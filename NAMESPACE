@@ -1,0 +1,10 @@
+exportPattern("^[[:alpha:]]+")
+
+import("limma")
+import("lme4")
+import("marray")
+import("gplots")
+import("ggplot2")
+import("MSnbase")
+import("Rcpp")
+
