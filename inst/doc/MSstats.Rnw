@@ -1024,7 +1024,7 @@ Same as in SRM experiments. See details in section 3.6.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 {
-\bibliographystyle{natbib}
+\bibliographystyle{natdin}
 \large
 \bibliography{bibliography}
 
