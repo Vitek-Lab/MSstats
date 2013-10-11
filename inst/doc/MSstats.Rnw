@@ -753,8 +753,8 @@ groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
 \vspace{-0.2in}
 \begin{figure}[ht!]
 \begin{center}
-\includegraphics[width=2.5in]{comparison1.pdf}
-\includegraphics[width=2.5in]{comparison2.pdf}
+\includegraphics[width=2.5in]{Comparison1.pdf}
+\includegraphics[width=2.5in]{Comparison2.pdf}
 \vspace{-0.1in}
 \caption{\small Comparison plots for multiple comparisons. The x-axis is the comparisons which the user designed. The y-axis is the log fold change for each comparison. The red points mean the estimated log fold change. The blue error bars mean the confidence interval with 0.95 significant level for log fold change. The horizontal line at log fold change=0 (the log fold change of one comparison is located around this line) means that there is no significant difference for this comparison.}
 \end{center}
