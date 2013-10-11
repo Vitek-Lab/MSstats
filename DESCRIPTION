@@ -1,7 +1,7 @@
 Package: MSstats
 Title: Protein Significance Analysis in LC-MS, SRM and DIA for
         Label-free or Label-based Proteomics Experiments
-Version: 1.99.1
+Version: 1.99.2
 Date: 2013-09-20
 Description: A set of tools for protein significance analysis in label-free or LC-MS, SRM and DIA experiments.
 Author: Meena Choi <choi67@purdue.edu>, Ching-Yun Chang <chang54@purdue.edu>, Olga Vitek <ovitek@purdue.edu>
