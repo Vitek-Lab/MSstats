@@ -1,3 +1,22 @@
+
+CHANGES IN VERSION 2.1.3
+-------------------------
+- fix the calculation problem for label-free experiments.
+	1. make.contrast.free itself
+	2. add more option for modeling
+
+
+
+CHANGES IN VERSION 2.1.1
+-------------------------
+- fix the bug in Condition plot : 
+	1. for label-based : match reference and endogenous
+	2. for label-free : when there is one observation in each group, SD=NA. make it zero.
+- fix the bug in heatmap and comparison plots : remove NA result for plotting
+- fix the bug for label-free groupComparison :  how to get subject_nested parameter in make.contrast.free for unequal number per group
+- fix the bug in group quantification : make.contrast.group.quantification fixed for subject_nested parameter
+
+
 CHANGES IN VERSION 1.99.1
 -------------------------
 - fixed several NOTES, added .Rbuildignore, compacted vignettes

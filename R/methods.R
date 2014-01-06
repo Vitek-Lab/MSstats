@@ -34,48 +34,146 @@
 	if(length(temp)==0) feature.c<-NULL
 
 #####
-# subject_nested
+# subject_nested 
 #####
 	temp<-coef.name[grep("SUBJECT_NESTED",coef.name)]
 	if(length(temp)>0){
 		temp1<-t(matrix(unlist(strsplit(as.character(temp),"\\.")),nrow=2))
 		temp2<-as.vector(xtabs(~temp1[,1]))	
-
+		
+		tempdata<-fit$model
+		levels<-unique(tempdata$GROUP)
+		sub.contrast<-contrast.matrix[as.numeric(as.character(levels))]
+		
 		# the base is alway be the first SUBJECT_NESTED
 		# (SUBJECT_NESTED1.1)
 		temp3<-temp2
-		temp3[1]<-temp2[1]+1
-
-		subjectNested.c<-rep(contrast.matrix/(temp3),temp2)
+			if(length(temp2)==length(sub.contrast)){
+				temp3[1]<-temp2[1]+1 ## this line first because if next is first,length of temp3 becomes >1
+			}else{
+				temp3<-c(1,temp3)
+			}
+		
+		# subjectNested.c<-rep(contrast.matrix/(temp3),temp2) ## in case of unequal sample per group, wrong
+		subjectNested.c<-rep(sub.contrast/(temp3),temp3)[-1]
+		
 		names(subjectNested.c)<-temp
 	}
 	if(length(temp)==0) subjectNested.c<-NULL
 
 #####
-# subject
+# subject : for time-course
 #####
+#	temp<-coef.name[grep("SUBJECT",coef.name)[!grep("SUBJECT",coef.name)%in%c(grep(":",coef.name),grep("NESTED",coef.name))]]
+#	if(length(temp)>0){
+#		subject.c<-rep(0,length(temp))
+#		names(subject.c)<-temp
+#	}
+#	if(length(temp)==0) subject.c<-NULL
+
 	temp<-coef.name[grep("SUBJECT",coef.name)[!grep("SUBJECT",coef.name)%in%c(grep(":",coef.name),grep("NESTED",coef.name))]]
+	
 	if(length(temp)>0){
-		subject.c<-rep(0,length(temp))
-		names(subject.c)<-temp
+#		subject.c<-rep(0,length(temp))
+#		names(subject.c)<-temp
+	
+	tempdata<-fit$model
+	levels<-unique(tempdata$GROUP)
+	labels<-paste("GROUP", levels, sep="")
+	patients<-NULL
+	for(i in 1:length(levels)){
+		sub<-tempdata[tempdata$GROUP==levels[i],]
+		sub.patients<-cbind(GROUP=paste("GROUP", levels[i], sep=""), SUBJECT=paste("SUBJECT", as.character(unique(sub$SUBJECT)), sep=""), Value=contrast.matrix[as.numeric(as.character(levels[i]))])
+		patients<-data.frame(rbind(patients,sub.patients))
 	}
+	
+	patient.count<-tapply(patients$SUBJECT, patients$GROUP, function(x) length(unique(x)))
+	patient.seq<-rep(0, length(temp))
+	for(i in 1:length(as.character(patients$SUBJECT))){
+		match<-any(temp==as.character(patients$SUBJECT)[i])
+		if(match & as.numeric(as.character(patients$Value[i]))!=0){
+			res<-temp == as.character(patients$SUBJECT)[i]
+			index<-which(res==TRUE)
+			group<-as.character(patients[i,]$GROUP)
+			count<-as.numeric(patient.count[names(patient.count)==group])
+			value<-as.numeric(as.character(patients[i,]$Value))
+			patient.value<-c(rep(0,index-1), value/count, rep(0, length(temp)-index))
+		}else{
+			patient.value<-rep(0,length(temp))
+		}
+		patient.seq<-patient.value+patient.seq
+	}
+	subject.c<-patient.seq
+	names(subject.c)<-temp
+	}
+	
 	if(length(temp)==0) subject.c<-NULL
 
+
+
 #####
-# subject by group : only for time-course
+# subject by group : only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
+#####
+#	temp<-coef.name[intersect(grep("SUBJECT",coef.name),grep("GROUP",coef.name))]
+
+#	tempSub<-unique(sub1[,c("GROUP","SUBJECT")])
+#	tempSub1<-xtabs(~GROUP,data=tempSub)
+#	tempSub2<-tempSub1[-1]
+#	if(length(temp)>0){
+#		temp1<-t(matrix(unlist(strsplit(as.character(temp),"\\:")),nrow=2))
+#		temp2<-as.vector(xtabs(~temp1[,2]))	## count per GROUP
+#		#gs.c<-rep(as.vector(contrast.matrix[-1]/(tempSub2)),temp2[1]) ## assume no missing for group and subject
+		
+#		# when Group completely  missing
+#		sub.matrix<-contrast.matrix[unique(tempSub$GROUP)]
+#		gs.c<-rep(as.vector(sub.matrix[-1]/(tempSub2)),each=temp2[1])
+#		names(gs.c)<-temp
+#	}
+#	if(length(temp)==0) gs.c<-NULL
+
+#####
+# subject by group : only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
 #####
 	temp<-coef.name[intersect(grep("SUBJECT",coef.name),grep("GROUP",coef.name))]
-
-	tempSub<-unique(sub1[,c("GROUP","SUBJECT")])
-	tempSub1<-xtabs(~GROUP,data=tempSub)
-	tempSub2<-tempSub1[-1]
+	
 	if(length(temp)>0){
-		temp1<-t(matrix(unlist(strsplit(as.character(temp),"\\:")),nrow=2))
-		temp2<-as.vector(xtabs(~temp1[,1]))	
-		gs.c<-rep(as.vector(contrast.matrix[-1]/(tempSub2)),temp2[1]) ## assume no missing for group and subject
-		names(gs.c)<-temp
+#		subject.c<-rep(0,length(temp))
+#		names(subject.c)<-temp
+	
+	tempdata<-fit$model
+	levels<-unique(tempdata$GROUP)
+	labels<-paste("GROUP", levels, sep="")
+	patients<-NULL
+	for(i in 1:length(levels)){
+		sub<-tempdata[tempdata$GROUP==levels[i],]
+		sub.patients<-cbind(GROUP=paste("GROUP", levels[i], sep=""), SUBJECT=paste("SUBJECT", as.character(unique(sub$SUBJECT)), sep=""), Value=contrast.matrix[as.numeric(as.character(levels[i]))])
+		patients<-data.frame(rbind(patients,sub.patients))
 	}
+	
+	patient.count<-tapply(patients$SUBJECT, patients$GROUP, function(x) length(unique(x)))
+	interaction.seq<-rep(0, length(temp))
+	interaction.labels<-paste(as.character(patients$GROUP),as.character(patients$SUBJECT), sep=":")
+	
+	for(i in 1:length(as.character(patients$SUBJECT))){
+		match<-any(temp==interaction.labels[i])
+		if(match & as.numeric(as.character(patients$Value[i]))!=0){
+			res<-temp == interaction.labels[i]
+			index<-which(res==TRUE)
+			group<-as.character(patients[i,]$GROUP)
+			count<-as.numeric(patient.count[names(patient.count)==group])
+			value<-as.numeric(as.character(patients[i,]$Value))
+			interaction.value<-c(rep(0,index-1), value/count, rep(0, length(temp)-index))
+		}else{
+			interaction.value<-rep(0,length(temp))
+		}
+		interaction.seq<-interaction.value+interaction.seq
+	}
+	gs.c<-interaction.seq
+	names(gs.c)<-temp
+	}
+	
 	if(length(temp)==0) gs.c<-NULL
+	
 
 #####
 # group : different from labeled
@@ -108,7 +206,7 @@
 
 	if(length(temp)==0) gf.c<-NULL
 
-
+	## be careful for order
 	contrast<-c(intercept.c,feature.c,subjectNested.c,subject.c,group.c,gs.c,gf.c)
 
 	if(class(fit)=="lm"){
@@ -319,14 +417,19 @@
 		# (SUBJECT_NESTED0.0)
 		if (nlevels(sub1$LABEL)==2){
 			temp3<-temp2
+			subjectNested.c<-rep(contrast.matrix/(temp3),temp2)
 		}
 		# free:
 		if (nlevels(sub1$LABEL)==1){
 			temp3<-temp2
-			temp3[1]<-temp2[1]+1
+			if(length(temp2)==length(contrast.matrix)){
+				temp3[1]<-temp2[1]+1 ## this line first because if next is first,length of temp3 becomes >1
+			}else{
+				temp3<-c(1,temp3)
+			}
+			subjectNested.c<-rep(contrast.matrix/(temp3),temp3)[-1]
 		}
 
-		subjectNested.c<-rep(contrast.matrix/(temp3),temp2)
 		names(subjectNested.c)<-temp
 	}
 	if(length(temp)==0) subjectNested.c<-NULL
@@ -868,36 +971,147 @@
 ##================================
 ## label-free, single
 ##================================
-.make.contrast.free.single<-function(fit,contrast.matrix){
+.make.contrast.free.single<-function(fit,contrast.matrix,sub1){
 
 	if(class(fit)=="lm"){
 		coef.name<-names(coef(fit))
+	}else{
+		coef.name<-names(fixef(fit))
 	}
 
 ## change contrast.matrix without Group1
-	cons=1
-	if(contrast.matrix[1]==0) contrast.free<-contrast.matrix[-1]
-	if(contrast.matrix[1]<0){ 
-		contrast.free<-contrast.matrix[-1]/abs(contrast.matrix[1])
-		cons=abs(contrast.matrix[1])
-		}
-	if(contrast.matrix[1]>0){ 
-		contrast.free<-contrast.matrix[-1]*(-1)/contrast.matrix[1]
-		cons=contrast.matrix[1]*(-1)
-		}
+#	cons=1
+#	if(contrast.matrix[1]==0) contrast.free<-contrast.matrix[-1]
+#	if(contrast.matrix[1]<0){ 
+#		contrast.free<-contrast.matrix[-1]/abs(contrast.matrix[1])
+#		cons=abs(contrast.matrix[1])
+#		}
+#	if(contrast.matrix[1]>0){ 
+#		contrast.free<-contrast.matrix[-1]*(-1)/contrast.matrix[1]
+#		cons=contrast.matrix[1]*(-1)
+#		}
 
+#	if(class(fit)=="lm"){
+#		coef.name<-names(coef(fit))
+#	}else{
+#		coef.name<-names(fixef(fit))
+#	}
+
+#####
 # intercept
+#####
 	temp<-coef.name[grep("Intercept",coef.name)]
 	intercept.c<-rep(0,length(temp))
 	names(intercept.c)<-temp
 	if(length(temp)==0) intercept.c<-NULL
 
 
-	contrast<-c(intercept.c,contrast.free)
+#####
+# subject
+#####
+	temp<-coef.name[grep("SUBJECT",coef.name)[!grep("SUBJECT",coef.name)%in%c(grep(":",coef.name),grep("NESTED",coef.name))]]
+	
+	if(length(temp)>0){
+#		subject.c<-rep(0,length(temp))
+#		names(subject.c)<-temp
+	
+	tempdata<-fit$model
+	levels<-unique(tempdata$GROUP)
+	labels<-paste("GROUP", levels, sep="")
+	patients<-NULL
+	for(i in 1:length(levels)){
+		sub<-tempdata[tempdata$GROUP==levels[i],]
+		sub.patients<-cbind(GROUP=paste("GROUP", levels[i], sep=""), SUBJECT=paste("SUBJECT", as.character(unique(sub$SUBJECT)), sep=""), Value=contrast.matrix[as.numeric(as.character(levels[i]))])
+		patients<-data.frame(rbind(patients,sub.patients))
+	}
+	
+	patient.count<-tapply(patients$SUBJECT, patients$GROUP, function(x) length(unique(x)))
+	patient.seq<-rep(0, length(temp))
+	for(i in 1:length(as.character(patients$SUBJECT))){
+		match<-any(temp==as.character(patients$SUBJECT)[i])
+		if(match & as.numeric(as.character(patients$Value[i]))!=0){
+			res<-temp == as.character(patients$SUBJECT)[i]
+			index<-which(res==TRUE)
+			group<-as.character(patients[i,]$GROUP)
+			count<-as.numeric(patient.count[names(patient.count)==group])
+			value<-as.numeric(as.character(patients[i,]$Value))
+			patient.value<-c(rep(0,index-1), value/count, rep(0, length(temp)-index))
+		}else{
+			patient.value<-rep(0,length(temp))
+		}
+		patient.seq<-patient.value+patient.seq
+	}
+	subject.c<-patient.seq
+	names(subject.c)<-temp
+	}
+	
+	if(length(temp)==0) subject.c<-NULL
+	
+	
+#####
+# group : different from labeled
+#####
+	temp<-coef.name[grep("GROUP",coef.name)[!grep("GROUP",coef.name)%in%grep(":",coef.name)]]
 
+### when there are some groups which are all missing
+	tempSub<-as.numeric(as.character(unique(sub1[,c("GROUP")])))
+	tempcontrast<-contrast.matrix[tempSub]
+
+	group.c<-tempcontrast[-1] ## for label-free, need to remove first
+	names(group.c)<-temp
+	if(length(temp)==0) group.c<-NULL
+
+
+#####
+# subject by group : only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
+#####
+	temp<-coef.name[intersect(grep("SUBJECT",coef.name),grep("GROUP",coef.name))]
+	
+	if(length(temp)>0){
+#		subject.c<-rep(0,length(temp))
+#		names(subject.c)<-temp
+	
+	tempdata<-fit$model
+	levels<-unique(tempdata$GROUP)
+	labels<-paste("GROUP", levels, sep="")
+	patients<-NULL
+	for(i in 1:length(levels)){
+		sub<-tempdata[tempdata$GROUP==levels[i],]
+		sub.patients<-cbind(GROUP=paste("GROUP", levels[i], sep=""), SUBJECT=paste("SUBJECT", as.character(unique(sub$SUBJECT)), sep=""), Value=contrast.matrix[as.numeric(as.character(levels[i]))])
+		patients<-data.frame(rbind(patients,sub.patients))
+	}
+	
+	patient.count<-tapply(patients$SUBJECT, patients$GROUP, function(x) length(unique(x)))
+	interaction.seq<-rep(0, length(temp))
+	interaction.labels<-paste(as.character(patients$GROUP),as.character(patients$SUBJECT), sep=":")
+	
+	for(i in 1:length(as.character(patients$SUBJECT))){
+		match<-any(temp==interaction.labels[i])
+		if(match & as.numeric(as.character(patients$Value[i]))!=0){
+			res<-temp == interaction.labels[i]
+			index<-which(res==TRUE)
+			group<-as.character(patients[i,]$GROUP)
+			count<-as.numeric(patient.count[names(patient.count)==group])
+			value<-as.numeric(as.character(patients[i,]$Value))
+			interaction.value<-c(rep(0,index-1), value/count, rep(0, length(temp)-index))
+		}else{
+			interaction.value<-rep(0,length(temp))
+		}
+		interaction.seq<-interaction.value+interaction.seq
+	}
+	gs.c<-interaction.seq
+	names(gs.c)<-temp
+	}
+	
+	if(length(temp)==0) gs.c<-NULL
+		
+### combine all
+	contrast<-c(intercept.c,group.c, subject.c, gs.c)
 
 	if(class(fit)=="lm"){
 		contrast1<-contrast[!is.na(coef(fit))]
+	}else{
+		contrast1<-contrast[!is.na(fixef(fit))]
 	}
 	
 	return(contrast1)

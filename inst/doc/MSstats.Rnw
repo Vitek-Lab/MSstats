@@ -452,7 +452,7 @@ To get started with this function and information about detailed options, visit 
 \item{Quality control plot }
 
 \begin{small}
-<<QCplot, eval=FALSE>>= 
+<<QCplot, echo=FALSE, results=hide>>= 
 dataProcessPlots(data=QuantData,type="QCPlot")
 @
 \end{small}
@@ -471,7 +471,7 @@ dataProcessPlots(data=QuantData,type="QCPlot")
 
 
 \begin{small}
-<<Profileplot, eval=FALSE>>= 
+<<Profileplot, echo=FALSE, results=hide>>= 
 dataProcessPlots(data=QuantData,type="ProfilePlot")
 @
 \end{small}
@@ -490,7 +490,7 @@ dataProcessPlots(data=QuantData,type="ProfilePlot")
 \item{Condition plot}
 
 \begin{small}
-<<Conditionplot, eval=FALSE>>= 
+<<Conditionplot, echo=FALSE, results=hide>>= 
 dataProcessPlots(data=QuantData,type="ConditionPlot")
 @
 \end{small}
@@ -594,14 +594,12 @@ To get started with this function, visit the help section of modelBasedQCPlots f
 ?modelBasedQCPlots
 @
 
-<<eval=FALSE>>==
-modelBasedQCPlots(data=testResultMultiComparisons$ModelQC, type="ResidualPlots", 
-                  which.Protein="PMG2", address=FALSE)
+<<echo=FALSE, results=hide>>==
+modelBasedQCPlots(data=testResultMultiComparisons$ModelQC, type="ResidualPlots",address=FALSE)
 @
 
-<<eval=FALSE>>==
-modelBasedQCPlots(data=testResultMultiComparisons$ModelQC,type="QQPlots",
-                  which.Protein="PMG2", address=FALSE)
+<<echo=FALSE, results=hide>>==
+modelBasedQCPlots(data=testResultMultiComparisons$ModelQC,type="QQPlots",address=FALSE)
 @
 \end{small}
 
@@ -654,7 +652,7 @@ head(testResultMultiComparisons$ComparisonResult)
 
 {\bf 1. Default : sig=0.05 / No FCcutoff / No ylimUp / with Protein name}
 \begin{small}
-<<groupComparisoneplot1, eval=FALSE>>= 
+<<groupComparisoneplot1, echo=FALSE, results=hide>>= 
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
                      type="VolcanoPlot",which.Comparison=c("T7-T1"), address=FALSE)
 @
@@ -677,7 +675,7 @@ after applying fold change cutoff.}
 Note : FCcutoff=70 is due to demonstration purpose.
 
 \begin{small}
-<<groupComparisoneplot2, eval=FALSE>>= 
+<<groupComparisoneplot2, echo=FALSE, results=hide>>= 
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
                      type="VolcanoPlot",FCcutoff=70, ylimUp=100, 
                      ProteinName=FALSE, which.Comparison=c("T7-T1"), address=FALSE)
@@ -685,18 +683,6 @@ groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
 \end{small}
 
 
-\vspace{-1cm}
-\begin{figure}[h!]
-\begin{center}
-\includegraphics[width=2.5in]{Volcano45Yeast1.pdf}
-\includegraphics[width=2.5in]{Volcano45Yeast2.pdf}
-\vspace{-0.5cm}
-\caption{\small Volcano plots of a single comparison for 45 proteins from the example time courses yeast study with all 45 proteins. Left volcano plot is the result for default option. Right volcano plot is the result for setting up {\tt FCcutoff}=1.5 and upper limit of y-axis is 60 without protein names.
-\label{fig:volcano}}
-\end{center}
-\end{figure}
-
-\clearpage
 
 \item[(2)]{Heatmap}
 \vspace{0.3cm}
@@ -729,22 +715,10 @@ groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
 \end{figure}
 
 \newpage
-\begin{figure}[h!]
-\begin{center}
-%\includegraphics[width=1.5in]{Heatmap_colorkey.png} \\
-\vspace{-0.3in}
-\includegraphics[width=2.5in]{Heatmap45Yeast1.pdf}
-\includegraphics[width=2.5in]{Heatmap45Yeast2.pdf}
-\vspace{-0.3in}
-\caption{\small Heatmap of multiple comparisons for the 45 proteins from the example time courses yeast study with all 45 proteins, which is the same result of ~\figref{volcano}. Left heatmp is the result for default option using FDR cutoff=0.05 only. Right heatmap is the result under both FDR cutoff=0.05 and FCcutoff=1.5}
-\end{center}
-\end{figure}
-
-\vspace{-0.3cm}
 \item[(3)]{Comparison plot}
 \vspace{-0.3cm}
 \begin{small}
-<<groupComparisoneplot5, eval=FALSE>>=
+<<groupComparisoneplot5, echo=FALSE, results=hide>>=
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
                      type="ComparisonPlot")
 @
@@ -792,16 +766,18 @@ To get started with this function, visit the help section of designSampleSize fi
 \subsubsection{Minimal number of biological replicates per condition}
 \begin{footnotesize}
 <<>>==
-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,power=0.8,
+result.sample<-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,power=0.8,
                  desiredFC=c(1.25,1.75),FDR=0.05)
+result.sample
 @
 \end{footnotesize}
 
 \subsubsection{Power calculation}
 \begin{footnotesize}
 <<>>==
-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,power=TRUE,
+result.power<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,power=TRUE,
                  desiredFC=c(1.25,1.75),FDR=0.05)
+result.power
 @
 \end{footnotesize}
 
@@ -819,32 +795,28 @@ To get started with this function, visit the help section of designSampleSizePlo
 @
 
 
-<<eval=FALSE>>==
+<<echo=FALSE, results=hide>>==
 # Minimal number of biological replicates per condition
-result.sample<-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,power=0.8,
-                                desiredFC=c(1.25,1.75),FDR=0.05)
 designSampleSizePlots(data=result.sample)
 @
-\end{small}
 
 
 \begin{center}
 \includegraphics[width=2.5in]{SampleSizeReplicateYeast.pdf}\\
 \end{center}
 
-\begin{small}
-<<eval=FALSE>>==
+
+<<echo=FALSE, results=hide>>==
 # Power
-result.power<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,power=TRUE,
-                               desiredFC=c(1.25,1.75),FDR=0.05)
 designSampleSizePlots(data=result.power)
 @
-\end{small}
+
 
 \begin{center}
 \includegraphics[width=2.5in]{power.pdf}\\
 \end{center}
 
+\end{small}
 
 
 %============================================

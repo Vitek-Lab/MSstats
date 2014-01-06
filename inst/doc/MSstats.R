@@ -49,21 +49,21 @@ head(QuantData)
 
 
 ###################################################
-### code chunk number 9: QCplot (eval = FALSE)
+### code chunk number 9: QCplot
 ###################################################
-## dataProcessPlots(data=QuantData,type="QCPlot")
+dataProcessPlots(data=QuantData,type="QCPlot")
 
 
 ###################################################
-### code chunk number 10: Profileplot (eval = FALSE)
+### code chunk number 10: Profileplot
 ###################################################
-## dataProcessPlots(data=QuantData,type="ProfilePlot")
+dataProcessPlots(data=QuantData,type="ProfilePlot")
 
 
 ###################################################
-### code chunk number 11: Conditionplot (eval = FALSE)
+### code chunk number 11: Conditionplot
 ###################################################
-## dataProcessPlots(data=QuantData,type="ConditionPlot")
+dataProcessPlots(data=QuantData,type="ConditionPlot")
 
 
 ###################################################
@@ -111,44 +111,42 @@ testResultMultiComparisons$ComparisonResult
 
 
 ###################################################
-### code chunk number 18: MSstats.Rnw:597-599 (eval = FALSE)
+### code chunk number 18: MSstats.Rnw:597-598
 ###################################################
-## modelBasedQCPlots(data=testResultMultiComparisons$ModelQC, type="ResidualPlots", 
-##                   which.Protein="PMG2", address=FALSE)
+modelBasedQCPlots(data=testResultMultiComparisons$ModelQC, type="ResidualPlots",address=FALSE)
 
 
 ###################################################
-### code chunk number 19: MSstats.Rnw:602-604 (eval = FALSE)
+### code chunk number 19: MSstats.Rnw:601-602
 ###################################################
-## modelBasedQCPlots(data=testResultMultiComparisons$ModelQC,type="QQPlots",
-##                   which.Protein="PMG2", address=FALSE)
+modelBasedQCPlots(data=testResultMultiComparisons$ModelQC,type="QQPlots",address=FALSE)
 
 
 ###################################################
-### code chunk number 20: MSstats.Rnw:631-632 (eval = FALSE)
+### code chunk number 20: MSstats.Rnw:629-630 (eval = FALSE)
 ###################################################
 ## ?groupComparisonPlots
 
 
 ###################################################
-### code chunk number 21: MSstats.Rnw:650-651
+### code chunk number 21: MSstats.Rnw:648-649
 ###################################################
 head(testResultMultiComparisons$ComparisonResult)
 
 
 ###################################################
-### code chunk number 22: groupComparisoneplot1 (eval = FALSE)
+### code chunk number 22: groupComparisoneplot1
 ###################################################
-## groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
-##                      type="VolcanoPlot",which.Comparison=c("T7-T1"), address=FALSE)
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
+                     type="VolcanoPlot",which.Comparison=c("T7-T1"), address=FALSE)
 
 
 ###################################################
-### code chunk number 23: groupComparisoneplot2 (eval = FALSE)
+### code chunk number 23: groupComparisoneplot2
 ###################################################
-## groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
-##                      type="VolcanoPlot",FCcutoff=70, ylimUp=100, 
-##                      ProteinName=FALSE, which.Comparison=c("T7-T1"), address=FALSE)
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
+                     type="VolcanoPlot",FCcutoff=70, ylimUp=100, 
+                     ProteinName=FALSE, which.Comparison=c("T7-T1"), address=FALSE)
 
 
 ###################################################
@@ -166,64 +164,62 @@ head(testResultMultiComparisons$ComparisonResult)
 
 
 ###################################################
-### code chunk number 26: groupComparisoneplot5 (eval = FALSE)
+### code chunk number 26: groupComparisoneplot5
 ###################################################
-## groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
-##                      type="ComparisonPlot")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,
+                     type="ComparisonPlot")
 
 
 ###################################################
-### code chunk number 27: MSstats.Rnw:784-785 (eval = FALSE)
+### code chunk number 27: MSstats.Rnw:758-759 (eval = FALSE)
 ###################################################
 ## ?designSampleSize
 
 
 ###################################################
-### code chunk number 28: MSstats.Rnw:794-796
+### code chunk number 28: MSstats.Rnw:768-771
 ###################################################
-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,power=0.8,
+result.sample<-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,power=0.8,
                  desiredFC=c(1.25,1.75),FDR=0.05)
+result.sample
 
 
 ###################################################
-### code chunk number 29: MSstats.Rnw:802-804
+### code chunk number 29: MSstats.Rnw:777-780
 ###################################################
-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,power=TRUE,
+result.power<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,power=TRUE,
                  desiredFC=c(1.25,1.75),FDR=0.05)
+result.power
 
 
 ###################################################
-### code chunk number 30: MSstats.Rnw:817-818 (eval = FALSE)
+### code chunk number 30: MSstats.Rnw:793-794 (eval = FALSE)
 ###################################################
 ## ?designSampleSizePlots
 
 
 ###################################################
-### code chunk number 31: MSstats.Rnw:822-826 (eval = FALSE)
+### code chunk number 31: MSstats.Rnw:798-800
 ###################################################
-## # Minimal number of biological replicates per condition
-## result.sample<-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,power=0.8,
-##                                 desiredFC=c(1.25,1.75),FDR=0.05)
-## designSampleSizePlots(data=result.sample)
+# Minimal number of biological replicates per condition
+designSampleSizePlots(data=result.sample)
 
 
 ###################################################
-### code chunk number 32: MSstats.Rnw:836-840 (eval = FALSE)
+### code chunk number 32: MSstats.Rnw:809-811
 ###################################################
-## # Power
-## result.power<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,power=TRUE,
-##                                desiredFC=c(1.25,1.75),FDR=0.05)
-## designSampleSizePlots(data=result.power)
+# Power
+designSampleSizePlots(data=result.power)
 
 
 ###################################################
-### code chunk number 33: MSstats.Rnw:864-865 (eval = FALSE)
+### code chunk number 33: MSstats.Rnw:836-837 (eval = FALSE)
 ###################################################
 ## ?quantification
 
 
 ###################################################
-### code chunk number 34: MSstats.Rnw:872-875
+### code chunk number 34: MSstats.Rnw:844-847
 ###################################################
 #  (1): Sample quantification
 subQuant<-quantification(QuantData)
@@ -231,7 +227,7 @@ head(subQuant)
 
 
 ###################################################
-### code chunk number 35: MSstats.Rnw:878-881
+### code chunk number 35: MSstats.Rnw:850-853
 ###################################################
 # (2): Group quantification
 groupQuant<-quantification(QuantData, type="Group")
