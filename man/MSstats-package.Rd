@@ -2,13 +2,13 @@
 \alias{MSstats-package}
 \alias{MSstats}
 \docType{package}
-\title{Tools for protein significance analysis in LC-MS,SRM and DIA for label-free or label-based proteomic experiments}
-\description{A set of tools for protein significance analysis in label-free and labeled synthetic peptides LC-MS, SRM and DIA experiments.}
+\title{Tools for protein significance analysis in DDA,SRM and DIA for label-free or label-based proteomic experiments}
+\description{A set of tools for protein significance analysis in SRM, DDA and DIA experiments.}
 \details{
 \tabular{ll}{
 Package: \tab MSstats\cr
-Version: \tab 1.99.0\cr
-Date: \tab 2013-09-20\cr
+Version: \tab 2.1.3\cr
+Date: \tab 2014-01-05\cr
 License: \tab Artistic-2.0 \cr
 LazyLoad: \tab yes\cr
 }
