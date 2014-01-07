@@ -1,3 +1,10 @@
+CHANGES IN VERSION 2.1.3
+-------------------------
+- fix the groupComparison for label-free experiments.
+- automatically generate progress report as .txt files
+- add progress message for groupComparison and dataProcessPlots function.
+
+
 CHANGES IN VERSION 2.1.1
 -------------------------
 - fix the bug in Condition plot : 
