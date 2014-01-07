@@ -67,6 +67,11 @@ groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Volc
 # FCcutoff=70 is for demonstration purpose
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, ylimUp=100, ProteinName=FALSE,address="Ex2_")
 
+# show only 'T3-T1' comparisons
+# Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, and no protein name displayed
+# FCcutoff=70 is for demonstration purpose
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, ylimUp=100, ProteinName=FALSE,which.Comparison="T3-T1",address="Ex3_")
+
 # Heatmap with FDR cutoff = 0.05
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",axis.size=1.2,address="Ex1_")
 
