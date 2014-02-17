@@ -19,7 +19,7 @@ Maintainer: Meena Choi (\email{choi67@purdue.edu})
 Ching-Yun Chang, Paola Picotti, Ruth Huttenhain, Viola Heinzelmann-Schwarz, Marko Jovanovic, Ruedi Aebersold, Olga Vitek. Protein significance analysis in selected reaction monitoring (SRM) measurements.  \emph{Molecular & Cellular Proteomics}, 11:M111.014662, 2012.}
 
 \examples{
-QuantData<-dataProcess(RawData)
+QuantData<-dataProcess(SRMRawData)
 
 head(QuantData)
 }

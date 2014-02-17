@@ -4,15 +4,19 @@
 \description{To check the assumption of model, modelBasedQCPlots takes the results after fitting models from function (\code{\link{groupComparison}}) as input and automatically generate two types of figures in pdf files as output : (1) normal quantile-quantile plot (specify "QQPlot" in option type) for checking normally distributed errors.; (2) residual plot (specify "ResidualPlot" in option type) for checking constant variance among different features.}
 
 \usage{
-modelBasedQCPlots(data,type,axis.size=10,point.size=3,text.size=7,width=10, height=10,featureName=TRUE,feature.QQPlot="all",which.Protein="all",address="")
+modelBasedQCPlots(data,type,
+	axis.size=10,dot.size=3,text.size=7,legend.size=7,
+	width=10, height=10,
+	featureName=TRUE,feature.QQPlot="all",which.Protein="all",address="")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{data}{'ModelQC' in testing output from function groupComparison.}
   \item{type}{choice of visualization. "QQPlots" represents normal quantile-quantile plot for each protein after fitting models. "ResidualPlots" represents a plot of residuals versus fitted values for each protein in the dataset.}
-  \item{axis.size}{size of axes labels, e.g. name of the comparisons and of targeted proteins in heatmap, and name of the comparisons in comparison plot. Default is 10.}
- \item{point.size}{size of points in the graph for residual plots. Default is 3.}
+  \item{axis.size}{size of axes labels. Default is 10.}
+ \item{dot.size}{size of points in the graph for residual plots and QQ plots. Default is 3.}
   \item{text.size}{size of labeling for feature names only in normal quantile-quantile plots separately for each feature. Default is 7.}
+  \item{legend.size}{size of legend for feature names only in residual plots. Default is 7.}
  \item{featureName}{for "ResidualPlot" only, TRUE show feature labeling and FALSE means no feature legend printing.}
  \item{feature.QQPlot}{"all"(Default) means that one normal quantile-quantile plot will be generated with across features of a protein. "byFeature" will generate normal quantile-quantile plots separately for each feature of a protein.}
   \item{width}{width of the saved file. Default is 10.}

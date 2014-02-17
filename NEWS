@@ -1,10 +1,13 @@
+CHANGES IN VERSION 2.1.4
+-------------------------
+- Change the numbering of file name for plots. If the file names are already existing in the folder, automatically next number will be add at the end of file name. Therefore file name will not be overwritten, and we can keep all pdf files for plots.
+
 
 CHANGES IN VERSION 2.1.3
 -------------------------
-- fix the calculation problem for label-free experiments.
-	1. make.contrast.free itself
-	2. add more option for modeling
-
+- fix the groupComparison for label-free experiments.
+- automatically generate progress report as .txt files
+- add progress message for groupComparison and dataProcessPlots function.
 
 
 CHANGES IN VERSION 2.1.1

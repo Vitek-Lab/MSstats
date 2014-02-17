@@ -4,21 +4,30 @@
 \description{To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, groupComparisonPlots takes testing results from function (\code{\link{groupComparison}}) as input and automatically generate three types of figures in pdf files as output : (1) volcano plot (specify "VolcanoPlot" in option type) for each comparison separately; (2) heatmap (specify "Heatmap" in option type) for multiple comparisons ; (3) comparison plot (specify "ComparisonPlot" in option type) for multiple comparisons per protein.}
 
 \usage{
-groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,axis.size=10,text.size=4,ProteinName=TRUE,ProteinNameLoc=1,width=10, height=10, which.Comparison="all", address="")
+groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,
+	ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,
+	x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4,legend.size=7,
+	ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", 
+	width=10, height=10, which.Comparison="all", address="")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{data}{'ComparisonResult' in testing output from function groupComparison.}
   \item{type}{choice of visualization. "VolcanoPlot" represents volcano plot of log fold changes and adjusted p-values for each comparison separately. "Heatmap" represents heatmap of adjusted p-values for multiple comparisons. "ComparisonPlot" represents comparison plot of log fold changes for multiple comparisons per protein.}
-  \item{sig}{FDR cutoff for the adjusted p-values. sig=0.05 is default.}
+  \item{sig}{FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.}
   \item{FCcutoff}{for volcano plot or heatmap, whether involve fold change cutoff or not. FALSE (default) means no fold change cutoff is applied for significance analysis. FCcutoff = specific value means specific fold change cutoff is applied.}
-  \item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + SE.}
-  \item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - SE.}
+  \item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.}
+  \item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.}
   \item{xlimUp}{for Volcano plot, the limit for x-axis. FALSE (default) for  use maximum for absolute value of log-fold change or 3 as default if maximum for absolute value of log-fold change is less than 3.}
-  \item{axis.size}{size of axes labels, e.g. name of the comparisons and of targeted proteins in heatmap, and name of the comparisons in comparison plot. Default is 10.}
+  \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}
+  \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
+  \item{dot.size}{size of dots in volcano plot and comparison plot. Default is 3.}
  \item{text.size}{size of ProteinName label in the graph for Volcano Plot. Default is 4.}
+  \item{legend.size}{size of legend for color at the bottom of volcano plot.  Default is 7.}
   \item{ProteinName}{for volcano plot only, whether display protein names or not. TRUE (default) means protein names are displayed next to the testing results. FALSE means no protein names are displayed.}
   \item{ProteinNameLoc}{for volcano plot only, assign the distance between the point and the displayed protein name. Default is 1.}
+   \item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180. }
+   \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
   \item{width}{width of the saved file. Default is 10.}
   \item{height}{height of the saved file. Default is 10.}
    \item{which.Comparison}{list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.}
@@ -73,11 +82,11 @@ groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Volc
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, ylimUp=100, ProteinName=FALSE,which.Comparison="T3-T1",address="Ex3_")
 
 # Heatmap with FDR cutoff = 0.05
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",axis.size=1.2,address="Ex1_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",address="Ex1_")
 
 # Heatmap with FDR cutoff = 0.05 and FC cutoff = 70
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",FCcutoff=70,axis.size=1.2,address="Ex2_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",FCcutoff=70,address="Ex2_")
 
 # Comparison Plot
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="ComparisonPlot",address="Ex1_")

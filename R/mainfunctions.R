@@ -11,7 +11,7 @@
 transformMSnSetToMSstats <- function(ProteinName,PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, Bioreplicate,Run, Condition, data) {
 
     if (!inherits(data, "MSnSet"))
-        stop("only MSnSet class can be converted to input format for MSstats.")
+        stop("Only MSnSet class can be converted to input format for MSstats.")
 
     ## if the data is an expression set, extract the different data components and reshape to "long" format 
 
@@ -65,7 +65,7 @@ transformMSnSetToMSstats <- function(ProteinName,PeptideSequence, PrecursorCharg
 
     diff.name<-setdiff(check.name, colnames(final.data))
     if(length(diff.name)>0)
-	stop(paste("error : Please check the variable name. The provided variable name",paste(diff.name,collapse=","), "is not present in the data set.",sep=" "))
+	stop(paste("Please check the variable name. The provided variable name",paste(diff.name,collapse=","), "is not present in the data set.",sep=" "))
 
 
     ## define the group column 
@@ -133,38 +133,70 @@ featureNames(e)<-paste(fData(e)$PEPTIDESEQUENCE,fData(e)$PRECURSORCHARGE, fData(
 #############################################
 #############################################
 
-dataProcess<-function(raw,logTrans=2, normalization="constant",nameStandards=NULL, betweenRunInterferenceScore=FALSE, address=""){
+dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE, address=""){
 	
 	## save process output in each step
-	processout<-NULL
+	allfiles<-list.files()
+
+	num<-0
+	filenaming<-"msstats"
+	finalfile<-"msstats.log"
+
+	while(is.element(finalfile,allfiles)){
+		num<-num+1
+		finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")
+	}
 	
-	# check right input
+	session<-sessionInfo()
+	sink("sessionInfo.txt")
+	print(session)
+	sink()
+	
+	processout<-as.matrix(read.table("sessionInfo.txt", header=T, sep="\t"))
+	write.table(processout, file=finalfile, row.names=FALSE)
+
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - dataProcess function"," "),ncol=1))
+	
+	#### check right column in input
 	requiredinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
 	
 	if(length(setdiff(toupper(requiredinput),toupper(colnames(raw))))!=0){
-		processout<-rbind(processout,c(paste("The required input : ",setdiff(toupper(requiredinput),toupper(colnames(raw)))," are not provided in input - stop")))
-		colnames(processout)<-c("Process-dataProcess function")
-		write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+		processout<-rbind(processout,c(paste("ERROR : The required input : ",setdiff(toupper(requiredinput),toupper(colnames(raw)))," are not provided in input - stop")))
+		write.table(processout, file=finalfile,row.names=FALSE)
 		
-		stop(message("Please check the required input. The required input needs (ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, Condition, BioReplicate, Run, Intensity)"))
+		stop("Please check the required input. The required input needs (ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, Condition, BioReplicate, Run, Intensity)")
 	}else{
 		processout<-rbind(processout,c("The required input : provided - okay"))
-		colnames(processout)<-c("Process-dataProcess function")
-		write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+		write.table(processout, file=finalfile,row.names=FALSE)
 	}
 	
-	#  check whether class of intensity is factor or chaterer, if yes, neec to chage as numeric
+	####  check whether class of intensity is factor or chaterer, if yes, neec to chage as numeric
     if(is.factor(raw$Intensity) | is.character(raw$Intensity)){	
 		suppressWarnings(raw$Intensity<-as.numeric(as.character(raw$Intensity)))
 	}
 	
-	# check whether the intensity has 0 value or negative value
+	#### check whether the intensity has 0 value or negative value
 	if(length(which(raw$Intensity<=0))>0){
-		processout<-rbind(processout,c("There are some intensities which are zero or negative values. need to change them. - stop"))
-		write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+		processout<-rbind(processout,c("ERROR : There are some intensities which are zero or negative values. need to change them. - stop"))
+		write.table(processout, file=finalfile,row.names=FALSE)
 		
-		stop(message("Intensity has 0 or negative values.\n"))
-	}	
+		stop("Intensity has 0 or negative values. Please check these intensities and change them. \n")
+	}
+	
+	#### check unexpected token(":")
+	if(length(grep(":",raw$PeptideSequence))!=0){
+		processout<-rbind(processout,c("ERROR : colon(:) is invalid in PeptideSequence column. Please replace with other entry. - stop"))
+		write.table(processout, file=finalfile,row.names=FALSE)
+		
+		stop("Colon(:) is invalid in PeptideSequence column. Please replace with other entry. \n")
+	}
+	
+	if(length(grep(":",raw$FragmentIon))!=0){
+		processout<-rbind(processout,c("ERROR : colon(:) is invalid in FragmentIon column. Please replace with other entry. - stop"))
+		write.table(processout, file=finalfile,row.names=FALSE)
+		
+		stop("Colon(:) is invalid in FragmentIon column. Please replace with other entry. \n")
+	}
 	
 #######################################	
 #### here, need to get standard protein name
@@ -188,10 +220,10 @@ dataProcess<-function(raw,logTrans=2, normalization="constant",nameStandards=NUL
 	raw.temp<-data.frame(raw.temp,PEPTIDE=paste(raw.temp$PEPTIDESEQUENCE,raw.temp$PRECURSORCHARGE,sep="_"), TRANSITION=paste(raw.temp$FRAGMENTION, raw.temp$PRODUCTCHARGE,sep="_"))
 	
 	if(length(unique(raw.temp$ISOTOPELABELTYPE))>2){
-		processout<-rbind(processout,c("There are more than two levels of labeling. So far, only label-free or reference-labeled experiment are supported. - stop"))
-		write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+		processout<-rbind(processout,c("ERROR : There are more than two levels of labeling. So far, only label-free or reference-labeled experiment are supported. - stop"))
+		write.table(processout, file=finalfile,row.names=FALSE)
 		
-		stop(message("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments."))
+		stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
 	}
 
 	## change light, heavy -> L,H
@@ -206,8 +238,6 @@ dataProcess<-function(raw,logTrans=2, normalization="constant",nameStandards=NUL
 	raw.temp<-raw.temp[,c("PROTEINNAME","PEPTIDE","TRANSITION","ISOTOPELABELTYPE","CONDITION","BIOREPLICATE","RUN","INTENSITY")]
 	
 	colnames(raw.temp)<-c("Protein","Peptide","Transition","Label","Condition","Sample","Run","Intensity")
-
-
 
 
 ##############################
@@ -225,15 +255,17 @@ work<-data.frame(work,SUBJECT_NESTED=paste(work[,"GROUP"],work[,"SUBJECT"],sep="
 
 
 processout<-rbind(processout,c("New input format : made new columns for analysis - okay"))
-write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+write.table(processout, file=finalfile,row.names=FALSE)
+
+
 
 ############## log transformation
 ## check logTrans is 2,10 or not
 if(logTrans!=2 & logTrans!=10){
-	processout<-rbind(processout,c("Logarithm transformation : log2 or log10 only - stop"))
-write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	processout<-rbind(processout,c("ERROR : Logarithm transformation : log2 or log10 only - stop"))
+write.table(processout, file=finalfile,row.names=FALSE)
 	
-	stop(message("only log2 or log10 are posssible.\n"))
+	stop("Only log2 or log10 are posssible.\n")
 }
 
 ## based on logTrans option, assign log transformation
@@ -245,29 +277,188 @@ work<-data.frame(work,INTENSITY=raw.temp$Intensity,ABUNDANCE=log10(raw.temp$Inte
 		} 	
 
 processout<-rbind(processout,c(paste("Logarithm transformation: log",logTrans," transformation is done - okay", sep="")))
-write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+write.table(processout, file=finalfile,row.names=FALSE)
+
+
+############## Check multi-method or not : multiple run for a replicate
+
+#standardFeature<-unique(work[work$RUN=="1","FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.
+
+#countdiff = tapply (work$FEATURE, work$RUN, function ( x ) length(setdiff(unique(x),standardFeature)) ) 
+
+## whether multirun or not : we assume that different method has completely different feature
+multirun<-.countMultiRun(work)
+checkMultirun<-any(multirun==0)
+
+##############################
+#### if multirun, make new column 'method'
+
+if(checkMultirun){ ## when checkMultirun is TRUE, it means there are more than 1 method.
+	
+	## make column 'method'
+	work$METHOD<-1
+	numincreasing=1
+	
+	## get run which has different feature names from run1
+	while(length(multirun[multirun==0])!=0){ ## until there is no more unique feature per run
+		nextmethod<-names(multirun[multirun==0])
+		numincreasing<-numincreasing+1
+		work[which(work$RUN %in% nextmethod),"METHOD"]<-numincreasing
+		
+		worktemp<-work[which(work$RUN %in% nextmethod),]
+		worktemp$RUN<-factor(worktemp$RUN)
+		
+		multirun<-.countMultiRun(worktemp)	
+	}
+	
+	processout<-rbind(processout,c(paste("Multiple methods are existed : ", length(unique(work$METHOD))," methods per MS replicate.")))
+	write.table(processout, file=finalfile,row.names=FALSE)
+	
+}else{
+	work$METHOD<-1
+	}
+
+### check messingness for multirun
+
 
 
 ##############################
-## check no value for some feature : at lease NA is needed.
+## check no value for some feature : balanced structure or not
+## need to separate label-free or label-based
 
-work.l<-work[work$LABEL=="L",]
+## only 1 method
+	
+if(!checkMultirun){
 
-structure = tapply ( work.l$ABUNDANCE, list ( work.l$FEATURE, work.l$SUBJECT_ORIGINAL ) , function ( x ) length ( x ) ) 
+	structure = tapply ( work$ABUNDANCE, list ( work$FEATURE, work$RUN ) , function ( x ) length ( x ) ) 
 
-flag = any ( apply ( structure, 1, function ( x ) sum ( is.na ( x ) ) ) > 0 ) 
+	####
+#	flag = any ( apply ( structure, 1, function ( x ) sum ( is.na ( x ) ) ) > 0 ) 
+#	flag = (nrow(unique(structure))!=1)
 
-if ( flag ){
-	processout<-rbind(processout,c("Missing feature intensities should be given by 'NA' in the abundance column - stop"))
-write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+## structure value should be 2 for labeled, 1 for label-free, if not there are missingness
+	if(nlevels(work$LABEL)==2){ ## label-based
+		flag = sum(is.na(structure))>0 | sum(structure!=2)>0
+	}else{  ## label-free
+		flag = sum(is.na(structure))>0 | sum(structure!=1)>0
+	}
+	
+	if ( flag ){
+		processout<-rbind(processout,c("ERROR: the input dataset has missing rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The missing rows are listed below."))
+		write.table(processout, file=finalfile,row.names=FALSE)
 
-	 stop ( message("Missing feature intensities should be given by 'NA' in the abundance column." ))
-}else{
-	processout<-rbind(processout,c("Balanced data format with NA for missing feature intensities - okay"))
-write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+		 message("ERROR : the input dataset has missing rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The missing rows are listed below.")
 
-}
+		## first, which run has missing	
+#		 runstructure<-apply ( structure, 2, function ( x ) sum ( is.na ( x ) ) ) > 0
+		if(nlevels(work$LABEL)==2){
+		 	runstructure<-apply ( structure, 2, function ( x ) sum ( is.na ( x ) | x!=2 ) ) > 0
+		 }else{
+		 	runstructure<-apply ( structure, 2, function ( x ) sum ( is.na ( x ) | x!=1 ) ) > 0
+		 }
 
+		 runID<-names(runstructure[runstructure==TRUE])
+	 
+	 	## then for each run, which features are missing,
+	 	for(j in 1:length(runID)){
+	 	
+	 		nameID<-unique(work[work$RUN==runID[j],c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","RUN")])
+	 		
+	 		featureID<-structure[,colnames(structure)==runID[j]]
+			if(nlevels(work$LABEL)==2){
+				finalfeatureID<-featureID[is.na(featureID) | featureID!=2]
+			}else{
+				finalfeatureID<-featureID[is.na(featureID) | featureID!=1]
+			}	 	
+	 	
+	 		message(paste("*** Subject : ", as.character(nameID[,"SUBJECT_ORIGINAL"]) ,", Condition : ", as.character(nameID[,"GROUP_ORIGINAL"]), " has missing rows for some features (", paste(names(finalfeatureID), collapse=", "),")", sep="" ))
+	 	
+	 		## save in process file.
+	 		processout<-rbind(processout,c(paste("*** Subject : ", as.character(nameID[,"SUBJECT_ORIGINAL"]) ,", Condition : ", as.character(nameID[,"GROUP_ORIGINAL"]), " has missing rows for some features (", paste(names(featureID[is.na(featureID)]), collapse=", "),")", sep="" )))
+		write.table(processout, file=finalfile,row.names=FALSE)
+
+		 }
+	 	stop()
+	 
+	}else{
+		processout<-rbind(processout,c("Balanced data format with NA for missing feature intensities - okay"))
+	write.table(processout, file=finalfile,row.names=FALSE)
+	
+	} ## end 1 method
+}else{ ## multiple methods
+	
+	allflag<-NULL
+	## check each method
+	for(k in 1:length(unique(work$METHOD))){
+		
+		worktemp<-work[work$METHOD==k,]
+		worktemp$RUN<-factor(worktemp$RUN)
+		worktemp$FEATURE<-factor(worktemp$FEATURE)
+
+		structure = tapply ( worktemp$ABUNDANCE, list ( worktemp$FEATURE, worktemp$RUN ) , function ( x ) length ( x ) ) 
+
+		## structure value should be 2 for labeled, 1 for label-free, if not there are missingness
+		if(nlevels(worktemp$LABEL)==2){ ## label-based
+			flag = sum(is.na(structure))>0 | sum(structure!=2)>0
+		}else{  ## label-free
+			flag = sum(is.na(structure))>0 | sum(structure!=1)>0
+		}
+		
+		allflag<-c(allflag,flag)
+	} ## end to check any flag among methods
+	
+		if ( sum(allflag)!=0 ){
+			processout<-rbind(processout,c("ERROR: the input dataset has missing rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The missing rows are listed below."))
+			write.table(processout, file=finalfile,row.names=FALSE)
+
+			message("ERROR : the input dataset has missing rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The missing rows are listed below.")
+
+			for(k in 1:length(unique(work$METHOD))){
+				
+				## see which method has missing rows
+				if(allflag[k]){
+					worktemp<-work[work$METHOD==k,]
+					worktemp$RUN<-factor(worktemp$RUN)
+					worktemp$FEATURE<-factor(worktemp$FEATURE)
+
+					structure = tapply ( worktemp$ABUNDANCE, list ( worktemp$FEATURE, worktemp$RUN ) , function ( x ) length ( x ) ) 
+				
+					## first, which run has missing	
+					if(nlevels(worktemp$LABEL)==2){
+		 				runstructure<-apply ( structure, 2, function ( x ) sum ( is.na ( x ) | x!=2 ) ) > 0
+		 			}else{
+		 				runstructure<-apply ( structure, 2, function ( x ) sum ( is.na ( x ) | x!=1 ) ) > 0
+		 			}
+
+					 runID<-names(runstructure[runstructure==TRUE])
+	 
+	 				## then for each run, which features are missing,
+	 				for(j in 1:length(runID)){
+	 	
+	 					nameID<-unique(worktemp[worktemp$RUN==runID[j],c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","RUN")])
+	 		
+	 					featureID<-structure[,colnames(structure)==runID[j]]
+						if(nlevels(worktemp$LABEL)==2){
+							finalfeatureID<-featureID[is.na(featureID) | featureID!=2]
+						}else{
+							finalfeatureID<-featureID[is.na(featureID) | featureID!=1]
+						}	 	
+	 	
+	 					message(paste("*** Subject : ", as.character(nameID[,"SUBJECT_ORIGINAL"]) ,", Condition : ", as.character(nameID[,"GROUP_ORIGINAL"]), " has missing rows for some features (", paste(names(finalfeatureID), collapse=", "),")", sep="" ))
+	 	
+	 					## save in process file.
+	 					processout<-rbind(processout,c(paste("*** Subject : ", as.character(nameID[,"SUBJECT_ORIGINAL"]) ,", Condition : ", as.character(nameID[,"GROUP_ORIGINAL"]), " has missing rows for some features (", paste(names(featureID[is.na(featureID)]), collapse=", "),")", sep="" )))
+						write.table(processout, file=finalfile,row.names=FALSE)
+					} ## end loop for run
+				} ## if only any flag for method
+			} ## end loop for methods
+	 		stop()
+	 
+		}else{
+			processout<-rbind(processout,c("Balanced data format with NA for missing feature intensities - okay"))
+			write.table(processout, file=finalfile,row.names=FALSE)
+		}
+} ## end multiple method
 
 
 ##############################
@@ -293,174 +484,299 @@ work$RUN<-factor(work$RUN,levels=unique(work$RUN),labels=seq(1,length(unique(wor
 
 
 processout<-rbind(processout,c("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL, SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN) - okay"))
-write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+write.table(processout, file=finalfile,row.names=FALSE)
 
+
+
+############################################################
+## Normalization : 
+
+if(!(toupper(normalization)=="NONE" | toupper(normalization)=="FALSE" | toupper(normalization)=="EQUALIZEMEDIANS" | toupper(normalization)=="QUANTILE" | toupper(normalization)=="GLOBALSTANDARDS")){
+		processout<-rbind(processout,c(paste("The required input - normalization : 'normalization' value is wrong. - stop")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+		
+		message("'normalization' must be one of \"None\", \"FALSE\", \"equalizeMedians\", \"quantile\", or \"globalStandards\". Here \"equalizeMedian\" will be used. If you want different normalization, please assign 'normalization' again.")
+	} 
 
 ############################################################
 ## Normalization : option 0. none
-if(normalization=="None" | normalization==FALSE){
+if(toupper(normalization)=="NONE" | toupper(normalization)=="FALSE"){ ## after 'toupper', FALSE becomes character.
 	processout<-rbind(processout,c("Normalization : no normalization - okay"))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 }
 
 ############################################################
-## Normalization : option 1. constant normalization
-if(normalization=="constant"){
-	if(nlevels(work$LABEL)==1){
-		### Constant normalization by heavy standard
-		median.run<-tapply(work$ABUNDANCE,work[,"RUN"], function(x) median(x,na.rm=TRUE))
-		median.all<-median(work$ABUNDANCE, na.rm=TRUE)
+## Normalization : option 1. constant normalization , equalize medians
+if(toupper(normalization)=="EQUALIZEMEDIANS"){
+	
+#	if(!checkMultirun){
+#		if(nlevels(work$LABEL)==1){
+#			### Constant normalization by endogenous
+#			median.run<-tapply(work$ABUNDANCE,work[,"RUN"], function(x) median(x,na.rm=TRUE))
+#			median.all<-median(work$ABUNDANCE, na.rm=TRUE)
 		
-		for (i in 1:length(unique(work$RUN))){
-			## ABUNDANCE is normalized
-			work[work$RUN==i,"ABUNDANCE"]<-work[work$RUN==i,"ABUNDANCE"]-median.run[i]+median.all
+#			for (i in 1:length(unique(work$RUN))){
+#				## ABUNDANCE is normalized
+#				work[work$RUN==i,"ABUNDANCE"]<-work[work$RUN==i,"ABUNDANCE"]-median.run[i]+median.all
+#			}
+#		}
+		
+#		if(nlevels(work$LABEL)==2){
+			### Constant normalization by heavy standard
+#			h<-work[work$LABEL=="H",]
+#			median.run<-tapply(h$ABUNDANCE,h[,"RUN"], function(x) median(x,na.rm=TRUE))
+#			median.all<-median(h$ABUNDANCE, na.rm=TRUE)
+		
+#			for (i in 1:length(unique(work$RUN))){
+#				## ABUNDANCE is normalized
+#				work[work$RUN==i,"ABUNDANCE"]<-work[work$RUN==i,"ABUNDANCE"]-median.run[i]+median.all
+#			}		
+#		}
+#	}else{ ## for multi-method case
+		if(nlevels(work$LABEL)==1){
+			### Constant normalization by endogenous per method
+			
+			median.run<-tapply(work$ABUNDANCE,work[,"RUN"], function(x) median(x,na.rm=TRUE))
+				
+			median.method<-tapply(work$ABUNDANCE,work$METHOD, function(x) median(x,na.rm=TRUE))
+
+			nmethod<-unique(work$METHOD)
+		
+			for(j in 1:length(nmethod)){
+				namerun<-unique(work[work$METHOD==nmethod[j],"RUN"])
+
+				for (i in 1:length(namerun)){
+					## ABUNDANCE is normalized
+					work[work$RUN==namerun[i],"ABUNDANCE"]<-work[work$RUN==namerun[i],"ABUNDANCE"]-median.run[names(median.run)==namerun[i]]+median.method[j]
+				}
+			}
 		}
-	}
+
 		
-	if(nlevels(work$LABEL)==2){
-		### Constant normalization by heavy standard
-		h<-work[work$LABEL=="H",]
-		median.run<-tapply(h$ABUNDANCE,h[,"RUN"], function(x) median(x,na.rm=TRUE))
-		median.all<-median(h$ABUNDANCE, na.rm=TRUE)
+		if(nlevels(work$LABEL)==2){
+			
+			### Constant normalization by heavy standard per method
+			h<-work[work$LABEL=="H",]
+			median.run<-tapply(h$ABUNDANCE,h[,"RUN"], function(x) median(x,na.rm=TRUE))
+			median.method<-tapply(h$ABUNDANCE,h$METHOD, function(x) median(x,na.rm=TRUE))
 		
-		for (i in 1:length(unique(work$RUN))){
-			## ABUNDANCE is normalized
-			work[work$RUN==i,"ABUNDANCE"]<-work[work$RUN==i,"ABUNDANCE"]-median.run[i]+median.all
-		}		
-	}
+			nmethod<-unique(work$METHOD)
+			
+			for(j in 1:length(nmethod)){
+				namerun<-unique(work[work$METHOD==nmethod[j],"RUN"])
+				
+				for (i in 1:length(namerun)){
+				## ABUNDANCE is normalized
+				work[work$RUN==namerun[i],"ABUNDANCE"]<-work[work$RUN==namerun[i],"ABUNDANCE"]-median.run[names(median.run)==namerun[i]]+median.method[j]
+				}
+			} ## end loop method		
+		} # for labe-based 
+
 	
-	processout<-rbind(processout,c("Normalization : Constant normalization - okay"))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
-}
-	
+		processout<-rbind(processout,c("Normalization : Constant normalization (equalize medians) - okay"))
+		write.table(processout, file=finalfile,row.names=FALSE)
+} ## end equaliemedian normalization	
 
 ############################################################
 ## Normalization : option 2. quantile normalization
-if(normalization=="quantile"){
+if(toupper(normalization)=="QUANTILE"){
+	
 	
 	if(nlevels(work$LABEL)==1){
 		
 		## for label-free, just use endogenous
-		worktemp<-work[!is.na(work$INTENSITY),]
-		quantiletemp<-as.matrix(xtabs(ABUNDANCE~FEATURE+RUN, data=worktemp))
-		
-		## need to put NA for missing value in endogenous
-		quantiletemp[quantiletemp==0]<-NA
-		
-		## using preprocessCore library
-		quantiledone<-normalize.quantiles(quantiletemp)
-		rownames(quantiledone)<-rownames(quantiletemp)
-		colnames(quantiledone)<-colnames(quantiletemp)
-		
-		### get quantiled to long format for apply difference endogenous
-		quantilelong<-melt(quantiledone, id=rownames(quantiledone))
-		colnames(quantilelong)<-c("FEATURE","RUN","ABUNDANCE_quantile")
 
-		## merge with original data
-		work<-merge(work,quantilelong, by=c("FEATURE","RUN"))
+		nmethod<-unique(work$METHOD)
+		quantileall<-NULL
 		
-		## reorder
-		work<-data.frame("PROTEIN"=work$PROTEIN, "PEPTIDE"=work$PEPTIDE, "TRANSITION"=work$TRANSITION, "FEATURE"=work$FEATURE, "LABEL"=work$LABEL, "GROUP_ORIGINAL"=work$GROUP_ORIGINAL, "SUBJECT_ORIGINAL"=work$SUBJECT_ORIGINAL, "RUN"=work$RUN, "GROUP"=work$GROUP, "SUBJECT"=work$SUBJECT, "SUBJECT_NESTED"=work$SUBJECT_NESTED, "INTENSITY"=work$INTENSITY, "ABUNDANCE"=work$ABUNDANCE_quantile)
+		for(j in 1:length(nmethod)){
+			namerun<-unique(work[work$METHOD==nmethod[j],"RUN"])
+		
+			worktemp<-work[which(work$RUN %in% namerun & !is.na(work$INTENSITY)),]
+			worktemp$RUN<-factor(worktemp$RUN)
+			worktemp$FEATURE<-factor(worktemp$FEATURE)
 
-		work<-work[with(work,order(LABEL,GROUP_ORIGINAL,SUBJECT_ORIGINAL,RUN,PROTEIN,PEPTIDE,TRANSITION)),]
+			quantiletemp<-as.matrix(xtabs(ABUNDANCE~FEATURE+RUN, data=worktemp))
+		
+			## need to put NA for missing value in endogenous
+			quantiletemp[quantiletemp==0]<-NA
+		
+			## using preprocessCore library
+			quantiledone<-normalize.quantiles(quantiletemp)
+			rownames(quantiledone)<-rownames(quantiletemp)
+			colnames(quantiledone)<-colnames(quantiletemp)
+		
+			### get quantiled to long format for apply difference endogenous
+			quantilelong<-melt(quantiledone, id=rownames(quantiledone))
+			colnames(quantilelong)<-c("FEATURE","RUN","ABUNDANCE_quantile")
+			rm(quantiledone)
+			
+			quantileall<-rbindlist(list(quantileall,quantilelong))
+			rm(quantilelong)
+		}
+		
+		work<-merge(work,quantileall, by=c("FEATURE","RUN"))
+		rm(quantileall)
+		
+			## reorder
+			work<-data.frame("PROTEIN"=work$PROTEIN, "PEPTIDE"=work$PEPTIDE, "TRANSITION"=work$TRANSITION, "FEATURE"=work$FEATURE, "LABEL"=work$LABEL, "GROUP_ORIGINAL"=work$GROUP_ORIGINAL, "SUBJECT_ORIGINAL"=work$SUBJECT_ORIGINAL, "RUN"=work$RUN, "GROUP"=work$GROUP, "SUBJECT"=work$SUBJECT, "SUBJECT_NESTED"=work$SUBJECT_NESTED, "INTENSITY"=work$INTENSITY, "ABUNDANCE"=work$ABUNDANCE_quantile, "METHOD"=work$METHOD)
+
+			work<-work[with(work,order(LABEL,GROUP_ORIGINAL,SUBJECT_ORIGINAL,RUN,PROTEIN,PEPTIDE,TRANSITION)),]
 
 	}
 		
 	if(nlevels(work$LABEL)==2){
 		
-		##### for label-based, make quantile normalization for reference
-		worktemp<-work[work$LABEL=="H" & !is.na(work$INTENSITY),]
-		quantiletemp<-as.matrix(xtabs(ABUNDANCE~FEATURE+RUN, data=worktemp))
+		nmethod<-unique(work$METHOD)
+		quantileall<-NULL
 		
-		## need to put NA for missing value in endogenous
-		quantiletemp[quantiletemp==0]<-NA
+		for(j in 1:length(nmethod)){
+			namerun<-unique(work[work$METHOD==nmethod[j],"RUN"])
 		
-		## using preprocessCore library
-		quantiledone<-normalize.quantiles(quantiletemp)
-		rownames(quantiledone)<-rownames(quantiletemp)
-		colnames(quantiledone)<-colnames(quantiletemp)
+			##### for label-based, make quantile normalization for reference
+			worktemp<-work[which(work$RUN %in% namerun & work$LABEL=="H" & !is.na(work$INTENSITY)),]
+			worktemp$RUN<-factor(worktemp$RUN)
+			worktemp$FEATURE<-factor(worktemp$FEATURE)
+			
+			quantiletemp<-as.matrix(xtabs(ABUNDANCE~FEATURE+RUN, data=worktemp))
+			rm(worktemp)
+
+			## need to put NA for missing value in endogenous
+			quantiletemp[quantiletemp==0]<-NA
 		
-		## get quantiled to long format for apply difference endogenous
-		quantilelong.h<-melt(quantiledone, id=rownames(quantiledone))
-		colnames(quantilelong.h)<-c("FEATURE","RUN","ABUNDANCE_quantile")
-		quantilelong.h<-data.frame(quantilelong.h, LABEL="H")
+			## using preprocessCore library
+			quantiledone<-normalize.quantiles(quantiletemp)
+			rownames(quantiledone)<-rownames(quantiletemp)
+			colnames(quantiledone)<-colnames(quantiletemp)
 		
+			## get quantiled to long format for apply difference endogenous
+			quantilelong.h<-melt(quantiledone, id=rownames(quantiledone))
+			colnames(quantilelong.h)<-c("FEATURE","RUN","ABUNDANCE_quantile")
+			quantilelong.h<-data.frame(quantilelong.h, LABEL="H")
 		
-		##### endogenous, in order to applying
-		worktemp.l<-work[work$LABEL=="L" & !is.na(work$INTENSITY),]
-		quantiletemp.l<-as.matrix(xtabs(ABUNDANCE~FEATURE+RUN, data=worktemp.l))
+			##### endogenous, in order to applying
+			worktemp.l<-work[which(work$RUN %in% namerun & work$LABEL=="L" & !is.na(work$INTENSITY)),]
+			worktemp.l$RUN<-factor(worktemp.l$RUN)
+			worktemp.l$FEATURE<-factor(worktemp.l$FEATURE)
+
+			quantiletemp.l<-as.matrix(xtabs(ABUNDANCE~FEATURE+RUN, data=worktemp.l))
+			rm(worktemp.l)
+			
+			## need to put NA for missing value in endogenous
+			quantiletemp.l[quantiletemp.l==0]<-NA
 		
-		## need to put NA for missing value in endogenous
-		quantiletemp.l[quantiletemp.l==0]<-NA
+			## apply the difference from reference
+			quantiledone.l<-quantiletemp.l-(quantiletemp-quantiledone)
 		
-		## apply the difference from reference
-		quantiledone.l<-quantiletemp.l-(quantiletemp-quantiledone)
+			## get quantiled to long format for apply difference endogenous
+			quantilelong.l<-melt(quantiledone.l, id=rownames(quantiledone.l))
+			colnames(quantilelong.l)<-c("FEATURE","RUN","ABUNDANCE_quantile")
+			quantilelong.l<-data.frame(quantilelong.l, LABEL="L")
+			
+			rm(quantiletemp)
+			rm(quantiledone)
+			rm(quantiletemp.l)
+			rm(quantiledone.l)
+	
+			quantileall<-rbindlist(list(quantileall,quantilelong.h, quantilelong.l))
+		}
+	
+			##### merge with original data
+			work<-merge(work,quantileall, by=c("FEATURE","RUN","LABEL"))
 		
-		## get quantiled to long format for apply difference endogenous
-		quantilelong.l<-melt(quantiledone.l, id=rownames(quantiledone.l))
-		colnames(quantilelong.l)<-c("FEATURE","RUN","ABUNDANCE_quantile")
-		quantilelong.l<-data.frame(quantilelong.l, LABEL="L")
-		
-		quantilelong<-rbind(quantilelong.h,quantilelong.l)
-		
-		##### merge with original data
-		work<-merge(work,quantilelong, by=c("FEATURE","RUN","LABEL"))
-		
-		## reorder
-		work<-data.frame("PROTEIN"=work$PROTEIN, "PEPTIDE"=work$PEPTIDE, "TRANSITION"=work$TRANSITION, "FEATURE"=work$FEATURE, "LABEL"=work$LABEL, "GROUP_ORIGINAL"=work$GROUP_ORIGINAL, "SUBJECT_ORIGINAL"=work$SUBJECT_ORIGINAL, "RUN"=work$RUN, "GROUP"=work$GROUP, "SUBJECT"=work$SUBJECT, "SUBJECT_NESTED"=work$SUBJECT_NESTED, "INTENSITY"=work$INTENSITY, "ABUNDANCE"=work$ABUNDANCE_quantile)
+			## reorder
+			work<-data.frame("PROTEIN"=work$PROTEIN, "PEPTIDE"=work$PEPTIDE, "TRANSITION"=work$TRANSITION, "FEATURE"=work$FEATURE, "LABEL"=work$LABEL, "GROUP_ORIGINAL"=work$GROUP_ORIGINAL, "SUBJECT_ORIGINAL"=work$SUBJECT_ORIGINAL, "RUN"=work$RUN, "GROUP"=work$GROUP, "SUBJECT"=work$SUBJECT, "SUBJECT_NESTED"=work$SUBJECT_NESTED, "INTENSITY"=work$INTENSITY, "ABUNDANCE"=work$ABUNDANCE_quantile,"METHOD"=work$METHOD)
 
 		work<-work[with(work,order(LABEL,GROUP_ORIGINAL,SUBJECT_ORIGINAL,RUN,PROTEIN,PEPTIDE,TRANSITION)),]
 
 	}
 	
 	processout<-rbind(processout,c("Normalization : Quantile normalization - okay"))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 }
 	
 	
 	
 ############################################################
 ## Normalization : option 3. global standards - for endogenous
-if(normalization=="globalStandards"){
+if(toupper(normalization)=="GLOBALSTANDARDS"){
 	
 	## need the names of global standards
-	if(is.null(nameStandards)) stop ( message("For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input." ))
+	if(is.null(nameStandards)){
+		
+		processout<-rbind(processout,c("ERROR : For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input."))
+		write.table(processout, file=finalfile,row.names=FALSE)
+		
+		stop ("For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input." )
+	}
 	
-	combine<-NULL
+	work$RUN<-factor(work$RUN)
+	combine<-data.frame(RUN=levels(work$RUN))
+	allPeptide<-unique(work$PEPTIDE)
+	allProtein<-unique(work$PROTEIN)
 	
 	for(i in 1:length(nameStandards)){
 		
-		tempStandard<-work[work$PROTEIN==nameStandards[i],]
+		## if Peptides
+		namePeptide<-allPeptide[grep(nameStandards[i],allPeptide)]
+
+		if(length(namePeptide)!=0){
+			tempStandard<-work[work$PEPTIDE==namePeptide,]
+		}else{
+			
+			## if Proteins
+			nameProtein<-allProtein[grep(nameStandards[i],allProtein)]
+			
+			if(length(nameProtein)!=0){
+				tempstandard<-work[work$PROTEIN==nameProtein,]
+			}else{
+				processout<-rbind(processout,c(paste("global standard peptides or proteins, ",nameStandards[i] ,", is not in dataset. Please check whether 'nameStandards' input is correct or not.")))
+				write.table(processout, file=finalfile,row.names=FALSE)
+		
+				stop(paste("global standard peptides or proteins, ",nameStandards[i] ,", is not in dataset. Please check whether 'nameStandards' input is correct or not."))
+			}	
+
+		}
 
 		### here, by RUN, but need to check !!!
 		tempStandard<-tempStandard[tempStandard$GROUP!="0",]
 		tempStandard$RUN<-factor(tempStandard$RUN)
 
 		tempStandard<-tempStandard[!is.na(tempStandard$ABUNDANCE),]
-		meanStandard<-tapply(tempStandard$ABUNDANCE, tempStandard$RUN, mean)
+		meanStandard<-tapply(tempStandard$ABUNDANCE, tempStandard$RUN, function(x) mean(x, na.rm=TRUE))
 
-		combine<-cbind(combine, meanStandard)
+		meanStandard<-data.frame(RUN=names(meanStandard),meanStandard)
+		combine<-merge(combine, meanStandard, by="RUN", all=TRUE)
 	}
 	
+	rownames(combine)<-combine$RUN
+	combine<-subset(combine, select=-c(RUN))
+
 	## get mean among global standards
-	if(ncol(combine)!=1){
-		allmean<-apply(combine,1,mean)
-	}else{
-		allmean<-meanStandard
-	}
-
-	## median among all 
-	median.est<-median(allmean[!is.na(allmean)])
-
+	allmean<-apply(combine,1,mean)
+	#allmean[is.na(allmean)]<-0
+	
+	allmeantemp<-data.frame(RUN=names(allmean),allmean)
+	allrun<-unique(work[,c("RUN","METHOD")])
+	
+	allmeantemp<-merge(allmeantemp, allrun,by="RUN")
+	median.all<-tapply(allmeantemp$allmean, allmeantemp$METHOD, function(x) median(x,na.rm=TRUE))
+	
 	#### adjust
-	for (i in 1:length(unique(work$RUN))){
-
-		if(!is.na(allmean[i])) work[work$RUN==i & work$LABEL=="L","ABUNDANCE"]<-work[work$RUN==i & work$LABEL=="L","ABUNDANCE"]-allmean[i]+median.est
-
-	}	
-
+	nmethod<-unique(work$METHOD)
+			
+	for(j in 1:length(nmethod)){
+		namerun<-unique(work[work$METHOD==nmethod[j],"RUN"])
+				
+		for (i in 1:length(namerun)){
+			## ABUNDANCE is normalized			
+			if(!is.na(allmean[names(allmean)==namerun[i]])) work[work$RUN==namerun[i] & work$LABEL=="L","ABUNDANCE"]<-work[work$RUN==namerun[i] & work$LABEL=="L","ABUNDANCE"]-allmean[names(allmean)==namerun[i]]+median.all[j]
+		}
+	} ## end loop method
+		
+		
 	processout<-rbind(processout,c("Normalization : normalization with global standards protein - okay"))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 
 }
 	
@@ -500,11 +816,11 @@ if(betweenRunInterferenceScore){
 	write.table(BetweenRunInterferenceFile,file=paste(address,"BetweenRunInterferenceFile.txt",sep=""))
 	
 	processout<-rbind(processout,c("Between Run Interference Score is calculated and saved in .csv file - okay"))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 
 }else{
 	processout<-rbind(processout,c("Between Run Interference Score is not calculated."))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 }
 
 ####### check missingness 
@@ -567,7 +883,7 @@ work<-data.frame(work, "SuggestToFilter"=0)
 
 	## output for label
 	processout<-rbind(processout,c(paste(length(unique(work$LABEL)), " level of Isotope type labeling in this experiment",sep="")))
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 
 temp<-data.frame("Summary of Features :")
 colnames(temp)<-" "
@@ -598,13 +914,13 @@ print(as.data.frame(summary.f))
 	processout<-rbind(processout,c(paste(rownames(summary.f)[2]," : ",summary.f[2],sep="")))
 	processout<-rbind(processout,c(paste(rownames(summary.f)[3]," : ",summary.f[3],sep="")))
 
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 
 #### protein list with 1 feature
 temp<-unique(work[,c("PROTEIN","FEATURE")])
 temp1<-xtabs(~PROTEIN,data=temp)
 temp2<-as.data.frame(temp1[temp1==1])
-if(nrow(temp2)>0) message("\n","** Protein (",rownames(temp2),") has only single transition : Consider excluding this protein from the dataset.", "\n")
+if(nrow(temp2)>0) message("\n","** Protein (",paste(rownames(temp2),collapse = ", "),") has only single transition : Consider excluding this protein from the dataset.", "\n")
 
 temp<-data.frame("Summary of Samples :")
 colnames(temp)<-" "
@@ -624,9 +940,10 @@ temp1<-xtabs(~GROUP_ORIGINAL,data=temp)
 summary.s[2,]<-temp1
 
 ## # of tehcnical replicates
-c.tech<-round(summary.s[1,]/summary.s[2,])
-summary.s[3,]<-ifelse(c.tech==1,0,c.tech)
-	
+c.tech<-round(summary.s[1,]/(summary.s[2,]* length(unique(work$METHOD))))
+#summary.s[3,]<-ifelse(c.tech==1,0,c.tech)
+summary.s[3,]<-c.tech
+
 colnames(summary.s)<-unique(work$GROUP_ORIGINAL)
 rownames(summary.s)<-c("# of MS runs","# of Biological Replicates", "# of Technical Replicates")
 
@@ -652,7 +969,7 @@ if(sum(run.missing<0.25)!=0) message("    -> ", paste("RUN",names(without[run.mi
 	processout<-rbind(processout,c(paste("  # run with 75% missing observations: ", sum(run.missing<0.25), sep="")))
 	if(sum(run.missing<0.25)!=0) processout<-rbind(processout,"    -> ", paste("RUN",names(without[run.missing<0.25]),sep=" "))
 
-	write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+	write.table(processout, file=finalfile,row.names=FALSE)
 
 
 #### check any protein has only light for labeled-experiment
@@ -675,7 +992,7 @@ if (nlevels(work$LABEL)==2){
 
 		###
 		processout<-rbind(processout,c("Processing data for analysis is done. - okay"))
-		write.table(processout, file="Process_dataProcess.txt",row.names=FALSE)
+		write.table(processout, file=finalfile,row.names=FALSE)
 
 ## return work data.frame	
 return(work)
@@ -692,14 +1009,22 @@ return(work)
 #############################################
 
 
-dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=FALSE,ylimDown=FALSE,scale=FALSE,interval="SE",axis.size=10,text.size=4,text.angle=0,legend.size=7,width=10,height=10, which.Protein="all", address=""){
+dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=FALSE,ylimDown=FALSE,scale=FALSE,interval="CI",x.axis.size=10,y.axis.size=10,text.size=4,text.angle=0,legend.size=7,dot.size=3,width=10,height=10, which.Protein="all", address=""){
+	
+	if(!is.element("SUBJECT_NESTED",colnames(data))){
+		stop("Input for dataProcessPlots function should be processed by dataProcess function previously. Please use 'dataProcess' function first.")
+	}
+	
+	if(length(setdiff(toupper(type),c(toupper("ProfilePlot"),toupper("QCPlot"),toupper("ConditionPlot"))))!=0){
+		stop(paste("Input for type=",type,". However,'type' should be one of \"ProfilePlot\", \"QCPlot\",\"ConditionPlot\".",sep=""))
+	}
 	
 	data$PROTEIN<-factor(data$PROTEIN)	
 
 	#################
 	## Profile plot
 	#################
-	if (type=="ProfilePlot"){
+	if (toupper(type)=="PROFILEPLOT"){
 		
 		#### choose Proteins or not
 		if(which.Protein!="all"){
@@ -709,7 +1034,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			
 				## message if name of Protein is wrong.
 				if(length(setdiff(temp.name,unique(data$PROTEIN)))>0)
-					stop(message(paste("error : Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "),sep=" ")))
+					stop(paste("Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
 			}
 		
 			## check which.Protein is order number of Protein
@@ -718,7 +1043,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				
 				## message if name of Protein is wrong.
 				if(length(levels(data$PROTEIN))<max(which.Protein))
-					stop(message(paste("error : Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" ")))
+					stop(paste("Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
 			}
 			
 			## use only assigned proteins
@@ -727,8 +1052,21 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 		}
 		
 		#### save the plots as pdf or not
-		if(address!=FALSE) pdf(paste(address,"ProfilePlot.pdf",sep=""), width=width, height=height)
-	
+		# If there are the file with the same name, add next numbering at the end of file name		
+		if(address!=FALSE){
+			allfiles<-list.files()
+
+			num<-0
+			filenaming<-paste(address,"ProfilePlot",sep="")
+			finalfile<-paste(address,"ProfilePlot.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
 
 		# assign upper or lower limit
 		## ylimUp
@@ -788,7 +1126,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 
 			#options(show.error.messages = FALSE)
 
-			if(featureName=="Transition"){
+			if(toupper(featureName)=="TRANSITION"){
 	
             	ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=1.3)+geom_line(size=0.5)+scale_colour_manual(values=s)+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(
 				panel.background=element_rect(fill='white', colour="black"),
@@ -796,12 +1134,12 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				panel.grid.minor = element_blank(),
 				strip.background=element_rect(fill='gray95'),
 				strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-				axis.text.x=element_text(size=axis.size,colour="black"),
-				axis.text.y=element_text(size=axis.size,colour="black"),
+				axis.text.x=element_text(size=x.axis.size,colour="black"),
+				axis.text.y=element_text(size=y.axis.size,colour="black"),
 				axis.ticks=element_line(colour="black"),
-				axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-				axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-				title=element_text(size=axis.size+8,vjust=1.5),
+				axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+				axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+				title=element_text(size=x.axis.size+8,vjust=1.5),
 				legend.position="top",
 				legend.text=element_text(size=legend.size))+guides(color=guide_legend(title=NULL,ncol=3,override.aes=list(linetype=ss,size=0.5)))
 
@@ -821,7 +1159,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 
 			}
 
-			if(featureName=="Peptide"){
+			if(toupper(featureName)=="PEPTIDE"){
 
 				ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=1.3)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(
 				panel.background=element_rect(fill='white', colour="black"),
@@ -829,12 +1167,12 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				panel.grid.minor = element_blank(),
 				strip.background=element_rect(fill='gray95'),	
 				strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-				axis.text.x=element_text(size=axis.size,colour="black"),
-				axis.text.y=element_text(size=axis.size,colour="black"),
+				axis.text.x=element_text(size=x.axis.size,colour="black"),
+				axis.text.y=element_text(size=y.axis.size,colour="black"),
 				axis.ticks=element_line(colour="black"),
-				axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-				axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-				title=element_text(size=axis.size+8,vjust=1.5),
+				axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+				axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+				title=element_text(size=x.axis.size+8,vjust=1.5),
 				legend.position="top",
 				legend.text=element_text(size=legend.size))+guides(color=guide_legend(title=paste("# peptide:",nlevels(sub$PEPTIDE)),ncol=3))
 
@@ -854,7 +1192,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 
 			}
 
-			if(featureName=="NA"){
+			if(toupper(featureName)=="NA"){
 	
 				ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=1.3)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(
 				panel.background=element_rect(fill='white', colour="black"),
@@ -862,12 +1200,12 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				panel.grid.minor = element_blank(),
 				strip.background=element_rect(fill='gray95'),	
 				strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-				axis.text.x=element_text(size=axis.size,colour="black"),
-				axis.text.y=element_text(size=axis.size,colour="black"),
+				axis.text.x=element_text(size=x.axis.size,colour="black"),
+				axis.text.y=element_text(size=y.axis.size,colour="black"),
 				axis.ticks=element_line(colour="black"),
-				axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-				axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-				title=element_text(size=axis.size+8,vjust=1.5),
+				axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+				axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+				title=element_text(size=x.axis.size+8,vjust=1.5),
 				legend.position="none")
 
 				## y-axis labeling
@@ -893,11 +1231,25 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 #################### 
 ## QC plot (Quality control plot)
 #################### 
-	if (type=="QCPlot"){
+	if (toupper(type)=="QCPLOT"){
 		
 		#### save the plots as pdf or not
-		if(address!=FALSE) pdf(paste(address,"QCPlot.pdf",sep=""), width=width, height=height)
+		# If there are the file with the same name, add next numbering at the end of file name		
+		if(address!=FALSE){
+			allfiles<-list.files()
 
+			num<-0
+			filenaming<-paste(address,"QCPlot",sep="")
+			finalfile<-paste(address,"QCPlot.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
+		
 		## options(warn=-1)
 
 		# assign upper or lower limit
@@ -943,12 +1295,12 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 		panel.grid.minor = element_blank(),
 		strip.background=element_rect(fill='gray95'),	
 		strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-		axis.text.x=element_text(size=axis.size,colour="black"),
-		axis.text.y=element_text(size=axis.size,colour="black"),
+		axis.text.x=element_text(size=x.axis.size,colour="black"),
+		axis.text.y=element_text(size=y.axis.size,colour="black"),
 		axis.ticks=element_line(colour="black"),
-		axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-		axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-		title=element_text(size=axis.size+8,vjust=1.5))
+		axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+		axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+		title=element_text(size=x.axis.size+8,vjust=1.5))
 
 		## y-axis labeling
 		temp<-data[!is.na(data[,"ABUNDANCE"]),]
@@ -975,9 +1327,8 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			
 				## message if name of Protein is wrong.
 				if(length(setdiff(temp.name,unique(data$PROTEIN)))>0){
-					message(paste("error : Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
 					dev.off()
-					stop()
+					stop(paste("Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
 				}
 			}
 				
@@ -987,9 +1338,8 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			
 				## message if name of Protein is wrong.
 				if(length(levels(data$PROTEIN))<max(which.Protein)){
-					message(paste("error : Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
 					dev.off()
-					stop()
+					stop(paste("Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
 				}
 			}
 			
@@ -1023,12 +1373,12 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			panel.grid.minor = element_blank(),
 			strip.background=element_rect(fill='gray95'),	
 			strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-			axis.text.x=element_text(size=axis.size,colour="black"),
-			axis.text.y=element_text(size=axis.size,colour="black"),
+			axis.text.x=element_text(size=x.axis.size,colour="black"),
+			axis.text.y=element_text(size=y.axis.size,colour="black"),
 			axis.ticks=element_line(colour="black"),
-			axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-			axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-			title=element_text(size=axis.size+8,vjust=1.5))
+			axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+			axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+			title=element_text(size=x.axis.size+8,vjust=1.5))
 
 			## y-axis labeling
 			if(temptest){
@@ -1049,7 +1399,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 #################### 
 ### Condition plot
 #################### 
-	if(type=="ConditionPlot"){
+	if(toupper(type)=="CONDITIONPLOT"){
 		
 		#### choose Proteins or not
 		if(which.Protein!="all"){
@@ -1060,7 +1410,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			
 				## message if name of Protein is wrong.
 				if(length(setdiff(temp.name,unique(data$PROTEIN)))>0)
-					stop(message(paste("error : Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" ")))
+					stop(paste("Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
 			}
 		
 			## check which.Protein is order number of Protein
@@ -1070,7 +1420,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				
 				## message if name of Protein is wrong.
 				if(length(levels(data$PROTEIN))<max(which.Protein))
-					stop(message(paste("error : Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" ")))
+					stop(paste("Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
 			}
 			
 			## use only assigned proteins
@@ -1079,8 +1429,22 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 		}
 		
 		#### save the plots as pdf or not
-		if(address!=FALSE) pdf(paste(address,"ConditionPlot.pdf",sep=""), width=width, height=height)
+		# If there are the file with the same name, add next numbering at the end of file name		
+		if(address!=FALSE){
+			allfiles<-list.files()
 
+			num<-0
+			filenaming<-paste(address,"ConditionPlot",sep="")
+			finalfile<-paste(address,"ConditionPlot.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
+		
 		if(nlevels(data$LABEL)==1){
 			for (i in 1:nlevels(data$PROTEIN)){	
 				sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
@@ -1093,7 +1457,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				sub.mean<-by(sub$ABUNDANCE, sub$GROUP_ORIGINAL, function(x) mean(x,na.rm=TRUE))
 				sub.sd<-by(sub$ABUNDANCE, sub$GROUP_ORIGINAL, sd)
 				sub.len<-by(sub$ABUNDANCE, sub$GROUP_ORIGINAL, length)
-				if(interval=="SE") ciw<-qt(0.975,sub.len)*sub.sd/sqrt(sub.len)
+				if(interval=="CI") ciw<-qt(0.975,sub.len)*sub.sd/sqrt(sub.len)
 				if(interval=="SD") ciw<-sub.sd
 				
 				if(sum(is.na(ciw))>=1) ciw[is.na(ciw)]<-0
@@ -1112,16 +1476,16 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 					## reformat as data.frame
 					tempsummary<-data.frame(Label=unique(sub$GROUP_ORIGINAL),mean=as.vector(sub.mean),ciw=as.vector(ciw))
 
- 					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=3,colour="darkred")+scale_x_discrete('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
+ 					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=dot.size,colour="darkred")+scale_x_discrete('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
  					panel.background=element_rect(fill='white', colour="black"),
  					panel.grid.major.y = element_line(colour="grey95"),
  					panel.grid.minor.y = element_blank(),
- 					axis.text.x=element_text(size=axis.size,colour="black",angle=text.angle),
- 					axis.text.y=element_text(size=axis.size,colour="black"),
+ 					axis.text.x=element_text(size=x.axis.size,colour="black",angle=text.angle),
+ 					axis.text.y=element_text(size=y.axis.size,colour="black"),
  					axis.ticks=element_line(colour="black"),
- 					axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
- 					axis.title.y=element_text(size=axis.size+5,vjust=0.3),
- 					title=element_text(size=axis.size+8,vjust=1.5))
+ 					axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+ 					axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+ 					title=element_text(size=x.axis.size+8,vjust=1.5))
 
 				}else{
 					#extract numeric value, don't use levels (because T1,T10,T3,...)
@@ -1130,16 +1494,16 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 					## reformat as data.frame
 					tempsummary<-data.frame(Label=as.numeric(gsub("\\D","",unique(sub$GROUP_ORIGINAL))),mean=as.vector(sub.mean),ciw=as.vector(ciw))
 
- 					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=3,colour="darkred")+scale_x_continuous('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
+ 					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=dot.size,colour="darkred")+scale_x_continuous('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
  					panel.background=element_rect(fill='white', colour="black"),
  					panel.grid.major.y = element_line(colour="grey95"),
  					panel.grid.minor.y = element_blank(),
- 					axis.text.x=element_text(size=axis.size,colour="black",angle=text.angle),
- 					axis.text.y=element_text(size=axis.size,colour="black"),
+ 					axis.text.x=element_text(size=x.axis.size,colour="black",angle=text.angle),
+ 					axis.text.y=element_text(size=y.axis.size,colour="black"),
  					axis.ticks=element_line(colour="black"),
- 					axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
- 					axis.title.y=element_text(size=axis.size+5,vjust=0.3),
- 					title=element_text(size=axis.size+8,vjust=1.5))
+ 					axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+ 					axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+ 					title=element_text(size=x.axis.size+8,vjust=1.5))
 
 				} ## scale : true
 				
@@ -1188,7 +1552,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 				sub.mean<-by(sub.l$ratio, sub.l$GROUP_ORIGINAL, function(x) mean(x,na.rm=TRUE))
 				sub.sd<-by(sub.l$ratio, sub.l$GROUP_ORIGINAL, sd)
 				sub.len<-by(sub.l$ratio, sub.l$GROUP_ORIGINAL, length)
-				if(interval=="SE") ciw<-qt(0.975,sub.len)*sub.sd/sqrt(sub.len)
+				if(interval=="CI") ciw<-qt(0.975,sub.len)*sub.sd/sqrt(sub.len)
 				if(interval=="SD") ciw<-sub.sd
 				
 				if(sum(is.na(ciw))>=1) ciw[is.na(ciw)]<-0
@@ -1207,30 +1571,30 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 	  				## reformat as data.frame
 					tempsummary<-data.frame(Label=unique(sub.l$GROUP_ORIGINAL),mean=as.vector(sub.mean),ciw=as.vector(ciw))
 	
-  					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=3,colour="darkred")+scale_x_discrete('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
+  					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=dot.size,colour="darkred")+scale_x_discrete('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
   					panel.background=element_rect(fill='white', colour="black"),
   					panel.grid.major.y = element_line(colour="grey95"),
   					panel.grid.minor.y = element_blank(),
-  					axis.text.x=element_text(size=axis.size,colour="black",angle=text.angle),
-  					axis.text.y=element_text(size=axis.size,colour="black"),
+  					axis.text.x=element_text(size=x.axis.size,colour="black",angle=text.angle),
+  					axis.text.y=element_text(size=y.axis.size,colour="black"),
   					axis.ticks=element_line(colour="black"),
-  					axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-  					axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-  					title=element_text(size=axis.size+8,vjust=1.5))
+  					axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+  					axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+  					title=element_text(size=x.axis.size+8,vjust=1.5))
   				}else{
 	  				## reformat as data.frame
 					tempsummary<-data.frame(Label=as.numeric(gsub("\\D","",unique(sub.l$GROUP_ORIGINAL))),mean=as.vector(sub.mean),ciw=as.vector(ciw))
 
-   					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=3,colour="darkred")+scale_x_continuous('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
+   					ptemp<-ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw),data=tempsummary, width=0.1,colour="red")+geom_point(size=dot.size,colour="darkred")+scale_x_continuous('Condition')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=unique(sub$PROTEIN))+theme(
    					panel.background=element_rect(fill='white', colour="black"),
    					panel.grid.major.y = element_line(colour="grey95"),
    					panel.grid.minor.y = element_blank(),
-   					axis.text.x=element_text(size=axis.size,colour="black",angle=text.angle),
-   					axis.text.y=element_text(size=axis.size,colour="black"),
+   					axis.text.x=element_text(size=x.axis.size,colour="black",angle=text.angle),
+   					axis.text.y=element_text(size=y.axis.size,colour="black"),
    					axis.ticks=element_line(colour="black"),
-   					axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-   					axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-   					title=element_text(size=axis.size+8,vjust=1.5))
+   					axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+   					axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+   					title=element_text(size=x.axis.size+8,vjust=1.5))
   				} ## scale : true
   				
   				## y-axis labeling, find log 2 or log 10
@@ -1266,39 +1630,62 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 #############################################
 #############################################
 
-groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE, scopeOfBioReplication="restricted", scopeOfTechReplication="expanded", interference=TRUE,featureVar=FALSE,missing.action = "nointeraction"){
+groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE, scopeOfBioReplication="restricted", scopeOfTechReplication="expanded", interference=TRUE,equalFeatureVar=TRUE,missing.action = "nointeraction"){
 
 	## save process output in each step
-	processout<-NULL
+	allfiles<-list.files()
+	filenaming<-"msstats"
+
+
+	if(length(grep(filenaming,allfiles))==0){
+		
+		finalfile<-"msstats.log"
+		processout<-NULL
+			
+	}else{
+		
+		num<-0
+		finalfile<-"msstats.log"
+
+		while(is.element(finalfile,allfiles)){
+			num<-num+1
+			lastfilename<-finalfile ## in order to rea
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")
+		}
+		
+		finalfile<-lastfilename
+		processout<-as.matrix(read.table(finalfile, header=T, sep="\t"))
+	}
 	
-	
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - groupComparison function"," "),ncol=1))
+
+
 	## check input is correct
 	## data format
 	rawinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
 	
 	if(length(setdiff(toupper(rawinput),toupper(colnames(data))))==0){
 		processout<-rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		stop(message("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison."))
+		stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
 	}
 	
 	
 	## contrast. matrix
 	if(ncol(contrast.matrix)!=length(unique(data$GROUP_ORIGINAL))){
 		processout<-rbind(processout,c(paste("The required input - contrast.matrix: the number of column and the number of group are not the same. - stop")))
-		colnames(processout)<-c("Process-groupComparison function")
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("Please check contrast matrix. The number of group in data set is different with columns of contrast.matrix."))
+		stop("Please check contrast matrix. The number of group in data set is different with columns of contrast.matrix.")
 	}
 		
 	# check whether row.names of contrast.matrix.sub exists or not
 	if(sum(is.null(row.names(contrast.matrix)))>0){
 		processout<-rbind(processout,c(paste("The required input - contrast.matrix: need row names of contrast.matrix . - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("No row.names of comparison exist.\n"))
+		stop("No row.names of comparison exist.\n")
 	}
 	
 
@@ -1307,56 +1694,63 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
 	## labeled value
 	if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){
 		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop(message("'labeled' must be one of TRUE or FALSE as a logical value."))
+		 stop("'labeled' must be one of TRUE or FALSE as a logical value.")
 	}
 	
 	if(sum(unique(data$LABEL) %in% "H")==0 & labeled==TRUE){
 		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. labeled should be 'FALSE' - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop(message("Dataset is based on label-free experiment. Please set \"labeled\"=FALSE."))
+		 stop("Dataset is based on label-free experiment. Please set \"labeled\"=FALSE.")
 	}
 
 
 	## other option value
 	if(!(scopeOfTechReplication=="restricted" | scopeOfTechReplication=="expanded")){
 		processout<-rbind(processout,c(paste("The required input - scopeOfTechReplication : 'scopeOfTechReplication' value is wrong. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("'scopeOfTechReplication' must be one of \"restricted\" or \"expanded\".
-	"))
+		stop("'scopeOfTechReplication' must be one of \"restricted\" or \"expanded\".
+	")
 	}
 	
 		
 	if(!(scopeOfBioReplication=="restricted" | scopeOfBioReplication=="expanded")){
 		processout<-rbind(processout,c(paste("The required input - scopeOfBioReplication : 'scopeOfBioReplication' value is wrong. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".
-	"))
+		stop("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".
+	")
 	} 
 	
 	if(!(interference==TRUE | interference==FALSE) | !is.logical(interference)){
 		processout<-rbind(processout,c(paste("The required input - interference : 'interference' value is wrong. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop(message("'interference' must be one of TRUE or FALSE as a logical value."))
+		 stop("'interference' must be one of TRUE or FALSE as a logical value.")
 	}
 	
-	if(!(featureVar==TRUE | featureVar==FALSE) | !is.logical(featureVar)){
-		processout<-rbind(processout,c(paste("The required input - featureVar : 'featureVar' value is wrong. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	if(!(equalFeatureVar==TRUE | equalFeatureVar==FALSE) | !is.logical(equalFeatureVar)){
+		processout<-rbind(processout,c(paste("The required input - equalFeatureVar : 'equalFeatureVar' value is wrong. - stop")))
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		stop(message("'featureVar' must be one of TRUE or FALSE as a logical value."))
+		stop("'equalFeatureVar' must be one of TRUE or FALSE as a logical value.")
+	}
+	
+	if(equalFeatureVar==FALSE & (scopeOfBioReplication=="expanded" | scopeOfTechReplication=="expanded")){
+		message("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication.")
+		
+		processout<-rbind(processout,c("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication."))
+		write.table(processout, file=finalfile, row.names=FALSE)
 	}
 	
 	if(!(missing.action %in% c("nointeraction", "impute", "remove"))){
 		processout<-rbind(processout,c(paste("The required input - missing.action : 'missing.action' value is wrong. - stop")))
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop(message("'missing.action' must be one of \"nointeraction\", \"impute\", or \"remove\"."))
+		 stop("'missing.action' must be one of \"nointeraction\", \"impute\", or \"remove\".")
 	}
 
 	## all input
@@ -1364,10 +1758,9 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
 		processout<-rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))
 		processout<-rbind(processout,c(paste("scopeOfTechReplication = ", scopeOfTechReplication,sep="")))
 		processout<-rbind(processout,c(paste("interference = ",interference,sep="")))
-		processout<-rbind(processout,c(paste("featureVar = ",featureVar,sep="")))
-		colnames(processout)<-c("Process-groupComparison function")
+		processout<-rbind(processout,c(paste("equalFeatureVar = ",equalFeatureVar,sep="")))
 
-		write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 
 ## check whether case-control(FALSE) or time-course(TRUE)
@@ -1379,7 +1772,7 @@ repeated<-.checkRepeated(data)
 		processout<-rbind(processout,c(paste("Case control design of experiment - okay")))
 
 	}
-	write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 ## since case-control(FALSE) with fixed subject and random run will fit the crossed model
@@ -1447,11 +1840,14 @@ if ( missing.action == "impute" ) {
 
 		if(length(missingPeptides) > 0){
 			number.missing <- length(missingPeptides)
-			message(paste("There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))		
+			message(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))	
+			
+			processout<-rbind(processout,c(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = "")))
+			write.table(processout, file=finalfile, row.names=FALSE)	
 		}
 	}
 	
-	data<-rbind(data.l,data.h)
+	data<-rbindlist(list(data.l,data.h))
 }
 
 
@@ -1462,7 +1858,10 @@ if ( missing.action == "impute" ) {
 if ( missing.action == "remove" ){
 	data<-data[-which(data$FEATURE %in% missingPeptides),]
 
-	message("The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")
+	message("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")
+	
+	processout<-rbind(processout,c("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model."))
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 }
 
@@ -1472,7 +1871,7 @@ missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPept
 
 ##
 	processout<-rbind(processout,c(paste("missing.action : ",missing.action," - okay",sep="")))
-	write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 ###==================================================
@@ -1513,13 +1912,20 @@ for (i in 1:nlevels(data$PROTEIN)){
 if ( missing.action == "nointeraction" & missing.results [ i ]){
 	remove.interaction = FALSE
 	
-	message(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
+	message("** ",paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
+	
+	processout<-rbind(processout,c(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = "")))
+	write.table(processout, file=finalfile, row.names=FALSE)
 }
 
 	message(paste("Testing a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
 	
 	if(singleFeature){
-		message("Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted")
+		message("** Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted.")
+		
+		processout<-rbind(processout,c(paste("Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted", sep = "")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+		
 		temp<-try(.fit.model.single(contrast.matrix,sub,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated,origGroup),silent=TRUE)
 
 	}	
@@ -1531,23 +1937,28 @@ if ( missing.action == "nointeraction" & missing.results [ i ]){
 #	noRunFeature<-.checkRunbyFeature(sub)
 #	if(noRunFeature) unbalanced=TRUE
 	
-	temp<-try(.fit.model(contrast.matrix,sub,labeled, scopeOfBioReplication,scopeOfTechReplication,interference=remove.interaction,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,featureVar,origGroup),silent=TRUE)
+	temp<-try(.fit.model(contrast.matrix,sub,labeled, scopeOfBioReplication,scopeOfTechReplication,interference=remove.interaction,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup),silent=TRUE)
 
 	}
 
 
 ## fix(apr 16)
 	if(class(temp)=="try-error") {
-		message("error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.")
+		message("*** error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.")
+		
+		processout<-rbind(processout,c(paste("error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.", sep = "")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+		
 		tempresult<-list(result=NULL,valueresid=NULL, valuefitted=NULL)
+		
 		for(k in 1:nrow(contrast.matrix)){	
-			tempresult$result<-rbind(tempresult$result, data.frame(Protein=levels(data$PROTEIN)[i],Label=row.names(contrast.matrix)[k], logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA))
+			tempresult$result<-rbindlist(list(tempresult$result, data.frame(Protein=levels(data$PROTEIN)[i],Label=row.names(contrast.matrix)[k], logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)))
 		}
 	}else{
 		tempresult<-temp
 	}
 
-	out<-rbind(out,tempresult$result)
+	out<-rbindlist(list(out,tempresult$result))
 
 ## add residual and fitted after fitting the model
 	if(class(temp)=="try-error") {
@@ -1567,18 +1978,18 @@ if ( missing.action == "nointeraction" & missing.results [ i ]){
 #	sub<-merge(sub, fitted, by="row.names",all=T)
 #	rownames(sub)<-data$Row.names
 
-	dataafterfit<-rbind(dataafterfit,sub)
+	dataafterfit<-rbindlist(list(dataafterfit,sub))
 	
 ##
 	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
-	write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 } ### end protein loop
 
 ##
 	processout<-rbind(processout,c("Comparisons for all proteins are done.- okay"))
-	write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 ##### finalize result
@@ -1589,31 +2000,34 @@ out$Label<-as.character(out$Label)
 for(i in 1:nrow(contrast.matrix)){
 	outsub<-out[out$Label==row.names(contrast.matrix)[i],]
 	outsub<-data.frame(outsub,adj.pvalue=p.adjust(outsub$pvalue,method="BH"))
-	out.all<-rbind(out.all, outsub)
+	out.all<-rbindlist(list(out.all, outsub))
 }
 out.all$Label<-factor(out.all$Label)
 
 
 ##
 	processout<-rbind(processout,c("Adjust p-values per comparison are calculated - okay."))
-	write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 temp<-data[!is.na(data[,"ABUNDANCE"]),]
 
 if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<
 abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
-	colnames(out.all)[3]<-"log2FC"	
+	setnames(out.all,3,"log2FC")	
 }
 
 if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])>
 abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
-	colnames(out.all)[3]<-"log10FC"	
+	setnames(out.all,3,"log10FC")	
 }
+
+	## change the format as data.frame
+	out.all<-data.frame(out.all)
 
 ##
 	processout<-rbind(processout,c("Group comparison is done. - okay"))
-	write.table(processout, file="Process_groupComparison.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 finalout<-list(ComparisonResult=out.all,ModelQC=dataafterfit)
@@ -1628,7 +2042,11 @@ return(finalout)
 #############################################
 #############################################
 
-modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,width=10, height=10,featureName=TRUE,feature.QQPlot="all",which.Protein="all",address=""){
+modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend.size=7,width=10, height=10,featureName=TRUE,feature.QQPlot="all",which.Protein="all",address=""){
+	
+	if(length(setdiff(toupper(type),c("QQPLOTS","RESIDUALPLOTS")))!=0){
+		stop(paste("Input for type=",type,". However,'type' should be one of \"QQPlots\", \"ResidualPlots\" .",sep=""))
+	}
 	
 	data<-data[!is.na(data$fitted),]
 	data<-data[!is.na(data$residuals),]
@@ -1644,7 +2062,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 		
 			## message if name of Protein is wrong.
 			if(length(setdiff(temp.name,unique(data$PROTEIN)))>0)
-				stop(message(paste("error : Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" ")))
+				stop(paste("Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
 		}
 
 		## check which.Protein is order number of Protein		
@@ -1654,7 +2072,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 		
 			## message if name of Protein is wrong.
 			if(length(levels(data$PROTEIN))<max(which.Protein))
-				stop(message(paste("error : Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" ")))
+				stop(paste("Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
 		}
 			
 		## use only assigned proteins
@@ -1665,22 +2083,55 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 #############################################
 ### normality, QQ plot
 #############################################
-	if(type=="QQPlots"){
+	if(toupper(type)=="QQPLOTS"){
 	
 	### test feature.QQPlot is something wrong.
 	
 	
 	#### one QQplot per protein, all features together
-		if(feature.QQPlot=="all"){
+		if(toupper(feature.QQPlot)=="ALL"){
 		
-			if(address!=FALSE) pdf(paste(address,"QQPlot_allFeatures.pdf",sep=""))
+			#### save the plots as pdf or not
+			# If there are the file with the same name, add next numbering at the end of file name	
+			if(address!=FALSE){
+				allfiles<-list.files()
 
+				num<-0
+				filenaming<-paste(address,"QQPlot_allFeatures",sep="")
+				finalfile<-paste(address,"QQPlot_allFeatures.pdf",sep="")
+
+				while(is.element(finalfile,allfiles)){
+					num<-num+1
+					finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+				}	
+		
+				pdf(finalfile, width=width, height=height)
+			}
+		
 			for (i in 1:nlevels(data$PROTEIN)){	
 
 				sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
-
-				qqnorm(sub$residual,main=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))
-				qqline(sub$residual, col=2)
+				
+				## get slope and intercept for qline
+				y<-quantile(sub$residuals[!is.na(sub$residuals)], c(0.25, 0.75))
+				x<-qnorm(c(0.25, 0.75))
+				slope<-diff(y)/diff(x)
+				int<-y[1L]-slope*x[1L]
+				
+				ptemp<-ggplot(sub, aes_string(sample='residuals'))+geom_point(stat="qq",alpha=0.8,shape=1,size=dot.size)+scale_shape(solid=FALSE)+ geom_abline(slope = slope, intercept = int,colour="red")+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+theme(
+			panel.background=element_rect(fill='white', colour="black"),
+			panel.grid.major = element_line(colour="grey95"),
+			panel.grid.minor =element_blank(),
+			axis.text.x=element_text(size=axis.size,colour="black"),
+			axis.text.y=element_text(size=axis.size,colour="black"),
+			axis.ticks=element_line(colour="black"),
+			axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+			axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+			title=element_text(size=axis.size+8,vjust=1.5),
+			legend.position="none")
+				
+				print(ptemp)
+			
 			} ## end loop
 		
 			if(address!=FALSE) dev.off()
@@ -1688,17 +2139,35 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 	
 	
 	#### panel for each feature,
-		if(feature.QQPlot=="byFeature"){
+		if(toupper(feature.QQPlot)=="BYFEATURE"){
 		
-			if(address!=FALSE) pdf(paste(address,"QQPlot_byFeatures.pdf",sep=""))
+			#### save the plots as pdf or not
+			# If there are the file with the same name, add next numbering at the end of file name	
+			if(address!=FALSE){
+				allfiles<-list.files()
+
+				num<-0
+				filenaming<-paste(address,"QQPlot_byFeatures",sep="")
+				finalfile<-paste(address,"QQPlot_byFeatures.pdf",sep="")
+
+				while(is.element(finalfile,allfiles)){
+					num<-num+1
+					finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+				}	
+		
+				pdf(finalfile, width=width, height=height)
+			}
 
 			for (i in 1:nlevels(data$PROTEIN)){	
 
 				sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
+				
 			
 				## label-free
 				if(length(unique(sub$LABEL))==1){
-					ptemp<-ggplot(sub, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+theme(
+					
+					## need to update for qline per feature
+					ptemp<-ggplot(sub, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8,size=dot.size)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+theme(
 			panel.background=element_rect(fill='white', colour="black"),
 			panel.grid.major = element_line(colour="grey95"),
 			panel.grid.minor =element_blank(),
@@ -1716,10 +2185,11 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 			
 				## label-based : seperate endogenous and reference
 				if(length(unique(sub$LABEL))==2){
-				
+					## need to update for qline per feature
+
 					### endogenous intensities
 					sub.l<-sub[sub$LABEL=="L",]
-					ptemp<-ggplot(sub.l, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Endogenous Intensities"))+theme(
+					ptemp<-ggplot(sub.l, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8,size=dot.size)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Endogenous Intensities"))+theme(
 			panel.background=element_rect(fill='white', colour="black"),
 			panel.grid.major = element_line(colour="grey95"),
 			panel.grid.minor =element_blank(),
@@ -1736,7 +2206,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				
 					### reference intensities
 					sub.h<-sub[sub$LABEL=="H",]
-					ptemp<-ggplot(sub.h, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Reference Intensities"))+theme(
+					ptemp<-ggplot(sub.h, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8,size=dot.size)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Reference Intensities"))+theme(
 			panel.background=element_rect(fill='white', colour="black"),
 			panel.grid.major = element_line(colour="grey95"),
 			panel.grid.minor =element_blank(),
@@ -1763,7 +2233,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 #############################################
 #### Residual plot
 #############################################
-	if(type=="ResidualPlots"){
+	if(toupper(type)=="RESIDUALPLOTS"){
 
 		y.limdown<-min(data$residuals,na.rm=TRUE)
 		y.limup<-max(data$residuals,na.rm=TRUE)
@@ -1771,16 +2241,31 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 		x.limdown<-min(data$fitted,na.rm=TRUE)
 		x.limup<-max(data$fitted,na.rm=TRUE)
 
-		# output separate pdf plot
-		if(address!=FALSE) pdf(paste(address,"ResidualPlot.pdf",sep=""))
 
+		#### save the plots as pdf or not
+		# If there are the file with the same name, add next numbering at the end of file name	
+		if(address!=FALSE){
+			allfiles<-list.files()
+
+			num<-0
+			filenaming<-paste(address,"ResidualPlot",sep="")
+			finalfile<-paste(address,"ResidualPlot.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
+			
 		for (i in 1:nlevels(data$PROTEIN)){	
 
 			sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
 			sub$PEPTIDE<-factor(sub$PEPTIDE)
 			sub$FEATURE<-factor(sub$FEATURE)
 
-			ptemp<-ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=point.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limit=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limit=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
+			ptemp<-ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=dot.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limit=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limit=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
 			
 			if(length(unique(sub$LABEL))==2){
 				ptemp<-ptemp+scale_shape_manual(values=c(2,19),name="",labels=c("Reference","Endogenous"))
@@ -1793,6 +2278,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				ptemp<-ptemp+theme(
 		panel.background=element_rect(fill='white', colour="black"),
 		legend.key=element_rect(fill='white',colour='white'),
+		legend.text=element_text(size=legend.size),
 		panel.grid.major = element_line(colour="grey95"),
 		panel.grid.minor = element_blank(),
 		axis.text.x=element_text(size=axis.size,colour="black"),
@@ -1805,7 +2291,6 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 			}else{
 				ptemp<-ptemp+theme(
 		panel.background=element_rect(fill='white', colour="black"),
-		legend.key=element_rect(fill='white',colour='white'),
 		panel.grid.major = element_line(colour="grey95"),
 		panel.grid.minor = element_blank(),
 		axis.text.x=element_text(size=axis.size,colour="black"),
@@ -1840,6 +2325,22 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 #############################################
 #############################################
 #############################################
+
+
+#############################################
+# check whether there are multiple runs for a replicate
+# if yes, normalization should be different way.
+#############################################
+
+.countMultiRun<-function(data){
+	
+	standardFeature<-unique(data[data$RUN==unique(data$RUN[1]),"FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.
+
+	## get overlapped feature ID
+	countdiff = tapply (data$FEATURE, data$RUN, function ( x ) length(intersect(unique(x),standardFeature)) ) 
+
+	return(countdiff)
+}
 
 #############################################
 # check if measurements are missing for entire group
@@ -1981,8 +2482,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 }
 
 ########################################################
-.fit.model.single<-function(contrast.matrix,data,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated, origGroup){
+.fit.model.single<-function(contrast.matrix,data,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated,origGroup){
 	
+
 	if(labeled){ ## labeled==TRUE
 	
 # when subject is fixed, it is ok using lm function. When we use lm, model with nested or crossed samples have the same results. In the future, if we want to have sample quantification. We need to separate the cases of nested or crossed samples.
@@ -2006,8 +2508,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					fit.full<-lm(ABUNDANCE ~ SUBJECT + GROUP + RUN , data = data)
 				}
 			}
-			
-
+	   		
 			## get parameter from model
 			fixedPara<-.getParameterFixed(fit.full)
 	
@@ -2023,7 +2524,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign){
-					message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 					out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2072,13 +2573,13 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					df.full<-lm(ABUNDANCE ~ SUBJECT + GROUP + RUN , data = data)$df.residual
 				}
 			}
-
 			
 			## get parameter from model
 			randomPara<-.getParameterRandom(fit.full,df.full)
 	
 			#### each comparison
 			allout<-NULL
+			
 			for(k in 1:nrow(contrast.matrix)){
 	
 				# choose each comparison
@@ -2088,7 +2589,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 					out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2146,7 +2647,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 					out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2196,7 +2697,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					df.full<-sum(temp1[-c(1,2)]-1)
 				}
 			}
-			
+	   		
 			## get parameter from model
 			randomPara<-.getParameterRandom(fit.full,df.full)
 	
@@ -2211,7 +2712,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 					out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2263,7 +2764,6 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}
 			} ## time-course
 
-
 			## get parameter from model
 			fixedPara<-.getParameterFixed(fit.full)
 	
@@ -2279,7 +2779,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data2$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.\n")
+					message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 					out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
 					contrast<-.make.contrast.free.single(fit.full,contrast.matrix.sub,data2)
@@ -2305,7 +2805,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 			# case-control
 			if (!repeated){
 				if(!TechReplicate){
-					message("error : can't analyze with expanded scope of BioReplicates. Use the restricted scope of BioReplicates")
+					message("*** error : can't analyze with expanded scope of BioReplicates. Use the restricted scope of BioReplicates")
 				}else{
 					fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT) , data = data2)
 					df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)$df.residual
@@ -2320,7 +2820,6 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT , data = data2)$df.residual
 				}
 			} ## time-course
-
 	
 			## get parameter from model
 			randomPara<-.getParameterRandom(fit.full,df.full)
@@ -2337,7 +2836,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data2$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 					out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2346,9 +2845,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 	
 					## any error for out, just NA
 					if(is.null(out)){
-						out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
+						out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
 					}else{
-						out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
+						out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
 					}
 				}
 	
@@ -2376,12 +2875,10 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 
 
 ########################################################
-.fit.model<-function(contrast.matrix,data,labeled,scopeOfBioReplication,scopeOfTechReplication,interference,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,featureVar,origGroup){
+.fit.model<-function(contrast.matrix,data,labeled,scopeOfBioReplication,scopeOfTechReplication,interference,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup){
 	
 
 	nrepeats=3
-	labeled=labeled
-	i<-NULL
 	
 	## label-free : use only light intensity, need to change contrast.matrix without Group0	
 	if(!labeled){
@@ -2399,7 +2896,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 			}
 			
 			## make equal variance for feature
-			if(featureVar){
+			if(!equalFeatureVar){
 				fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
 			}
 
@@ -2418,7 +2915,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data2$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", paste(origGroup[GroupComparisonAgreement$positionMiss],collapse=", "), " are missing completely.")
 
 					out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2470,7 +2967,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}
 	
 	     		## make equal variance for feature
-	     		if(featureVar){
+	     		if(!equalFeatureVar){
 	     			fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
 	     		}
 	     		
@@ -2490,7 +2987,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
 
 					if(GroupComparisonAgreement$sign==TRUE){
-						message("error : results of Protein ", levels(data2$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+						message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 						out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 					}else{
@@ -2570,9 +3067,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}
 	
 	     		## make equal variance for feature
-	     		if(featureVar){
-	     			fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
-	     		}
+#	     		if(!equalFeatureVar){
+#	     			fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
+#	     		}
 	     		
 	     		
 				## get parameter from model
@@ -2590,7 +3087,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
 
 					if(GroupComparisonAgreement$sign==TRUE){
-						message("error : results of Protein ", levels(data2$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+						message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 						out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 					}else{
@@ -2631,7 +3128,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 			}
 			
 	     	## make equal variance for feature
-	     	if(featureVar){
+	     	if(!equalFeatureVar){
 	   			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
 	   		}
 	     		
@@ -2651,7 +3148,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 				if(GroupComparisonAgreement$sign==TRUE){
-					message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+					message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 					out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 				}else{
@@ -2696,7 +3193,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}	
 	
 		     	## make equal variance for feature
-	     		if(featureVar){
+	     		if(!equalFeatureVar){
 	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
 	     		}
 	     		
@@ -2715,7 +3212,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 					if(GroupComparisonAgreement$sign==TRUE){
-						message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+						message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 						out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 					}else{
@@ -2793,9 +3290,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}
 	
 		     	## make equal variance for feature
-	     		if(featureVar){
-	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-	     		}
+#	     		if(!equalFeatureVar){
+#	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
+#	     		}
 	     		
 	     		
 				## get parameter from model
@@ -2813,7 +3310,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 					if(GroupComparisonAgreement$sign==TRUE){
-						message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+						message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 						out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 					}else{
@@ -2876,9 +3373,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}	
 	
 		     	## make equal variance for feature
-	     		if(featureVar){
-	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-	     		}
+#	     		if(!equalFeatureVar){
+#	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
+#	     		}
 	     		
 	     		
 				## get parameter from model
@@ -2896,7 +3393,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 					if(GroupComparisonAgreement$sign==TRUE){
-						message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+						message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 						out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 					}else{
@@ -2971,9 +3468,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 				}	
 	
 		     	## make equal variance for feature
-	     		if(featureVar){
-	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-	     		}
+#	     		if(!equalFeatureVar){
+#	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
+#	     		}
 	     		
 	     		
 				## get parameter from model
@@ -2991,7 +3488,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 					GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
 
 					if(GroupComparisonAgreement$sign==TRUE){
-						message("error : results of Protein ", levels(data$PROTEIN)[i], " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+						message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
 
 						out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
 					}else{
@@ -3034,9 +3531,11 @@ modelBasedQCPlots<-function(data,type,axis.size=10,point.size=3,text.size=7,widt
 #############################################
 
 
-groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,axis.size=10,text.size=4,ProteinName=TRUE,ProteinNameLoc=1,width=10, height=10, which.Comparison="all",address=""){
+groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4, legend.size=7,ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", width=10, height=10, which.Comparison="all", address=""){
 
-
+if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0){
+		stop(paste("Input for type=",type,". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".",sep=""))
+	}
 		#### choose comparison to draw plots
 		
 		if(which.Comparison!="all"){
@@ -3047,7 +3546,7 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 		
 				## message if name of comparison is wrong.
 				if(length(setdiff(temp.name,unique(data$Label)))>0)
-					stop(message(paste("error : Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "),sep=" ")))
+					stop(paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "),sep=" "))
 			}
 					
 					
@@ -3058,7 +3557,7 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 				
 				## message if name of comparison is wrong.
 				if(length(levels(data$Label))<max(which.Comparison))
-					stop(message(paste("error : Please check your selection of comparisons. There are ", length(levels(data$Label))," comparisons in this result.",sep=" ")))
+					stop(paste("Please check your selection of comparisons. There are ", length(levels(data$Label))," comparisons in this result.",sep=" "))
 			}
 
 			
@@ -3078,10 +3577,18 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 ## Heatmap
 #######################
 
-	if (type=="Heatmap"){
+	if (toupper(type)=="HEATMAP"){
 		
-		if(address!=FALSE) pdf(paste(address,"Heatmap.pdf",sep=""),width=width,height=height)
-
+		#### check whether there is only one protein or not,
+		if(length(unique(data$Protein))<=1){
+			stop("At least two proteins are needed for heatmaps.")
+		}
+		
+		#### check whether there is only one comparison or not,
+		if(length(unique(data$Label))<=1){
+			stop("At least two comparisons are needed for heatmaps.")
+		}
+			
 		y.limUp <-30
 		if(is.numeric(ylimUp)) y.limUp<-ylimUp 
 
@@ -3119,43 +3626,104 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 		## remove if whole rows or columns are NA
 		obj<-obj[rowSums(!is.na(obj))!=0, colSums(!is.na(obj))!=0]
 
-		### remove any NA
-		#obj<-obj[!is.na(obj[,1]),]
-
-		blue.red.18 <- maPalette(low = "blue", high = "red", mid = "white", k = 12)
+		### clustering for order
+		tempobj<-obj
+		tempobj[is.na(tempobj)]<-50
+		
+		if(toupper(clustering)=='PROTEIN'){
+			obj<-obj[hclust(dist(tempobj),method="ward")$order,]
+		}
+		if(toupper(clustering)=='COMPARISON'){
+			obj<-obj[hclust(dist(t(tempobj)),method="ward")$order,]
+		}
+		if(toupper(clustering)=='BOTH'){
+			obj<-obj[hclust(dist(tempobj),method="ward")$order,hclust(dist(t(tempobj)),method="ward")$order]
+		}
+		if(toupper(clustering)=='NONE'){
+			obj<-obj
+		}
+		
+		rm(tempobj)
+		
+		## change the order
+		#obj$id<-seq(1:nrow(obj))
+		#obj<-obj[order(obj$id,decreasing=TRUE),]
+		#obj<-subset(obj, select=-c(id))
+	
+		## color scale
+		blue.red.18 <- maPalette(low = "blue", high = "red", mid = "black", k = 12)
 		my.colors <-blue.red.18
-		my.colors[my.colors=="#FFFFFF"]<-"gold"
-
+		#my.colors[my.colors=="#FFFFFF"]<-"gold"
+		my.colors<-c(my.colors,"grey") ## for NA
+		
 		up<-ceiling(-log10(2^-y.limUp ))
 		temp<-10^(-sort(ceiling(seq(3,up,length=10)[c(1,2,3,5,10)]),decreasing = TRUE))
 		breaks<-c(temp,sig)
 		neg.breaks <- log(breaks, 2)
-		my.breaks  <- c(neg.breaks,0,-neg.breaks[6:1])
-
+		my.breaks  <- c(neg.breaks,0,-neg.breaks[6:1],101)			
+		
 		### draw color key
 		blocks<-c(-breaks,1, breaks[6:1])
 		x.at<-seq(-0.05,1.05,length.out=13)
+		
+		
+		### maximum number of proteins per heatmap
+		namepro<-rownames(obj)
+		totalpro<-length(namepro)
+		numheatmap<-totalpro %/% numProtein +1
 
+		
+		# If there are the file with the same name, add next numbering at the end of file name
+		if(address!=FALSE){
+			allfiles<-list.files()
+
+			num<-0
+			filenaming<-paste(address,"Heatmap",sep="")
+			finalfile<-paste(address,"Heatmap.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
+	
 		par(mar=c(3,3,3,3), mfrow=c(3,1),oma=c(3,0,3,0))
 		plot.new()
-		image(z = matrix(seq(1:length(my.colors)+1), ncol = 1), col = my.colors, xaxt = "n", yaxt = "n")
+		image(z = matrix(seq(1:(length(my.colors)-1)), ncol = 1), col = my.colors[-length(my.colors)], xaxt = "n", yaxt = "n")
 		mtext("Color Key", side=3,line=1, cex=3)
 		mtext("(sign) Adjusted p-value", side=1,line=3,at=0.5, cex=1.7)
 		mtext(blocks,side=1,line=1,at=x.at, cex=1)
 
 		### draw heatmap
+		
+		### loop for numProtein
+		for(j in 1:numheatmap){
+		
+		## get the number proteins needed
+		if(j!=numheatmap){
+			tempobj<-obj[((j-1)*numProtein+1):(j*numProtein),]
+		}else{
+			tempobj<-obj[((j-1)*numProtein+1):nrow(obj),]
+		}
+		
 		par(oma=c(3,0,0,4))
-		heatmap.2(as.matrix(obj),
+		heatmap.2(as.matrix(tempobj),
 			col=my.colors,
+			Rowv=FALSE,
 			Colv=FALSE,
 			dendrogram="none",
 			breaks=my.breaks,
 			trace="none",
 			na.color="grey", ## missing value will be grey
-			cexCol=1.2,cexRow=1.2, # assign text.size as option
+			cexCol=(x.axis.size/10),cexRow=(y.axis.size/10), # assign text.size as option
 			key=FALSE,
 			lhei=c(0.1,0.9),lwid=c(0.1,0.9)
 		)
+
+		
+		} ## end loop for heatmap
 		
 		if(address!=FALSE) dev.off()
 	}
@@ -3164,10 +3732,25 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 #######################
 ## VolcanoPlot
 #######################
-	if (type=="VolcanoPlot"){
+	if (toupper(type)=="VOLCANOPLOT"){
 		
-		if(address!=FALSE) pdf(paste(address,"VolcanoPlot.pdf",sep=""))
+		# If there are the file with the same name, add next numbering at the end of file name		
+		if(address!=FALSE){
+			allfiles<-list.files()
 
+			num<-0
+			filenaming<-paste(address,"VolcanoPlot",sep="")
+			finalfile<-paste(address,"VolcanoPlot.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
+		
+		
 		y.limUp <-30
 		if(is.numeric(ylimUp)) y.limUp<-ylimUp 
 
@@ -3202,7 +3785,9 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 				
 			sub<-data[data$Label==levels(data$Label)[i],]
 			sub$adj.pvalue[sub$adj.pvalue<2^(-y.limUp)]<-2^(-y.limUp)
-
+			
+			sub<-as.data.frame(sub)
+			
 			## ylimUp
 			y.limup<-ceiling(max(-log2(sub[!is.na(sub$adj.pvalue),"adj.pvalue"])))
 			if(y.limup < (-log2(sig))) y.limup<- (-log2(sig)+1) ## for too small y.lim
@@ -3219,20 +3804,23 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 			### for assigning x in ggplot2
 			subtemp<-sub
 			colnames(subtemp)[3]<-"logFC"
+			#setnames(subtemp,3,"logFC")	
+
 			subtemp$log2adjp<-(-log2(subtemp$adj.pvalue))
 
 			### Plotting
-			ptemp<-ggplot()+geom_point(aes_string(x='logFC', y='log2adjp',color='colgroup',label='Protein'),size=4, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))+theme(
+			ptemp<-ggplot()+geom_point(aes_string(x='logFC', y='log2adjp',color='colgroup',label='Protein'),size=dot.size, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))+theme(
 			panel.background=element_rect(fill='white', colour="black"),
 			panel.grid.minor = element_blank(),
-			axis.text.x=element_text(size=axis.size,colour="black"),
-			axis.text.y=element_text(size=axis.size,colour="black"),
+			axis.text.x=element_text(size=x.axis.size,colour="black"),
+			axis.text.y=element_text(size=y.axis.size,colour="black"),
 			axis.ticks=element_line(colour="black"),
-			axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-			axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-			title=element_text(size=axis.size+8,vjust=1.5),
+			axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+			axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+			title=element_text(size=x.axis.size+8,vjust=1.5),
 			legend.position="bottom",
 			legend.key=element_rect(fill='white',colour='white'),
+			legend.text=element_text(size=legend.size),
 			legend.title=element_blank())
 
 			## x-axis labeling
@@ -3290,21 +3878,38 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 #######################
 ## Comparison Plot
 #######################
-	if (type=="ComparisonPlot"){
+	if (toupper(type)=="COMPARISONPLOT"){
 		
 		
 		datatemp<-data[!is.na(data$adj.pvalue),]
 		datatemp$Protein<-factor(datatemp$Protein)
-		colnames(datatemp)[3]<-"logFC"
-				
-		if(address!=FALSE) pdf(paste(address,"ComparisonPlot.pdf",sep=""))
+		setnames(datatemp,3,"logFC")
+		
+		# If there are the file with the same name, add next numbering at the end of file name		
+		if(address!=FALSE){
+			allfiles<-list.files()
 
+			num<-0
+			filenaming<-paste(address,"ComparisonPlot",sep="")
+			finalfile<-paste(address,"ComparisonPlot.pdf",sep="")
+
+			while(is.element(finalfile,allfiles)){
+				num<-num+1
+				finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+			}	
+		
+			pdf(finalfile, width=width, height=height)
+		}
 
 		for (i in 1:nlevels(datatemp$Protein)){
 			
-  			sub<-datatemp[datatemp$Protein==levels(datatemp$Protein)[i],]
-  			sub$ciw<-qt(1-sig/2,sub$DF)*sub$SE
-  
+  			sub<-datatemp[datatemp$Protein==levels(datatemp$Protein)[i],] 		
+  			#sub$ciw<-qt(1-sig/2,sub$DF)*sub$SE
+  			## adjust for multiple comparison within protein
+  			sub$ciw<-qt(1-sig/(2*nrow(sub)),sub$DF)*sub$SE
+
+  			sub<-as.data.frame(sub)
+  			
   			## ylimUp
 			y.limup<-ceiling(max(sub$logFC+sub$ciw))
 			if(is.numeric(ylimUp)) y.limup<-ylimUp 
@@ -3313,16 +3918,16 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 			y.limdown<-floor(min(sub$logFC-sub$ciw))
 			if(is.numeric(ylimDown)) y.limdown<-ylimDown 
   
-			ptemp<-ggplot(aes_string(x='Label', y='logFC'), data=sub)+geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw),data=sub, width=0.1,colour="red")+geom_point(size=3,colour="darkred")+scale_x_discrete('Comparison')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=levels(datatemp$Protein)[i])+theme(
+			ptemp<-ggplot(aes_string(x='Label', y='logFC'), data=sub)+geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw),data=sub, width=0.1,colour="red")+geom_point(size=dot.size,colour="darkred")+scale_x_discrete('Comparison')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=levels(datatemp$Protein)[i])+theme(
 			panel.background=element_rect(fill='white', colour="black"),
 			panel.grid.major.y = element_line(colour="grey95"),
 			panel.grid.minor.y = element_blank(),
-			axis.text.x=element_text(size=axis.size,colour="black"),
-			axis.text.y=element_text(size=axis.size,colour="black"),
+			axis.text.x=element_text(size=x.axis.size,colour="black"),
+			axis.text.y=element_text(size=y.axis.size,colour="black"),
 			axis.ticks=element_line(colour="black"),
-			axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-			axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-			title=element_text(size=axis.size+8,vjust=1.5))
+			axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+			axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+			title=element_text(size=x.axis.size+8,vjust=1.5))
 	
 			if(colnames(data)[3]=="log2FC") ptemp<-ptemp+scale_y_continuous("Log2-Fold Change",limit=c(y.limdown, y.limup))
 			if(colnames(data)[3]=="log10FC") ptemp<-ptemp+scale_y_continuous("Log10-Fold Change",limit=c(y.limdown, y.limup))
@@ -3344,47 +3949,87 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimU
 #############################################
 
 
-designSampleSize<-function(data=data,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=FDR,power=power,scopeOfBioReplication="restricted",interference=TRUE){
+designSampleSize<-function(data=data,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=0.05,power=0.9,scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE){
 
+	nrepeats=3
+	
 	## save process output in each step
-	processout<-NULL
+	allfiles<-list.files()
+	filenaming<-"msstats"
 
+
+	if(length(grep(filenaming,allfiles))==0){
+		
+		finalfile<-"msstats.log"
+		processout<-NULL
+			
+	}else{
+		
+		num<-0
+		finalfile<-"msstats.log"
+
+		while(is.element(finalfile,allfiles)){
+			num<-num+1
+			lastfilename<-finalfile ## in order to rea
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")
+		}
+		
+		finalfile<-lastfilename
+		processout<-as.matrix(read.table(finalfile,header=T, sep="\t"))
+	}
+	
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - designSampleSize function"," "),ncol=1))
+
+	
 	## data format
 	rawinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
 	
 	if(length(setdiff(toupper(rawinput),toupper(colnames(data))))==0){
 		processout<-rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))
-		colnames(processout)<-c("Process-designSampleSize function")
 
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		stop(message("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison."))
+		stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
 	}
 
 	
 ## check one TRUE or not
 if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 	processout<-rbind(processout,c(paste("The required input - number of sample or features : Only one value should be TRUE. - stop")))
-	write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
-	 stop(message("One of (numSample, numPep, numTran, power) needs to be TRUE"))
+	 stop("One of (numSample, numPep, numTran, power) needs to be TRUE")
 }
 
 
 ## check other options
 	if(!(scopeOfBioReplication=="restricted" | scopeOfBioReplication=="expanded")){
 		processout<-rbind(processout,c(paste("The required input - scopeOfBioReplication : 'scopeOfBioReplication' value is wrong. - stop")))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".
-	"))
+		stop("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".
+	")
 	} 
 	
 	if(!(interference==TRUE | interference==FALSE) | !is.logical(interference)){
 		processout<-rbind(processout,c(paste("The required input - interference : 'interference' value is wrong. - stop")))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop(message("'interference' must be one of TRUE or FALSE as a logical value."))
+		 stop("'interference' must be one of TRUE or FALSE as a logical value.")
+	}
+	
+	if(!(equalFeatureVar==TRUE | equalFeatureVar==FALSE) | !is.logical(equalFeatureVar)){
+		processout<-rbind(processout,c(paste("The required input - equalFeatureVar : 'equalFeatureVar' value is wrong. - stop")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+
+		 stop("'equalFeatureVar' must be one of TRUE or FALSE as a logical value.")
+	}
+	
+	if(equalFeatureVar==FALSE & scopeOfBioReplication=="expanded"){
+		message("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication..")
+		
+		processout<-rbind(processout,c("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication."))
+		write.table(processout, file=finalfile, row.names=FALSE)
 	}
 	
 	## all input
@@ -3396,9 +4041,9 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 		processout<-rbind(processout,c(paste("Power = ", power,sep="")))
 		processout<-rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))
 		processout<-rbind(processout,c(paste("interference = ", interference,sep="")))
-		colnames(processout)<-c("Process-designSampleSize function")
+		processout<-rbind(processout,c(paste("equalFeatureVar = ", equalFeatureVar,sep="")))
 
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 
 
@@ -3411,7 +4056,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 		processout<-rbind(processout,c(paste("Case control design of experiment - okay")))
 
 	}
-	write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 	
 	if (nlevels(data$LABEL)==1){
@@ -3432,78 +4077,48 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 			sub$FEATURE<-factor(sub$FEATURE)	
 			sub$RUN<-factor(sub$RUN)
 
+			repeated<-.checkRepeated(sub)
 			singleFeature<-.checkSingleFeature(sub)
+			singleSubject<-.checkSingleSubject(sub)
+			TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
+
 			MissGroupByFeature<-.checkMissGroupByFeature(sub)
 			MissRunByFeature<-.checkMissRunByFeature(sub)
+			MissSubjectByGroup<-.checkRunbyFeature(sub)
+			#UnequalSubject<-.checkUnequalSubject(sub)
 
 			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
-			if(singleFeature){
-				fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
-			}else{
-				if (nlevels(data$SUBJECT_ORIGINAL)==1){
-					fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP, data = sub)
+			
+						
+			fit.full<-try(.fit.samplesize.labelfree(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar), silent=TRUE)
+
+				if(class(fit.full)=="try-error") {
+#						message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+						
+						processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+						write.table(processout, file=finalfile, row.names=FALSE)
+					
+				}else{
+			
+					## get variance component
+
+					if(class(fit.full)!="mer"){
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2
+					}else{
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2
+						}
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2
+						}
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2
+						}
+					}
 				}
 				
-				if (nlevels(data$SUBJECT_ORIGINAL)>1){
-		
-					# (1) Subject:F
-					if(scopeOfBioReplication=="restricted"){
-							
-						##case-control
-						if(!repeated & interference){
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP  + FEATURE:GROUP , data = sub)
-						}
-						if(!repeated & !interference){
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP  , data = sub)
-						}
-			
-						## time-course
-						if(repeated & interference){
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP  + FEATURE:GROUP , data = sub)
-						}
-						if(repeated & !interference){
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP , data = sub)
-						}
-					}
-		
-					# (2) Subject:R
-					if(scopeOfBioReplication=="expanded"){
-			
-						## case-control
-						if(!repeated){
-							if(!MissGroupByFeature & interference){
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + FEATURE:GROUP , data = sub)
-							}
-							if(MissGroupByFeature | !interference){
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
-							}
-						}else{  ## time-course
-							if(!MissGroupByFeature & interference){
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) +(1|SUBJECT:GROUP) + GROUP + FEATURE:GROUP , data = sub)
-							}
-							if(MissGroupByFeature| !interference){
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) +(1|SUBJECT:GROUP) + GROUP, data = sub)
-							}
-						}			
-					}
-				}
-			} ## singleSub is FALSE	
-
-			if(class(fit.full)!="mer"){
-				VarComponent[i,"Error"]<-summary.lm(fit.full)$sigma^2
-			}else{
-				stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
-				VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2
-				if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){
-					VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2
-				}
-				if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){
-					VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2
-				}
-				if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){
-					VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2
-				}
-			}
 		} ## end-loop
 
 		VarComponent[is.na(VarComponent)]<-0	
@@ -3516,7 +4131,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 		
 		###
 		processout<-rbind(processout,c("Calculated variance component. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 
 		### power calculation
@@ -3534,11 +4149,13 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
     			power[i]<-powerTemp[order(abs(diff))][1]
     		}
     		
+    		CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
+    		
     		###
 		processout<-rbind(processout,c("Power is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-    		out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power)
+    		out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)
     		return(out)
     		
     	}
@@ -3561,7 +4178,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				
 				###
 		processout<-rbind(processout,c("The number of sample is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
 				return(out)
@@ -3579,7 +4196,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				
 				###
 		processout<-rbind(processout,c("The number of peptide per protein is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
 				return(out)
@@ -3597,7 +4214,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				
 				###
 		processout<-rbind(processout,c("The number of transition per peptide is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
 				return(out)
@@ -3623,77 +4240,45 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 			sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)
 			sub$FEATURE<-factor(sub$FEATURE)	
 			sub$RUN<-factor(sub$RUN)
-
+			
+			repeated<-.checkRepeated(sub)
 			singleFeature<-.checkSingleFeature(sub)
+			singleSubject<-.checkSingleSubject(sub)
+			TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
+
 			MissGroupByFeature<-.checkMissGroupByFeature(sub)
 			MissRunByFeature<-.checkMissRunByFeature(sub)
+			MissSubjectByGroup<-.checkRunbyFeature(sub)
+			#UnequalSubject<-.checkUnequalSubject(sub)
 
 			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
+			
+			fit.full<-try(.fit.samplesize.labeled(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar), silent=TRUE)
 
-			if(singleFeature){
-				fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
-			}else{
-				if (nlevels(sub$SUBJECT_ORIGINAL)==1){
-					fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = sub)
-				}
-	
-				if (nlevels(sub$SUBJECT_ORIGINAL)>1){
-		
-					# (1) Subject: F
-					if(scopeOfBioReplication=="restricted"){
-			
-						## case-control
-						if(!repeated){
-							if(interference){
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-							}else{
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN, data = sub)		
-							}
-						}else{ ## time-course
-							if(interference){
-								fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-							}else{
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + RUN, data = sub)
-							}	
+				if(class(fit.full)=="try-error") {
+#						message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+						
+						processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+						write.table(processout, file=finalfile, row.names=FALSE)
+					
+				}else{
+
+					if(class(fit.full)!="mer"){
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2
+					}else{
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2
 						}
-					}
-		
-					# (2) Subject: R
-					if(scopeOfBioReplication=="expanded"){
-			
-						## case-control
-						if(!repeated){
-							if(!MissGroupByFeature & !MissRunByFeature & interference){
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-							}else{
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = sub)
-							}
-						}else{  # time-course
-							if(!MissGroupByFeature & !MissRunByFeature & interference){
-								fit.full<-lmer(ABUNDANCE ~ FEATURE + (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-							}else{
-								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN, data = sub)
-							}
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2
+						}
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2
 						}
 					}
 				}
-			}
-
-			if(class(fit.full)!="mer"){
-				VarComponent[i,"Error"]<-summary.lm(fit.full)$sigma^2
-			}else{
-				stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
-				VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2
-				if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){
-					VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2
-				}
-				if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){
-					VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2
-				}
-				if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){
-					VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2
-				}
-			}
 		} ## end-loop
 
 		VarComponent[is.na(VarComponent)]<-0	
@@ -3706,7 +4291,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 		
 		###
 		processout<-rbind(processout,c("Calculated variance component. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 
 		### power calculation
@@ -3724,12 +4309,14 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				min(abs(diff),na.rm=TRUE)
 				power[i]<-powerTemp[order(abs(diff))][1]
 			}
-    
+    		
+    		CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
+    		
         	###
 		processout<-rbind(processout,c("Power is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-  			out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power)
+  			out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)
     		return(out)
     	}
 
@@ -3751,7 +4338,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				
 				###
 		processout<-rbind(processout,c("The number of sample is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
 				return(out)
@@ -3769,7 +4356,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				
 				###
 		processout<-rbind(processout,c("The number of peptide per protein is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
 				return(out)
@@ -3787,7 +4374,7 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 				
 				###
 		processout<-rbind(processout,c("The number of transition per peptide is calculated. - okay"))
-		write.table(processout, file="Process_designSampleSize.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
 				return(out)
@@ -3796,6 +4383,138 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 	} ## label-based
 }
 
+.fit.samplesize.labelfree<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar){
+				
+	if(singleFeature){
+		fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
+	}else{
+		if (singleSubject){
+			if(!TechReplicate){
+				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + GROUP:FEATURE, data = sub)
+			}else{
+				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP, data = sub)
+			}
+		}else{
+		
+			# (1) Subject:F
+			if(scopeOfBioReplication=="restricted"){
+							
+				##case-control
+				if(!repeated){
+					if(interference){
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP  + FEATURE:GROUP , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP  , data = sub)
+					}
+				}else{
+				## time-course
+					if(interference){
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP  + FEATURE:GROUP , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP , data = sub)
+					}
+				}
+			}
+		
+			# (2) Subject:R
+			if(scopeOfBioReplication=="expanded"){
+			
+				# case-control
+				if (!repeated){
+					if(interference){
+						if(!MissGroupByFeature){
+      						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + FEATURE:GROUP , data = sub)
+      					}else{  ## MissGroupByFeature==TRUE
+     						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
+      					}
+					}else{ ## interference==FALSE
+	  					fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
+					}
+				}else{  ##time-course
+					if(interference){
+						if(!MissGroupByFeature){
+      						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + FEATURE:GROUP , data = sub)
+      					}else{ ## MissGroupByFeature==TRUE
+      						fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP, data = sub)
+     					}
+					}else{  ## interference==FALSE
+	  					fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP, data = sub)
+	  				}
+	  			}			
+			}
+		}
+	} ## singleSub is FALSE	
+
+	## make equal variance for feature
+	if(!equalFeatureVar & scopeOfBioReplication=="restricted"){
+		nrepeats=3
+		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
+	}
+			
+	return(fit.full)
+}
+
+.fit.samplesize.labeled<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar){
+
+	if(singleFeature){
+		fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
+	}else{
+		if (singleSubject){ ## single subject
+			if(TechReplicate){
+				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN + GROUP:FEATURE + RUN:FEATURE, data = sub)
+			}else{
+				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = sub)
+			}
+		}else{
+		
+			# (1) Subject: F
+			if(scopeOfBioReplication=="restricted"){
+			
+				## case-control
+				if(!repeated){
+					if(interference){
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN, data = sub)		
+					}
+				}else{ ## time-course
+					if(interference){
+							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + RUN, data = sub)
+					}	
+				}
+			}
+		
+			# (2) Subject: R
+			if(scopeOfBioReplication=="expanded"){
+			
+				## case-control
+				if(!repeated){
+					if(!MissGroupByFeature & !MissRunByFeature & interference){
+						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+					}else{
+						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = sub)
+					}
+				}else{  # time-course
+					if(!MissGroupByFeature & !MissRunByFeature & interference){
+						fit.full<-lmer(ABUNDANCE ~ FEATURE + (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+					}else{
+						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN, data = sub)
+					}
+				}
+			}
+		}
+	}
+			
+	## make equal variance for feature
+	if(!equalFeatureVar & scopeOfBioReplication=="restricted"){
+		nrepeats=3
+		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
+	}
+				
+	return(fit.full)
+}
 
 
 #############################################
@@ -3810,6 +4529,8 @@ designSampleSizePlots<-function(data=data){
 	if (length(unique(data$numPep))>1) index<-"numPep"
 	if (length(unique(data$numTran))>1) index<-"numTran"
 	if (length(unique(data$power))>1) index<-"power"
+	
+	if (length(unique(data$numSample))==1 & length(unique(data$numPep))==1 & length(unique(data$numTran))==1 & length(unique(data$power))==1) index<-"numSample"
 
 	text.size<-1.2	
 	axis.size<-1.3	
@@ -3872,54 +4593,148 @@ with(data, {
 #############################################
 
 
-quantification<-function(data,type="Sample",format="matrix"){
+quantification<-function(data,type="Sample",format="matrix", scopeOfTechReplication="restricted", scopeOfBioReplication="restricted", interference=TRUE, missing.action="nointeraction",equalFeatureVar=TRUE){
 
 	## save process output in each step
-	processout<-NULL
+	allfiles<-list.files()
+	filenaming<-"msstats"
+
+
+	if(length(grep(filenaming,allfiles))==0){
+		
+		finalfile<-"msstats.log"
+		processout<-NULL
+			
+	}else{
+		
+		num<-0
+		finalfile<-"msstats.log"
+
+		while(is.element(finalfile,allfiles)){
+			num<-num+1
+			lastfilename<-finalfile ## in order to rea
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")
+		}
+		
+		finalfile<-lastfilename
+		processout<-as.matrix(read.table(finalfile, header=T,sep="\t"))
+	}
+	
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - quantification function"," "),ncol=1))
+
 
 	## data format
 	rawinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
 	
 	if(length(setdiff(toupper(rawinput),toupper(colnames(data))))==0){
 		processout<-rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))
-		colnames(processout)<-c("Process-quantification function")
 
-		write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
-		stop(message("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison."))
+		stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
 	}
 
 ## check other options
-	if(!(type=="Sample" | type=="Group")){
+	if(!(toupper(type)=="SAMPLE" | toupper(type)=="GROUP")){
 		processout<-rbind(processout,c(paste("The required input - type : 'type' value is wrong. - stop")))
-		write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("'type' must be one of \"Sample\" or \"Group\".
-	"))
+		stop("'type' must be one of \"Sample\" or \"Group\". ")
 	} 
 	
-	if(!(format=="matrix" | format=="long")){
+	if(!(toupper(format)=="MATRIX" | toupper(format)=="LONG")){
 		processout<-rbind(processout,c(paste("The required input - format : 'format' value is wrong. - stop")))
-		write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		stop(message("'format' must be one of \"matrix\" or \"long\".
-	"))
+		stop("'format' must be one of \"matrix\" or \"long\". ")
 	} 
 
 		## all input
 		processout<-rbind(processout,c(paste("type of quantification = ",type,sep="")))
 		processout<-rbind(processout,c(paste("format of output = ",format,sep="")))
-		colnames(processout)<-c("Process-quantification function")
 
-		write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+		write.table(processout, file=finalfile, row.names=FALSE)
 
 
-	## Group quantification
-	if (type=="Group"){
+#################################
+### how to handle missingness for endogenous
+
+data$PROTEIN<-factor(data$PROTEIN)
+
+data.l<-data[data$LABEL=="L",]
+data.h<-data[data$LABEL=="H",]
+
+missingPeptides<-.checkMissFeature(data.l)
+
+protein.list = tapply ( data.l$FEATURE, data.l$PROTEIN, function ( x ) unique ( as.character ( x ) ) )
+
+missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )
+
+
+
+## Impute for missing endogenous intensity
+if ( toupper(missing.action) == "IMPUTE" ) { 
+	if(length(missingPeptides) > 0){
+	
+		dataBySample <- tapply(data.l$ABUNDANCE, list(data.l$SUBJECT_ORIGINAL, data.l$FEATURE), function(x) min(x, na.rm = TRUE))
+		dataBySample <- dataBySample[!(apply(dataBySample, 1, function(x) sum(is.na(x))) == ncol(dataBySample)), ]
+
+		if(!is.numeric(dataBySample)){ ## only one subject
+			minValuePerSample <- apply(dataBySample, 1, function(x) min(x, na.rm = TRUE))
+		}else{
+			minValuePerSample<-min(dataBySample, na.rm=TRUE)
+		}
+	
+		imputeValue <- mean(minValuePerSample[!is.infinite(minValuePerSample)], na.rm = TRUE)
+
+		for(i in 1:length(missingPeptides)){
+			sub <- data.l[data.l$FEATURE == missingPeptides[i], ]
+			t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))
+			missingConds <- names(t)[which(t == 0 | is.na(t))]		
+			data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue
+		}
+
+		if(length(missingPeptides) > 0){
+			number.missing <- length(missingPeptides)
+			message(paste("There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))		
+		}
+	}
+	
+	data<-rbindlist(list(data.l,data.h))
+}
+
+
+## even though it is not the case, user can do with no interaction ( no else command)
+
+
+## 
+if ( toupper(missing.action) == "REMOVE" ){
+	data<-data[-which(data$FEATURE %in% missingPeptides),]
+
+	message("The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")
+
+}
+
+
+## for assigning interference
+missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )
+
+##
+	processout<-rbind(processout,c(paste("missing.action : ",missing.action," - okay",sep="")))
+	write.table(processout, file=finalfile, row.names=FALSE)
+
+
+#################################
+## Group quantification
+
+	if (toupper(type)=="GROUP"){
 
 		if(nlevels(data$LABEL)==2){	
 		
 			## set output format
+			data$GROUP<-factor(data$GROUP)
+			data$GROUP_ORIGINAL<-factor(data$GROUP_ORIGINAL)
+			
 			finalresult<-data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$GROUP)),Condition=rep(c(levels(data$GROUP_ORIGINAL),"Ref"),nlevels(data$PROTEIN)), LogIntensities=NA)
 	
 			result<-NULL
@@ -3938,53 +4753,85 @@ quantification<-function(data,type="Sample",format="matrix"){
 
 				##  make result matrix per protein in case some subjects can miss in certain protein	
 				sub.result<-data.frame(Protein=rep(levels(data$PROTEIN)[i],each=nlevels(sub$GROUP)),Condition=rep(c(levels(sub$GROUP_ORIGINAL),"Ref"),1),LogIntensities=NA)
-
+				
+				repeated<-.checkRepeated(sub)
 				singleFeature<-.checkSingleFeature(sub)
 				singleSubject<-.checkSingleSubject(sub)
+				TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
 
-				if(singleFeature==TRUE){
-					fit<-lm(ABUNDANCE ~ GROUP + RUN , data = sub)
-				}	
+				MissGroupByFeature<-.checkMissGroupByFeature(sub)
+				MissRunByFeature<-.checkMissRunByFeature(sub)
+				MissSubjectByGroup<-.checkRunbyFeature(sub)
+				UnequalSubject<-.checkUnequalSubject(sub)
 	
-				if(singleFeature==FALSE){
 	
-					if (singleSubject==TRUE){
-						fit<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = sub)
-					}
-					if (singleSubject==FALSE){
-						fit<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-					}
+				## need to assigning whether interaction term is included or not
+				remove.interaction<-interference
+	
+				if ( missing.action == "nointeraction" & missing.results [ i ]){
+					remove.interaction = FALSE
+	
+					message(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
 				}
+				
+				
+				##### fit the model
+				message(paste("Fitting the model for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
 
+				
+				fit<-try(.fit.quantification.group.labeled(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,scopeOfTechReplication,scopeOfBioReplication,remove.interaction,equalFeatureVar), silent=TRUE)
+				
 ## extrac coefficient : 
 ## if we add lmer for random
 # if(class(fit)=="lm"){ cf <- summary.lm(fit)$coefficients
 #	}else{ cf <- as.matrix(fixef(fit)) }
 # but now only fixed,
 
-				cf <- summary.lm(fit)$coefficients
+				if(class(fit)=="try-error") {
+					message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+					
+					result<-rbind(result, sub.result)
 
-				# calculate group quantification for all levels of group
-				a=1
+					processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+					write.table(processout, file=finalfile, row.names=FALSE)
+					
+				}else{
+					if(class(fit)=="lm"){
+						cf <- summary(fit)$coefficients
+					}else{
+						cf <- fixef(fit)
+					}
+
+					# calculate group quantification for all levels of group
+					a=1
 		
-				for (j in 1:nlevels(sub$GROUP_ORIGINAL)){
-					contrast.matrix<-rep(0,nlevels(sub$GROUP_ORIGINAL))
-					contrast.matrix[j]<-1
-					contrast<-.make.contrast.group.quantification(fit,contrast.matrix,sub)
+					for (j in 1:nlevels(sub$GROUP_ORIGINAL)){
+						contrast.matrix<-rep(0,nlevels(sub$GROUP_ORIGINAL))
+						contrast.matrix[j]<-1
+						contrast<-.make.contrast.group.quantification(fit,contrast.matrix,sub)
 		
-					## instead of result, use sub.result
-					sub.result[a,3]<-.estimableQuantification(cf,contrast)
+						## instead of result, use sub.result
+						if(class(fit)=="lm"){
+							sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+						}else{
+							sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+						}
+						a=a+1
+					}
+					contrast<-.make.contrast.group.quantification.reference(fit,contrast.matrix,sub)
+					if(class(fit)=="lm"){
+						sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+					}else{
+						sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+					}
 					a=a+1
-				}
-				contrast<-.make.contrast.group.quantification.reference(fit,contrast.matrix,sub)
-				sub.result[a,3]<-.estimableQuantification(cf,contrast)
-				a=a+1
 		
-				result<-rbind(result, sub.result)
+					result<-rbind(result, sub.result)
 				
-				##
-	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
-	write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+					##
+					processout<-rbind(processout,c(paste("Finished to quantify for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
+					write.table(processout, file=finalfile, row.names=FALSE)
+				}
 
 			}	## end loop for each protein
 		}	## label-based
@@ -3992,6 +4839,9 @@ quantification<-function(data,type="Sample",format="matrix"){
 
 		if(nlevels(data$LABEL)==1){	
 
+			data$GROUP<-factor(data$GROUP)
+			data$GROUP_ORIGINAL<-factor(data$GROUP_ORIGINAL)
+			
 			finalresult<-data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$GROUP_ORIGINAL)),Condition=rep(c(levels(data$GROUP_ORIGINAL)),nlevels(data$PROTEIN)),LogIntensities=NA)
 	
 			result<-NULL
@@ -4009,49 +4859,81 @@ quantification<-function(data,type="Sample",format="matrix"){
 				
 				sub.result<-data.frame(Protein=rep(levels(data$PROTEIN)[i],each=nlevels(sub$GROUP_ORIGINAL)),Condition=rep(c(levels(sub$GROUP_ORIGINAL)),1),LogIntensities=NA)
 
+				repeated<-.checkRepeated(sub)
 				singleFeature<-.checkSingleFeature(sub)
 				singleSubject<-.checkSingleSubject(sub)
+				TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
 
-				if(singleFeature==TRUE){
-					fit<-lm(ABUNDANCE ~ GROUP , data = sub)
-				}	
-				if(singleFeature==FALSE){
+				MissGroupByFeature<-.checkMissGroupByFeature(sub)
+				MissRunByFeature<-.checkMissRunByFeature(sub)
+				MissSubjectByGroup<-.checkRunbyFeature(sub)
+				UnequalSubject<-.checkUnequalSubject(sub)
 	
-					if(singleSubject==TRUE){
-						fit<-lm(ABUNDANCE ~ FEATURE + GROUP, data = sub)
-					}
-					if (singleSubject==FALSE){
-						fit<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + FEATURE:GROUP, data = sub)
-					}
+	
+				## need to assigning whether interaction term is included or not
+				remove.interaction<-interference
+	
+				if ( missing.action == "nointeraction" & missing.results [ i ]){
+					remove.interaction = FALSE
+	
+					message(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
 				}
-
+				
+				##### fit the model
+				message(paste("Fitting the model for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				
+				fit<-try(.fit.quantification.group.label.free(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,scopeOfTechReplication,scopeOfBioReplication,remove.interaction,equalFeatureVar), silent=TRUE)
+				
 ## extrac coefficient : 
 ## if we add lmer for random
 # if(class(fit)=="lm"){ cf <- summary.lm(fit)$coefficients
 #	}else{ cf <- as.matrix(fixef(fit)) }
 # but now only fixed,
 
-				cf <- summary.lm(fit)$coefficients
 
-				# calculate group quantification for all levels of group
-				a=1
+				if(class(fit)=="try-error") {
+					message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+					
+					result<-rbind(result, sub.result)
+					
+					processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+					write.table(processout, file=finalfile, row.names=FALSE)
+				}else{
+					
+					if(class(fit)=="lm"){
+						cf <- summary(fit)$coefficients
+					}else{
+						cf <- fixef(fit)
+					}
+
+					# calculate group quantification for all levels of group
+					a=1
 				
-				for(j in 1:nlevels(sub$GROUP_ORIGINAL)){
-					contrast.matrix<-rep(0,nlevels(sub$GROUP_ORIGINAL))
-					contrast.matrix[j]<-1
-					contrast<-.make.contrast.group.quantification(fit,contrast.matrix,sub)
-					sub.result[a,3]<-.estimableQuantification(cf,contrast)
-					a=a+1
-				}
+					for(j in 1:nlevels(sub$GROUP_ORIGINAL)){
+						contrast.matrix<-rep(0,nlevels(sub$GROUP_ORIGINAL))
+						contrast.matrix[j]<-1
+						contrast<-.make.contrast.group.quantification(fit,contrast.matrix,sub)
+						
+						if(class(fit)=="lm"){
+							sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+						}else{
+							sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+						}
+						a=a+1
+						
+					}
 		
-				result<-rbind(result, sub.result)
+					result<-rbind(result, sub.result)
 				
-				##
-	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
-	write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+					##
+					processout<-rbind(processout,c(paste("Finished to quantify for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
+					write.table(processout, file=finalfile, row.names=FALSE)
+				}
 	
 			} ## end-loop for each protein	
 		}	## label-free
+		
+		message("Preparing the output.")
 
 		## make new data.frame in case there are missing group
 		for(k in 1:nrow(result)){	
@@ -4059,18 +4941,16 @@ quantification<-function(data,type="Sample",format="matrix"){
 		}
 
 
-		### output1 : long format	
-		#write.csv(finalresult,file=paste(address,"GroupQuantification_longFormat.csv",sep=""))	
-
-		### output2 : dataMatrix
-		finalresult$Condition<-factor(finalresult$Condition, levels=rep(c(levels(data$GROUP_ORIGINAL),"Ref")))
+		### output
+		finalresult$Condition<-factor(finalresult$Condition, levels=rep(c(levels(data$GROUP_ORIGINAL))))
+		
 		finalmatrix<-as.data.frame.matrix(xtabs(LogIntensities~Protein+Condition, data=finalresult))
 		
-		#write.csv(finalmatrix,file=paste(address,"GroupQuantification_dataMatrix.csv",sep=""))	
-
 				##
+	message("Done.")
+	
 	processout<-rbind(processout,c("Finish group quantificiation - okay."))
-	write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 	
 	
 		if(format=="long") return(finalresult)
@@ -4078,13 +4958,15 @@ quantification<-function(data,type="Sample",format="matrix"){
 	}	
 	
 	
+#################################	
 ###### sample quantification		
-	if (type=="Sample"){
+	if (toupper(type)=="SAMPLE"){
 	
 		if(nlevels(data$LABEL)==2){	
 
-			data$PROTEIN<-factor(data$PROTEIN)
-
+			data$SUBJECT<-factor(data$SUBJECT)
+			data$SUBJECT_NESTED<-factor(data$SUBJECT_NESTED)
+			
 			finalresult<-data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$SUBJECT_NESTED)),Subject=rep(c(levels(data$SUBJECT_NESTED)[-1],"Ref"),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA,LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
 	
 			result<-NULL
@@ -4105,63 +4987,96 @@ quantification<-function(data,type="Sample",format="matrix"){
 	
 				sub.result<-data.frame(Protein=rep(levels(data$PROTEIN)[i],each=nlevels(sub$SUBJECT_NESTED)),Subject=rep(c(levels(sub$SUBJECT_NESTED)[-1],"Ref"),1),LogIntensities=NA, NumFeature=length(unique(sub$FEATURE)),NumPeaks=c(temp[-1,"Freq"],temp[1,"Freq"]))
 
+				repeated<-.checkRepeated(sub)
 				singleFeature<-.checkSingleFeature(sub)
 				singleSubject<-.checkSingleSubject(sub)
+				TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
 
-				if(singleFeature==TRUE){
-					#fit<-lm(ABUNDANCE ~ GROUP + RUN , data = sub)
-					fit<-lm(ABUNDANCE ~ SUBJECT_NESTED , data = sub)
-
-					message("** Protein (",levels(data$PROTEIN)[i],") has only single transition. Results may be unreliable.", "\n")
-				}	
+				MissGroupByFeature<-.checkMissGroupByFeature(sub)
+				MissRunByFeature<-.checkMissRunByFeature(sub)
+				MissSubjectByGroup<-.checkRunbyFeature(sub)
+				UnequalSubject<-.checkUnequalSubject(sub)
 	
-				if(singleFeature==FALSE){
-					if (singleSubject==TRUE){
-						fit<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = sub)
-					}
-					if (singleSubject==FALSE){
-						fit<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-					}
+	
+				## need to assigning whether interaction term is included or not
+				remove.interaction<-interference
+	
+				if ( missing.action == "nointeraction" & missing.results [ i ]){
+					remove.interaction = FALSE
+	
+					message(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
 				}
+				
+				##### fit the model
+				message(paste("Fitting the model for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				
 
+				fit<-try(.fit.quantification.sample.labeled(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,remove.interaction,scopeOfTechReplication,equalFeatureVar), silent=TRUE)
+				
 ## extrac coefficient : 
 ## if we add lmer for random
 # if(class(fit)=="lm"){ cf <- summary.lm(fit)$coefficients
 #	}else{ cf <- as.matrix(fixef(fit)) }
 # but now only fixed,
 
-				cf <- summary.lm(fit)$coefficients
+				if(class(fit)=="try-error") {
+					message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+					
+					result<-rbind(result, sub.result)
 
-				# calculate sample quantification for all levels of sample
-				a=1	
+					processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+					write.table(processout, file=finalfile, row.names=FALSE)
 					
-				for(j in 1:(nlevels(sub$SUBJECT_NESTED)-1)){
-					contrast.matrix<-rep(0,(nlevels(sub$SUBJECT_NESTED)-1))
-					contrast.matrix[j]<-1
+				}else{
 					
-					if(singleFeature==TRUE){
-						contrast<-.make.contrast.subject.quantification.single(fit,contrast.matrix,sub)
+					if(class(fit)=="lm"){
+						cf <- summary(fit)$coefficients
 					}else{
-						contrast<-.make.contrast.subject.quantification(fit,contrast.matrix,sub)
+						cf <- fixef(fit)
 					}
+
+					# calculate sample quantification for all levels of sample
+					a=1	
 					
-					sub.result[a,3]<-.estimableQuantification(cf,contrast)
-					a=a+1
-				} ## end subject_nested
+					for(j in 1:(nlevels(sub$SUBJECT_NESTED)-1)){
+						contrast.matrix<-rep(0,(nlevels(sub$SUBJECT_NESTED)-1))
+						contrast.matrix[j]<-1
+					
+						if(singleFeature==TRUE){
+							contrast<-.make.contrast.subject.quantification.single(fit,contrast.matrix,sub)
+						}else{
+							contrast<-.make.contrast.subject.quantification(fit,contrast.matrix,sub)
+						}
+					
+						if(class(fit)=="lm"){
+							sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+						}else{
+							sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+						}
+						a=a+1
+					} ## end subject_nested
 				
-				contrast<-.make.contrast.subject.quantification.reference(fit,contrast.matrix,sub)
-				sub.result[a,3]<-.estimableQuantification(cf,contrast)
+					contrast<-.make.contrast.subject.quantification.reference(fit,contrast.matrix,sub)
+						if(class(fit)=="lm"){
+							sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+						}else{
+							sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+						}
 				
-				result<-rbind(result, sub.result)
+					result<-rbind(result, sub.result)
 				
-				##
-	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
-	write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+					##
+					processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
+					write.table(processout, file=finalfile, row.names=FALSE)
+				}
 
 			} ## end-loop
 		} ##label-based	
 
 		if(nlevels(data$LABEL)==1){
+			
+			data$SUBJECT<-factor(data$SUBJECT)
+			data$SUBJECT_NESTED<-factor(data$SUBJECT_NESTED)
 			
 			finalresult<-data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$SUBJECT_NESTED)),Subject=rep(c(levels(data$SUBJECT_NESTED)),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA, LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
 			
@@ -4183,55 +5098,84 @@ quantification<-function(data,type="Sample",format="matrix"){
 				
 				sub.result<-data.frame(Protein=rep(levels(data$PROTEIN)[i],each=nlevels(sub$SUBJECT_NESTED)),Subject=rep(c(levels(sub$SUBJECT_NESTED)),1),LogIntensities=NA, NumFeature=length(unique(sub$FEATURE)),NumPeaks=temp$Freq)
 				
+				repeated<-.checkRepeated(sub)
 				singleFeature<-.checkSingleFeature(sub)
 				singleSubject<-.checkSingleSubject(sub)
+				TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
 
-				if(singleFeature==TRUE){
-					fit<-lm(ABUNDANCE~ SUBJECT_NESTED , data = sub)
-					
-					message("** Protein (",unique(sub$PROTEIN),") has only single transition. Results may be unreliable.", "\n")
-				}	
-				if(singleFeature==FALSE){
-					if (singleSubject==TRUE){
-						fit<-lm(ABUNDANCE ~ FEATURE + GROUP, data = sub)
-					}
-					if (singleSubject==FALSE){
-						fit<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + FEATURE:GROUP, data = sub)
-					}
+				MissGroupByFeature<-.checkMissGroupByFeature(sub)
+				MissRunByFeature<-.checkMissRunByFeature(sub)
+				MissSubjectByGroup<-.checkRunbyFeature(sub)
+				UnequalSubject<-.checkUnequalSubject(sub)
+	
+	
+				## need to assigning whether interaction term is included or not
+				remove.interaction<-interference
+	
+				if ( missing.action == "nointeraction" & missing.results [ i ]){
+					remove.interaction = FALSE
+	
+					message(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
 				}
+				
+				##### fit the model
+				message(paste("Fitting the model for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
 
+			fit<-try(.fit.quantification.sample.label.free(sub,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,remove.interaction,equalFeatureVar), silent=TRUE)
+			
 ## extrac coefficient : 
 ## if we add lmer for random
 # if(class(fit)=="lm"){ cf <- summary.lm(fit)$coefficients
 #	}else{ cf <- as.matrix(fixef(fit)) }
 # but now only fixed,
 
-				cf <- summary.lm(fit)$coefficients
+				if(class(fit)=="try-error") {
+					message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+					
+					result<-rbind(result, sub.result)
 
-				# calculate sample quantification for all levels of sample
-				a=1	
+					processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+					write.table(processout, file=finalfile, row.names=FALSE)
 					
-				for(j in 1:nlevels(sub$SUBJECT_NESTED)){
-					contrast.matrix<-rep(0,nlevels(sub$SUBJECT_NESTED))
-					contrast.matrix[j]<-1
+				}else{
 					
-					if(singleFeature==TRUE){
-						contrast<-.make.contrast.subject.quantification.single(fit,contrast.matrix,sub)
+					if(class(fit)=="lm"){
+						cf <- summary(fit)$coefficients
 					}else{
-						contrast<-.make.contrast.subject.quantification(fit,contrast.matrix,sub)
+						cf <- fixef(fit)
 					}
+
+					# calculate sample quantification for all levels of sample
+					a=1	
 					
-					sub.result[a,3]<-.estimableQuantification(cf,contrast)
-					a=a+1
-				}
-				result<-rbind(result, sub.result)
+					for(j in 1:nlevels(sub$SUBJECT_NESTED)){
+						contrast.matrix<-rep(0,nlevels(sub$SUBJECT_NESTED))
+						contrast.matrix[j]<-1
+					
+						if(singleFeature){
+							contrast<-.make.contrast.subject.quantification.single(fit,contrast.matrix,sub)
+						}else{
+							contrast<-.make.contrast.subject.quantification(fit,contrast.matrix,sub)
+						}
+					
+						if(class(fit)=="lm"){
+							sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+						}else{
+							sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+						}
+						a=a+1
+					}
+					result<-rbind(result, sub.result)
 				
-				##
-	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
-	write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+					##
+					processout<-rbind(processout,c(paste("Finished to quantify for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
+					write.table(processout, file=finalfile, row.names=FALSE)
+				}
 
 			} ## end-loop for each protein	
 		} ## label-free
+		
+		message("Preparing the output.")
 
 		## make new data.frame in case there are missing group
 		name<-unique(data[,c("SUBJECT_NESTED","GROUP_ORIGINAL","SUBJECT_ORIGINAL")])
@@ -4248,6 +5192,9 @@ quantification<-function(data,type="Sample",format="matrix"){
 		for(i in 1:nrow(name)){
 			finalresult[finalresult$Subject==name$SUBJECT_NESTED[i],"BioReplicate"]<-name$SUBJECT_ORIGINAL[i]
 		}
+
+		result$Subject<-as.character(result$Subject)
+		finalresult$Subject<-as.character(finalresult$Subject)
 
 		for(k in 1:nrow(result)){
 			finalresult[finalresult$Protein==result[k,"Protein"] & finalresult$Subject==result[k,"Subject"],c("LogIntensities","NumFeature","NumPeaks")]<-result[k,c("LogIntensities","NumFeature","NumPeaks")]
@@ -4282,11 +5229,486 @@ quantification<-function(data,type="Sample",format="matrix"){
 		}
 
 		#write.csv(finalmatrix,file=paste(address,"SampleQuantification_dataMatrix.csv",sep=""))		##
+	message("Done.")
+	
 	processout<-rbind(processout,c("Finish sample quantificiation - okay."))
-	write.table(processout, file="Process_quantification.txt",row.names=FALSE)
+	write.table(processout, file=finalfile, row.names=FALSE)
 
 
 		if(format=="long") return(finalresultout)
 		if(format=="matrix") return(finalmatrix)
 	}## end sample quantification		
+}
+
+
+.fit.quantification.group.labeled<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,scopeOfTechReplication,scopeOfBioReplication,remove.interaction,equalFeatureVar){
+				
+		if(singleFeature){
+			#fit<-lm(ABUNDANCE ~ GROUP + RUN , data = sub)
+						
+			### (1) fixed Subject, fixed Run
+			if(scopeOfTechReplication=="restricted" & scopeOfBioReplication=="restricted"){
+			
+				# case-control
+				if (!repeated){	
+					if(TechReplicate){
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED + GROUP + RUN , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ GROUP + RUN , data = sub)
+					}
+				}else{ ### time-course
+					if(TechReplicate){
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED + GROUP + RUN , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ SUBJECT + GROUP + RUN , data = sub)
+					}
+				}
+			}
+						
+			### (2) random Subject, fixed Run
+			if(scopeOfTechReplication=="restricted" & scopeOfBioReplication=="expanded"){
+
+				# case-control
+				if (!repeated){	
+					if(TechReplicate){
+						fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT_NESTED) + GROUP + RUN , data = sub)	
+					}else{
+						message(paste(unique(data$PROTEIN),"This protein has single feature and no technical replicate. Therefore, we can't analysis with expanded scope of biolofical replication."))
+					}
+				}else{ ### time-course
+					#if(TechReplicate){
+					#	fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN , data = sub)
+					#}else{
+						fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + GROUP + RUN , data = sub)
+					#}
+				}
+			}
+
+			### (3) fixed subject, random Run
+			if(scopeOfTechReplication=="expanded" & scopeOfBioReplication=="restricted"){
+
+				# case-control
+				if (!repeated){	
+					if(TechReplicate){
+						fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP + (1|RUN) , data = sub)
+					}else{
+						fit.full<-lmer(ABUNDANCE ~ GROUP + (1|RUN) , data = sub)
+					}
+				}else{ ### time-course
+					if(TechReplicate){
+						fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN) , data = sub)
+					}else{
+						fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP + (1|RUN) , data = sub)
+					}
+				}
+			}
+			
+		 	### (4) random subject, random Run
+			if(scopeOfTechReplication=="expanded" & scopeOfBioReplication=="expanded"){
+
+				# case-control
+				if (!repeated){	
+					if(TechReplicate){
+						fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT_NESTED) + GROUP + (1|RUN) , data = sub)
+					}else{
+						fit.full<-lmer(ABUNDANCE ~ GROUP + (1|RUN) , data = sub)
+					}
+				}else{ ### time-course
+					#if(TechReplicate){
+					#	fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + (1|RUN) , data = sub)	
+					#}else{
+						fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + GROUP + (1|RUN) , data = sub)
+					#}
+				}
+			}
+				
+		}else{ ## not single feature
+	
+			if (singleSubject){
+				if(TechReplicate){
+					fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN + GROUP:FEATURE + RUN:FEATURE, data = sub)
+				}else{
+					fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = sub)
+				}
+			}else{
+				if(scopeOfBioReplication=="restricted" & scopeOfTechReplication=="restricted"){
+	
+					## (1.1) case-control
+					if (!repeated){
+						if(!remove.interaction){
+							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+						}else{
+							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN, data = sub)
+						}
+					}else{  ## (1.2) time-course
+						if(!remove.interaction){
+							fit.full<-lm(ABUNDANCE ~ FEATURE  +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+						}else{
+							fit.full<-lm(ABUNDANCE ~ FEATURE  +  SUBJECT_NESTED  + GROUP + RUN, data = sub)
+						}
+					}	
+				} ## fixed sub, run
+		
+				if(scopeOfBioReplication=="expanded"&scopeOfTechReplication=="restricted"){
+	
+					## (2.1) case-control
+					if (!repeated){
+						if(!remove.interaction){	
+							if(!MissGroupByFeature & !MissRunByFeature){
+							
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+							}else{
+								
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = sub)		
+							}
+						}else{ ##interference==FALSE
+						
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = sub)
+						}
+					}else{  ## (2.2) time-course
+						if(!remove.interaction){	
+							if(!MissGroupByFeature & !MissRunByFeature){
+							
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+							}else{
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN, data = sub)
+							}
+						}else{  ##interference==FALSE
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + RUN, data = sub)
+						}	
+					}
+				} # random sub, fix run
+			
+				if(scopeOfBioReplication=="restricted"&scopeOfTechReplication=="expanded"){
+	
+					## (3.1) equal subject per group
+					if (!UnequalSubject){
+						if(!remove.interaction){
+							if(!MissGroupByFeature & !MissRunByFeature){
+							
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = sub)
+							}else{
+			
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN), data = sub)
+							}
+						}else{  ## interference
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN), data = sub)
+						}
+					}else{ ## (3.2) unequal subject per group
+						if(!remove.interaction){		
+							if(!MissGroupByFeature & !MissRunByFeature){
+
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = sub)
+							}else{
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL  + GROUP + (1|RUN), data = sub)
+							}			
+						}else{ ## interference==FALSE
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL  + GROUP + (1|RUN), data = sub)
+						}
+					}
+				} ## fix sub, random run
+						
+				if(scopeOfBioReplication=="expanded" & scopeOfTechReplication=="expanded"){
+	
+					## (4.1) case-control
+					if (!repeated){
+						if(!remove.interaction){
+							if(!MissGroupByFeature & !MissRunByFeature){
+							
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = sub)
+							}else{
+							
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED)  + GROUP + (1|RUN), data = sub)
+							}
+						}else{ ## interference==FALSE
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + (1|RUN), data = sub)
+						}
+					}else{  ## (4.2) time-course
+						if(!remove.interaction){	
+							if(!MissGroupByFeature & !MissRunByFeature){
+							
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = sub)
+							}else{
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + (1|RUN), data = sub)
+							}
+						}else{  ## interference==FALSE
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT)  + GROUP + (1|RUN), data = sub)
+						}
+					}	
+				} ## random run, random sub
+			} ## end single subject
+		}
+		
+		## make equal variance for feature
+	if(!equalFeatureVar & scopeOfBioReplication=="restricted" & scopeOfTechReplication=="restricted"){
+		nrepeats=3
+		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
+	}
+	
+	return(fit.full)
+}
+
+
+.fit.quantification.group.label.free<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,scopeOfTechReplication,scopeOfBioReplication,remove.interaction,equalFeatureVar){
+				
+	## for label-free : SUBJECT=SUBJECT_ORIGINAL
+		if(singleFeature){
+			#fit<-lm(ABUNDANCE ~ GROUP , data = sub)
+						
+			if (scopeOfBioReplication=="restricted"){
+				if (!repeated){ ## case-control
+					if(!TechReplicate){
+						fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP , data = sub)
+					}
+				}else{ ### repeated==TRUE, time-course
+					if(!TechReplicate){
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP, data = sub) ## SUBJECT==SUBJECT_NESTED here
+					}
+				} ## time-course
+			}
+
+			if(scopeOfBioReplication=="expanded"){
+
+				# case-control
+				if (!repeated){
+					#if(!TechReplicate){
+					#	message("*** error : can't analyze with expanded scope of BioReplicates. Use the restricted scope of BioReplicates")
+					#}else{
+						fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT_ORIGINAL) + GROUP , data = sub)
+					#}
+				}else{ ## time-course
+					#if(!TechReplicate){
+						fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT_ORIGINAL) + GROUP , data = sub)
+					#}else{
+					#	fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT)+(1|GROUP:SUBJECT), data = sub) ## SUBJECT==SUBJECT_NESTED here
+							 #}
+				} ## time-course
+			}
+
+		}else{ ## not single feature
+	
+			if(singleSubject){
+				if(!TechReplicate){
+					fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP , data = sub)
+				}else{
+					fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + GROUP:FEATURE , data = sub)
+				}
+
+			}else{ ## no random turn of run, can't do random subject
+				if(scopeOfBioReplication=="restricted"){
+					if(!remove.interaction){
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP, data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + FEATURE:GROUP, data = sub)
+					}
+				}
+							
+				if (scopeOfBioReplication=="expanded"){
+
+					# case-control
+					if (!repeated){
+						if(!remove.interaction){
+							if(!MissGroupByFeature){
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + FEATURE:GROUP , data = sub)
+      						}else{  ## MissGroupByFeature==TRUE
+      							
+      							fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
+      						}
+						}else{ ## interference==FALSE
+	  						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
+						}
+					}else{  ##time-course
+#									if(interference){
+#										if(!MissGroupByFeature){
+ #     										fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + FEATURE:GROUP , data = sub)
+#      									}else{ ## MissGroupByFeature==TRUE
+      						
+ #     										fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + GROUP, data = sub)
+  #   									}
+	#								}else{  ## interference==FALSE
+	 									fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT)  + GROUP, data = sub)
+	  #								}
+					}
+				} ## random sub
+			}
+		}
+		
+	if(!equalFeatureVar & scopeOfBioReplication=="restricted" & scopeOfTechReplication=="restricted"){
+		nrepeats=3
+		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
+	}
+
+	return(fit.full)
+}
+				
+.fit.quantification.sample.labeled<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,remove.interaction,scopeOfTechReplication,equalFeatureVar){
+	
+	if(singleFeature){
+						
+			### (1) fixed Subject, fixed Run
+			if(scopeOfTechReplication=="restricted" ){
+			
+				# case-control
+#				if (!repeated){	
+#					if(TechReplicate){
+#						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED + RUN , data = sub)
+## SUBJECT_NESTED+RUN = SUBJECT_NESTED for SUBJECT_NESTED value
+#					}else{
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED , data = sub)
+#					}
+#				}else{ ### time-course
+#					if(TechReplicate){
+#						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED + RUN , data = sub)
+# same as GROUP+SUBJECT+SUBJECT:GROUP
+#					}else{
+#						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED  , data = sub)
+#					}
+#				}
+			}
+						
+			
+			### (3) fixed subject, random Run
+			if(scopeOfTechReplication=="expanded" ){
+
+				# case-control
+#				if (!repeated){	
+					if(TechReplicate){
+						fit.full<-lmer(ABUNDANCE ~ SUBJECT_NESTED + (1|RUN) , data = sub)
+					}else{
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED , data = sub)
+					}
+#				}else{ ### time-course
+#					if(TechReplicate){
+#						fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN) , data = sub)
+#					}else{
+#						fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP + (1|RUN) , data = sub)
+#						fit.full<-lmer(ABUNDANCE ~ SUBJECT_NESTED + (1|RUN) , data = sub)
+#					}
+#				}
+			}
+			
+				
+		}else{ ## not single feature
+	
+			if (singleSubject){
+				if(TechReplicate){
+					if(scopeOfTechReplication=="restricted"){
+						fit.full<-lm(ABUNDANCE ~ FEATURE + SUBJECT_NESTED + RUN + RUN:FEATURE, data = sub)
+					}
+					if(scopeOfTechReplication=="expanded"){
+						fit.full<-lmer(ABUNDANCE ~ FEATURE + SUBJECT_NESTED + (1|RUN) + (1|RUN:FEATURE), data = sub)
+					}
+				}else{ 
+					fit.full<-lm(ABUNDANCE ~ FEATURE + SUBJECT_NESTED, data = sub)
+				}
+			}else{
+				if(scopeOfTechReplication=="restricted"){
+	
+					## (1.1) case-control
+					if (!repeated){
+						if(!remove.interaction){
+							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+						}else{
+							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN, data = sub)
+						}
+					}else{  ## (1.2) time-course
+						if(!remove.interaction){
+							fit.full<-lm(ABUNDANCE ~ FEATURE  +  SUBJECT_NESTED + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
+						}else{
+							fit.full<-lm(ABUNDANCE ~ FEATURE  +  SUBJECT_NESTED  + RUN, data = sub)
+						}
+					}	
+				} ## fixed sub, run
+					
+				if(scopeOfTechReplication=="expanded"){
+	
+					## (3.1) equal subject per group
+#					if (!UnequalSubject){
+#						if(!remove.interaction){
+#							if(!MissGroupByFeature & !MissRunByFeature){
+							
+#								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = sub)
+#							}else{
+			
+#								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + (1|RUN), data = sub)
+#							}
+#						}else{  ## interference
+#							fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + (1|RUN), data = sub)
+#						}
+#					}else{ ## (3.2) unequal subject per group
+						if(!remove.interaction){		
+							if(!MissGroupByFeature & !MissRunByFeature){
+
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = sub)
+							}else{
+								fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL  + GROUP + (1|RUN), data = sub)
+							}			
+						}else{ ## interference==FALSE
+							fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL  + GROUP + (1|RUN), data = sub)
+						}
+#					}
+				} ## fix sub, random run
+						
+			}
+		}
+	
+	if(!equalFeatureVar & scopeOfTechReplication=="restricted"){
+		nrepeats=3
+		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
+	}
+
+	return(fit.full)
+}
+		
+				
+.fit.quantification.sample.label.free<-function(sub,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,UnequalSubject,remove.interaction,equalFeatureVar){
+	
+	## only for restricted subject (here is no run term.)
+		if(singleFeature){
+			
+#				if (!repeated){ ## case-control
+#					if(!TechReplicate){
+						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED , data = sub)
+#					}else{
+#						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED , data = sub)
+#					}
+#				}else{ ### repeated==TRUE, time-course
+#					if(!TechReplicate){
+#						fit.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = sub)
+#						fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED , data = sub)
+
+#					}else{
+#						fit.full<-lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT, data = sub) ## SUBJECT==SUBJECT_NESTED here
+#					}
+#				} ## time-course
+		}else{ ## not single feature
+	
+			if(singleSubject){
+				# when single subject, there is no need to distinguish case-control and time course; fixed subject or random subject, and no need to have GXF since there is not enough degree of freedom, hence no separatation of interference
+				# GROUP=SUBJECT=SUBJECT_NESTED
+				if(!TechReplicate){
+					fit.full<-lm(ABUNDANCE ~ FEATURE + SUBJECT_NESTED , data = sub)
+				}else{
+					fit.full<-lm(ABUNDANCE ~ FEATURE + SUBJECT_NESTED + GROUP:FEATURE , data = sub)
+				}
+			}else{ ## no random turn of run, can't do random subject
+				if(!remove.interaction){
+					fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP, data = sub)
+				}else{
+					fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + FEATURE:GROUP, data = sub)
+				}			
+			}
+		}
+		
+	if(!equalFeatureVar){
+		nrepeats=3
+		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
+	}
+
+	return(fit.full)
+
 }

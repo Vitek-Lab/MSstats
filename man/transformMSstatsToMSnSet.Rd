@@ -14,7 +14,7 @@ transformMSstatsToMSnSet(data)
 \details{
 	
 \itemize{
-\item{raw : See \code{\link{RawData}} for the required data structure of raw (input) data.}
+\item{raw : See \code{\link{SRMRawData}} for the required data structure of raw (input) data.}
 \item{output : After transformation, assayData includes value of Intensity. phenoData has variables of IsotopeLabelType, Condition, BioReplicate,Run. featureData has variables of ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge.}
 }
 }
@@ -36,7 +36,7 @@ Gatto, L. and Lilly, K.S. (2012). MSnbase-an R Bioconductor package for isobaric
 \examples{
 	
 library(MSnbase)
-quant.msnset<-transformMSstatsToMSnSet(RawData)
+quant.msnset<-transformMSstatsToMSnSet(SRMRawData)
 
 }
 

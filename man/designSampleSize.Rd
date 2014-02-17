@@ -1,9 +1,11 @@
 \name{designSampleSize}
 \alias{designSampleSize}
-\title{Planning future experimental designs of label-free and label-based LC-MS, SRM, DIA experiments in sample size calculation}
-\description{Calculate sample size for future experiments of a label-free and label-based LC-MS, SRM and DIA experiment based on intensity-based linear model. Four options of the calculation: (1) number of biological replicates per condition, (2) number of peptides per protein, and (3) number of transitions per peptide, (4) power.}
+\title{Planning future experimental designs of Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiments in sample size calculation}
+\description{Calculate sample size for future experiments of a Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment based on intensity-based linear model. It is applicable to multiple types of sample preparation, including label-free workflows, workflows that use stable isotope labeled reference proteins and peptides, and workflows that use fractionation. Four options of the calculation: (1) number of biological replicates per condition, (2) number of peptides per protein, and (3) number of transitions per peptide, (4) power.}
 \usage{
-designSampleSize(data=data,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=FDR,power=power,scopeOfBioReplication="restricted",interference=TRUE)
+designSampleSize(data=data,numSample=numSample,numPep=numPep,numTran=numTran,
+	desiredFC=desiredFC,FDR=0.05,power=0.9,
+	scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -12,10 +14,11 @@ designSampleSize(data=data,numSample=numSample,numPep=numPep,numTran=numTran,des
   \item{numPep}{minimal number of peptides per protein. TRUE represents you require to calculate the sample size for this category, else you should input the exact number of peptides.}
   \item{numTran}{minimal number of transitions per peptide. TRUE represents you require to calculate the sample size for this category, else you should input the exact number of transitions.}
   \item{desiredFC}{the range of a desired fold change which includes the lower and upper values of the desired fold change.}
-  \item{FDR}{a pre-specified false discovery ratio (FDR) to control the overall false positive.}
-  \item{power}{a pre-specified statistical power which defined as the probability of detecting a true fold change. TRUE represent you require to calculate the power for this category, else you should input the average of power you expect.}
+  \item{FDR}{a pre-specified false discovery ratio (FDR) to control the overall false positive. Default is 0.05}
+  \item{power}{a pre-specified statistical power which defined as the probability of detecting a true fold change. TRUE represent you require to calculate the power for this category, else you should input the average of power you expect. Default is 0.9}
   \item{scopeOfBioReplication}{choice of scope of biological replication. "restricted"(default) represents restricted scope of biological replication to the selected individuals. "expanded" represents expanded scope of biological replication to the whole population.}
    \item{interference}{choice of interference data. TRUE(default) means data contain interference transitions and need additional model interaction to address the interference. FALSE means data contain no interference transitions and no need additional model interaction to address the interference.}
+   \item{equalFeatureVar}{logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. FALSE means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.}
 }
 
 \details{The function fits the model and uses variance components to calculate sample size. The underlying model fitting with intensity-based linear model with technical MS run replication. Data in the example is \code{\link{QuantData}}. Estimated sample size is rounded to 0 decimal.
