@@ -344,10 +344,10 @@ if(!checkMultirun){
 	}
 	
 	if ( flag ){
-		processout<-rbind(processout,c("ERROR: the input dataset has missing rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The missing rows are listed below."))
+		processout<-rbind(processout,c("ERROR: the input dataset has missing rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with ’NA’. The missing rows are listed below."))
 		write.table(processout, file=finalfile,row.names=FALSE)
 
-		 message("ERROR : the input dataset has missing rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The missing rows are listed below.")
+		 message("ERROR : the input dataset has missing rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with ’NA’. The missing rows are listed below.")
 
 		## first, which run has missing	
 #		 runstructure<-apply ( structure, 2, function ( x ) sum ( is.na ( x ) ) ) > 0
