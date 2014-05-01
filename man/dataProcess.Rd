@@ -4,7 +4,7 @@
 \description{Data pre-processing and quality control of MS runs of the original raw data into quantitative data for model fitting and group comparison. Log transformation is automatically applied and additional variables are created in columns for model fitting and group comparison process. Three options of data pre-processing and quality control of MS runs in dataProcess are (1) Transformation: logarithm transformation with base 2 or 10; (2) Normalization: to remove systematic bias between MS runs.}
 
 \usage{
-dataProcess(raw, logTrans=2, normalization="equalizeMedians",nameStandards=NULL,betweenRunInterferenceScore=FALSE,address="")	
+dataProcess(raw, logTrans=2, normalization="equalizeMedians",nameStandards=NULL,betweenRunInterferenceScore=FALSE,fillIncompleteRows=FALSE,address="")	
 }
 
 \arguments{
@@ -13,6 +13,7 @@ dataProcess(raw, logTrans=2, normalization="equalizeMedians",nameStandards=NULL,
   \item{normalization}{normalization to remove systematic bias between MS runs. There are three different normalizations supported. 'equalizeMedians'(default) represents constant normalization (equalizing the medians) based on reference signals is performed. 'quantile' represents quantile normalization based on reference signals is performed. 'globalStandards' represents normalization with global standards proteins. FALSE represents no normalization is performed.}
   \item{nameStandards}{vector of global standard peptide names. only for normalization with global standard peptides. }
  \item{betweenRunInterferenceScore}{interference is detected by a between-run-interference score. TRUE means the scores are generated automatically and stored in a .csv file. FALSE(default) means no scores are generated.}
+ \item{fillIncompleteRows}{If the input dataset has incomplete rows, FALSE(default) reports error message with list of features which have incomplete rows . TRUE adds the rows with intensity value=NA for missing peaks.}
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
 }
 

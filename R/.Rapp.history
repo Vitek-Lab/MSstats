@@ -1,0 +1,4 @@
+library(MSstats.daily)
+head(SRMRawData)
+a<-dataProcess(SRMRawData)
+head(a)

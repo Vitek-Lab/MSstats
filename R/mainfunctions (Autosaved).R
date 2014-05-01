@@ -4550,10 +4550,7 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 				if(colnames(sub)[3]=="log2FC"){
 		
 					## three different lines
-					sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
-					FCcutpos<-data.frame(logFC=log2(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
-					FCcutneg<-data.frame(logFC=(-log2(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
-		
+					pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))		
 					## three lines, with order color first and then assign linetype manual
 					pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
 				}
