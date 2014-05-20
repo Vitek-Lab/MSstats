@@ -1433,6 +1433,7 @@ if(toupper(normalization)=="GLOBALSTANDARDS"){
 
 		meanStandard<-data.frame(RUN=names(meanStandard),meanStandard)
 		combine<-merge(combine, meanStandard, by="RUN", all=TRUE)
+		colnames(combine)[i+1]<-paste("meanStandard",i,sep="")
 	}
 	
 	rownames(combine)<-combine$RUN
