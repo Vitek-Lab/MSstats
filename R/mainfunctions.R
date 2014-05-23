@@ -573,6 +573,10 @@ if(!checkMultirun){
 
 		###### second, check other some missingness
 		
+		## for missign row, need to assign before looping. need to assign at the beginning because it need either cases, with missingness or not
+		missingwork.l<-NULL
+		missingwork.h<-NULL
+			
 		## structure value should be 1 for reference and endogenous separately, if not there are missingness. if more there are duplicates.
 		
 		## if count of NA is not zero and not number of run (excluding complete missingness across runs)
@@ -602,8 +606,6 @@ if(!checkMultirun){
 		 		## get the name of Run
 		 		runID<-names(runstructure[runstructure==TRUE])
 	 
-	 			## for missign row, need to assign before looping
-		 		missingwork.l<-NULL
 			 
 	 			## then for each run, which features are missing,
 	 			for(j in 1:length(runID)){
@@ -649,10 +651,7 @@ if(!checkMultirun){
 
 		 		## get the name of Run
 		 		runID<-names(runstructure[runstructure==TRUE])
-	 
-	 			## for missign row, need to assign before looping
-		 		missingwork.h<-NULL
-			 
+	 		 
 	 			## then for each run, which features are missing,
 	 			for(j in 1:length(runID)){
 	 	
@@ -689,30 +688,31 @@ if(!checkMultirun){
 			 	} ## end loop for run ID
 			 } ## end for endogenous
 		 
-		 	## merge missing rows if fillIncompleteRows=TRUE or message.
-	 		 if(fillIncompleteRows){
-	 	 	
-	 	 		# merge with work
-	 	 		## in future, use rbindlist?? rbindlist(list(work, missingwork))
-				work<-rbind(work,missingcomplete.l, missingcomplete.h, missingwork.l,missingwork.h)
-			
-	 	 		## print message
-				message("\n DONE : Incomplete rows for missing peaks are added with intensity values=NA. \n")
-					
-				## save in process file.
-				processout<-rbind(processout,"Incomplete rows for missing peaks are added with intensity values=NA. - done, Okay")
-				write.table(processout, file=finalfile,row.names=FALSE)
-
-	 	 	}else{
-	 	 	
-	 	 		## save in process file.
-				processout<-rbind(processout,"Please check whether features in the list are generated from spectral processing tool. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
-				write.table(processout, file=finalfile,row.names=FALSE)
-			
-	 	 		stop("Please check whether features in the list are generated from spectral processing tool or not. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
-	 	 	
-	 	 	}
 	 	} ## end for flag missing
+	 	
+	 	## merge missing rows if fillIncompleteRows=TRUE or message.
+	 	if(fillIncompleteRows){
+	 	 	
+	 	 	# merge with work
+	 	 	## in future, use rbindlist?? rbindlist(list(work, missingwork))
+			work<-rbind(work,missingcomplete.l, missingcomplete.h, missingwork.l,missingwork.h)
+			
+	 	 	## print message
+			message("\n DONE : Incomplete rows for missing peaks are added with intensity values=NA. \n")
+					
+			## save in process file.
+			processout<-rbind(processout,"Incomplete rows for missing peaks are added with intensity values=NA. - done, Okay")
+			write.table(processout, file=finalfile,row.names=FALSE)
+
+	 	 }else{
+	 	 	
+	 	 	## save in process file.
+			processout<-rbind(processout,"Please check whether features in the list are generated from spectral processing tool. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
+			write.table(processout, file=finalfile,row.names=FALSE)
+			
+	 	 	stop("Please check whether features in the list are generated from spectral processing tool or not. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
+	 	 	
+	 	 }
 	
 		########### if there are duplicates measurements
 		if(flagduplicate.h){
@@ -984,7 +984,11 @@ if(!checkMultirun){
 						###### second, check other some missingness
 		
 						## structure value should be 1 for reference and endogenous separately, if not there are missingness. if more there are duplicates.
-		
+									 
+	 					## for missign row, need to assign before looping
+		 				missingwork.l<-NULL
+		 				missingwork.h<-NULL
+
 						## if count of NA is not zero and not number of run (excluding complete missingness across runs)
 						missing.l<-names(featurestructure.l[featurestructure.l!=ncol(structure.l) & featurestructure.l!=0])
 						missing.h<-names(featurestructure.h[featurestructure.h!=ncol(structure.h) & featurestructure.h!=0])
@@ -1011,9 +1015,6 @@ if(!checkMultirun){
 		 
 		 						## get the name of Run
 		 						runID<-names(runstructure[runstructure==TRUE])
-	 
-	 							## for missign row, need to assign before looping
-		 						missingwork.l<-NULL
 			 
 	 							## then for each run, which features are missing,
 	 							for(j in 1:length(runID)){
@@ -1059,9 +1060,6 @@ if(!checkMultirun){
 
 		 						## get the name of Run
 		 						runID<-names(runstructure[runstructure==TRUE])
-	 
-	 							## for missign row, need to assign before looping
-		 						missingwork.h<-NULL
 			 
 	 							## then for each run, which features are missing,
 	 							for(j in 1:length(runID)){
@@ -1774,6 +1772,18 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 		lineNameAxis<-cumGroupAxis[-nlevels(data$GROUP_ORIGINAL)]
 
 		groupName<-data.frame(RUN=c(0,lineNameAxis)+groupAxis/2+0.5,y=rep(y.limup-1,length(groupAxis)),Name=levels(data$GROUP_ORIGINAL))
+		
+		if(length(unique(data$LABEL))==2){
+			data$LABEL<-factor(data$LABEL,labels=c("Reference","Endogenous"))	
+		}else{
+			if(unique(data$LABEL)=="L"){
+				data$LABEL<-factor(data$LABEL,labels=c("Endogenous"))	
+			}
+			if(unique(data$LABEL)=="H"){
+				data$LABEL<-factor(data$LABEL,labels=c("Reference"))
+			}
+		}
+
 
 		for (i in 1:nlevels(data$PROTEIN)){	
 			sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
@@ -1783,16 +1793,6 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)
 			sub$PEPTIDE<-factor(as.character(sub$PEPTIDE))
 
-			if(length(unique(data$LABEL))==2){
-				sub$LABEL<-factor(sub$LABEL,labels=c("Reference","Endogenous"))	
-			}else{
-				if(unique(data$LABEL)=="L"){
-					sub$LABEL<-factor(sub$LABEL,labels=c("Endogenous"))	
-				}
-				if(unique(data$LABEL)=="H"){
-					sub$LABEL<-factor(sub$LABEL,labels=c("Reference"))
-				}
-			}
 
 			#sub<- sub[with(sub, order(LABEL,RUN,FEATURE)), ]
 
@@ -2044,7 +2044,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 		for (i in 1:nlevels(data$PROTEIN)){	
 			sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
 			subTemp<-sub[!is.na(sub$ABUNDANCE),]
-			subTemp$LABEL<-factor(subTemp$LABEL)	
+			#subTemp$LABEL<-factor(subTemp$LABEL)	
 			sub<-sub[with(sub, order(LABEL,RUN)),]
 			
 			## if all measurements are NA,
@@ -2054,16 +2054,16 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			}
 			
 
-			if(length(unique(subTemp$LABEL))==2){
-				label.color<-c("darkseagreen1","lightblue")
-			}else{
-				if(unique(subTemp$LABEL)=="Endogenous"){
-					label.color<-c("lightblue")	
-				}
-				if(unique(subTemp$LABEL)=="Reference"){
-					label.color<-c("darkseagreen1")
-				}
-			}
+#			if(length(unique(subTemp$LABEL))==2){
+#				label.color<-c("darkseagreen1","lightblue")
+#			}else{
+#				if(unique(subTemp$LABEL)=="Endogenous"){
+#					label.color<-c("lightblue")	
+#				}
+#				if(unique(subTemp$LABEL)=="Reference"){
+#					label.color<-c("darkseagreen1")
+#				}
+#			}
 
 			##options(show.error.messages = FALSE)
 
