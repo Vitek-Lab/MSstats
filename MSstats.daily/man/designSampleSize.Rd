@@ -3,13 +3,14 @@
 \title{Planning future experimental designs of Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiments in sample size calculation}
 \description{Calculate sample size for future experiments of a Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment based on intensity-based linear model. It is applicable to multiple types of sample preparation, including label-free workflows, workflows that use stable isotope labeled reference proteins and peptides, and workflows that use fractionation. Four options of the calculation: (1) number of biological replicates per condition, (2) number of peptides per protein, and (3) number of transitions per peptide, (4) power.}
 \usage{
-designSampleSize(data=data,numSample=numSample,numPep=numPep,numTran=numTran,
+designSampleSize(data=data,labeled=TRUE,numSample=numSample,numPep=numPep,numTran=numTran,
 	desiredFC=desiredFC,FDR=0.05,power=0.9,
 	scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{data}{name of the data set.}
+  \item{data}{'fittedmodel' in testing output from function groupComparison.}
+  \item{labeled}{choice of labeling technique. TRUE(default) represents the study using stable isotope labeled reference proteins and peptides. FALSE represents label-free study.}
   \item{numSample}{minimal number of biological replicates per condition. TRUE represents you require to calculate the sample size for this category, else you should input the exact number of biological replicates.}
   \item{numPep}{minimal number of peptides per protein. TRUE represents you require to calculate the sample size for this category, else you should input the exact number of peptides.}
   \item{numTran}{minimal number of transitions per peptide. TRUE represents you require to calculate the sample size for this category, else you should input the exact number of transitions.}
@@ -43,28 +44,26 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 # Consider quantitative data (i.e. QuantData) from yeast study.
 # A time course study with ten time points of interests and three biological replicates.
 
-head(QuantData)
-
 ## Calculate sample size for future experiments:
 
 #(1) Minimal number of biological replicates per condition
 
-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,
+designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=TRUE,numPep=3,numTran=4,
 desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
 
 #(2) Minimal number of peptides per protein
 
-designSampleSize(data=QuantData,numSample=2,numPep=TRUE,numTran=4,
+designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=2,numPep=TRUE,numTran=4,
 desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
 
 #(3) Minimal number of transitions per peptide
 
-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=TRUE,
+designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=2,numPep=3,numTran=TRUE,
 desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
 
 #(4) Power calculation
 
-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,
+designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=2,numPep=3,numTran=4,
 desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
 }
 

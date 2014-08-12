@@ -2542,8 +2542,11 @@ if(repeated==FALSE&scopeOfBioReplication=="restricted"&scopeOfTechReplication=="
 
 					
 data$PROTEIN<-factor(data$PROTEIN)	
+
+## for final result report
 out<-NULL
 outsummary<-NULL
+outfitted<-NULL
 dataafterfit<-NULL
 
 #################################
@@ -2694,7 +2697,7 @@ if ( missing.action == "nointeraction" & missing.results [ i ]){
 		processout<-rbind(processout,c(paste("error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.", sep = "")))
 		write.table(processout, file=finalfile, row.names=FALSE)
 		
-		tempresult<-list(result=NULL,valueresid=NULL, valuefitted=NULL)
+		tempresult<-list(result=NULL,valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)
 		
 		for(k in 1:nrow(contrast.matrix)){	
 			tempresult$result<-rbind(tempresult$result, data.frame(Protein=levels(data$PROTEIN)[i],Label=row.names(contrast.matrix)[k], logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA))
@@ -2703,9 +2706,11 @@ if ( missing.action == "nointeraction" & missing.results [ i ]){
 		tempresult<-temp
 	}
 
+## comparison result table
 #	out<-rbindlist(list(out,tempresult$result))
 	out<-rbind(out,tempresult$result)
 
+## for checking model assumptions
 ## add residual and fitted after fitting the model
 	if(class(temp)=="try-error") {
 		if(nrow(sub)!=0){
@@ -2728,6 +2733,9 @@ if ( missing.action == "nointeraction" & missing.results [ i ]){
 
 #	dataafterfit<-rbindlist(list(dataafterfit,sub))
 	dataafterfit<-rbind(dataafterfit,sub)
+
+## save fitted model
+	outfitted<-c(outfitted, list(tempresult$fittedmodel))
 
 ##
 	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
@@ -2765,12 +2773,12 @@ temp<-data[!is.na(data[,"ABUNDANCE"]),]
 
 if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<
 abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
-	setnames(out.all,3,"log2FC")	
+	colnames(out.all)[3]<-"log2FC"
 }
 
 if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])>
 abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
-	setnames(out.all,3,"log10FC")	
+	colnames(out.all)[3]<-"log10FC"
 }
 
 	## change the format as data.frame
@@ -2781,7 +2789,7 @@ abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
 	write.table(processout, file=finalfile, row.names=FALSE)
 
 
-finalout<-list(ComparisonResult=out.all,ModelQC=dataafterfit)
+finalout<-list(ComparisonResult=out.all, ModelQC=dataafterfit, fittedmodel=outfitted)
 return(finalout)	
 
 }
@@ -3618,7 +3626,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 		finalfitted<-fitted(fit.full)
 	}
 		
-	finalout<-list(result=allout,valueresid=finalresid, valuefitted=finalfitted)	
+	finalout<-list(result=allout,valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
 	return(finalout)
 			
 } ## .fit.model.single
@@ -3628,7 +3636,6 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 ########################################################
 .fit.model<-function(contrast.matrix,data,labeled,scopeOfBioReplication,scopeOfTechReplication,interference,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup){
 	
-
 	nrepeats=3
 	
 	## label-free : use only light intensity, need to change contrast.matrix without Group0	
@@ -3650,6 +3657,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 			if(!equalFeatureVar){
 				fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
 			}
+
 
 			## get parameter from model
 			fixedPara<-.getParameterFixed(fit.full)
@@ -4268,7 +4276,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 		finalfitted<-fitted(fit.full)
 	}
 		
-	finalout<-list(result=allout,valueresid=finalresid, valuefitted=finalfitted)	
+	finalout<-list(result=allout,valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
 
 	return(finalout)
 }	
@@ -4847,7 +4855,7 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,logBa
 #############################################
 
 
-designSampleSize<-function(data=data,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=0.05,power=0.9,scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE){
+designSampleSize<-function(data=data,labeled=TRUE,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=0.05,power=0.9,scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE){
 
 	nrepeats=3
 	
@@ -4879,56 +4887,24 @@ designSampleSize<-function(data=data,numSample=numSample,numPep=numPep,numTran=n
 	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - designSampleSize function"," "),ncol=1))
 
 	
-	## data format
-	rawinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
-	
-	if(length(setdiff(toupper(rawinput),toupper(colnames(data))))==0){
-		processout<-rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))
 
+
+	## check one TRUE or not
+	if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
+		processout<-rbind(processout,c(paste("The required input - number of sample or features : Only one value should be TRUE. - stop")))
 		write.table(processout, file=finalfile, row.names=FALSE)
 
-		stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
+		 stop("One of (numSample, numPep, numTran, power) needs to be TRUE")
 	}
 
-	
-## check one TRUE or not
-if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
-	processout<-rbind(processout,c(paste("The required input - number of sample or features : Only one value should be TRUE. - stop")))
-	write.table(processout, file=finalfile, row.names=FALSE)
-
-	 stop("One of (numSample, numPep, numTran, power) needs to be TRUE")
-}
-
-
-## check other options
-	if(!(scopeOfBioReplication=="restricted" | scopeOfBioReplication=="expanded")){
-		processout<-rbind(processout,c(paste("The required input - scopeOfBioReplication : 'scopeOfBioReplication' value is wrong. - stop")))
-		write.table(processout, file=finalfile, row.names=FALSE)
-		
-		stop("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".
-	")
-	} 
-	
-	if(!(interference==TRUE | interference==FALSE) | !is.logical(interference)){
-		processout<-rbind(processout,c(paste("The required input - interference : 'interference' value is wrong. - stop")))
+	## labeled value
+	if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))
 		write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop("'interference' must be one of TRUE or FALSE as a logical value.")
+		 stop("'labeled' must be one of TRUE or FALSE as a logical value.")
 	}
 	
-	if(!(equalFeatureVar==TRUE | equalFeatureVar==FALSE) | !is.logical(equalFeatureVar)){
-		processout<-rbind(processout,c(paste("The required input - equalFeatureVar : 'equalFeatureVar' value is wrong. - stop")))
-		write.table(processout, file=finalfile, row.names=FALSE)
-
-		 stop("'equalFeatureVar' must be one of TRUE or FALSE as a logical value.")
-	}
-	
-	if(equalFeatureVar==FALSE & scopeOfBioReplication=="expanded"){
-		message("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication..")
-		
-		processout<-rbind(processout,c("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication."))
-		write.table(processout, file=finalfile, row.names=FALSE)
-	}
 	
 	## all input
 		processout<-rbind(processout,c(paste("number of sample = ",numSample,sep="")))
@@ -4937,64 +4913,25 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 		processout<-rbind(processout,c(paste("Desired fold change = ",paste(desiredFC,collapse=" - "),sep="")))
 		processout<-rbind(processout,c(paste("FDR = ",FDR,sep="")))
 		processout<-rbind(processout,c(paste("Power = ", power,sep="")))
-		processout<-rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))
-		processout<-rbind(processout,c(paste("interference = ", interference,sep="")))
-		processout<-rbind(processout,c(paste("equalFeatureVar = ", equalFeatureVar,sep="")))
 
 		write.table(processout, file=finalfile, row.names=FALSE)
 
-
-
-## check whether case-control(FALSE) or time-course(TRUE)
-	repeated<-.checkRepeated(data)
-	
-	if(repeated){ 
-		processout<-rbind(processout,c(paste("Time course design of experiment - okay")))
-	}else{
-		processout<-rbind(processout,c(paste("Case control design of experiment - okay")))
-
-	}
-	write.table(processout, file=finalfile, row.names=FALSE)
-
-	
-	if (nlevels(data$LABEL)==1){
+	## for label-free experiment
+	if (!labeled){
 		
 		sigma.error<-NULL	
-		VarComponent<-data.frame(Protein=levels(data$PROTEIN),Error=NA,Subject=NA,GroupBySubject=NA)
+		VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
 
-		for (i in 1:nlevels(data$PROTEIN)){
+		for (i in 1:length(data)){
 			
-			sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
-
-			sub<-sub[!is.na(sub$ABUNDANCE),]
-			sub$GROUP<-factor(sub$GROUP)
-			sub$SUBJECT<-factor(sub$SUBJECT)
-			sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	
-			sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)
-			sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)
-			sub$FEATURE<-factor(sub$FEATURE)	
-			sub$RUN<-factor(sub$RUN)
-
-			repeated<-.checkRepeated(sub)
-			singleFeature<-.checkSingleFeature(sub)
-			singleSubject<-.checkSingleSubject(sub)
-			TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
-
-			MissGroupByFeature<-.checkMissGroupByFeature(sub)
-			MissRunByFeature<-.checkMissRunByFeature(sub)
-			MissSubjectByGroup<-.checkRunbyFeature(sub)
-			#UnequalSubject<-.checkUnequalSubject(sub)
-
 			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
 			
-						
-			fit.full<-try(.fit.samplesize.labelfree(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar), silent=TRUE)
+			fit.full<-data[[i]]
 
-				if(class(fit.full)=="try-error") {
-#						message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
-						
-						processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
-						write.table(processout, file=finalfile, row.names=FALSE)
+				## if fit.full==NA (class(fit.full)=="try-error)
+				if(is.null(fit.full)) {
+					## !!!!! but if we have NULL for last protein?
+					next
 					
 				}else{
 			
@@ -5126,44 +5063,22 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 	} ## label-free
 
 
-	if (nlevels(data$LABEL)==2){
+	## isotope labeled experiment
+	if (labeled){
 		
 		sigma.error<-NULL	
-		VarComponent<-data.frame(Protein=levels(data$PROTEIN),Error=NA,Subject=NA,GroupBySubject=NA)
+		VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
 
-		for (i in 1:nlevels(data$PROTEIN)){
+		for (i in 1:length(data)){
 			
-			sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
-
-			sub<-sub[!is.na(sub$ABUNDANCE),]
-			sub$GROUP<-factor(sub$GROUP)
-			sub$SUBJECT<-factor(sub$SUBJECT)
-			sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	
-			sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)
-			sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)
-			sub$FEATURE<-factor(sub$FEATURE)	
-			sub$RUN<-factor(sub$RUN)
-			
-			repeated<-.checkRepeated(sub)
-			singleFeature<-.checkSingleFeature(sub)
-			singleSubject<-.checkSingleSubject(sub)
-			TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
-
-			MissGroupByFeature<-.checkMissGroupByFeature(sub)
-			MissRunByFeature<-.checkMissRunByFeature(sub)
-			MissSubjectByGroup<-.checkRunbyFeature(sub)
-			#UnequalSubject<-.checkUnequalSubject(sub)
-
 			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
 			
-			fit.full<-try(.fit.samplesize.labeled(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar), silent=TRUE)
+			fit.full<-data[[i]]
 
-				if(class(fit.full)=="try-error") {
-#						message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
-						
-						processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
-						write.table(processout, file=finalfile, row.names=FALSE)
-					
+				## if fit.full==NA (class(fit.full)=="try-error)
+				if(is.null(fit.full)) {
+					next
+
 				}else{
 
 					if(class(fit.full)!="mer"){
@@ -5285,139 +5200,6 @@ if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){
 			}
 		} # power is numeric
 	} ## label-based
-}
-
-.fit.samplesize.labelfree<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar){
-				
-	if(singleFeature){
-		fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
-	}else{
-		if (singleSubject){
-			if(!TechReplicate){
-				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + GROUP:FEATURE, data = sub)
-			}else{
-				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP, data = sub)
-			}
-		}else{
-		
-			# (1) Subject:F
-			if(scopeOfBioReplication=="restricted"){
-							
-				##case-control
-				if(!repeated){
-					if(interference){
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP  + FEATURE:GROUP , data = sub)
-					}else{
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP  , data = sub)
-					}
-				}else{
-				## time-course
-					if(interference){
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP  + FEATURE:GROUP , data = sub)
-					}else{
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP , data = sub)
-					}
-				}
-			}
-		
-			# (2) Subject:R
-			if(scopeOfBioReplication=="expanded"){
-			
-				# case-control
-				if (!repeated){
-					if(interference){
-						if(!MissGroupByFeature){
-      						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + FEATURE:GROUP , data = sub)
-      					}else{  ## MissGroupByFeature==TRUE
-     						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
-      					}
-					}else{ ## interference==FALSE
-	  					fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = sub)
-					}
-				}else{  ##time-course
-					if(interference){
-						if(!MissGroupByFeature){
-      						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + FEATURE:GROUP , data = sub)
-      					}else{ ## MissGroupByFeature==TRUE
-      						fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP, data = sub)
-     					}
-					}else{  ## interference==FALSE
-	  					fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP, data = sub)
-	  				}
-	  			}			
-			}
-		}
-	} ## singleSub is FALSE	
-
-	## make equal variance for feature
-	if(!equalFeatureVar & scopeOfBioReplication=="restricted"){
-		nrepeats=3
-		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
-	}
-			
-	return(fit.full)
-}
-
-.fit.samplesize.labeled<-function(sub,repeated,singleFeature, singleSubject, TechReplicate, MissGroupByFeature,MissRunByFeature,MissSubjectByGroup,scopeOfBioReplication,interference,equalFeatureVar){
-
-	if(singleFeature){
-		fit.full<-lm(ABUNDANCE ~ GROUP , data = sub)
-	}else{
-		if (singleSubject){ ## single subject
-			if(TechReplicate){
-				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN + GROUP:FEATURE + RUN:FEATURE, data = sub)
-			}else{
-				fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = sub)
-			}
-		}else{
-		
-			# (1) Subject: F
-			if(scopeOfBioReplication=="restricted"){
-			
-				## case-control
-				if(!repeated){
-					if(interference){
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-					}else{
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN, data = sub)		
-					}
-				}else{ ## time-course
-					if(interference){
-							fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-					}else{
-						fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + RUN, data = sub)
-					}	
-				}
-			}
-		
-			# (2) Subject: R
-			if(scopeOfBioReplication=="expanded"){
-			
-				## case-control
-				if(!repeated){
-					if(!MissGroupByFeature & !MissRunByFeature & interference){
-						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-					}else{
-						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = sub)
-					}
-				}else{  # time-course
-					if(!MissGroupByFeature & !MissRunByFeature & interference){
-						fit.full<-lmer(ABUNDANCE ~ FEATURE + (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = sub)
-					}else{
-						fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN, data = sub)
-					}
-				}
-			}
-		}
-	}
-			
-	## make equal variance for feature
-	if(!equalFeatureVar & scopeOfBioReplication=="restricted"){
-		nrepeats=3
-		fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats)
-	}
-				
-	return(fit.full)
 }
 
 

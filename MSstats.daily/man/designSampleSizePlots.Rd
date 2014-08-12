@@ -34,22 +34,22 @@ head(QuantData)
 
 #(1) Minimal number of biological replicates per condition
 
-result.sample<-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+result.sample<-designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=TRUE,numPep=3,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
 designSampleSizePlots(data=result.sample)
 
 #(2) Minimal number of peptides per protein
 
-result.peptide<-designSampleSize(data=QuantData,numSample=2,numPep=TRUE,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
+result.peptide<-designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=2,numPep=TRUE,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
 designSampleSizePlots(data=result.peptide)
 
 #(3) Minimal number of transitions per peptide
 
-result.tran<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=TRUE,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
+result.tran<-designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=2,numPep=3,numTran=TRUE,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
 designSampleSizePlots(data=result.tran)
 
 #(4) Power
 
-result.power<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
+result.power<-designSampleSize(data=testResultMultiComparisons$fittedmodel,labeled=TRUE,numSample=2,numPep=3,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
 designSampleSizePlots(data=result.power)
 
 
