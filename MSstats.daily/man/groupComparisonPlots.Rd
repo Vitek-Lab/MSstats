@@ -5,7 +5,7 @@
 
 \usage{
 groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,
-	ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,
+	logBase.pvalue=10,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,
 	x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4,legend.size=7,
 	ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", 
 	width=10, height=10, which.Comparison="all", address="")
@@ -16,8 +16,9 @@ groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,
   \item{type}{choice of visualization. "VolcanoPlot" represents volcano plot of log fold changes and adjusted p-values for each comparison separately. "Heatmap" represents heatmap of adjusted p-values for multiple comparisons. "ComparisonPlot" represents comparison plot of log fold changes for multiple comparisons per protein.}
   \item{sig}{FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.}
   \item{FCcutoff}{for volcano plot or heatmap, whether involve fold change cutoff or not. FALSE (default) means no fold change cutoff is applied for significance analysis. FCcutoff = specific value means specific fold change cutoff is applied.}
-  \item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.}
-  \item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.}
+  \item{logBase.pvalue}{for volcano plot or heatmap, (-) logarithm transformation of adjusted p-value with base 2 or 10(default).}
+  \item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.}
+  \item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.}
   \item{xlimUp}{for Volcano plot, the limit for x-axis. FALSE (default) for  use maximum for absolute value of log-fold change or 3 as default if maximum for absolute value of log-fold change is less than 3.}
   \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}
   \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
@@ -36,7 +37,7 @@ groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,
 
 \details{
 \itemize{
-\item{Volcano plot : illustrate actual log-fold changes and adjusted p-values for each comparison separately with all proteins. The x-axis is the log fold change. The base of logarithm transformation is the same as specified in "logTrans" from \code{\link{dataProcess}}. The y-axis is the negative log2 adjusted p-values. The horizontal dashed line represents the FDR cutoff. The points below the FDR cutoff line are non-significantly abundant proteins (colored in black). The points above the FDR cutoff line are significantly abundant proteins (colored in red/blue for up-/down-regulated). If fold change cutoff is specified (FCcutoff = specific value), the points above the FDR cutoff line but within the FC cutoff line are non-significantly abundant proteins (colored in black)/}
+\item{Volcano plot : illustrate actual log-fold changes and adjusted p-values for each comparison separately with all proteins. The x-axis is the log fold change. The base of logarithm transformation is the same as specified in "logTrans" from \code{\link{dataProcess}}. The y-axis is the negative log2 or log10 adjusted p-values. The horizontal dashed line represents the FDR cutoff. The points below the FDR cutoff line are non-significantly abundant proteins (colored in black). The points above the FDR cutoff line are significantly abundant proteins (colored in red/blue for up-/down-regulated). If fold change cutoff is specified (FCcutoff = specific value), the points above the FDR cutoff line but within the FC cutoff line are non-significantly abundant proteins (colored in black)/}
 
 \item{Heatmap : illustrate up-/down-regulated proteins for multiple comparisons with all proteins. Each column represents each comparison of interest. Each row represents each protein. Color red/blue represents proteins in that specific comparison are significantly up-regulated/down-regulated proteins with FDR cutoff and/or FC cutoff. The color scheme shows the evidences of significance. The darker color it is, the stronger evidence of significance it has. Color gold represents proteins are not significantly different in abundance.}
 
@@ -70,23 +71,23 @@ testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=Quan
 testResultMultiComparisons$ComparisonResult
 
 # Volcano plot with FDR cutoff = 0.05 and no FC cutoff
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",address="Ex1_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",logBase.pvalue=2,address="Ex1_")
 
 # Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, and no protein name displayed
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, ylimUp=100, ProteinName=FALSE,address="Ex2_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,address="Ex2_")
 
 # show only 'T3-T1' comparisons
 # Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, and no protein name displayed
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, ylimUp=100, ProteinName=FALSE,which.Comparison="T3-T1",address="Ex3_")
+# groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,which.Comparison="T3-T1",address="Ex3_")
 
 # Heatmap with FDR cutoff = 0.05
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",address="Ex1_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap", logBase.pvalue=2, address="Ex1_")
 
 # Heatmap with FDR cutoff = 0.05 and FC cutoff = 70
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",FCcutoff=70,address="Ex2_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",FCcutoff=70, logBase.pvalue=2, address="Ex2_")
 
 # Comparison Plot
 groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="ComparisonPlot",address="Ex1_")

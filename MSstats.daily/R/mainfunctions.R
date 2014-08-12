@@ -133,7 +133,7 @@ featureNames(e)<-paste(fData(e)$PEPTIDESEQUENCE,fData(e)$PRECURSORCHARGE, fData(
 #############################################
 #############################################
 
-dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE, fillIncompleteRows=FALSE, address=""){
+dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE, fillIncompleteRows=FALSE, FeatureSelection=FALSE,lambda=seq(0,1.4,0.1),eta=0.05, address=""){
 	
 	## save process output in each step
 	allfiles<-list.files()
@@ -157,6 +157,20 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
 
 	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - dataProcess function"," "),ncol=1))
 	
+	#######################################	
+	#### make case-insensitive for function options
+	#######################################	
+
+	normalization<-toupper(normalization)
+#	nameStandards<-toupper(nameStandards)
+#	betweenRunInterferenceScore<-toupper(betweenRunInterferenceScore)
+#	fillIncompleteRows<-toupper(fillIncompleteRows)
+	
+
+	
+	####################################
+	#### Check correct option or input
+
 	#### check right column in input
 	requiredinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
 	
@@ -205,6 +219,33 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
 		
 		stop("Colon(:) is invalid in FragmentIon column. Please replace with other entry. \n")
 	}
+	
+	##### check logTrans is 2,10 or not
+	if(logTrans!=2 & logTrans!=10){
+		processout<-rbind(processout,c("ERROR : Logarithm transformation : log2 or log10 only - stop"))
+		write.table(processout, file=finalfile,row.names=FALSE)
+	
+		stop("Only log2 or log10 are posssible.\n")
+	}
+	
+	##### check no row for some feature : balanced structure or not
+
+	if(!(fillIncompleteRows==TRUE | fillIncompleteRows==FALSE) | !is.logical(fillIncompleteRows)){
+		processout<-rbind(processout,c(paste("The required input - fillIncompleteRows : 'fillIncompleteRows' value is wrong. It should be either TRUE or FALSE. - stop")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+
+		stop("'fillIncompleteRows' must be one of TRUE or FALSE as a logical value.")
+	}
+	
+	##### need the names of global standards
+	if(!is.element("NONE",normalization) & !is.element("FALSE",normalization) & is.element("GLOBALSTANDARDS",normalization) & is.null(nameStandards)){
+		
+		processout<-rbind(processout,c("ERROR : For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input."))
+		write.table(processout, file=finalfile,row.names=FALSE)
+		
+		stop ("For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input." )
+	}
+	
 	
 #######################################	
 #### here, need to get standard protein name
@@ -272,13 +313,6 @@ write.table(processout, file=finalfile,row.names=FALSE)
 
 
 ############## log transformation
-## check logTrans is 2,10 or not
-if(logTrans!=2 & logTrans!=10){
-	processout<-rbind(processout,c("ERROR : Logarithm transformation : log2 or log10 only - stop"))
-write.table(processout, file=finalfile,row.names=FALSE)
-	
-	stop("Only log2 or log10 are posssible.\n")
-}
 
 ## based on logTrans option, assign log transformation
 # remove log2 or log10 intensity
@@ -338,17 +372,10 @@ if(checkMultirun){ ## when checkMultirun is TRUE, it means there are more than 1
 ## check no value for some feature : balanced structure or not
 ## need to separate label-free or label-based
 
-if(!(fillIncompleteRows==TRUE | fillIncompleteRows==FALSE) | !is.logical(fillIncompleteRows)){
-		processout<-rbind(processout,c(paste("The required input - fillIncompleteRows : 'fillIncompleteRows' value is wrong. It should be either TRUE or FALSE. - stop")))
-		write.table(processout, file=finalfile, row.names=FALSE)
+	processout<-rbind(processout,c(paste("fillIncompleteRows = ",fillIncompleteRows,sep="")))
+	write.table(processout, file=finalfile, row.names=FALSE)
 
-		 stop("'fillIncompleteRows' must be one of TRUE or FALSE as a logical value.")
-}else{
-		processout<-rbind(processout,c(paste("fillIncompleteRows = ",fillIncompleteRows,sep="")))
-		write.table(processout, file=finalfile, row.names=FALSE)
-}
 
-	
 ## only 1 method
 	
 if(!checkMultirun){
@@ -490,6 +517,9 @@ if(!checkMultirun){
 		
 		
 		###### first, check some features which completely missing across run
+		missingcomplete.l<-NULL	
+		missingcomplete.h<-NULL	
+		
 		
 		### 1. reference peptides
 		featurestructure.h<-apply(structure.h, 1, function (x) sum(is.na(x)))
@@ -508,8 +538,6 @@ if(!checkMultirun){
 			### add missing rows if option is TRUE
 			if(fillIncompleteRows){
 				
-				missingcomplete.h<-NULL
-
 				# get unique Run information
 				nameID<-unique(work.h[,c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED","RUN","METHOD")])
 				
@@ -547,8 +575,6 @@ if(!checkMultirun){
 			
 			### add missing rows if option is TRUE
 			if(fillIncompleteRows){
-				
-				missingcomplete.l<-NULL
 
 				# get unique Run information
 				nameID<-unique(work.l[,c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED","RUN","METHOD")])
@@ -704,7 +730,7 @@ if(!checkMultirun){
 			processout<-rbind(processout,"Incomplete rows for missing peaks are added with intensity values=NA. - done, Okay")
 			write.table(processout, file=finalfile,row.names=FALSE)
 
-	 	 }else{
+	 	 }else if(!is.null(missingcomplete.l) | !is.null(missingcomplete.h) | !is.null(missingwork.l) | !is.null(missingwork.l) ){
 	 	 	
 	 	 	## save in process file.
 			processout<-rbind(processout,"Please check whether features in the list are generated from spectral processing tool. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
@@ -727,7 +753,7 @@ if(!checkMultirun){
 	 	
 	 			nameID<-unique(work[work$RUN==runID[j],c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED","RUN","METHOD")])
 	 		
-	 			featureID<-structure[,colnames(structure)==runID[j]]
+	 			featureID<-structure.h[,colnames(structure.h)==runID[j]]
 	 			finalfeatureID<-featureID[!is.na(featureID) & featureID>1]
 	 	
 	 			message(paste("*** Subject : ", as.character(nameID[,"SUBJECT_ORIGINAL"]) ,", Condition : ", as.character(nameID[,"GROUP_ORIGINAL"]), " has multiple rows (duplicate rows) for some REFERENCE features (", paste(names(finalfeatureID), collapse=", "),")", sep="" ))
@@ -756,7 +782,7 @@ if(!checkMultirun){
 	 	
 	 			nameID<-unique(work[work$RUN==runID[j],c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED","RUN","METHOD")])
 	 		
-	 			featureID<-structure[,colnames(structure)==runID[j]]
+	 			featureID<-structure.l[,colnames(structure.l)==runID[j]]
 	 			finalfeatureID<-featureID[!is.na(featureID) & featureID>1]
 	 	
 	 			message(paste("*** Subject : ", as.character(nameID[,"SUBJECT_ORIGINAL"]) ,", Condition : ", as.character(nameID[,"GROUP_ORIGINAL"]), " has multiple rows (duplicate rows) for some ENDOGENOUS features (", paste(names(finalfeatureID), collapse=", "),")", sep="" ))
@@ -900,7 +926,6 @@ if(!checkMultirun){
 						structure.l = tapply ( work.l$ABUNDANCE, list ( work.l$FEATURE, work.l$RUN ) , function ( x ) length ( x ) ) 
 						structure.h = tapply ( work.h$ABUNDANCE, list ( work.h$FEATURE, work.h$RUN ) , function ( x ) length ( x ) ) 
 						
-						###### first, check some features which completely missing across run
 						### 1. reference peptides
 						featurestructure.h<-apply(structure.h, 1, function (x) sum(is.na(x)))
 		
@@ -917,9 +942,7 @@ if(!checkMultirun){
 			
 							### add missing rows if option is TRUE
 							if(fillIncompleteRows){
-				
-								missingcomplete.h<-NULL
-
+								
 								# get unique Run information
 								nameID<-unique(work.h[,c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED","RUN","METHOD")])
 				
@@ -957,8 +980,6 @@ if(!checkMultirun){
 			
 							### add missing rows if option is TRUE
 							if(fillIncompleteRows){
-				
-								missingcomplete.l<-NULL
 
 								# get unique Run information
 								nameID<-unique(work.l[,c("SUBJECT_ORIGINAL","GROUP_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED","RUN","METHOD")])
@@ -984,10 +1005,6 @@ if(!checkMultirun){
 						###### second, check other some missingness
 		
 						## structure value should be 1 for reference and endogenous separately, if not there are missingness. if more there are duplicates.
-									 
-	 					## for missign row, need to assign before looping
-		 				missingwork.l<-NULL
-		 				missingwork.h<-NULL
 
 						## if count of NA is not zero and not number of run (excluding complete missingness across runs)
 						missing.l<-names(featurestructure.l[featurestructure.l!=ncol(structure.l) & featurestructure.l!=0])
@@ -1119,7 +1136,7 @@ if(!checkMultirun){
 				processout<-rbind(processout,"Incomplete rows for missing peaks are added with intensity values=NA. - done, Okay")
 				write.table(processout, file=finalfile,row.names=FALSE)
 
-	 	 	}else{
+	 	 	}else if(!is.null(missingcomplete.l) | !is.null(missingcomplete.h) | !is.null(missingwork.l) | !is.null(missingwork.l) | !is.null(missingwork)){
 	 	 	
 	 	 		## save in process file.
 				processout<-rbind(processout,"Please check whether features in the list are generated from spectral processing tool. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
@@ -1143,7 +1160,6 @@ if(!checkMultirun){
 ##############################
 ## factorize GROUP, SUBJECT, GROUP_ORIGINAL, SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN
 
-
 work$PROTEIN<-factor(work$PROTEIN)
 work$PEPTIDE<-factor(work$PEPTIDE)
 work$TRANSITION<-factor(work$TRANSITION)
@@ -1166,11 +1182,10 @@ processout<-rbind(processout,c("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGI
 write.table(processout, file=finalfile,row.names=FALSE)
 
 
-
 ############################################################
 ## Normalization : 
 
-if(!(toupper(normalization)=="NONE" | toupper(normalization)=="FALSE" | toupper(normalization)=="EQUALIZEMEDIANS" | toupper(normalization)=="QUANTILE" | toupper(normalization)=="GLOBALSTANDARDS")){
+if(!(normalization=="NONE" | normalization=="FALSE" | normalization=="EQUALIZEMEDIANS" | normalization=="QUANTILE" | normalization=="GLOBALSTANDARDS")){
 		processout<-rbind(processout,c(paste("The required input - normalization : 'normalization' value is wrong. - stop")))
 		write.table(processout, file=finalfile, row.names=FALSE)
 		
@@ -1179,14 +1194,14 @@ if(!(toupper(normalization)=="NONE" | toupper(normalization)=="FALSE" | toupper(
 
 ############################################################
 ## Normalization : option 0. none
-if(toupper(normalization)=="NONE" | toupper(normalization)=="FALSE"){ ## after 'toupper', FALSE becomes character.
+if(is.element("NONE",normalization) | is.element("FALSE",normalization)){ ## after 'toupper', FALSE becomes character.
 	processout<-rbind(processout,c("Normalization : no normalization - okay"))
 	write.table(processout, file=finalfile,row.names=FALSE)
 }
 
 ############################################################
 ## Normalization : option 1. constant normalization , equalize medians
-if(toupper(normalization)=="EQUALIZEMEDIANS"){
+if(!is.element("NONE",normalization) & !is.element("FALSE",normalization) & is.element("EQUALIZEMEDIANS",normalization)){
 	
 #	if(!checkMultirun){
 #		if(nlevels(work$LABEL)==1){
@@ -1258,7 +1273,7 @@ if(toupper(normalization)=="EQUALIZEMEDIANS"){
 
 ############################################################
 ## Normalization : option 2. quantile normalization
-if(toupper(normalization)=="QUANTILE"){
+if(!is.element("NONE",normalization) & !is.element("FALSE",normalization) & is.element("QUANTILE",normalization)){
 	
 	
 	if(nlevels(work$LABEL)==1){
@@ -1315,7 +1330,8 @@ if(toupper(normalization)=="QUANTILE"){
 			namerun<-unique(work[work$METHOD==nmethod[j],"RUN"])
 		
 			##### for label-based, make quantile normalization for reference
-			worktemp<-work[which(work$RUN %in% namerun & work$LABEL=="H" & !is.na(work$INTENSITY)),]
+			#worktemp<-work[which(work$RUN %in% namerun & work$LABEL=="H" & !is.na(work$INTENSITY)),] ## because for sparse of reference
+			worktemp<-work[which(work$RUN %in% namerun & work$LABEL=="H"),]
 			worktemp$RUN<-factor(worktemp$RUN)
 			worktemp$FEATURE<-factor(worktemp$FEATURE)
 			
@@ -1336,7 +1352,8 @@ if(toupper(normalization)=="QUANTILE"){
 			quantilelong.h<-data.frame(quantilelong.h, LABEL="H")
 		
 			##### endogenous, in order to applying
-			worktemp.l<-work[which(work$RUN %in% namerun & work$LABEL=="L" & !is.na(work$INTENSITY)),]
+			#worktemp.l<-work[which(work$RUN %in% namerun & work$LABEL=="L" & !is.na(work$INTENSITY)),] ## because for sparse of reference
+			worktemp.l<-work[which(work$RUN %in% namerun & work$LABEL=="L"),]
 			worktemp.l$RUN<-factor(worktemp.l$RUN)
 			worktemp.l$FEATURE<-factor(worktemp.l$FEATURE)
 
@@ -1382,16 +1399,7 @@ if(toupper(normalization)=="QUANTILE"){
 	
 ############################################################
 ## Normalization : option 3. global standards - for endogenous
-if(toupper(normalization)=="GLOBALSTANDARDS"){
-	
-	## need the names of global standards
-	if(is.null(nameStandards)){
-		
-		processout<-rbind(processout,c("ERROR : For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input."))
-		write.table(processout, file=finalfile,row.names=FALSE)
-		
-		stop ("For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input." )
-	}
+if(!is.element("NONE",normalization) & !is.element("FALSE",normalization) & is.element("GLOBALSTANDARDS",normalization)){
 	
 	work$RUN<-factor(work$RUN)
 	combine<-data.frame(RUN=levels(work$RUN))
@@ -1412,7 +1420,7 @@ if(toupper(normalization)=="GLOBALSTANDARDS"){
 			nameProtein<-allProtein[grep(nameStandards[i],allProtein)]
 			
 			if(length(nameProtein)!=0){
-				tempstandard<-work[work$PROTEIN==nameProtein,]
+				tempStandard<-work[work$PROTEIN==nameProtein,]
 			}else{
 				processout<-rbind(processout,c(paste("global standard peptides or proteins, ",nameStandards[i] ,", is not in dataset. Please check whether 'nameStandards' input is correct or not.")))
 				write.table(processout, file=finalfile,row.names=FALSE)
@@ -1507,6 +1515,35 @@ if(betweenRunInterferenceScore){
 	processout<-rbind(processout,c("Between Run Interference Score is not calculated."))
 	write.table(processout, file=finalfile,row.names=FALSE)
 }
+
+
+
+
+##############################
+## featureSelection
+## (1) remove noisy feature
+## (2) rank the feature
+## (3) decision rule: minimize standard error
+
+if(FeatureSelection==TRUE){
+	tempfeature<-try(.featureSelection1(work,lambda,eta, address),silent=TRUE)
+
+	if(class(tempfeature)=="try-error") {
+		message("*** error : can't select the best features. Now use all features.")
+		
+		processout<-rbind(processout,c(paste("error : can't select the best features. Now use all features.")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+		
+		work<-work
+		
+	}else{
+		work<-tempfeature
+	}
+}
+
+
+
+
 
 ####### check missingness 
 ####### transitions are completely missing in one condition : missingness #######
@@ -4245,11 +4282,55 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 #############################################
 
 
-groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4, legend.size=7,ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", width=10, height=10, which.Comparison="all", address=""){
+groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,logBase.pvalue=10,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4, legend.size=7,ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", width=10, height=10, which.Comparison="all", address=""){
+	
+	## save process output in each step
+	allfiles<-list.files()
+	filenaming<-"msstats"
 
-if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0){
+	if(length(grep(filenaming,allfiles))==0){
+		
+		finalfile<-"msstats.log"
+		processout<-NULL
+			
+	}else{
+		
+		num<-0
+		finalfile<-"msstats.log"
+
+		while(is.element(finalfile,allfiles)){
+			num<-num+1
+			lastfilename<-finalfile ## in order to rea
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")
+		}
+		
+		finalfile<-lastfilename
+		processout<-as.matrix(read.table(finalfile, header=T, sep="\t"))
+	}
+	
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - groupComparisonPlots function"," "),ncol=1))
+	
+	
+	### make upper letter
+	type<-toupper(type)
+
+	if(length(setdiff(type,c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0){
+	
+		processout<-rbind(processout,c(paste("Input for type=",type,". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".",sep="")))
+		write.table(processout, file=finalfile,row.names=FALSE)
+		
 		stop(paste("Input for type=",type,". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".",sep=""))
 	}
+	
+	##### check logBase.pvalue is 2,10 or not
+	if(logBase.pvalue!=2 & logBase.pvalue!=10){
+		processout<-rbind(processout,c("ERROR : (-) Logarithm transformation for adjusted p-values : log2 or log10 only - stop"))
+		write.table(processout, file=finalfile,row.names=FALSE)
+	
+		stop("Only -log2 or -log10 for logarithm transformation for adjusted p-values are posssible.\n")
+	}
+	
+	
 		#### choose comparison to draw plots
 		
 		if(which.Comparison!="all"){
@@ -4260,6 +4341,10 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 		
 				## message if name of comparison is wrong.
 				if(length(setdiff(temp.name,unique(data$Label)))>0)
+				
+					processout<-rbind(processout,paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "),sep=" "))
+					write.table(processout, file=finalfile,row.names=FALSE)
+		
 					stop(paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "),sep=" "))
 			}
 					
@@ -4291,7 +4376,7 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 ## Heatmap
 #######################
 
-	if (toupper(type)=="HEATMAP"){
+	if (type=="HEATMAP"){
 		
 		#### check whether there is only one protein or not,
 		if(length(unique(data$Protein))<=1){
@@ -4303,14 +4388,28 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 			stop("At least two comparisons are needed for heatmaps.")
 		}
 			
-		y.limUp <-30
+		if(logBase.pvalue==2){
+			y.limUp <-30
+		}
+		
+		if(logBase.pvalue==10){
+			y.limUp <-10
+		}
+
 		if(is.numeric(ylimUp)) y.limUp<-ylimUp 
 
 		## when NA, change it
 		#data$adj.pvalue[is.na(data$adj.pvalue)]<-1 ## missing will be grey
 		
-		data$adj.pvalue[data$adj.pvalue< 2^(-y.limUp)]<-2^(-y.limUp)
-
+		if(logBase.pvalue==2){
+			data$adj.pvalue[data$adj.pvalue<2^(-y.limUp)]<-2^(-y.limUp)
+		}
+			
+		if(logBase.pvalue==10){
+			data$adj.pvalue[data$adj.pvalue<10^(-y.limUp)]<-10^(-y.limUp)
+		}
+			
+			
 		## if FCcutoff is assigned, make p-value insignificant.
 		if(is.numeric(FCcutoff)){
 			if(colnames(data)[3]=="log2FC"){
@@ -4327,7 +4426,14 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 		for (i in 1:nlevels(data$Label)){
 			
 			sub<-data[data$Label==levels(data$Label)[i],]
-			temp<- -log2(sub$adj.pvalue)*sign(sub[,3])
+			
+			if(logBase.pvalue==2){
+				temp<- -log2(sub$adj.pvalue)*sign(sub[,3])
+			}
+			
+			if(logBase.pvalue==10){
+				temp<- -log10(sub$adj.pvalue)*sign(sub[,3])
+			}
 			
 			final<-	data.frame(cbind(final,temp))
 		}
@@ -4446,7 +4552,7 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 #######################
 ## VolcanoPlot
 #######################
-	if (toupper(type)=="VOLCANOPLOT"){
+	if (type=="VOLCANOPLOT"){
 		
 		# If there are the file with the same name, add next numbering at the end of file name		
 		if(address!=FALSE){
@@ -4464,8 +4570,14 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 			pdf(finalfile, width=width, height=height)
 		}
 		
+		if(logBase.pvalue==2){
+			y.limUp <-30
+		}
 		
-		y.limUp <-30
+		if(logBase.pvalue==10){
+			y.limUp <-10
+		}
+		
 		if(is.numeric(ylimUp)) y.limUp<-ylimUp 
 
 		## remove the result, NA
@@ -4498,14 +4610,29 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 		for(i in 1:nlevels(data$Label)){
 				
 			sub<-data[data$Label==levels(data$Label)[i],]
-			sub$adj.pvalue[sub$adj.pvalue<2^(-y.limUp)]<-2^(-y.limUp)
+			
+			if(logBase.pvalue==2){
+				sub$adj.pvalue[sub$adj.pvalue<2^(-y.limUp)]<-2^(-y.limUp)
+			}
+			
+			if(logBase.pvalue==10){
+				sub$adj.pvalue[sub$adj.pvalue<10^(-y.limUp)]<-10^(-y.limUp)
+			}
 			
 			sub<-as.data.frame(sub)
 			
 			## ylimUp
-			y.limup<-ceiling(max(-log2(sub[!is.na(sub$adj.pvalue),"adj.pvalue"])))
-			if(y.limup < (-log2(sig))) y.limup<- (-log2(sig)+1) ## for too small y.lim
-	
+			if(logBase.pvalue==2){
+				y.limup<-ceiling(max(-log2(sub[!is.na(sub$adj.pvalue),"adj.pvalue"])))
+				if(y.limup < (-log2(sig))) y.limup<- (-log2(sig)+1) ## for too small y.lim
+			}
+			
+			if(logBase.pvalue==10){
+				y.limup<-ceiling(max(-log10(sub[!is.na(sub$adj.pvalue),"adj.pvalue"])))
+				if(y.limup < (-log10(sig))) y.limup<- (-log10(sig)+1) ## for too small y.lim
+			}
+			
+			
 			## ylimDown
 			y.limdown<-0 ## default is zero
 			if(is.numeric(ylimDown)) y.limdown<-ylimDown
@@ -4520,10 +4647,24 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 			colnames(subtemp)[3]<-"logFC"
 			#setnames(subtemp,3,"logFC")	
 
-			subtemp$log2adjp<-(-log2(subtemp$adj.pvalue))
-
+			if(logBase.pvalue==2){
+				subtemp$log2adjp<-(-log2(subtemp$adj.pvalue))
+			}
+			
+			if(logBase.pvalue==10){
+				subtemp$log10adjp<-(-log10(subtemp$adj.pvalue))
+	
+			}
+			
 			### Plotting
-			ptemp<-ggplot()+geom_point(aes_string(x='logFC', y='log2adjp',color='colgroup',label='Protein'),size=dot.size, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))
+			if(logBase.pvalue==2){
+				ptemp<-ggplot()+geom_point(aes_string(x='logFC', y='log2adjp',color='colgroup',label='Protein'),size=dot.size, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))
+			}
+			
+			if(logBase.pvalue==10){
+				ptemp<-ggplot()+geom_point(aes_string(x='logFC', y='log10adjp',color='colgroup',label='Protein'),size=dot.size, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log10 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))
+			}
+
 			
 			## x-axis labeling
 			if(colnames(sub)[3]=="log2FC") ptemp<-ptemp+scale_x_continuous('Log2 fold change',limit=c(-x.lim,x.lim))
@@ -4531,7 +4672,13 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 
 			## add protein name
 			if(ProteinName){
-				ptemp<-ptemp+geom_text(aes_string(x='logFC', y='log2adjp',label='Protein'),data=subtemp,color="black",guide="none",hjust=0.5-sign(sub[,3])*ProteinNameLoc, vjust=0.5,size=text.size)
+				if(logBase.pvalue==2){
+					ptemp<-ptemp+geom_text(aes_string(x='logFC', y='log2adjp',label='Protein'),data=subtemp,color="black",guide="none",hjust=0.5-sign(sub[,3])*ProteinNameLoc, vjust=0.5,size=text.size)
+				}
+				
+				if(logBase.pvalue==10){
+					ptemp<-ptemp+geom_text(aes_string(x='logFC', y='log10adjp',label='Protein'),data=subtemp,color="black",guide="none",hjust=0.5-sign(sub[,3])*ProteinNameLoc, vjust=0.5,size=text.size)
+				}
 			} 
 
 			## For legend of linetype for cutoffs
@@ -4540,34 +4687,69 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 
 			## cutoff lines, FDR only
 			if(!FCcutoff){ 
-	
-				sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log2adjp=(-log2(sig)))
+				if(logBase.pvalue==2){
+					sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log2adjp=(-log2(sig)))
 	 
-				pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'), linetype="twodash", colour="darkgrey",size=0.6)+scale_linetype_manual(values=ltypes,labels=paste("Adj p-value cutoff(",sig,")",sep=""))
+					pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'), linetype="twodash", colour="darkgrey",size=0.6)+scale_linetype_manual(values=ltypes,labels=paste("Adj p-value cutoff(",sig,")",sep=""))
+				}
+				
+				if(logBase.pvalue==10){
+					sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log10adjp=(-log10(sig)))
+	 
+					pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log10adjp'), linetype="twodash", colour="darkgrey",size=0.6)+scale_linetype_manual(values=ltypes,labels=paste("Adj p-value cutoff(",sig,")",sep=""))
+				}				
 			}
 
 			# cutoff lines, FDR and Fold change cutoff
 			if(is.numeric(FCcutoff)){
 				if(colnames(sub)[3]=="log2FC"){
+					if(logBase.pvalue==2){
 		
-					## three different lines
-					sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
-					FCcutpos<-data.frame(logFC=log2(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
-					FCcutneg<-data.frame(logFC=(-log2(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
+						## three different lines
+						sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
+						FCcutpos<-data.frame(logFC=log2(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
+						FCcutneg<-data.frame(logFC=(-log2(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
 		
-					## three lines, with order color first and then assign linetype manual
-					pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
+						## three lines, with order color first and then assign linetype manual
+						pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
+					}
+					
+					if(logBase.pvalue==10){
+		
+						## three different lines
+						sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)))
+						FCcutpos<-data.frame(logFC=log2(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10))
+						FCcutneg<-data.frame(logFC=(-log2(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10))
+		
+						## three lines, with order color first and then assign linetype manual
+						pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log10adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log10adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log10adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
+					}
+					
 				}
 
 				if(colnames(sub)[3]=="log10FC"){
+					if(logBase.pvalue==2){
 					
-					## three different lines
-					sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
-					FCcutpos<-data.frame(logFC=log10(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
-					FCcutneg<-data.frame(logFC=(-log10(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
+						## three different lines
+						sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
+						FCcutpos<-data.frame(logFC=log10(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
+						FCcutneg<-data.frame(logFC=(-log10(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
 		
-					## three lines, with order color first and then assign linetype manual
-					pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp') ,linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'),linetype="dotted",colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
+						## three lines, with order color first and then assign linetype manual
+						pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp') ,linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'),linetype="dotted",colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
+					}
+					
+					if(logBase.pvalue==10){
+					
+						## three different lines
+						sigcut<-data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)))
+						FCcutpos<-data.frame(logFC=log10(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10))
+						FCcutneg<-data.frame(logFC=(-log10(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10))
+		
+						## three lines, with order color first and then assign linetype manual
+						pfinal<-ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log10adjp') ,linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log10adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log10adjp'),linetype="dotted",colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
+					}
+
 				}
 			}
 			
@@ -4594,7 +4776,7 @@ if(length(setdiff(toupper(type),c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0
 #######################
 ## Comparison Plot
 #######################
-	if (toupper(type)=="COMPARISONPLOT"){
+	if (type=="COMPARISONPLOT"){
 		
 		
 		datatemp<-data[!is.na(data$adj.pvalue),]
