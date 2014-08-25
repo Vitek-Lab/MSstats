@@ -2890,6 +2890,8 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 			legend.position="none")
 				
 				print(ptemp)
+				
+				message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
 			
 			} ## end loop
 		
@@ -2939,7 +2941,10 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 			strip.text.x=element_text(size=text.size),
 			legend.position="none")
 					
-					print(ptemp)	
+					print(ptemp)
+					
+					message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+						
 				}
 			
 				## label-based : seperate endogenous and reference
@@ -2979,6 +2984,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 			legend.position="none")
 					
 					print(ptemp)	
+					
+					message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+					
 				}
 			
 			} ## end loop
@@ -3062,6 +3070,9 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 			}
 			
 		print(ptemp)
+		
+		message(paste("Drew the residual plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+		
 		}
 		
 		if(address!=FALSE) dev.off()	
@@ -3635,7 +3646,8 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 
 ########################################################
 .fit.model<-function(contrast.matrix,data,labeled,scopeOfBioReplication,scopeOfTechReplication,interference,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup){
-	
+
+	## # of repeats for unequal feature variance
 	nrepeats=3
 	
 	## label-free : use only light intensity, need to change contrast.matrix without Group0	
@@ -3727,6 +3739,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 	
 	     		## make equal variance for feature
 	     		if(!equalFeatureVar){
+	     			data2<-data2[!is.na(data2$ABUNDANCE),]
 	     			fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
 	     		}
 	     		
