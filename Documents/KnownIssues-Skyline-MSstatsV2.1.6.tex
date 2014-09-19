@@ -1,0 +1,88 @@
+\documentclass[10pt]{article} 
+
+\topmargin -5pt
+\oddsidemargin -1pt
+\evensidemargin -1pt
+\textwidth 6.5 in
+\textheight 8.75in
+\pagestyle{plain}
+\setcounter{page}{1}
+
+
+\usepackage{color}
+
+\def\code#1{ 
+\vspace{-7mm}
+\begin{flushleft}
+\colorbox{ColorLightGray}{ 
+\begin{minipage}{6.6in}
+\begin{flushleft}
+\small \tt 
+#1
+\end{flushleft}
+\end{minipage}
+}
+\end{flushleft}
+}
+
+\usepackage{amsmath,amsfonts,amsthm}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+
+%\def\todo#1{{\color{red}[FROM OV TO MEENA: #1]}}
+%\def\meena#1{{\color{blue}[MEENA: #1]}}
+\def\ov#1{{\color{magenta}#1}}
+%\def\comment#1{{\color{magenta}[COMMENT: #1]}}
+%\def\m{$\tt{MSstats}$~}
+
+
+
+\begin{document}
+\noindent
+
+\title{MSstats.daily version 2.1.6 : Known issues of MSstats as an external tool in Skyline}
+\author{Meena Choi, {\tt choi67@purdue.edu}}
+\maketitle
+%\tableofcontents
+%\clearpage
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Known installation issues}
+
+
+\begin{enumerate}
+\item {\bf Conflicts with existing installations of R libraries in Windows.} 
+\begin{enumerate}
+\item Uninstall previous version of R through 'Control panel'. 
+\item Delete the R folder under {\tt C:/Users/xxx/Documents/} (where {\tt xxx} is the user name), or under {\tt C:/Program Files/}
+\item Install MSstats
+\end{enumerate}
+
+\item {\bf Conflicts with some antivirus programs.} 
+\begin{enumerate}
+\item Pause your antivirus program. 
+\item Install MSstats.
+\end{enumerate}
+
+\end{enumerate}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Window local settings issues}
+
+
+\begin{verbatim}
+=======================================
+** Reading the data for MSstats..... 
+Error in raw$StandardType : $ operator is invalid for atomic vectors
+\end{verbatim}
+
+If you have the error message as above and you are not using 'English (US)' (Turkish and French local settings are reported about this error message) , please change to 'English (US)' and then restart Skyline. 
+
+
+
+
+\end{document}

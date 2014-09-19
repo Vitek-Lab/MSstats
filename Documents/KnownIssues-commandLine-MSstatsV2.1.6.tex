@@ -1,0 +1,79 @@
+\documentclass[10pt]{article} 
+
+\topmargin -5pt
+\oddsidemargin -1pt
+\evensidemargin -1pt
+\textwidth 6.5 in
+\textheight 8.75in
+\pagestyle{plain}
+\setcounter{page}{1}
+
+
+\usepackage{color}
+
+\def\code#1{ 
+\vspace{-7mm}
+\begin{flushleft}
+\colorbox{ColorLightGray}{ 
+\begin{minipage}{6.6in}
+\begin{flushleft}
+\small \tt 
+#1
+\end{flushleft}
+\end{minipage}
+}
+\end{flushleft}
+}
+
+\usepackage{amsmath,amsfonts,amsthm}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+
+%\def\todo#1{{\color{red}[FROM OV TO MEENA: #1]}}
+%\def\meena#1{{\color{blue}[MEENA: #1]}}
+\def\ov#1{{\color{magenta}#1}}
+%\def\comment#1{{\color{magenta}[COMMENT: #1]}}
+%\def\m{$\tt{MSstats}$~}
+
+
+
+\begin{document}
+\noindent
+
+\title{MSstats.daily version 2.1.6 : Known issues using commend lines in R}
+\author{Meena Choi, {\tt choi67@purdue.edu}}
+\maketitle
+%\tableofcontents
+%\clearpage
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Known statistical analysis issues}
+
+\begin{enumerate}
+\item {\bf Warnings from {\tt dataProcessPlots}}, e.g.:
+\begin{small}
+\begin{verbatim}
+There were 11 warnings (use warnings() to see them)
+> warnings()
+Warning messages:
+1: Removed 86 rows containing missing values (geom_point).
+2: Removed 2 rows containing missing values (geom_path).
+...
+\end{verbatim}
+\end{small}
+This warning means that the input dataset has missing values. The missing values will result in disconnected lines in the profile plots. The warning is not critical, and can be ignored.
+
+
+\item The option {\tt equalFeatureVar=FALSE} with expanded scope of biological replication or technical replication in {\tt groupComparison} and {\tt designSampleSize} is currently not available.
+
+\item At least two comparisons of conditions are needed to display a heatmap of the results.
+
+
+\end{enumerate}
+
+
+\end{document}
