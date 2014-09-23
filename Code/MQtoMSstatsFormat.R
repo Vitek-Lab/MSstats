@@ -13,7 +13,6 @@ library(reshape2)
 ## fewMeasurements : if 1 or 2 measurements across runs per feature, 'remove' will remove those featuares. It can affected for unequal variance analysis.
 ## experiment : "DDA" or "SILAC"
 
-
 MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Proteins", useUniquePeptide=TRUE, summary=max, fewMeasurements="remove", experiment="DDA"){
 	
 	### evidence.txt file
@@ -112,7 +111,7 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 		## good to remove before reformatting to long-format
 	
 		if(fewMeasurements=="remove"){
-			infile_w<-removeFeatureWithfew.GLF(infile_w)
+			infile_w<-removeFeatureWithfew(infile_w)
 		}
 	
 		## then, go back to long-format
@@ -126,7 +125,6 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 	
 	#########################
 	### 2.2) label-free : however, several runs for a sample.
-	
 	
 	
 	#########################
@@ -170,13 +168,12 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 	infile_l$ProductCharge <- NA
 
 	#Create Condition & Bioreplicate columns; TODO: fill in with correct values
-	if(length(unique(infile_l$IsotopeLabelType))>1){
+	#if(length(unique(infile_l$IsotopeLabelType))>1){
 		infile_l<-merge(infile_l, annot, by=c("Raw.file","IsotopeLabelType"))
 
-	}else{
-		infile_l<-merge(infile_l, annot, by="Raw.file")
-	}
-	
+# 	}else{
+# 		infile_l<-merge(infile_l, annot, by="Raw.file")
+# 	}
 	
 	infile_l <- infile_l[,c(c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Raw.file","Intensity"))]
 	colnames(infile_l)[9] <- "Run"
@@ -214,18 +211,16 @@ castMaxQToWide.SILAC= function(d_long, aggregateFun=aggregateFun){
   return(data_w)
 }
 
-
-
 meltMaxQToLong.GLF = function(d_wide){
   data_l = melt(d_wide, id.vars=c('Proteins','Modified.sequence','Charge'))
-  colnames(data_l)[colnames(data_l)==c("variable","value")]<-c('Raw.file','Intensity')
+  colnames(data_l)[colnames(data_l) %in% c("variable","value")]<-c('Raw.file','Intensity')
   return(data_l)
 }
 
 
 meltMaxQToLong.SILAC = function(d_wide){
   data_l = melt(d_wide, id.vars=c('Proteins','Modified.sequence','Charge',"IsotopeLabelType"))
-  colnames(data_l)[colnames(data_l)==c("variable","value")]<-c('Raw.file','Intensity')
+  colnames(data_l)[colnames(data_l) %in% c("variable","value")]<-c('Raw.file','Intensity')
   return(data_l)
 }
 
