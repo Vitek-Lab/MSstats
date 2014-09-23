@@ -2577,14 +2577,21 @@ if ( missing.action == "impute" ) {
 		}
 	
 		imputeValue <- mean(minValuePerSample[!is.infinite(minValuePerSample)], na.rm = TRUE)
-
-		for(i in 1:length(missingPeptides)){
-			sub <- data.l[data.l$FEATURE == missingPeptides[i], ]
-			t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))
-			missingConds <- names(t)[which(t == 0 | is.na(t))]		
-			data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue
-		}
-
+		
+# 		for(i in 1:length(missingPeptides)){
+# 			sub <- data.l[data.l$FEATURE == missingPeptides[i], ]
+# 			t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))
+# 			missingConds <- names(t)[which(t == 0 | is.na(t))]		
+# 			data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue
+# 		}
+    
+    ##  ERIK - replaced loop commented out above with lines below
+    missing.entire.condition = aggregate(ABUNDANCE ~ FEATURE+GROUP, data=data.l, FUN=function(x) all(is.na(x)), na.action = NULL)
+		colnames(missing.entire.condition)[3]='MISSING.CONDITION'
+    data.l = merge(data.l, missing.entire.condition, by=c('FEATURE','GROUP'))
+		data.l[data.l$MISSING.CONDITION,]$ABUNDANCE = imputeValue
+    ## ERIK - END
+    
 		if(length(missingPeptides) > 0){
 			number.missing <- length(missingPeptides)
 			message(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))	
