@@ -1,40 +1,8 @@
-
-
 library(reshape2)
-rm(list=ls(all=TRUE))
 
-##1
-setwd("/Users/Meena/Box Sync/MSstats/datasets/UB-LabelFree")
-annot <- read.table("MKL-1-22-keys.txt", header=TRUE)
-infile <- read.table("MKL-1-22-evidence.txt", sep="\t", header=TRUE)
-
-colnames(annot)[1]<-"Raw.file"
-annot<-annot[,-6]
-annot<-annot[,-2]
-
-
-##2
-setwd("/Users/Meena/Dropbox/Silvia_MaxQuant")
-annot <- read.csv("annotation.csv", header=TRUE)
-infile <- read.table("evidence.txt", sep="\t", header=TRUE)
-proteinGroups<-read.table("proteinGroups.txt", sep="\t", header=TRUE)
-proteinGroups[1,]
-
-##3
-setwd("/Users/Meena/Box Sync/MSstats/datasets/UB-SILAC")
-annot <- read.table("HIV_vs_MOCK_annotation.txt", header=TRUE)
-infile <- read.table("input/042613-dc-1-2-evidence.txt", sep="\t", header=TRUE)
-
-colnames(annot)[1]<-"Raw.file"
-dim(annot)
-
-experiment="SILAC"
-##4
-
-
-	################################################
-	################################################
-	################################################
+################################################
+################################################
+################################################
 ## evidence : evidence.txt
 ## annotation : annotation.txt - Raw.file, Condition, BioReplicate, Run, (IsotopeLabelType)
 ## proteinGroups : proteinGroups.txt . if proteinGroups=NULL, use 'Proteins'. if not, use proteinGroups information for matching Protein group ID
@@ -219,13 +187,6 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 	return(infile_l)
 }
 
-
-
-d_long<-infile[infile$Feature=="THINIVVIGHVDSGK_3",]
-
-	infile_w<-castMaxQToWide.GLF(d_long, aggregateFun=summary)
-
-
 castMaxQToWide.GLF= function(d_long, aggregateFun=aggregateFun){
   data_w = dcast( Proteins + Modified.sequence + Charge ~ Raw.file, data=d_long, value.var='Intensity', fun.aggregate=aggregateFun, keep=TRUE) 
   ## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
@@ -281,14 +242,3 @@ removeFeatureWithfew=function(x){
 	
 	return(x)
 }
-
-
-
-
-
-library(MSstats.daily)
-
-quant<-dataProcess(infile_l, normalization=FALSE, fillIncompleteRows=TRUE)
-dataProcessPlots(quant, type="ProfilePlot",featureName="Peptide", address="UB_LF_")
-
-
