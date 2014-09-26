@@ -24,7 +24,7 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 	################################################
 	### 1. remove contaminant, reverse proteinID 
 	### Contaminant, Reverse column in evidence
-	infile<-infile[-which(infile$Contaminant %in% "+" | infile$Reverse %in% "+") ,]
+  infile = infile[infile$Contaminant != "+" & is.na(infile$Reverse),]
 
 	### ? Only.identified.by.site column in proteinGroupID? : sometimes, it is not in evidence.txt
 	if(is.element("Only.identified.by.site", colnames(infile))){
