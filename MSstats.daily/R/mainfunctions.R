@@ -2776,7 +2776,7 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   write.table(processout, file=finalfile, row.names=FALSE)
   
   
-  temp<-data[!is.na(data[,"ABUNDANCE"]),]
+  temp<-data[!is.na(data[,"ABUNDANCE"]) & !is.na(data[,"INTENSITY"]),]
   
   if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<
        abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
