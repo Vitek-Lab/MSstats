@@ -2490,7 +2490,7 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
     write.table(processout, file=finalfile, row.names=FALSE)
   }
   
-  if(!(missing.action %in% c("nointeraction", "impute", "remove"))){
+  if(!(missing.action %in% c("nointeraction", "impute", "remove","impute-conditions", "impute-byfeature"))){
     processout<-rbind(processout,c(paste("The required input - missing.action : 'missing.action' value is wrong. - stop")))
     write.table(processout, file=finalfile, row.names=FALSE)
     
@@ -2561,10 +2561,8 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   
   missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )
   
-  
-  
   ## Impute for missing endogenous intensity
-  if ( missing.action == "impute" ) { 
+  if ( grepl('impute', missing.action)) { 
     if(length(missingPeptides) > 0){
       
       dataBySample <- tapply(data.l$ABUNDANCE, list(data.l$SUBJECT_ORIGINAL, data.l$FEATURE), function(x) min(x, na.rm = TRUE))
@@ -2578,19 +2576,34 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
       
       imputeValue <- mean(minValuePerSample[!is.infinite(minValuePerSample)], na.rm = TRUE)
       
-      # 		for(i in 1:length(missingPeptides)){
-      # 			sub <- data.l[data.l$FEATURE == missingPeptides[i], ]
-      # 			t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))
-      # 			missingConds <- names(t)[which(t == 0 | is.na(t))]		
-      # 			data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue
-      # 		}
+      ## ERIK
+      if( missing.action == "impute-conditions"){ ## NOT SELECTABLE AT THE MOMENT
+        missing.entire.condition = aggregate(ABUNDANCE ~ FEATURE+GROUP, data=data.l, FUN=function(x) all(is.na(x)), na.action = NULL)
+        colnames(missing.entire.condition)[3]='MISSING.CONDITION'
+        data.l = merge(data.l, missing.entire.condition, by=c('FEATURE','GROUP'))
+        data.l[data.l$MISSING.CONDITION,]$ABUNDANCE = imputeValue  
+      }else if(missing.action == "impute-byfeature"){
+        feature_minima = aggregate(ABUNDANCE ~ FEATURE, data=data.l, FUN=function(x) min(x, na.rm=T), na.action = NULL) 
+        feature_minima = feature_minima[is.finite(feature_minima$ABUNDANCE),]
+        colnames(feature_minima)[2] = 'FEATURE.MINIMUM'
+        data.l = merge(data.l, feature_minima, by=c('FEATURE'), all.x=T)
+        data.l[is.na(data.l$ABUNDANCE),]$ABUNDANCE = data.l[is.na(data.l$ABUNDANCE),]$FEATURE.MINIMUM
+      }
+      else if(missing.action == "impute"){ ## IMPUTES ALL
+        data.l[is.na(data.l$ABUNDANCE),]$ABUNDANCE = imputeValue
+      }
       
-      ##  ERIK - replaced loop commented out above with lines below
-      missing.entire.condition = aggregate(ABUNDANCE ~ FEATURE+GROUP, data=data.l, FUN=function(x) all(is.na(x)), na.action = NULL)
-      colnames(missing.entire.condition)[3]='MISSING.CONDITION'
-      data.l = merge(data.l, missing.entire.condition, by=c('FEATURE','GROUP'))
-      data.l[data.l$MISSING.CONDITION,]$ABUNDANCE = imputeValue
-      ## ERIK - END
+      
+      ## END ERIK
+      
+      ## MEENA
+      #       for(i in 1:length(missingPeptides)){
+      #         sub <- data.l[data.l$FEATURE == missingPeptides[i], ]
+      #         t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))
+      #         missingConds <- names(t)[which(t == 0 | is.na(t))]		
+      #         data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue
+      #       }
+      ## END MEENA
       
       if(length(missingPeptides) > 0){
         number.missing <- length(missingPeptides)
