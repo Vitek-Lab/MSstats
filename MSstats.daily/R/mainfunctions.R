@@ -2605,7 +2605,10 @@ if ( missing.action == "impute" ) {
 
 ## 
 if ( missing.action == "remove" ){
-	data<-data[-which(data$FEATURE %in% missingPeptides),]
+	# if no peptides are missing, -which doesn't work right
+	if (length(missingPeptides) > 0) {
+		data<-data[-which(data$FEATURE %in% missingPeptides),]
+	}
 
 	message("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")
 	
