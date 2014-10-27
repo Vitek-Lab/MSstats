@@ -45,6 +45,31 @@
 \maketitle
 
 
+%%%%%%%%%%%%%%%%%%%%%
+\section*{v 2.3.5 updates : October 27, 2014}
+\begin{enumerate}
+\item {\tt groupComparison} function
+	\begin{enumerate}
+	\item Fixed the bug for {\tt missing.action}.
+	\end{enumerate}
+	
+\item {\tt groupComparisonPlots} function
+	\begin{enumerate}
+	\item Added {\tt logBase.pvalue} : for volcano plot or heatmap, (-) logarithm transformation of adjusted p-value with base 2 or 10. -log10(adjusted p-value) is the default.
+	\end{enumerate}
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%
+\section*{v 2.3.2 updates : June 15, 2014}
+\begin{enumerate}
+\item {\tt dataProcess} function
+	\begin{enumerate}
+	\item Added {\tt FeatureSelection} : one method for feature selection is available. {\tt FeatureSelection=TRUE} selects the most informative features which agree with the pattern of the average features (use endogenous intensities) across the runs. {\tt FeatureSelection=FALSE} uses all features that the data set has. This option will be extended with more methods for feature selection.
+	\item Updated two steps normalization : two normalization options can be used such as {\tt normalization=c("equalMedians","globalStandards")}. For label-based experiment with {\tt normalization=c("equalMedians","globalStandards")}, the data will be normalized for reference peptides, which medians of intensities across runs become equal. Then endogenous peptides will be normalized with global standard protein.
+	\end{enumerate}
+\end{enumerate}
+
 
 %%%%%%%%%%%%%%%%%%%%%
 \section*{v 2.1.6 updates : March 25, 2014}

@@ -2623,8 +2623,8 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   ## even though it is not the case, user can do with no interaction ( no else command)
   
   
-  ## 
-  if ( missing.action == "remove" ){
+  ## Meena : 2014/10/26, add missingPeptides has any peptide or not
+  if ( missing.action == "remove" & length(missingPeptides)>0 ){
     data<-data[-which(data$FEATURE %in% missingPeptides),]
     
     message("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")
