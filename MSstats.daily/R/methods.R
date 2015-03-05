@@ -784,6 +784,211 @@ names<-c(colnames(workPerProt)[2:at],"FEATURE",colnames(workPerProt)[(at+1):dim(
 
 
 
+##########################################################################################
+
+.make.contrast.run.quantification<-function(fit,contrast.matrix,sub1,labeled){
+
+	if(class(fit)=="lm"){
+		coef.name<-names(coef(fit))
+	}else{
+		coef.name<-names(fixef(fit))
+	}
+
+#####
+# intercept
+#####
+	temp<-coef.name[grep("Intercept",coef.name)]
+	
+	if(length(temp)>0){
+		intercept.c<-rep(1,length(temp))
+		names(intercept.c)<-temp
+	}else{
+		intercept.c<-NULL
+	}
+
+#####
+# feature
+#####
+	temp<-coef.name[grep("FEATURE",coef.name)[!grep("FEATURE",coef.name)%in%grep(":",coef.name)]]
+
+	if(length(temp)>0){
+		tempSub<-unique(sub1[,c("FEATURE","RUN")])
+		tempSub1<-xtabs(~RUN+FEATURE,data=tempSub)
+		tempSub2<-tempSub1[contrast.matrix==1,]
+
+		feature.c<-as.numeric(tempSub2[-1])/sum(tempSub2)
+		names(feature.c)<-temp
+		
+	}else{
+		feature.c<-NULL
+	}
+	
+
+#####
+# run : different with other quantification - first try
+#####
+
+	if(!labeled){ ## label-free
+		temp<-coef.name[grep("RUN",coef.name)[!grep("RUN",coef.name)%in%grep(":",coef.name)]]
+	
+		if(length(temp)>0){
+			run.c<-contrast.matrix[-1]
+			names(run.c)<-temp
+		}else{
+			run.c<-NULL
+		}
+	}else{ ## label-based
+
+		temp<-coef.name[grep("RUN",coef.name)[!grep("RUN",coef.name)%in%grep(":",coef.name)]]
+	
+		if(length(temp)>0){
+			run.c<-rep(1/nlevels(sub1$RUN),length(temp))
+			names(run.c)<-temp
+		}else{
+			run.c<-NULL
+		}
+	}
+	
+
+
+#####
+# ref
+#####
+	temp<-coef.name[grep("ref",coef.name)]
+	
+	if(length(temp)>0){
+		if (nlevels(sub1$LABEL)==2){
+			ref.c<-contrast.matrix
+		}
+
+		# free:
+		if (nlevels(sub1$LABEL)==1){
+			ref.c<-contrast.matrix[-1]
+		}
+		names(ref.c)<-temp
+	}else{
+		ref.c<-NULL
+	}
+
+####
+# run by feature
+#####
+	temp<-coef.name[intersect(grep("RUN",coef.name),grep("FEATURE",coef.name))]
+	tempSub<-dim(unique(sub1[,c("RUN","FEATURE")]))[1]
+	if(length(temp)>0){
+		rf.c<-rep(1/tempSub,length(temp))
+		names(rf.c)<-temp
+	}else{
+		rf.c<-NULL
+	}
+	
+#####
+# subject_nested
+#####
+	temp<-coef.name[grep("SUBJECT_NESTED",coef.name)]
+	
+	if(length(temp)>0){
+		if (nlevels(sub1$LABEL)==2){
+			subjectNested.c<-contrast.matrix
+		}
+
+		# free:
+		if (nlevels(sub1$LABEL)==1){
+			subjectNested.c<-contrast.matrix[-1]
+		}
+		names(subjectNested.c)<-temp
+	}else{
+		subjectNested.c<-NULL
+	}
+
+	
+	contrast<-c(intercept.c,feature.c,run.c,ref.c,rf.c, subjectNested.c)
+
+	if(class(fit)=="lm"){
+		contrast1<-contrast[!is.na(coef(fit))]
+	}else{
+		contrast1<-contrast[!is.na(fixef(fit))]
+	}
+	
+	return(contrast1)
+}
+
+
+
+##########################################################################################
+.make.contrast.run.quantification.reference<-function(fit,contrast.matrix,sub1){
+
+	if(class(fit)=="lm"){
+		coef.name<-names(coef(fit))
+	}else{
+		coef.name<-names(fixef(fit))
+	}
+
+#####
+# intercept
+#####
+	temp<-coef.name[grep("Intercept",coef.name)]
+	intercept.c<-rep(1,length(temp))
+	names(intercept.c)<-temp
+	if(length(temp)==0) intercept.c<-NULL
+
+
+#####
+# feature
+#####
+	temp<-coef.name[grep("FEATURE",coef.name)[!grep("FEATURE",coef.name)%in%grep(":",coef.name)]]
+
+	if(length(temp)>0){
+		tempSub<-unique(sub1[,c("FEATURE","RUN")])
+		tempSub1<-xtabs(~RUN+FEATURE,data=tempSub)
+		tempSub2<-tempSub1[contrast.matrix==1,]
+
+		feature.c<-as.numeric(tempSub2[-1])/sum(tempSub2)
+		names(feature.c)<-temp
+		
+	}else{
+		feature.c<-NULL
+	}
+
+
+#####
+# run
+#####
+	temp<-coef.name[grep("RUN",coef.name)[!grep("RUN",coef.name)%in%grep(":",coef.name)]]
+	
+	if(length(temp)>0){
+		run.c<-rep(1/nlevels(sub1$RUN),length(temp))
+		names(run.c)<-temp
+	}else{
+		run.c<-NULL
+	}
+
+
+#####
+# ref
+#####
+	temp<-coef.name[grep("ref",coef.name)]
+	if(length(temp)>0){
+		ref.c<-rep(0,length(temp))	
+		names(ref.c)<-temp
+	}else{
+		ref.c<-NULL
+	}
+
+
+	contrast<-c(intercept.c,feature.c,run.c,ref.c)
+
+	if(class(fit)=="lm"){
+		contrast1<-contrast[!is.na(coef(fit))]
+	}else{
+		contrast1<-contrast[!is.na(fixef(fit))]
+	}
+	
+	return(contrast1)
+}
+
+
+
 ##================================
 ## .make.contrast.group.quantification: 
 ## label-based/label-free; single/multiple features
@@ -1812,6 +2017,35 @@ names<-c(colnames(workPerProt)[2:at],"FEATURE",colnames(workPerProt)[(at+1):dim(
 
 
 #####
+# subject_nested 
+#####
+	temp<-coef.name[grep("SUBJECT_NESTED",coef.name)]
+	if(length(temp)>0){
+		temp1<-t(matrix(unlist(strsplit(as.character(temp),"\\.")),nrow=2))
+		temp2<-as.vector(xtabs(~temp1[,1]))	
+		
+		tempdata<-fit$model
+		levels<-unique(tempdata$GROUP)
+		sub.contrast<-contrast.matrix[as.numeric(as.character(levels))]
+		
+		# the base is alway be the first SUBJECT_NESTED
+		# (SUBJECT_NESTED1.1)
+		temp3<-temp2
+			if(length(temp2)==length(sub.contrast)){
+				temp3[1]<-temp2[1]+1 ## this line first because if next is first,length of temp3 becomes >1
+			}else{
+				temp3<-c(1,temp3)
+			}
+		
+		# subjectNested.c<-rep(contrast.matrix/(temp3),temp2) ## in case of unequal sample per group, wrong
+		subjectNested.c<-rep(sub.contrast/(temp3),temp3)[-1]
+		
+		names(subjectNested.c)<-temp
+	}
+	if(length(temp)==0) subjectNested.c<-NULL
+
+
+#####
 # subject by group : only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
 #####
 	temp<-coef.name[intersect(grep("SUBJECT",coef.name),grep("GROUP",coef.name))]
@@ -1855,7 +2089,7 @@ names<-c(colnames(workPerProt)[2:at],"FEATURE",colnames(workPerProt)[(at+1):dim(
 	if(length(temp)==0) gs.c<-NULL
 		
 ### combine all
-	contrast<-c(intercept.c,group.c, subject.c, gs.c)
+	contrast<-c(intercept.c,group.c,subjectNested.c, subject.c, gs.c)
 
 	if(class(fit)=="lm"){
 		contrast1<-contrast[!is.na(coef(fit))]
@@ -1876,7 +2110,8 @@ names<-c(colnames(workPerProt)[2:at],"FEATURE",colnames(workPerProt)[(at+1):dim(
 .getParameterFixed<-function(obj){
 	temp1<-summary.lm(obj)
 	cf <- temp1$coefficients
-	vcv <- temp1$cov.unscaled * temp1$sigma^2	
+	vcv <- temp1$cov.unscaled * temp1$sigma^2
+	### todo : for unbalanced case, variance is weighted by degree of freedom	
 	df <- obj$df.residual
 	parameter<-list(cf=cf, vcv=vcv, df=df)
 	
@@ -1997,3 +2232,5 @@ names<-c(colnames(workPerProt)[2:at],"FEATURE",colnames(workPerProt)[(at+1):dim(
 
 	return(wls.fit)
 }
+
+

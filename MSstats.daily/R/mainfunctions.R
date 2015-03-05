@@ -133,7 +133,7 @@ transformMSstatsToMSnSet<-function(data){
 #############################################
 #############################################
 
-dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE, fillIncompleteRows=FALSE, FeatureSelection=FALSE,lambda=seq(0,1.4,0.1),eta=0.05, address=""){
+dataProcess2<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE, fillIncompleteRows=TRUE, FeatureSelection=FALSE,lambda=seq(0,1.4,0.1),eta=0.05, address="",equalFeatureVar=TRUE,missing.action ="none", summary="linear"){
   
   ## save process output in each step
   allfiles<-list.files()
@@ -1716,8 +1716,89 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   processout<-rbind(processout,c("Processing data for analysis is done. - okay"))
   write.table(processout, file=finalfile,row.names=FALSE)
   
-  ## return work data.frame	
-  return(work)
+ 	###================================================== 
+	### imputation
+	### 1. model-based imputation
+	if(missing.action=="MBimpute"){
+	
+		## endogenous only
+		datamat = dcast( PROTEIN + PEPTIDE ~ RUN, data=work[work$LABEL=="L",], value.var='ABUNDANCE', keep=TRUE) 
+
+		dataimputed<-.MBimpute(datamat, my.pi=0.05, compute_pi=TRUE)
+
+		data_l = melt(dataimputed$y_imputed, id.vars=c('PROTEIN',"PEPTIDE"))
+		colnames(data_l)[colnames(data_l) %in% c("variable","value")]<-c('RUN','ABUNDANCE')
+		
+		name<-unique(work[,c("RUN","GROUP_ORIGINAL","SUBJECT_ORIGINAL","GROUP","SUBJECT","SUBJECT_NESTED")])
+		feature<-unique(work[,c("PEPTIDE","TRANSITION","FEATURE")])
+
+		data_l<-merge(data_l, name, by="RUN")
+		data_l<-merge(data_l, feature, by="PEPTIDE")
+		data_l$LABEL<-"L"
+
+		# which no missing value
+		workno<-work[!is.na(work$INTENSITY) | work$LABEL!="L",]
+		workno$imputed<-FALSE
+	
+		# which with missing value, find the place in the table
+		workwith<-work[is.na(work$INTENSITY) & work$LABEL=="L",]
+		workwith$imputed<-TRUE
+	
+		workwith$unirow<-paste(workwith$FEATURE, workwith$RUN, sep="_")
+		data_l$unirow<-paste(data_l$FEATURE, data_l$RUN, sep="_")
+	
+		temp<-data_l[,which(colnames(data_l) %in% c("unirow","ABUNDANCE"))]
+		temp<-merge(workwith, temp, by="unirow")
+		temp$ABUNDANCE.x<-temp$ABUNDANCE.y
+		temp<-temp[,-1]
+		temp<-temp[,-ncol(temp)]
+		colnames(temp)[13]<-"ABUNDANCE"
+	
+		## combine again
+		work<-rbind(workno, temp)
+	
+		work<-work[with(work,order(LABEL,GROUP_ORIGINAL,SUBJECT_ORIGINAL,RUN,PROTEIN,PEPTIDE,TRANSITION)),]
+	
+	}
+	
+	###==================================================
+ 	### get the summarization per subplot (per RUN)   
+
+	message("\n == Start the summarization per subplot...")
+
+	rqdata<-try(.runQuantification(work,summary,equalFeatureVar),silent=TRUE)
+
+	if(class(rqdata)=="try-error") {
+      message("*** error : can't summarize per subplot with ", summary, ".")
+     
+      processout<-rbind(processout,c(paste("error : can't summarize per subplot with ", summary, ".", sep = "")))
+      write.table(processout, file=finalfile, row.names=FALSE)
+	
+	  rqall<-NULL
+	  
+	 }else{
+      
+		label<-nlevels(work$LABEL)==2
+	
+		lab<-unique(work[,c("RUN","GROUP","GROUP_ORIGINAL","SUBJECT_ORIGINAL","SUBJECT_NESTED","SUBJECT")])
+	
+		if(label) lab<-lab[lab$GROUP!=0,]
+
+		rqall<-merge(rqdata, lab, by="RUN")
+		rqall$GROUP<-factor(rqall$GROUP)
+		rqall$Protein<-factor(rqall$Protein)
+		
+		message("\n == the summarization per subplot is done.")
+		
+		processout<-rbind(processout,c(paste("the summarization per subplot is done.- okay : ",summary, sep="")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+
+	 }
+	 
+  ## return work data.frame	and run quantification
+	
+	processedquant<-list(ProcessedData=work, RunlevelData=rqall)
+    return(processedquant)
   
 }
 
@@ -2373,7 +2454,7 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 #############################################
 #############################################
 
-groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE, scopeOfBioReplication="restricted", scopeOfTechReplication="expanded", interference=TRUE,equalFeatureVar=TRUE,missing.action = "nointeraction"){
+groupComparison2<-function(contrast.matrix=contrast.matrix,data=data, scopeOfBioReplication="expanded", scopeOfTechReplication="restricted"){
   
   ## save process output in each step
   allfiles<-list.files()
@@ -2416,7 +2497,7 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   
   
   ## contrast. matrix
-  if(ncol(contrast.matrix)!=length(unique(data$GROUP_ORIGINAL))){
+  if(ncol(contrast.matrix)!=length(unique(data$ProcessedData$GROUP_ORIGINAL))){
     processout<-rbind(processout,c(paste("The required input - contrast.matrix: the number of column and the number of group are not the same. - stop")))
     write.table(processout, file=finalfile, row.names=FALSE)
     
@@ -2429,25 +2510,6 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
     write.table(processout, file=finalfile, row.names=FALSE)
     
     stop("No row.names of comparison exist.\n")
-  }
-  
-  
-  
-  
-  ## labeled value
-  if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){
-    processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    stop("'labeled' must be one of TRUE or FALSE as a logical value.")
-  }
-  
-  if(sum(unique(data$LABEL) %in% "H")==0 & labeled==TRUE){
-    processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. labeled should be 'FALSE'. Therefore now use labeled=FALSE")))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    message("Dataset is based on label-free experiment. MSstats will use \"labeled\"=FALSE.")
-    labeled<-FALSE
   }
   
   
@@ -2469,46 +2531,18 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
 	")
   } 
   
-  if(!(interference==TRUE | interference==FALSE) | !is.logical(interference)){
-    processout<-rbind(processout,c(paste("The required input - interference : 'interference' value is wrong. - stop")))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    stop("'interference' must be one of TRUE or FALSE as a logical value.")
-  }
-  
-  if(!(equalFeatureVar==TRUE | equalFeatureVar==FALSE) | !is.logical(equalFeatureVar)){
-    processout<-rbind(processout,c(paste("The required input - equalFeatureVar : 'equalFeatureVar' value is wrong. - stop")))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    stop("'equalFeatureVar' must be one of TRUE or FALSE as a logical value.")
-  }
-  
-  if(equalFeatureVar==FALSE & (scopeOfBioReplication=="expanded" | scopeOfTechReplication=="expanded")){
-    message("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication.")
-    
-    processout<-rbind(processout,c("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication."))
-    write.table(processout, file=finalfile, row.names=FALSE)
-  }
-  
-  if(!(missing.action %in% c("nointeraction", "impute", "remove","impute-conditions", "impute-byfeature"))){
-    processout<-rbind(processout,c(paste("The required input - missing.action : 'missing.action' value is wrong. - stop")))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    stop("'missing.action' must be one of \"nointeraction\", \"impute\", or \"remove\".")
-  }
+  labeled<-ifelse(length(unique(data$ProcessedData$LABEL))==1, FALSE, TRUE)
   
   ## all input
   processout<-rbind(processout,c(paste("labeled = ",labeled,sep="")))
   processout<-rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))
-  processout<-rbind(processout,c(paste("scopeOfTechReplication = ", scopeOfTechReplication,sep="")))
-  processout<-rbind(processout,c(paste("interference = ",interference,sep="")))
-  processout<-rbind(processout,c(paste("equalFeatureVar = ",equalFeatureVar,sep="")))
+#  processout<-rbind(processout,c(paste("scopeOfTechReplication = ", scopeOfTechReplication,sep="")))
   
   write.table(processout, file=finalfile, row.names=FALSE)
   
   
   ## check whether case-control(FALSE) or time-course(TRUE)
-  repeated<-.checkRepeated(data)
+  repeated<-.checkRepeated(data$ProcessedData)
   
   if(repeated){ 
     processout<-rbind(processout,c(paste("Time course design of experiment - okay")))
@@ -2519,29 +2553,7 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   write.table(processout, file=finalfile, row.names=FALSE)
   
   
-  ## since case-control(FALSE) with fixed subject and random run will fit the crossed model
-  # we need to set subject_original to non-unique
-  
-  if(repeated==FALSE&scopeOfBioReplication=="restricted"&scopeOfTechReplication=="expanded"){
-    test<-unique(data[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])
-    test<- test[with(test, order(GROUP_ORIGINAL,SUBJECT_ORIGINAL)),]
-    test$GROUP_ORIGINAL<-factor(test$GROUP_ORIGINAL)
-    test1<-as.matrix(xtabs(~test[,1]))
-    test$SUBJECT_ORIGINAL_NOUNIQUE<-as.numeric(unlist(apply(test1,1,function(x) seq(x))))
-    
-    data$SUBJECT_ORIGINAL<-as.character(data$SUBJECT_ORIGINAL)
-    
-    for (i in 1:length(unique(test$SUBJECT_ORIGINAL_NOUNIQUE))){
-      list<-test$SUBJECT_ORIGINAL[test$SUBJECT_ORIGINAL_NOUNIQUE==i]
-      data$SUBJECT_ORIGINAL[data$SUBJECT_ORIGINAL%in%list]<-i	
-    }
-    
-    data$SUBJECT_ORIGINAL<-factor(data$SUBJECT_ORIGINAL)
-  }
-  
-  
-  
-  data$PROTEIN<-factor(data$PROTEIN)	
+  #data$PROTEIN<-factor(data$PROTEIN)	
   
   ## for final result report
   out<-NULL
@@ -2549,110 +2561,23 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   outfitted<-NULL
   dataafterfit<-NULL
   
-  #################################
-  ### how to handle missingness for endogenous
-  
-  data.l<-data[data$LABEL=="L",]
-  data.h<-data[data$LABEL=="H",]
-  
-  missingPeptides<-.checkMissFeature(data.l)
-  
-  protein.list = tapply ( data.l$FEATURE, data.l$PROTEIN, function ( x ) unique ( as.character ( x ) ) )
-  
-  missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )
-  
-  ## Impute for missing endogenous intensity
-  if ( grepl('impute', missing.action)) { 
-    if(length(missingPeptides) > 0){
-      
-      dataBySample <- tapply(data.l$ABUNDANCE, list(data.l$SUBJECT_ORIGINAL, data.l$FEATURE), function(x) min(x, na.rm = TRUE))
-      dataBySample <- dataBySample[!(apply(dataBySample, 1, function(x) sum(is.na(x))) == ncol(dataBySample)), ]
-      
-      if(!is.numeric(dataBySample)){ ## only one subject
-        minValuePerSample <- apply(dataBySample, 1, function(x) min(x, na.rm = TRUE))
-      }else{
-        minValuePerSample<-min(dataBySample, na.rm=TRUE)
-      }
-      
-      imputeValue <- mean(minValuePerSample[!is.infinite(minValuePerSample)], na.rm = TRUE)
-      
-      ## ERIK
-      if( missing.action == "impute-conditions"){ ## NOT SELECTABLE AT THE MOMENT
-        missing.entire.condition = aggregate(ABUNDANCE ~ FEATURE+GROUP, data=data.l, FUN=function(x) all(is.na(x)), na.action = NULL)
-        colnames(missing.entire.condition)[3]='MISSING.CONDITION'
-        data.l = merge(data.l, missing.entire.condition, by=c('FEATURE','GROUP'))
-        data.l[data.l$MISSING.CONDITION,]$ABUNDANCE = imputeValue  
-      }else if(missing.action == "impute-byfeature"){
-        feature_minima = aggregate(ABUNDANCE ~ FEATURE, data=data.l, FUN=function(x) min(x, na.rm=T), na.action = NULL) 
-        feature_minima = feature_minima[is.finite(feature_minima$ABUNDANCE),]
-        colnames(feature_minima)[2] = 'FEATURE.MINIMUM'
-        data.l = merge(data.l, feature_minima, by=c('FEATURE'), all.x=T)
-        data.l[is.na(data.l$ABUNDANCE),]$ABUNDANCE = data.l[is.na(data.l$ABUNDANCE),]$FEATURE.MINIMUM
-      }
-      else if(missing.action == "impute"){ ## IMPUTES ALL
-        data.l[is.na(data.l$ABUNDANCE),]$ABUNDANCE = imputeValue
-      }
-      
-      
-      ## END ERIK
-      
-      ## MEENA
-      #       for(i in 1:length(missingPeptides)){
-      #         sub <- data.l[data.l$FEATURE == missingPeptides[i], ]
-      #         t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))
-      #         missingConds <- names(t)[which(t == 0 | is.na(t))]		
-      #         data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue
-      #       }
-      ## END MEENA
-      
-      if(length(missingPeptides) > 0){
-        number.missing <- length(missingPeptides)
-        message(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))	
-        
-        processout<-rbind(processout,c(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = "")))
-        write.table(processout, file=finalfile, row.names=FALSE)	
-      }
-    }
-    
-    #	data<-rbindlist(list(data.l,data.h))
-    data<-rbind(data.l,data.h)
-    
-  }
-  
-  
-  ## even though it is not the case, user can do with no interaction ( no else command)
-  
-  
-  ## Meena : 2014/10/26, add missingPeptides has any peptide or not
-  if ( missing.action == "remove" & length(missingPeptides)>0 ){
-    data<-data[-which(data$FEATURE %in% missingPeptides),]
-    
-    message("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")
-    
-    processout<-rbind(processout,c("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model."))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-  }
-  
-  
-  ## for assigning interference
-  missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )
-  
-  ##
-  processout<-rbind(processout,c(paste("missing.action : ",missing.action," - okay",sep="")))
-  write.table(processout, file=finalfile, row.names=FALSE)
-  
+  ### check input for labeled
   
   ###==================================================
   ### start to analyze by protein ID
-  
+ 	message(paste("\n Start to test and get inference in whole plot..."))
+ 
   ### need original group information
-  origGroup<-unique(data$GROUP_ORIGINAL)
+  rqall<-data$RunlevelData
+
+  origGroup<-unique(rqall$GROUP_ORIGINAL)
   
-  for (i in 1:nlevels(data$PROTEIN)){
+  for (i in 1:nlevels(rqall$Protein)){
     
-    sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
-    
+    sub<-rqall[rqall$Protein==levels(rqall$Protein)[i],]
+    colnames(sub)[colnames(sub)=="LogIntensities"]<-"ABUNDANCE"
+    colnames(sub)[colnames(sub)=="Protein"]<-"PROTEIN"
+
     # it is important to remove NA first, before we have the correct structure for each factor
     sub<-sub[!is.na(sub$ABUNDANCE),]
     
@@ -2661,55 +2586,26 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
     sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	
     sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)
     sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)
-    sub$FEATURE<-factor(sub$FEATURE)	
+    # sub$FEATURE<-factor(sub$FEATURE)	
     sub$RUN<-factor(sub$RUN)
     
-    singleFeature<-.checkSingleFeature(sub)
+    # singleFeature<-.checkSingleFeature(sub)
     singleSubject<-.checkSingleSubject(sub)
     TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
     
-    MissGroupByFeature<-.checkMissGroupByFeature(sub)
-    MissRunByFeature<-.checkMissRunByFeature(sub)
+    # MissGroupByFeature<-.checkMissGroupByFeature(sub)
+    # MissRunByFeature<-.checkMissRunByFeature(sub)
     MissSubjectByGroup<-.checkRunbyFeature(sub)
     UnequalSubject<-.checkUnequalSubject(sub)
+        
     
+    ########### testing and inference in whole plot
+    message(paste("Testing a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(rqall$Protein)),")"))
     
-    ## need to assigning whether interaction term is included or not
-    remove.interaction<-interference
-    
-    if ( missing.action == "nointeraction" & missing.results [ i ]){
-      remove.interaction = FALSE
+     ## fit the model 
+      temp<-try(.fit.model.single(contrast.matrix,sub,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,singleSubject,repeated,origGroup),silent=TRUE)
       
-      message("** ",paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))
-      
-      processout<-rbind(processout,c(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = "")))
-      write.table(processout, file=finalfile, row.names=FALSE)
-    }
-    
-    message(paste("Testing a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
-    
-    if(singleFeature){
-      message("** Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted.")
-      
-      processout<-rbind(processout,c(paste("Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted", sep = "")))
-      write.table(processout, file=finalfile, row.names=FALSE)
-      
-      temp<-try(.fit.model.single(contrast.matrix,sub,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated,origGroup),silent=TRUE)
-      
-    }	
-    
-    
-    if(!singleFeature){
-      
-      # not sure it is correct and what it means
-      #	noRunFeature<-.checkRunbyFeature(sub)
-      #	if(noRunFeature) unbalanced=TRUE
-      
-      temp<-try(.fit.model(contrast.matrix,sub,labeled, scopeOfBioReplication,scopeOfTechReplication,interference=remove.interaction,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup),silent=TRUE)
-      
-    }
-    
-    
+
     ## fix(apr 16)
     if(class(temp)=="try-error") {
       message("*** error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.")
@@ -2761,7 +2657,6 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
     processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
     write.table(processout, file=finalfile, row.names=FALSE)
     
-    
   } ### end protein loop
   
   ##
@@ -2789,7 +2684,7 @@ groupComparison<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE
   write.table(processout, file=finalfile, row.names=FALSE)
   
   
-  temp<-data[!is.na(data[,"ABUNDANCE"]) & !is.na(data[,"INTENSITY"]),]
+  temp<-data$ProcessedData[!is.na(data$ProcessedData[,"ABUNDANCE"]) & !is.na(data$ProcessedData[,"INTENSITY"]),]
   
   if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<
        abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){
@@ -3192,8 +3087,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 
 .checkTechReplicate<- function(data){
   
-  data.light<-data[data$LABEL=="L",]
-  temp<-unique(data.light[,c("SUBJECT_NESTED","RUN")])
+  temp<-unique(data[,c("SUBJECT_NESTED","RUN")])
   temp$SUBJECT_NESTED<-factor(temp$SUBJECT_NESTED)
   temp1<-xtabs(~SUBJECT_NESTED,data=temp)
   TechReplicate<-all(temp1!="1")
@@ -3271,264 +3165,226 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
   return(any(temp1!=temp1[1]))
 }
 
+
 ########################################################
-.fit.model.single<-function(contrast.matrix,data,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated,origGroup){
+.runQuantification<-function(data,summary,equalFeatureVar){
+	
+	data<-data[!is.na(data$ABUNDANCE),]
+    data$PROTEIN<-factor(data$PROTEIN)
+    
+    label<-nlevels(data$LABEL)==2
+      
+    data$RUN<-factor(data$RUN)
+
+	# set ref which is distinguish reference and endogenous. any reference=0. endogenous is the same as RUN
+	if(label){
+		data$ref<-0
+		data$ref[data$LABEL!="H"]<-data$RUN[data$LABEL!="H"]
+		data$ref<-factor(data$ref)
+#		unique(data[,c("RUN","LABEL","GROUP","ref")])
+	}
+	      
+#    finalresult<-data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$RUN)),RUN=rep(c(levels(data$RUN)),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA,LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
+
+	
+	if(summary=="linear"){
+		result<-NULL
+	  
+		for(i in 1: nlevels(data$PROTEIN)){
+        
+     		sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
+
+#      sub$GROUP<-factor(sub$GROUP)
+#      sub$SUBJECT<-factor(sub$SUBJECT)
+#      sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	
+#      sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)
+     		sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)
+      		sub$FEATURE<-factor(sub$FEATURE)	
+      		sub$RUN<-factor(sub$RUN)	        
+      
+      	if(!label){
+      		temp<-data.frame(xtabs(~RUN, data=sub))
+	
+      		sub.result<-data.frame(Protein=rep(levels(data$PROTEIN)[i],each=nlevels(sub$RUN)),RUN=rep(c(levels(sub$RUN)),1),LogIntensities=NA, NumFeature=length(unique(sub$FEATURE)),NumPeaks=temp$Freq)
+      	
+      	}else{
+      	
+      		sub$ref<-factor(sub$ref)			
+
+      		temp<-data.frame(xtabs(~ref, data=sub))
+
+      		sub.result<-data.frame(Protein=rep(levels(data$PROTEIN)[i],each=nlevels(sub$ref)),RUN=rep(c(levels(sub$ref)[-1],"Ref"),1),LogIntensities=NA, NumFeature=length(unique(sub$FEATURE)),NumPeaks=c(temp[-1,"Freq"],temp[1,"Freq"]))
+      	
+      	}
+      
+      	singleFeature<-.checkSingleFeature(sub)
+      	singleSubject<-.checkSingleSubject(sub)
+      	TechReplicate<-.checkTechReplicate(sub) ## use for label-free model
+        
+      	##### fit the model
+      	message(paste("Getting the summarization per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+        
+      	fit<-try(.fit.quantification.run(sub,singleFeature,singleSubject, TechReplicate,labeled=label, equalFeatureVar), silent=TRUE)
+             
+      	if(class(fit)=="try-error") {
+        	message("*** error : can't fit the model for ", levels(data$PROTEIN)[i])
+          
+        	result<-rbind(result, sub.result)
+          
+          #processout<-rbind(processout,c(paste("*** error : can't fit the model for ", levels(data$PROTEIN)[i],sep="")))
+          #write.table(processout, file=finalfile, row.names=FALSE)
+          
+      	}else{
+          
+       		if(class(fit)=="lm"){
+          		cf <- summary(fit)$coefficients
+       	 	}else{
+         		cf <- fixef(fit)
+         	}
+          
+        	# calculate sample quantification for all levels of sample
+        	a=1	
+          
+        	for(j in 1:nlevels(sub$RUN)){
+         		contrast.matrix<-rep(0,nlevels(sub$RUN))
+          		contrast.matrix[j]<-1
+            
+          		contrast<-.make.contrast.run.quantification(fit,contrast.matrix,sub, labeled=label)
+            
+         		if(class(fit)=="lm"){
+           			sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+          		}else{
+            		sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+          		}
+          
+          		a=a+1
+        	}
+          
+          	## for label-based case, need reference quantification
+        	if(label){
+        		contrast<-.make.contrast.run.quantification.reference(fit,contrast.matrix,sub)
+        		if(class(fit)=="lm"){
+              		sub.result[a,3]<-.estimableFixedQuantification(cf,contrast)
+          		}else{
+              		sub.result[a,3]<-.estimableRandomQuantification(cf,contrast)
+          		}
+        	}
+          
+        	result<-rbind(result, sub.result)
+          
+          ##
+          #processout<-rbind(processout,c(paste("Finished to quantify for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))
+          #write.table(processout, file=finalfile, row.names=FALSE)
+        	}
+        
+      	} ## end-loop for each protein	
+	} ## for linear model summary
+	
+	
+	## Tukey Median Polish	
+	if(summary=="TMP"){
+		
+		if(label){
+			message("* For TMP(Tukey's median polish) summary with label-based experiment, ratio between endogenous intensity and reference intensity is used.")
+		
+			processout<-rbind(processout,c("* For TMP(Tukey's median polish) summary with label-based experiment, ratio between endogenous intensity and reference intensity is used."))
+			write.table(processout, file=finalfile, row.names=FALSE)
+		}
+
+		result<-NULL
+	  
+		for(i in 1: nlevels(data$PROTEIN)){
+        
+     		sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
+
+      		sub$FEATURE<-factor(sub$FEATURE)	
+      		sub$RUN<-factor(sub$RUN)	        
+      
+      		if(!label){ ## label-free
+      			
+      			data_w = dcast(RUN ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+  				rownames(data_w)<-data_w$RUN
+  				data_w<-data_w[,-1]
+  				data_w[data_w==1]<-NA
+      			
+      		}else{ ## labeled
+		
+      			sub.l<-sub[sub$LABEL=="L",]
+				sub.h<-sub[sub$LABEL=="H",]
+				
+				data_w.l = dcast(RUN ~ FEATURE, data=sub.l, value.var='ABUNDANCE', keep=TRUE)
+				rownames(data_w.l)<-data_w.l$RUN
+				data_w.l<-data_w.l[,-1]
+				data_w.l[data_w.l==1]<-NA
+
+				data_w.h = dcast(RUN ~ FEATURE, data=sub.h, value.var='ABUNDANCE', keep=TRUE)
+				rownames(data_w.h)<-data_w.h$RUN
+				data_w.h<-data_w.h[,-1]
+				data_w.h[data_w.h==1]<-NA
+	
+				data_w<-data_w.l/data_w.h
+      		}
+      		
+      		meddata <- medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
+			tmpresult<-meddata$overall + meddata$row
+
+			sub.result<-data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult))
+			
+      		result<-rbind(result, sub.result)
+      	}  ## loop for proteins
+	}
+		
+	## !!! need to write nice format
+	return(result)
+}
+
+
+
+##########################################################################################
+## updated v3
+.fit.quantification.run<-function(sub,singleFeature,singleSubject, TechReplicate,labeled,equalFeatureVar){
+	
+	if(!labeled){ ### label-free case
+		## for single Feature, original value is the run quantification
+		if(singleFeature){
+			fit.full<-lm(ABUNDANCE ~ RUN , data = sub)
+		}else{
+			fit.full<-lm(ABUNDANCE ~ FEATURE + RUN , data = sub)
+		}
+		
+	}else{ ### labeled-based case
+		### update v3
+		if(singleSubject){
+			if(TechReplicate){
+				fit.full<-lm(ABUNDANCE ~ FEATURE+RUN+ref , data = sub)
+
+			}else{ ## no Technical replicate
+				## impossible for compare
+				## error message
+			}
+		}else{ ## several subjects
+			fit.full<-lm(ABUNDANCE ~ FEATURE+RUN+ref , data = sub)
+			#fit.full<-lm(ABUNDANCE ~ FEATURE+ref , data = sub)
+
+		}
+	}
+	
+	## make equal variance for feature : need to be updated
+    if(!equalFeatureVar){
+       fit.full<-.iter.wls.fit.model(data=sub,fit=fit.full,nrepeats=1)
+    }
+	
+	return(fit.full)
+}
+
+
+
+########################################################
+.fit.model.single<-function(contrast.matrix,data,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,singleSubject,repeated,origGroup){
   
-  
-  if(labeled){ ## labeled==TRUE
-    
-    # when subject is fixed, it is ok using lm function. When we use lm, model with nested or crossed samples have the same results. In the future, if we want to have sample quantification. We need to separate the cases of nested or crossed samples.
-    
-    ### (1) fixed Subject, fixed Run
-    if(scopeOfTechReplication=="restricted" & scopeOfBioReplication=="restricted"){
-      
-      # case-control
-      if (!repeated){	
-        if(TechReplicate){
-          fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED + GROUP + RUN , data = data)
-          
-        }else{
-          fit.full<-lm(ABUNDANCE ~ GROUP + RUN , data = data)
-        }
-      }else{ ### time-course
-        if(TechReplicate){
-          fit.full<-lm(ABUNDANCE ~ SUBJECT_NESTED + GROUP + RUN , data = data)
-          
-        }else{
-          fit.full<-lm(ABUNDANCE ~ SUBJECT + GROUP + RUN , data = data)
-        }
-      }
-      
-      ## get parameter from model
-      fixedPara<-.getParameterFixed(fit.full)
-      
-      #### each comparison
-      allout<-NULL
-      
-      for(k in 1:nrow(contrast.matrix)){
-        
-        # choose each comparison
-        contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-        
-        if(GroupComparisonAgreement$sign){
-          message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-          
-          out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-          out<-.estimableFixedRandom(fixedPara,contrast)
-          
-          ## any error for out, just NA
-          if(is.null(out)){
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout<-rbind(allout, out)
-      } # end loop for comparion
-      
-      #finalout<-list(result=allout,summary=fit.full)		
-      #return(finalout)
-    }	### tech replication=restricted
-    
-    
-    ### (2) random Subject, fixed Run
-    if(scopeOfTechReplication=="restricted" & scopeOfBioReplication=="expanded"){
-      
-      # case-control
-      if (!repeated){	
-        if(TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT_NESTED) + GROUP + RUN , data = data)
-          # calculate DF of SUBJECT_NESTED
-          temp<-unique(data[,c("GROUP","SUBJECT")])
-          temp1<-xtabs(~GROUP,data=temp)
-          df.full<-sum(temp1[-1]-1)	
-        }else{
-          message(paste(unique(data$PROTEIN),"This protein has single feature and no technical replicate. Therefore, we can't analysis with expanded scope of biolofical replication."))
-        }
-      }else{ ### time-course
-        if(TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN , data = data)
-          # calculate DF of SUBJECT:GROUP
-          temp<-unique(data[,c("GROUP","SUBJECT")])
-          temp1<-xtabs(~GROUP,data=temp)
-          df.full<-sum(temp1[-c(1,2)]-1)
-        }else{
-          fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + GROUP + RUN , data = data)
-          df.full<-lm(ABUNDANCE ~ SUBJECT + GROUP + RUN , data = data)$df.residual
-        }
-      }
-      
-      ## get parameter from model
-      randomPara<-.getParameterRandom(fit.full,df.full)
-      
-      #### each comparison
-      allout<-NULL
-      
-      for(k in 1:nrow(contrast.matrix)){
-        
-        # choose each comparison
-        contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-        
-        if(GroupComparisonAgreement$sign==TRUE){
-          message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-          
-          out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-          out<-.estimableFixedRandom(randomPara,contrast)
-          
-          ## any error for out, just NA
-          if(is.null(out)){
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout<-rbind(allout, out)
-      } # end loop for comparion
-      
-    } # random subject, fixed run
-    
-    ### (3) fixed subject, random Run
-    if(scopeOfTechReplication=="expanded" & scopeOfBioReplication=="restricted"){
-      
-      # case-control
-      if (!repeated){	
-        if(TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP + (1|RUN) , data = data)
-          df.full<-lm(ABUNDANCE ~ SUBJECT_ORIGINAL  + GROUP + RUN , data = data)$df.residual
-          
-        }else{
-          fit.full<-lmer(ABUNDANCE ~ GROUP + (1|RUN) , data = data)
-          df.full<-lm(ABUNDANCE ~ GROUP + RUN , data = data)$df.residual
-        }
-      }else{ ### time-course
-        if(TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN) , data = data)
-          df.full<-lm(ABUNDANCE ~ SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + RUN , data = data)$df.residual
-          
-        }else{
-          fit.full<-lmer(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP + (1|RUN) , data = data)
-          df.full<-lm(ABUNDANCE ~ SUBJECT_ORIGINAL + GROUP + RUN , data = data)$df.residual
-        }
-      }
-      
-      ## get parameter from model
-      randomPara<-.getParameterRandom(fit.full,df.full)
-      
-      #### each comparison
-      allout<-NULL
-      for(k in 1:nrow(contrast.matrix)){
-        
-        # choose each comparison
-        contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-        
-        if(GroupComparisonAgreement$sign==TRUE){
-          message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-          
-          out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-          out<-.estimableFixedRandom(randomPara,contrast)
-          
-          ## any error for out, just NA
-          if(is.null(out)){
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout<-rbind(allout, out)
-      } # end loop for comparion
-      
-    } # random run, fixed subject	
-    
-    ### (4) random subject, random Run
-    if(scopeOfTechReplication=="expanded" & scopeOfBioReplication=="expanded"){
-      
-      # case-control
-      if (!repeated){	
-        if(TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT_NESTED) + GROUP + (1|RUN) , data = data)
-          # calculate DF of SUBJECT_NESTED
-          temp<-unique(data[,c("GROUP","SUBJECT")])
-          temp1<-xtabs(~GROUP,data=temp)
-          df.full<-sum(temp1[-1]-1)
-        }else{
-          fit.full<-lmer(ABUNDANCE ~ GROUP + (1|RUN) , data = data)
-          df.full<-lm(ABUNDANCE ~ GROUP + RUN , data = data)$df.residual
-        }
-      }else{ ### time-course
-        if(TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + (1|RUN) , data = data)
-          # calculate DF of SUBJECT:GROUP
-          temp<-unique(data[,c("GROUP","SUBJECT")])
-          temp1<-xtabs(~GROUP,data=temp)
-          df.full<-sum(temp1[-c(1,2)]-1)	
-        }else{
-          fit.full<-lmer(ABUNDANCE ~ (1|SUBJECT) + GROUP + (1|RUN) , data = data)
-          # calculate DF of SUBJECT:GROUP
-          temp<-unique(data[,c("GROUP","SUBJECT")])
-          temp1<-xtabs(~GROUP,data=temp)
-          df.full<-sum(temp1[-c(1,2)]-1)
-        }
-      }
-      
-      ## get parameter from model
-      randomPara<-.getParameterRandom(fit.full,df.full)
-      
-      #### each comparison
-      allout<-NULL
-      for(k in 1:nrow(contrast.matrix)){
-        
-        # choose each comparison
-        contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-        
-        if(GroupComparisonAgreement$sign==TRUE){
-          message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-          
-          out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-          out<-.estimableFixedRandom(randomPara,contrast)
-          
-          ## any error for out, just NA
-          if(is.null(out)){
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout<-rbind(allout, out)
-      } # end loop for comparion
-      
-    } # random run, fixed subject	
-    
-  } ## label-based
-  
-  
-  ## label-free : use only light intensity, need to change contrast.matrix without Group0	
-  if(!labeled){
-    ## use only light
-    data2<-subset(data,LABEL=="L")
+  ## input : output of run quantification
+  	
+	data2<-data
     data2$GROUP<-factor(data2$GROUP)
     data2$SUBJECT<-factor(data2$SUBJECT)
     
@@ -3540,17 +3396,21 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
       
       # case-control: impossible for GROUP+SUBJECT for case-control (parameter for the last SUBJECT is NA even though with technical replicates)
       if (!repeated){ ## case-control
-        if(!TechReplicate){
+        if(!TechReplicate | singleSubject){
           fit.full<-lm(ABUNDANCE ~ GROUP , data = data2)
         }else{
           fit.full<-lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)
           
         }
       }else{ ### repeated==TRUE, time-course
-        if(!TechReplicate){
-          fit.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)
-        }else{
-          fit.full<-lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT, data = data2) ## SUBJECT==SUBJECT_NESTED here
+      	if(singleSubject){
+          fit.full<-lm(ABUNDANCE ~ GROUP , data = data2)
+      	}else{ ## no single subject
+        	if(!TechReplicate){
+          		fit.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)
+        	}else{
+          		fit.full<-lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT, data = data2) ## SUBJECT==SUBJECT_NESTED here
+        	}
         }
       } ## time-course
       
@@ -3594,25 +3454,34 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
       
       # case-control
       if (!repeated){
-        if(!TechReplicate){
-          message("*** error : can't analyze with expanded scope of BioReplicates. Use the restricted scope of BioReplicates")
-        }else{
+         if(!TechReplicate){
+           fit.full<-lm(ABUNDANCE ~ GROUP , data = data2)
+         }else{
           fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT) , data = data2)
           df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)$df.residual
-        }
+         }
         
       }else{ ## time-course
-        if(!TechReplicate){
-          fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT) , data = data2)
-          df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)$df.residual
-        }else{
-          fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT)+(1|GROUP:SUBJECT), data = data2) ## SUBJECT==SUBJECT_NESTED here
-          df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT , data = data2)$df.residual
+      	if(singleSubject){
+          fit.full<-lm(ABUNDANCE ~ GROUP , data = data2)
+      	}else{ ## no single subject
+        	if(!TechReplicate){
+          	fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT) , data = data2)
+          	df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)$df.residual
+        	}else{
+          	fit.full<-lmer(ABUNDANCE ~ GROUP+(1|SUBJECT)+(1|GROUP:SUBJECT), data = data2) ## SUBJECT==SUBJECT_NESTED here
+          	df.full<-lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT , data = data2)$df.residual
+        	}
         }
       } ## time-course
       
       ## get parameter from model
-      randomPara<-.getParameterRandom(fit.full,df.full)
+      	if(class(fit.full)=="lm"){
+			Para<-.getParameterFixed(fit.full)
+		}else{
+			Para<-.getParameterRandom(fit.full,df.full)
+		}
+      
       
       #### each comparison
       allout<-NULL
@@ -3631,7 +3500,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
           out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
         }else{
           contrast<-.make.contrast.free.single(fit.full,contrast.matrix.sub,data2)
-          out<-.estimableFixedRandom(randomPara,contrast)
+          out<-.estimableFixedRandom(Para,contrast)
           
           ## any error for out, just NA
           if(is.null(out)){
@@ -3647,7 +3516,6 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
       
     }	## expanded, random subject
     
-  } ## label-free
   
   if(class(fit.full)=="lm"){  ### lm model
     finalresid<-fit.full$residuals
@@ -3661,658 +3529,6 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
   return(finalout)
   
 } ## .fit.model.single
-
-
-
-########################################################
-.fit.model<-function(contrast.matrix,data,labeled,scopeOfBioReplication,scopeOfTechReplication,interference,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup){
-  
-  ## # of repeats for unequal feature variance
-  nrepeats=3
-  
-  ## label-free : use only light intensity, need to change contrast.matrix without Group0	
-  if(!labeled){
-    ## use only light
-    data2<-subset(data,LABEL=="L")
-    data2$GROUP<-factor(data2$GROUP)
-    data2$SUBJECT<-factor(data2$SUBJECT)
-    
-    # when single subject, there is no need to distinguish case-control and time course; fixed subject or random subject, and no need to have GXF since there is not enough degree of freedom, hence no separatation of interference	
-    if (singleSubject){
-      if(!TechReplicate){
-        fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP , data = data2)
-      }else{
-        fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + GROUP:FEATURE , data = data2)
-      }
-      
-      ## make equal variance for feature
-      if(!equalFeatureVar){
-        fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
-      }
-      
-      
-      ## get parameter from model
-      fixedPara<-.getParameterFixed(fit.full)
-      
-      #### each comparison
-      allout<-NULL
-      
-      for(k in 1:nrow(contrast.matrix)){
-        
-        # choose each comparison
-        contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
-        
-        if(GroupComparisonAgreement$sign==TRUE){
-          message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", paste(origGroup[GroupComparisonAgreement$positionMiss],collapse=", "), " are missing completely.")
-          
-          out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast<-.make.contrast.free(fit.full,contrast.matrix.sub,data2)
-          out<-.estimableFixedRandom(fixedPara,contrast)
-          
-          ## any error for out, just NA
-          if(is.null(out)){
-            out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout<-rbind(allout, out)
-        
-      } # end loop for contrast
-      
-    } ## singleSubject is TRUE
-    
-    if (!singleSubject){
-      
-      # when subject is fixed, it is ok using lm function. When we use lm, model with nested or crossed samples have the same results. In the future, if we want to have sample quantification. We need to separate the cases of nested or crossed samples.
-      
-      #===========
-      # (1) Subject:F; case-control/time course
-      # since it's fixed effect model, the results of nested model and crossed model are the same
-      # but when there is unequal subject, the SE is slightly different
-      # also no missing patterns (GXF, G, S) will stop the test
-      #==========	
-      if (scopeOfBioReplication=="restricted"){
-        
-        # case-control
-        if (!repeated){	
-          if(interference){
-            fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + FEATURE:GROUP , data = data2)
-          }else{
-            fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP, data = data2)
-          }
-        }else{	## time-course
-          if(interference){
-            fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + FEATURE:GROUP , data = data2)
-            #fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + SUBJECT:GROUP + GROUP + FEATURE:GROUP , data = data2)
-          }else{
-            fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP, data = data2)
-            #fit.full<-lm(ABUNDANCE ~ FEATURE + SUBJECT + SUBJECT:GROUP + GROUP, data = data2)
-            
-          }
-        }
-        
-        ## make equal variance for feature
-        if(!equalFeatureVar){
-          data2<-data2[!is.na(data2$ABUNDANCE),]
-          fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
-        }
-        
-        
-        ## get parameter from model before all comparison
-        fixedPara<-.getParameterFixed(fit.full)
-        
-        #### each comparison
-        allout<-NULL
-        
-        for(k in 1:nrow(contrast.matrix)){
-          
-          # choose each comparison
-          contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-          row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-          
-          GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
-          
-          if(GroupComparisonAgreement$sign==TRUE){
-            message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-            
-            out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-          }else{
-            contrast<-.make.contrast.free(fit.full,contrast.matrix.sub,data2)
-            out<-.estimableFixedRandom(fixedPara,contrast)
-            
-            ## any error for out, just NA
-            if(is.null(out)){
-              out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-            }else{
-              out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-            }
-          }
-          
-          allout<-rbind(allout, out)
-          
-        } # end loop for contrast
-        
-      } ## bioRep is restricted
-      
-      
-      #===========
-      # (2) Subject:R; 
-      # since it's mixed effect model, the results of nested model and crossed model are not the same
-      # df of nested and crossed are not the same as well.
-      # also missing patterns (GXF) will stop the test, but (G, S) will not
-      #==========	
-      if (scopeOfBioReplication=="expanded"){
-        
-        # case-control
-        if (!repeated){
-          if(interference){
-            if(!MissGroupByFeature){
-              
-              # SE is slightly different	
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + FEATURE:GROUP , data = data2)
-              temp<-unique(data2[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1-1)
-            }else{  ## MissGroupByFeature==TRUE
-              
-              # SE is slightly different	
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = data2)
-              temp<-unique(data2[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1-1)
-            }
-          }else{ ## interference==FALSE
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP, data = data2)
-            temp<-unique(data2[,c("GROUP","SUBJECT")])
-            temp1<-xtabs(~GROUP,data=temp)
-            df.full<-sum(temp1-1)
-          }
-        }else{  ##time-course
-          if(interference){
-            if(!MissGroupByFeature){
-              
-              # SE is slightly different	
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + FEATURE:GROUP , data = data2)
-              temp<-unique(data2[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-1]-1)
-            }else{ ## MissGroupByFeature==TRUE
-              
-              # SE is slightly different	
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP, data = data2)
-              temp<-unique(data2[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-1]-1)
-            }
-          }else{  ## interference==FALSE
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +   (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP, data = data2)
-            temp<-unique(data2[,c("GROUP","SUBJECT")])
-            temp1<-xtabs(~GROUP,data=temp)
-            df.full<-sum(temp1[-1]-1)
-          }
-        }
-        
-        ## make equal variance for feature
-        #	     		if(!equalFeatureVar){
-        #	     			fit.full<-.iter.wls.fit.model(data=data2,fit=fit.full,nrepeats)
-        #	     		}
-        
-        
-        ## get parameter from model
-        randomPara<-.getParameterRandom(fit.full,df.full)
-        
-        #### each comparison
-        allout<-NULL
-        
-        for(k in 1:nrow(contrast.matrix)){
-          
-          # choose each comparison
-          contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-          row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-          
-          GroupComparisonAgreement<-.chechGroupComparisonAgreement(data2,contrast.matrix.sub)
-          
-          if(GroupComparisonAgreement$sign==TRUE){
-            message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-            
-            out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-          }else{
-            contrast<-.make.contrast.free(fit.full,contrast.matrix.sub,data2)
-            out<-.estimableFixedRandom(randomPara,contrast)
-            
-            ## any error for out, just NA
-            if(is.null(out)){
-              out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-            }else{
-              out<-data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-            }
-          }
-          allout<-rbind(allout, out)
-          
-        } # end loop for contrast
-        
-      }## bio rep is expanded
-      
-    }## singleSub=FALSE
-    
-  } ## label -free	
-  
-  
-  
-  if(labeled){	
-    
-    # when single subject, there is no need to distinguish case-control and time course; fixed subject or random subject, and no need to have GXF RXF since there is not enough degree of freedom, hence no separatation of interference	
-    
-    if (singleSubject){
-      
-      message(paste("*** ",unique(data$PROTEIN)," has single subject per condition. Only restricted scope of conclusion is possible."))
-      
-      if(TechReplicate){
-        fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN + GROUP:FEATURE + RUN:FEATURE, data = data)
-      }else{
-        fit.full<-lm(ABUNDANCE ~ FEATURE + GROUP + RUN, data = data)
-      }
-      
-      ## make equal variance for feature
-      if(!equalFeatureVar){
-        fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-      }
-      
-      
-      ## get parameter from model
-      fixedPara<-.getParameterFixed(fit.full)
-      
-      #### each comparison
-      allout<-NULL
-      
-      for(k in 1:nrow(contrast.matrix)){
-        
-        # choose each comparison
-        contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-        
-        if(GroupComparisonAgreement$sign==TRUE){
-          message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-          
-          out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-          out<-.estimableFixedRandom(fixedPara,contrast)
-          
-          ## any error for out, just NA
-          if(is.null(out)){
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout<-rbind(allout, out)
-        
-      } # end loop for contrast
-      
-    } ## singleSub is True
-    
-    if (!singleSubject){
-      
-      ##########################	
-      # (1) Subject: F, Run: F
-      ##########################	
-      
-      if(scopeOfBioReplication=="restricted" & scopeOfTechReplication=="restricted"){
-        
-        ## (1.1) case-control
-        if (!repeated){
-          if(interference){
-            fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = data)
-          }else{
-            fit.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT_NESTED + GROUP + RUN, data = data)
-          }
-        }else{  ## (1.2) time-course
-          if(interference){
-            fit.full<-lm(ABUNDANCE ~ FEATURE  +  SUBJECT_NESTED + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = data)
-          }else{
-            fit.full<-lm(ABUNDANCE ~ FEATURE  +  SUBJECT_NESTED  + GROUP + RUN, data = data)
-          }
-        }	
-        
-        ## make equal variance for feature
-        if(!equalFeatureVar){
-          fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-        }
-        
-        
-        ## get parameter from model
-        fixedPara<-.getParameterFixed(fit.full)
-        
-        #### each comparison
-        allout<-NULL
-        for(k in 1:nrow(contrast.matrix)){
-          
-          # choose each comparison
-          contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-          row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-          
-          GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-          
-          if(GroupComparisonAgreement$sign==TRUE){
-            message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-            
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-          }else{
-            contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-            out<-.estimableFixedRandom(fixedPara,contrast)
-            
-            ## any error for out, just NA
-            if(is.null(out)){
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-            }else{
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-            }
-          }
-          
-          allout<-rbind(allout, out)	
-        } # end loop for comparison
-      } ## fSfR
-      
-      
-      ##########################	
-      # (2) Subject: R, Run: F
-      ##########################	
-      
-      if(scopeOfBioReplication=="expanded"&scopeOfTechReplication=="restricted"){
-        
-        ## (2.1) case-control
-        if (!repeated){
-          if(interference){	
-            if(!MissGroupByFeature & !MissRunByFeature){
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = data)
-              # calculate DF of SUBJECT_NESTED
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-1]-1)
-            }else{
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = data)
-              # calculate DF of SUBJECT_NESTED
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-1]-1)		
-            }
-          }else{ ##interference==FALSE
-            
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + RUN, data = data)
-            # calculate DF of SUBJECT_NESTED
-            temp<-unique(data[,c("GROUP","SUBJECT")])
-            temp1<-xtabs(~GROUP,data=temp)
-            df.full<-sum(temp1[-1]-1)
-          }
-        }else{  ## (2.2) time-course
-          if(interference){	
-            if(!MissGroupByFeature & !MissRunByFeature){
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN + FEATURE:GROUP +  FEATURE:RUN, data = data)
-              # calculate DF of SUBJECT:GROUP
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-c(1,2)]-1)
-            }else{
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + RUN, data = data)
-              # calculate DF of SUBJECT:GROUP
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-c(1,2)]-1)	
-            }
-          }else{  ##interference==FALSE
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + RUN, data = data)
-            # calculate DF of SUBJECT:GROUP
-            temp<-unique(data[,c("GROUP","SUBJECT")])
-            temp1<-xtabs(~GROUP,data=temp)
-            df.full<-sum(temp1[-c(1,2)]-1)
-          }	
-        }
-        
-        ## make equal variance for feature
-        #	     		if(!equalFeatureVar){
-        #	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-        #	     		}
-        
-        
-        ## get parameter from model
-        randomPara<-.getParameterRandom(fit.full,df.full)
-        
-        #### each comparison
-        allout<-NULL
-        
-        for(k in 1:nrow(contrast.matrix)){
-          
-          # choose each comparison
-          contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-          row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-          
-          GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-          
-          if(GroupComparisonAgreement$sign==TRUE){
-            message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-            
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-          }else{
-            contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-            out<-.estimableFixedRandom(randomPara,contrast)
-            
-            ## any error for out, just NA
-            if(is.null(out)){
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-            }else{
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-            }	
-          }
-          
-          allout<-rbind(allout, out)	
-          
-        } # end loop for comparison
-        
-      }	#rSfR
-      
-      ##########################	
-      # (3) Subject: F, Run: R
-      # only SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP can work for model fitting
-      # therefore, there is no need to separate case-control and time course
-      # however, when there is unequal subject, we need to fit additive model of removing SUBJECT by GROUP
-      ##########################	
-      
-      if(scopeOfBioReplication=="restricted"&scopeOfTechReplication=="expanded"){
-        
-        ## (3.1) equal subject per group
-        if (!UnequalSubject){
-          if(interference){
-            if(!MissGroupByFeature & !MissRunByFeature){
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = data)
-              df.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP + GROUP:SUBJECT + RUN + FEATURE:GROUP +  FEATURE:RUN, data = data)$df.residual
-            }else{
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN), data = data)
-              df.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP + GROUP:SUBJECT + RUN, data = data)$df.residual
-            }
-          }else{  ## interference
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + SUBJECT_ORIGINAL:GROUP + GROUP + (1|RUN), data = data)
-            df.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP + GROUP:SUBJECT + RUN, data = data)$df.residual
-          }
-        }else{ ## (3.2) unequal subject per group
-          if(interference){		
-            if(!MissGroupByFeature & !MissRunByFeature){
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = data)
-              df.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP + GROUP:SUBJECT + RUN + FEATURE:GROUP +  FEATURE:RUN, data = data)$df.residual
-            }else{
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL  + GROUP + (1|RUN), data = data)
-              df.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP + GROUP:SUBJECT  + RUN, data = data)$df.residual
-            }			
-          }else{ ## interference==FALSE
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  SUBJECT_ORIGINAL  + GROUP + (1|RUN), data = data)
-            df.full<-lm(ABUNDANCE ~ FEATURE +  SUBJECT + GROUP + GROUP:SUBJECT + RUN, data = data)$df.residual
-          }
-        }	
-        
-        ## make equal variance for feature
-        #	     		if(!equalFeatureVar){
-        #	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-        #	     		}
-        
-        
-        ## get parameter from model
-        randomPara<-.getParameterRandom(fit.full,df.full)
-        
-        #### each comparison
-        allout<-NULL
-        
-        for(k in 1:nrow(contrast.matrix)){
-          
-          # choose each comparison
-          contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-          row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-          
-          GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-          
-          if(GroupComparisonAgreement$sign==TRUE){
-            message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-            
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-          }else{
-            contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-            out<-.estimableFixedRandom(randomPara,contrast)
-            
-            ## any error for out, just NA
-            if(is.null(out)){
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-            }else{
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-            }
-          }
-          allout<-rbind(allout, out)	
-        } # end loop for comparison
-      } #fSrR	
-      
-      ##########################	
-      # (4) Subject: R, Run: R
-      ##########################	
-      
-      if(scopeOfBioReplication=="expanded" & scopeOfTechReplication=="expanded"){
-        
-        ## (4.1) case-control
-        if (!repeated){
-          if(interference){
-            if(!MissGroupByFeature & !MissRunByFeature){
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = data)
-              # calculate DF of SUBJECT_NESTED
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-1]-1)
-            }else{
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED)  + GROUP + (1|RUN), data = data)
-              # calculate DF of SUBJECT_NESTED
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-1]-1)
-            }
-          }else{ ## interference==FALSE
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT_NESTED) + GROUP + (1|RUN), data = data)
-            # calculate DF of SUBJECT_NESTED
-            temp<-unique(data[,c("GROUP","SUBJECT")])
-            temp1<-xtabs(~GROUP,data=temp)
-            df.full<-sum(temp1[-1]-1)
-          }
-        }else{  ## (4.2) time-course
-          if(interference){	
-            if(!MissGroupByFeature & !MissRunByFeature){
-              
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + (1|RUN) + FEATURE:GROUP +  (1|FEATURE:RUN), data = data)
-              # calculate DF of SUBJECT:GROUP
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-c(1,2)]-1)
-            }else{
-              fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP) + GROUP + (1|RUN), data = data)
-              # calculate DF of SUBJECT:GROUP
-              temp<-unique(data[,c("GROUP","SUBJECT")])
-              temp1<-xtabs(~GROUP,data=temp)
-              df.full<-sum(temp1[-c(1,2)]-1)
-            }
-          }else{  ## interference==FALSE
-            fit.full<-lmer(ABUNDANCE ~ FEATURE +  (1|SUBJECT) + (1|SUBJECT:GROUP)  + GROUP + (1|RUN), data = data)
-            # calculate DF of SUBJECT:GROUP
-            temp<-unique(data[,c("GROUP","SUBJECT")])
-            temp1<-xtabs(~GROUP,data=temp)
-            df.full<-sum(temp1[-c(1,2)]-1)
-          }
-        }	
-        
-        ## make equal variance for feature
-        #	     		if(!equalFeatureVar){
-        #	     			fit.full<-.iter.wls.fit.model(data=data,fit=fit.full,nrepeats)
-        #	     		}
-        
-        
-        ## get parameter from model
-        randomPara<-.getParameterRandom(fit.full,df.full)
-        
-        #### each comparison
-        allout<-NULL
-        
-        for(k in 1:nrow(contrast.matrix)){
-          
-          # choose each comparison
-          contrast.matrix.sub<-matrix(contrast.matrix[k,], nrow=1)
-          row.names(contrast.matrix.sub)<-row.names(contrast.matrix)[k]
-          
-          GroupComparisonAgreement<-.chechGroupComparisonAgreement(data,contrast.matrix.sub)
-          
-          if(GroupComparisonAgreement$sign==TRUE){
-            message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-            
-            out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-          }else{
-            contrast<-.make.contrast.based(fit.full,contrast.matrix.sub,data)
-            out<-.estimableFixedRandom(randomPara,contrast)
-            
-            ## any error for out, just NA
-            if(is.null(out)){
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-            }else{
-              out<-data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-            }
-          }
-          
-          allout<-rbind(allout, out)	
-        } # end loop for comparison	
-      } #rSrR		
-    } ## singleSub is FALSE
-  }## label-based
-  
-  if(class(fit.full)=="lm"){  ### lm model
-    finalresid<-fit.full$residuals
-    finalfitted<-fit.full$fitted.values
-  }else{   ### lmer model
-    finalresid<-resid(fit.full)
-    finalfitted<-fitted(fit.full)
-  }
-  
-  finalout<-list(result=allout,valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
-  
-  return(finalout)
-}	
 
 
 
