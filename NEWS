@@ -1,0 +1,68 @@
+CHANGES IN VERSION 3.0.3
+-------------------------
+- dataProcess : new option, skylineReport. for skyline MSstats report, there is ‘Truncated’ column. If Truncated==True, remove them. and keep zero value for summaryMethod=“skyline”.
+- groupComparison : for skyline option, t.test, val.equal=TRUE, which is no adjustment for degree of freedom, just pooled variance.
+
+
+CHANGES IN VERSION 2.1.4
+-------------------------
+- Change the numbering of file name for plots. If the file names are already existing in the folder, automatically next number will be add at the end of file name. Therefore file name will not be overwritten, and we can keep all pdf files for plots.
+
+
+CHANGES IN VERSION 2.1.3
+-------------------------
+- fix the groupComparison for label-free experiments.
+- automatically generate progress report as .txt files
+- add progress message for groupComparison and dataProcessPlots function.
+
+
+CHANGES IN VERSION 2.1.1
+-------------------------
+- fix the bug in Condition plot : 
+	1. for label-based : match reference and endogenous
+	2. for label-free : when there is one observation in each group, SD=NA. make it zero.
+- fix the bug in heatmap and comparison plots : remove NA result for plotting
+- fix the bug for label-free groupComparison :  how to get subject_nested parameter in make.contrast.free for unequal number per group
+- fix the bug in group quantification : make.contrast.group.quantification fixed for subject_nested parameter
+
+
+CHANGES IN VERSION 1.99.1
+-------------------------
+- fixed several NOTES, added .Rbuildignore, compacted vignettes
+- TODO: check remaining 'no visible binding for global variable' NOTES
+- removed warn -1 
+- added validity check when returning MSnSet
+- used inherits/is. for class testing
+- TODO fix if conditions syntax
+
+CHANGES IN VERSION 1.99.0
+-------------------------
+ o improve efficiency for computing groupComparison and quantification <2012-12-21>
+ o add .rnw <2012-12-03>
+ o update groupComparision for label-free time-course experiment with single Feature and with or without technical replicates <2013-04-08>
+ o add option for saving QQ plot and Residual plot in order to checkin the normality assumption in groupComparison function. <2013-04-08>
+ o use ggplot2 package for all plots. <2013-07-11>
+ o fix bug for volcano plot : different color labeling <2013-07-12>
+ o add power plot in sample size calculation plot <2013-07-12>
+ o add 'interference=TRUE or FALSE' in sample size calculation <2013-07-15>
+ o add 'legend.size=7'for size of feature name legends in dataProcessPlots <2013-07-23> 
+ o add 'text.angle=0'for angle of condition labeling in dataProcessPlots <2013-07-23>
+ o fix bug for quantification : when there are missing values in endogenous intensities, but values in reference intensities. <2013-07-24>
+ o fix bug for groupComparison : when there are missing values in endogenous intensities, but values in reference intensities, .make.constast.based or .free sub function were changed. <2013-07-25>
+
+o two function for transformation between required input for MSstats and MSnSet class <2013-09-04>
+o flexibility for visualization : save as pdf files or show in window with selected proteins or all proteins. <2013-09-04>
+o handle unequal variance for feature in groupComparison function with featureVar=TRUE <2013-09-04>
+
+o Add 'missing.action' for impute missing values in group comparison stage. <2013-09-20>
+
+
+
+
+
+
+
+
+
+
+
