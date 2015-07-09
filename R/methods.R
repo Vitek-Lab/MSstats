@@ -2241,12 +2241,12 @@ names<-c(colnames(workPerProt)[2:at],"FEATURE",colnames(workPerProt)[(at+1):dim(
 	temp<-coef.name[grep("ref",coef.name)]
 	
 	if(length(temp)>0){
-		if (nlevels(sub1$LABEL)==2){
-			levels<-levels(sub1$ref)
-			ref.c<-contrast.matrix[1:(length(levels)-1)]
-		}
 
+		levels<-levels(sub1$ref)
+		ref.c<-contrast.matrix[1:(length(levels)-1)]
+	
 		names(ref.c)<-temp
+		
 	}else{
 		ref.c<-NULL
 	}

@@ -7,7 +7,8 @@ dataProcessPlots(data=data,type=type,featureName="Transition",
 	ylimUp=FALSE,ylimDown=FALSE,scale=FALSE,interval="CI",
 	x.axis.size=10,y.axis.size=10,
 	text.size=4,text.angle=0,legend.size=7,dot.size.profile=2,dot.size.condition=3,
-	width=10, height=10, which.Protein="all",address="")
+	width=10, height=10, which.Protein="all",
+	originalPlot=TRUE, summaryPlot=TRUE, address="")
 }
 
 \arguments{
@@ -28,6 +29,8 @@ dataProcessPlots(data=data,type=type,featureName="Transition",
   \item{width}{width of the saved file. Default is 10.}
   \item{height}{height of the saved file. Default is 10.}
   \item{which.Protein}{Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from levels(data$PROTEIN). Default is "all", which generates all plots for each protein.}
+  \item{originalPlot}{TRUE(default) draws original profile plots.}
+  \item{summaryPlot}{TRUE(default) draws profile plots with summarization for run levels.}
   \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "ProfilePlot.pdf" or "QCplot.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 

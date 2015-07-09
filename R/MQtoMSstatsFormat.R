@@ -47,7 +47,7 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 	### 2015/02/03
 	
 	### first, remove contaminants
-	tempprotein<-proteinGroups[proteinGroups$Contaminant!="+" & proteinGroups$Reverse!="+" & proteinGroups$Only.identified.by.site!="+",]
+	tempprotein<-proteinGroups[proteinGroups$Potential.contaminant!="+" & proteinGroups$Reverse!="+" & proteinGroups$Only.identified.by.site!="+",]
 
 	### then take proteins which are included
 	infile<-infile[which(infile$Protein.group.IDs %in% unique(tempprotein$id)),]
@@ -150,7 +150,7 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 		## good to remove before reformatting to long-format
 	
 		if(fewMeasurements=="remove"){
-			infile_w<-removeFeatureWithfew(infile_w)
+			infile_w<-.removeFeatureWithfew(infile_w)
 		}
 	
 		## then, go back to long-format

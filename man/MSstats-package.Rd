@@ -1,14 +1,14 @@
-\name{MSstats.daily-package}
-\alias{MSstats.daily-package}
-\alias{MSstats.daily}
+\name{MSstats-package}
+\alias{MSstats-package}
+\alias{MSstats}
 \docType{package}
 \title{Tools for protein significance analysis in DDA,SRM and DIA proteomic experiments for label-free workflows or workflows with stable isotope labeled reference }
 \description{A set of tools for protein significance analysis in SRM, DDA and DIA experiments.}
 \details{
 \tabular{ll}{
-Package: \tab MSstats.daily\cr
-Version: \tab 3.0.4\cr
-Date: \tab 2015-05-16\cr
+Package: \tab MSstats\cr
+Version: \tab 3.0.6\cr
+Date: \tab 2015-07-08\cr
 License: \tab Artistic-2.0 \cr
 LazyLoad: \tab yes\cr
 }
@@ -29,6 +29,6 @@ Ching-Yun Chang, Paola Picotti, Ruth Huttenhain, Viola Heinzelmann-Schwarz, Mark
 Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Statistical protein quantification and significance analysis in label-free LC-M experiments with complex designs" \emph{BMC Bioinformatics}, 13:S16, 2012.
 }
 
-\keyword{ MSstats.daily }
+\keyword{ MSstats }
 
 

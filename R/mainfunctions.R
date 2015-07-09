@@ -213,7 +213,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   	## if there is 'Truncated' column,
   	if(is.element(toupper("Truncated"), toupper(colnames(raw)))){
   		## remove truncated peaks
-  		raw[raw$Truncated=="True","Intensity"]<-NA
+  		raw[!is.na(raw$Truncated) & raw$Truncated==TRUE,"Intensity"]<-NA
   	
     	processout<-rbind(processout,c("There are some truncated peaks. They replaced with NA."))
     	write.table(processout, file=finalfile,row.names=FALSE)
@@ -398,6 +398,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   #countdiff = tapply (work$FEATURE, work$RUN, function ( x ) length(setdiff(unique(x),standardFeature)) ) 
   
   ## whether multirun or not : we assume that different method has completely different feature
+  work$RUN<-factor(work$RUN)
   multirun<-.countMultiRun(work)
   checkMultirun<-any(multirun==0)
   
@@ -1848,7 +1849,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
 #############################################
 
 
-dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=FALSE,ylimDown=FALSE,scale=FALSE,interval="CI",x.axis.size=10,y.axis.size=10,text.size=4,text.angle=0,legend.size=7,dot.size.profile=2,dot.size.condition=3,width=10,height=10, which.Protein="all", address=""){
+dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=FALSE,ylimDown=FALSE,scale=FALSE,interval="CI",x.axis.size=10,y.axis.size=10,text.size=4,text.angle=0,legend.size=7,dot.size.profile=2,dot.size.condition=3,width=10,height=10, which.Protein="all", originalPlot=TRUE, summaryPlot=TRUE, address=""){
 	
   datafeature<-data$ProcessedData
   datarun<-data$RunlevelData
@@ -1898,35 +1899,6 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
       datarun$PROTEIN<-factor(datarun$PROTEIN)
     }
     
-    #### save the plots as pdf or not
-    # If there are the file with the same name, add next numbering at the end of file name		
-    if(address!=FALSE){
-      allfiles<-list.files()
-      
-      num<-0
-      filenaming<-paste(address,"ProfilePlot",sep="")
-      finalfile<-paste(address,"ProfilePlot.pdf",sep="")
-      
-      while(is.element(finalfile,allfiles)){
-        num<-num+1
-        finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-      }	
-      
-      pdf(finalfile, width=width, height=height)
-    }
-    
-    ## need to fill in incomplete rows for Runlevel data
-    haverun<-FALSE
-    
-    if(sum(is.element(colnames(datarun),"RUN"))!=0){
-    		datamat = dcast( Protein ~ RUN, data=datarun, value.var='LogIntensities', keep=TRUE) 
-    
-    		datarun = melt(datamat, id.vars=c('Protein'))
-		colnames(datarun)[colnames(datarun) %in% c("variable","value")]<-c('RUN','ABUNDANCE')
-		
-		haverun<-TRUE
-    }
-    
     # assign upper or lower limit
     ## ylimUp
     y.limup<-30
@@ -1958,8 +1930,39 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
       }
     }
     
+    ## need to fill in incomplete rows for Runlevel data
+    haverun<-FALSE
+    
+    if(sum(is.element(colnames(datarun),"RUN"))!=0){
+    		datamat = dcast( Protein ~ RUN, data=datarun, value.var='LogIntensities', keep=TRUE) 
+    
+    		datarun = melt(datamat, id.vars=c('Protein'))
+		colnames(datarun)[colnames(datarun) %in% c("variable","value")]<-c('RUN','ABUNDANCE')
+		
+		haverun<-TRUE
+    }
+    
     ## remove the column called 'SuggestToFilter' if there.
     if(any(is.element(colnames(datafeature),"SuggestToFilter"))) datafeature$SuggestToFilter<-NULL
+    
+    
+    #### save the plots as pdf or not
+    # If there are the file with the same name, add next numbering at the end of file name		
+    if(originalPlot){
+    if(address!=FALSE){
+      allfiles<-list.files()
+      
+      num<-0
+      filenaming<-paste(address,"ProfilePlot",sep="")
+      finalfile<-paste(address,"ProfilePlot.pdf",sep="")
+      
+      while(is.element(finalfile,allfiles)){
+        num<-num+1
+        finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+      }	
+      
+      pdf(finalfile, width=width, height=height)
+    }
     
     for (i in 1:nlevels(datafeature$PROTEIN)){	
       sub<-datafeature[datafeature$PROTEIN==levels(datafeature$PROTEIN)[i],]
@@ -2041,56 +2044,8 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			ptemp<-ptemp+geom_point(size=1.5)+guides(color=guide_legend(title=paste("# peptide:",nlevels(sub$PEPTIDE)),ncol=3))
 		}
 		
-		
-        ## 2st plot for original plot : summary
-        if(haverun){
-        	subrun<-datarun[datarun$Protein==levels(datafeature$PROTEIN)[i],]
-			
-			if(nrow(subrun)!=0){
-				quantrun<-data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=subrun$RUN,GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE,METHOD=1)
-			}else{ ## if there is only one Run measured across all runs, no Run information for linear with censored
-				quantrun<-data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=unique(datafeature$RUN)[1],GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA,METHOD=1)
-			}
-			
-
-			if(any(is.element(colnames(sub),"imputed"))){
-				quantrun$imputed<-FALSE
-			}
-
-			quantrun$analysis<-"Run summary"
-			sub$analysis<-"Processed feature-level data"
-		
-			final<-rbind(sub, quantrun)
-			final$analysis<-factor(final$analysis)
-			final$FEATURE<-factor(final$FEATURE)
-			final$RUN<-as.numeric(final$RUN)
-
-			ptempall<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis',linetype='FEATURE',size='analysis',shape='analysis'), data=final)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=c("lightgray","darkred"))+scale_shape_manual(values=c(20,20))+scale_size_manual(values=c(1,2))+scale_linetype_manual(values=c(rep(1,times=length(unique(final$FEATURE))-1),2),guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(final$PROTEIN))+theme(
-				panel.background=element_rect(fill='white', colour="black"),
-				legend.key=element_rect(fill='white',colour='white'),
-				panel.grid.minor = element_blank(),
-				strip.background=element_rect(fill='gray95'),
-				strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-				axis.text.x=element_text(size=x.axis.size,colour="black"),
-				axis.text.y=element_text(size=y.axis.size,colour="black"),
-				axis.ticks=element_line(colour="black"),
-				axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
-				axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
-				title=element_text(size=x.axis.size+8,vjust=1.5),
-				legend.position="top",
-				legend.text=element_text(size=legend.size),
-				legend.title=element_blank())
-
-				ptempall<-ptempall+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
-				
-				## draw point again because some red summary dots could be hiden
-				ptempall<-ptempall+geom_point(data=final,aes(x=RUN, y=ABUNDANCE,shape=analysis, size=analysis, color=analysis))
-				
-			.multiplot(ptemp,ptempall, cols=2)
-        }else{
-        		print(ptemp)
-        }
-        
+		print(ptemp)
+       
         message(paste("Drew the Profile plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),")"))
         
       }
@@ -2130,55 +2085,8 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			ptemp<-ptemp+guides(color=guide_legend(title=paste("# peptide:",nlevels(sub$PEPTIDE)),ncol=3))
 		}
         
-		## 2st plot for original plot : summary
-		if(haverun){
-			
-        	subrun<-datarun[datarun$Protein==levels(datafeature$PROTEIN)[i],]
-			
-			if(nrow(subrun)!=0){
-				quantrun<-data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=subrun$RUN,GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE,METHOD=1)
-			}else{ ## if there is only one Run measured across all runs, no Run information for linear with censored
-				quantrun<-data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=unique(datafeature$RUN)[1],GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA,METHOD=1)
-			}
+		print(ptemp)
 
-			if(any(is.element(colnames(sub),"imputed"))){
-				quantrun$imputed<-FALSE
-			}
-
-			quantrun$analysis<-"Run summary"
-			sub$analysis<-"Processed feature-level data"
-		
-			final<-rbind(sub, quantrun)
-			final$analysis<-factor(final$analysis)
-			final$FEATURE<-factor(final$FEATURE)
-			final$RUN<-as.numeric(final$RUN)
-
-			ptempall<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis',linetype='FEATURE',size='analysis',shape='analysis'), data=final)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=c("lightgray","darkred"))+scale_shape_manual(values=c(20,20))+scale_size_manual(values=c(1,2))+scale_linetype_manual(values=c(rep(1,times=length(unique(final$FEATURE))-1),2),guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(final$PROTEIN))+theme(
-				panel.background=element_rect(fill='white', colour="black"),
-				legend.key=element_rect(fill='white',colour='white'),
-				panel.grid.minor = element_blank(),
-				strip.background=element_rect(fill='gray95'),
-				strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-				axis.text.x=element_text(size=x.axis.size,colour="black"),
-				axis.text.y=element_text(size=y.axis.size,colour="black"),
-				axis.ticks=element_line(colour="black"),
-				axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
-				axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
-				title=element_text(size=x.axis.size+8,vjust=1.5),
-				legend.position="top",
-				legend.text=element_text(size=legend.size),
-				legend.title=element_blank())
-
-			ptempall<-ptempall+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
-				
-				## draw point again because some red summary dots could be hiden
-			ptempall<-ptempall+geom_point(data=final,aes(x=RUN, y=ABUNDANCE,shape=analysis, size=analysis, color=analysis))
-				
-			.multiplot(ptemp,ptempall, cols=2)
-        }else{
-        		print(ptemp)
-      	}
-        
         message(paste("Drew the Profile plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),")"))
         
       }
@@ -2218,59 +2126,117 @@ dataProcessPlots<-function(data=data,type=type,featureName="Transition",ylimUp=F
 			ptemp<-ptemp
 		}
         
-## 2st plot for original plot : summary
-		if(haverun){
-        	subrun<-datarun[datarun$Protein==levels(datafeature$PROTEIN)[i],]
-
-			if(nrow(subrun)!=0){
-				quantrun<-data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=subrun$RUN,GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE,METHOD=1)
-			}else{ ## if there is only one Run measured across all runs, no Run information for linear with censored
-				quantrun<-data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=unique(datafeature$RUN)[1],GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA,METHOD=1)
-			}
-
-			if(any(is.element(colnames(sub),"imputed"))){
-				quantrun$imputed<-FALSE
-			}
-
-			quantrun$analysis<-"Run summary"
-			sub$analysis<-"Processed feature-level data"
-		
-			final<-rbind(sub, quantrun)
-			final$analysis<-factor(final$analysis)
-			final$FEATURE<-factor(final$FEATURE)
-			final$RUN<-as.numeric(final$RUN)
-
-			ptempall<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis',linetype='FEATURE',size='analysis',shape='analysis'), data=final)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=c("lightgray","darkred"))+scale_shape_manual(values=c(20,20))+scale_size_manual(values=c(1,2))+scale_linetype_manual(values=c(rep(1,times=length(unique(final$FEATURE))-1),2),guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(final$PROTEIN))+theme(
-				panel.background=element_rect(fill='white', colour="black"),
-				legend.key=element_rect(fill='white',colour='white'),
-				panel.grid.minor = element_blank(),
-				strip.background=element_rect(fill='gray95'),
-				strip.text.x=element_text(colour=c("#00B0F6"),size=14),
-				axis.text.x=element_text(size=x.axis.size,colour="black"),
-				axis.text.y=element_text(size=y.axis.size,colour="black"),
-				axis.ticks=element_line(colour="black"),
-				axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
-				axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
-				title=element_text(size=x.axis.size+8,vjust=1.5),
-				legend.position="top",
-				legend.text=element_text(size=legend.size),
-				legend.title=element_blank())
-
-			ptempall<-ptempall+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
-				
-				## draw point again because some red summary dots could be hiden
-			ptempall<-ptempall+geom_point(data=final,aes(x=RUN, y=ABUNDANCE,shape=analysis, size=analysis, color=analysis))
-				
-			.multiplot(ptemp,ptempall, cols=2)
-        }else{
-        		print(ptemp)
-        	}
+       	print(ptemp)
         	
         message(paste("Drew the Profile plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),")"))
         
       }
     } ## end-loop for each protein
     if(address!=FALSE) dev.off() 
+    } # end original plot
+    
+    ###############
+    ## 2st plot for original plot : summary
+    
+    if(summaryPlot){
+		if(address!=FALSE){
+     	 	allfiles<-list.files()
+      
+     	 	num<-0
+      		filenaming<-paste(address,"ProfilePlot_wSummarization",sep="")
+      		finalfile<-paste(address,"ProfilePlot_wSummarization.pdf",sep="")
+      
+      		while(is.element(finalfile,allfiles)){
+        		num<-num+1
+        		finalfile<-paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+      		}	
+      
+     	 	pdf(finalfile, width=width, height=height)
+    	}
+
+    	for (i in 1:nlevels(datafeature$PROTEIN)){	
+     		sub<-datafeature[datafeature$PROTEIN==levels(datafeature$PROTEIN)[i],]
+      		sub$FEATURE<-factor(as.character(sub$FEATURE))	
+      		sub$SUBJECT<-factor(sub$SUBJECT)	
+      		sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	
+      		sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)
+      		sub$PEPTIDE<-factor(as.character(sub$PEPTIDE))
+      
+      		#sub<- sub[with(sub, order(LABEL,RUN,FEATURE)), ]
+      
+      		## if all measurements are NA,
+     		 if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){
+       			 message(paste("Can't the Profile plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))
+        		next()
+     		 }
+      
+      		# seq for peptide and transition
+     		 b<-unique(sub[,c("PEPTIDE","FEATURE")])
+     		 b<-b[with(b,order(PEPTIDE,FEATURE)),] ## add because if there are missing value, orders are different.
+      
+     		 temp1<-xtabs(~b[,1])
+      		ss<-NULL
+      		s<-NULL
+      
+      		for(j in 1:length(temp1)){
+        		temp3<-rep(j,temp1[j])
+       			s<-c(s,temp3)
+       			temp2<-seq(1,temp1[j])
+        		ss<-c(ss,temp2)	
+     		}
+      
+      		if(haverun){
+        		subrun<-datarun[datarun$Protein==levels(datafeature$PROTEIN)[i],]
+			
+				if(nrow(subrun)!=0){
+					quantrun<-data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=subrun$RUN,GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE,METHOD=1)
+				}else{ ## if there is only one Run measured across all runs, no Run information for linear with censored
+					quantrun<-data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary",TRANSITION="Run summary",FEATURE="Run summary",LABEL="Endogenous",GROUP_ORIGINAL=NA,SUBJECT_ORIGINAL=NA,RUN=unique(datafeature$RUN)[1],GROUP=NA,SUBJECT=NA,SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA,METHOD=1)
+				}
+			
+
+				if(any(is.element(colnames(sub),"imputed"))){
+					quantrun$imputed<-FALSE
+				}
+
+				quantrun$analysis<-"Run summary"
+				sub$analysis<-"Processed feature-level data"
+		
+				final<-rbind(sub, quantrun)
+				final$analysis<-factor(final$analysis)
+				final$FEATURE<-factor(final$FEATURE)
+				final$RUN<-as.numeric(final$RUN)
+
+				ptempall<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis',linetype='FEATURE',size='analysis',shape='analysis'), data=final)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=c("lightgray","darkred"))+scale_shape_manual(values=c(20,20))+scale_size_manual(values=c(1,2))+scale_linetype_manual(values=c(rep(1,times=length(unique(final$FEATURE))-1),2),guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(final$PROTEIN))+theme(
+					panel.background=element_rect(fill='white', colour="black"),
+					legend.key=element_rect(fill='white',colour='white'),
+					panel.grid.minor = element_blank(),
+					strip.background=element_rect(fill='gray95'),
+					strip.text.x=element_text(colour=c("#00B0F6"),size=14),
+					axis.text.x=element_text(size=x.axis.size,colour="black"),
+					axis.text.y=element_text(size=y.axis.size,colour="black"),
+					axis.ticks=element_line(colour="black"),
+					axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
+					axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
+					title=element_text(size=x.axis.size+8,vjust=1.5),
+					legend.position="top",
+					legend.text=element_text(size=legend.size),
+					legend.title=element_blank())
+
+					ptempall<-ptempall+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+				
+					## draw point again because some red summary dots could be hiden
+					ptempall<-ptempall+geom_point(data=final,aes(x=RUN, y=ABUNDANCE,shape=analysis, size=analysis, color=analysis))
+			
+				print(ptempall)
+			
+				message(paste("Drew the Profile plot with summarization for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),")"))
+			
+			}
+
+    	} ## end-loop for each protein
+    	if(address!=FALSE) dev.off() 
+  	}  
   } ## end Profile plot	
   
   
@@ -3289,7 +3255,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 
 .countMultiRun<-function(data){
   
-  standardFeature<-unique(data[data$RUN==unique(data$RUN[1]),"FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.
+ standardFeature<-unique(data[data$RUN==unique(data$RUN[1]),"FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.
   
   ## get overlapped feature ID
   countdiff = tapply (data$FEATURE, data$RUN, function ( x ) length(intersect(unique(x),standardFeature)) ) 
@@ -3584,6 +3550,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 
       		sub$FEATURE<-factor(sub$FEATURE)	
       		sub$RUN<-factor(sub$RUN)
+      		sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")
       			        
       		if(nlevels(sub$FEATURE)>1){ ## for more than 1 features
       			if(!label){ ## label-free
@@ -3592,43 +3559,65 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
   					rownames(data_w)<-data_w$RUN
   					data_w<-data_w[,-1]
   					data_w[data_w==1]<-NA
+  					
+  					meddata <- medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
+					tmpresult<-meddata$overall + meddata$row
+					
+					sub.result<-data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult))
+			
+      				result<-rbind(result, sub.result)
       			
       			}else{ ## labeled
-		
-      				sub.l<-sub[sub$LABEL=="L",]
-					sub.h<-sub[sub$LABEL=="H",]
-				
-					data_w.l = dcast(RUN ~ FEATURE, data=sub.l, value.var='ABUNDANCE', keep=TRUE)
-					rownames(data_w.l)<-data_w.l$RUN
-					data_w.l<-data_w.l[,-1]
-					data_w.l[data_w.l==1]<-NA
+					
+					data_w = dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+  					rownames(data_w)<-data_w$run.label
+  					data_w<-data_w[,-1]
+  					#data_w[data_w==1]<-NA
+  					
+  					meddata <- medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
+					tmpresult<-meddata$overall + meddata$row
+					
+					reformresult<-data.frame(tmpresult)
+					end<-nchar(rownames(reformresult))
+					reformresult$LABEL<-substr(rownames(reformresult),end,end)
+					reformresult$RUN<-substr(rownames(reformresult),1,end-2)
+					colnames(reformresult)[1]<-"ABUNDANCE"
+					
+					## now single feature, adjust reference feature difference
+      				h<-reformresult[reformresult$LABEL=="H",]
+ 					allmed<-median(h$ABUNDANCE, na.rm=TRUE)
 
-					data_w.h = dcast(RUN ~ FEATURE, data=sub.h, value.var='ABUNDANCE', keep=TRUE)
-					rownames(data_w.h)<-data_w.h$RUN
-					data_w.h<-data_w.h[,-1]
-					data_w.h[data_w.h==1]<-NA
-					
-					### need to matching, if there are missing values
-					runname<-intersect(rownames(data_w.h),rownames(data_w.l))
-					
-					data_w.l<-data_w.l[which(rownames(data_w.l) %in% runname),]
-					data_w.h<-data_w.h[which(rownames(data_w.h) %in% runname),]
-					## then, take ratio
-					data_w<-data_w.l/data_w.h
+        			for (i in 1:length(unique(reformresult$RUN))){
+          				## ABUNDANCE is normalized
+          				reformresult[reformresult$RUN==unique(reformresult$RUN)[i],"ABUNDANCE"]<-reformresult[reformresult$RUN==unique(reformresult$RUN)[i],"ABUNDANCE"]-reformresult[reformresult$RUN==unique(reformresult$RUN)[i] & reformresult$LABEL=="H","ABUNDANCE"]+allmed
+        			}
+        			
+        			reformresult<-reformresult[reformresult$LABEL=="L",]
+        			
+        			subtemp<-reformresult[!is.na(reformresult$ABUNDANCE),]
+      				sub.result<-data.frame(Protein=unique(sub$PROTEIN),LogIntensities=reformresult$ABUNDANCE, RUN=reformresult$RUN)
+      				
+      				result<-rbind(result, sub.result)
       			}
       		
-      			meddata <- medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
-				tmpresult<-meddata$overall + meddata$row
-
-				sub.result<-data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult))
-			
-      			result<-rbind(result, sub.result)
-      		
       		}else{
-      			## single feature, use original values
+      			if(label){ ## label-based
+      				## single feature, adjust reference feature difference
+      				h<-sub[sub$LABEL=="H",]
+ 					allmed<-median(h$ABUNDANCE, na.rm=TRUE)
+
+        			for (i in 1:length(unique(sub$RUN))){
+          				## ABUNDANCE is normalized
+          				sub[sub$RUN==unique(sub$RUN)[i],"ABUNDANCE"]<-sub[sub$RUN==unique(sub$RUN)[i],"ABUNDANCE"]-sub[sub$RUN==unique(sub$RUN)[i] & sub$LABEL=="H","ABUNDANCE"]+allmed
+        			}
+        			
+        			sub<-sub[sub$LABEL=="L",]
+      			}
+      			
+				## single feature, use original values
       			subtemp<-sub[!is.na(sub$ABUNDANCE),]
       			sub.result<-data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN)
-			
+      				
       			result<-rbind(result, sub.result)
       		}
       	}  ## loop for proteins
@@ -3757,7 +3746,147 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
     	data$RUN<-factor(data$RUN)
     	
 		if(label){
-			stop("* For label-based experiments, not prepared yet.")
+			
+			result<-NULL
+
+			for(i in 1:length(unique(data$PROTEIN))){
+	
+				sub<-data[data$PROTEIN==unique(data$PROTEIN)[i],]
+				
+				message(paste("Getting the summarization for censored missing values per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				
+				sub$FEATURE<-factor(sub$FEATURE)
+				sub$feature.label<-paste(sub$FEATURE, sub$LABEL, sep="_")
+				sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")
+
+				## remove run which has no measurement at all
+				subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY),]
+				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)
+				norun<-setdiff(unique(data$RUN),count$RUN)
+				
+				if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))){ # removed NA rows already, if there is no overlapped run, error
+					sub<-sub[-which(sub$RUN %in% norun),]
+					sub$RUN<-factor(sub$RUN)
+				}
+				
+				if(length(unique(sub$RUN))==1){
+				
+					message(paste("* Only 1 MS run in ",levels(data$PROTEIN)[i], " has measurement. Can't summarize with censored intensities."))
+				
+					next
+				}	
+				
+				## remove features which are completely NAs
+				countfeature<-xtabs(~FEATURE, subtemp)
+				namefeature<-names(countfeature)[countfeature==0]
+				
+				if(length(namefeature)!=0){
+					sub<-sub[-which(sub$FEATURE %in% namefeature),]
+					sub$FEATURE<-factor(sub$FEATURE)
+				}		
+				
+				##### how to decide censored or not
+				## 1. censored 
+				if(censoredInt=="0"){
+					sub$cen<-ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY==0,0,1)
+				}
+				
+				### 2. all censored missing
+				if(censoredInt=="NA"){
+					sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+				}
+				
+				
+				## 1. put minimum in protein level to NA
+				#if(cutoffCensored=="minEachProtein"){
+				#	if(censoredInt=="NA"){
+				#		cut<-min(sub$ABUNDANCE, na.rm=TRUE) 
+				#		sub[is.na(sub$INTENSITY),"ABUNDANCE"]<-cut
+				#	} 
+					
+				#	if(censoredInt=="0"){
+				#		cut<-min(sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,"ABUNDANCE"]) 
+				#		sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,"ABUNDANCE"]<-cut
+				#	}
+				#}
+				
+				## 2. put minimum in feature level to NA
+				if(cutoffCensored=="minFeature"){
+					if(censoredInt=="NA"){
+						cut<-aggregate(ABUNDANCE~feature.label,data=sub, function(x) min(x, na.rm=TRUE))
+
+						for(j in 1:length(unique(sub$feature.label))){
+							sub[is.na(sub$INTENSITY) & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+					
+					if(censoredInt=="0"){
+						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						cut<-aggregate(ABUNDANCE~feature.label,data=subtemptemp, FUN=min)
+
+						for(j in 1:length(unique(sub$feature.label))){
+							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+				}
+				
+				## 3. put minimum in RUN to NA
+				if(cutoffCensored=="minRun"){
+					if(censoredInt=="NA"){
+						cut<-aggregate(ABUNDANCE~run.label,data=sub, function(x) min(x, na.rm=TRUE))
+
+						for(j in 1:length(unique(sub$run.label))){
+							sub[is.na(sub$INTENSITY) & sub$run.label==cut$run.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+					
+					if(censoredInt=="0"){
+						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						cut<-aggregate(ABUNDANCE~run.label,data=subtemptemp, FUN=min)
+
+						for(j in 1:length(unique(sub$run.label))){
+							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$run.label==cut$run.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+				}	
+	
+
+				### fit the model
+				if(length(unique(sub$FEATURE))==1){
+					
+					# with single feature, not converge, wrong intercept
+					# need to check
+					fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
+				}else{
+					fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
+				}
+				
+		
+				sub.result<-data.frame(Protein=unique(sub$PROTEIN),RUN=rep(c(levels(sub$RUN)),1),LogIntensities=NA)
+
+				# get the parameters
+				cf <- summary(fittest)$coefficients
+
+				# calculate sample quantification for all levels of sample
+      			a=1	
+          
+       			for(j in 1:nlevels(sub$RUN)){
+       				contrast.matrix<-rep(0,nlevels(sub$RUN))
+        			contrast.matrix[j]<-1
+          					contrast<-.make.contrast.run.quantification.Survival(fittest,contrast.matrix,sub, labeled=TRUE)
+	
+         			 sub.result[a,3]<-.estimableFixedQuantificationSurvival(cf,contrast)
+         			 a=a+1
+        		}
+
+				result<-rbind(result, sub.result)
+			}
+
+			datamat = dcast( Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
+			datamat = melt(datamat, id.vars=c('Protein'))
+			colnames(datamat)<-c('Protein','RUN','LogIntensities')
+			result<-datamat
+			
 		}else{
 			
 			result<-NULL
@@ -3786,6 +3915,15 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				
 					next
 				}	
+				
+				## remove features which are completely NAs
+				countfeature<-xtabs(~FEATURE, subtemp)
+				namefeature<-names(countfeature)[countfeature==0]
+				
+				if(length(namefeature)!=0){
+					sub<-sub[-which(sub$FEATURE %in% namefeature),]
+					sub$FEATURE<-factor(sub$FEATURE)
+				}		
 				
 				##### how to decide censored or not
 				## 1. censored 
@@ -3839,17 +3977,17 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				
 				
 				## 1. put minimum in protein level to NA
-				if(cutoffCensored=="minEachProtein"){
-					if(censoredInt=="NA"){
-						cut<-min(sub$ABUNDANCE, na.rm=TRUE) 
-						sub[is.na(sub$INTENSITY),"ABUNDANCE"]<-cut
-					} 
+				#if(cutoffCensored=="minEachProtein"){
+				#	if(censoredInt=="NA"){
+				#		cut<-min(sub$ABUNDANCE, na.rm=TRUE) 
+				#		sub[is.na(sub$INTENSITY),"ABUNDANCE"]<-cut
+				#	} 
 					
-					if(censoredInt=="0"){
-						cut<-min(sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,"ABUNDANCE"]) 
-						sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,"ABUNDANCE"]<-cut
-					}
-				}
+				#	if(censoredInt=="0"){
+				#		cut<-min(sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,"ABUNDANCE"]) 
+				#		sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,"ABUNDANCE"]<-cut
+				#	}
+				#}
 				
 				## 2. put minimum in feature level to NA
 				if(cutoffCensored=="minFeature"){
