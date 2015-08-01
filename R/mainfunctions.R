@@ -3759,6 +3759,12 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				sub$feature.label<-paste(sub$FEATURE, sub$LABEL, sep="_")
 				sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")
 
+				## if all measurements are NA,
+      			if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){
+       				message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))
+        			next()
+      			}
+      			
 				## remove run which has no measurement at all
 				subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY),]
 				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)
@@ -3899,6 +3905,12 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				
 				sub$FEATURE<-factor(sub$FEATURE)
 	
+				## if all measurements are NA,
+      			if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){
+       				message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))
+        			next
+      			}
+      			
 				## remove run which has no measurement at all
 				subtemp<-sub[!is.na(sub$INTENSITY),]
 				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)
@@ -4481,7 +4493,7 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,logBa
     tempobj[is.na(tempobj)]<-50
     
     if(toupper(clustering)=='PROTEIN'){
-      obj<-obj[hclust(dist(tempobj),method="wward.D")$order,]
+      obj<-obj[hclust(dist(tempobj),method="ward.D")$order,]
     }
     if(toupper(clustering)=='COMPARISON'){
       obj<-obj[hclust(dist(t(tempobj)),method="ward.D")$order,]
