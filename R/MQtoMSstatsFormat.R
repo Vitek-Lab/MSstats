@@ -47,8 +47,25 @@ MaxQtoMSstatsFormat<-function(evidence, annotation,proteinGroups, proteinID="Pro
 	### 2015/02/03
 	
 	### first, remove contaminants
-	tempprotein<-proteinGroups[proteinGroups$Potential.contaminant!="+" & proteinGroups$Reverse!="+" & proteinGroups$Only.identified.by.site!="+",]
+	if(is.element("Contaminant", colnames(proteinGroups)) & is.element("+",unique(proteinGroups$Contaminant))){
+		proteinGroups<-proteinGroups[-which(proteinGroups$Contaminant %in% "+") ,]
+	}
+	
+	if(is.element("Potential.contaminant", colnames(proteinGroups)) & is.element("+",unique(proteinGroups$Potential.contaminant))){
+		proteinGroups<-proteinGroups[-which(proteinGroups$Potential.contaminant %in% "+") ,]
+	}
 
+	if(is.element("Reverse", colnames(proteinGroups)) & is.element("+",unique(proteinGroups$Reverse))){
+		proteinGroups<-proteinGroups[-which(proteinGroups$Reverse %in% "+") ,]
+	}
+
+	### ? Only.identified.by.site column in proteinGroupID? : sometimes, it is not in evidence.txt
+	if(is.element("Only.identified.by.site", colnames(proteinGroups))){
+		proteinGroups<-proteinGroups[-which(proteinGroups$Only.identified.by.site %in% "+") ,]
+	}
+	
+	tempprotein<-proteinGroups
+	
 	### then take proteins which are included
 	infile<-infile[which(infile$Protein.group.IDs %in% unique(tempprotein$id)),]
 
