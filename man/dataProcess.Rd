@@ -12,7 +12,7 @@ dataProcess(raw,logTrans=2,
 		summaryMethod="linear",
 		equalFeatureVar=TRUE,
 		filterLogOfSum=TRUE,
-   		cutoffCensored="minRun",
+   		cutoffCensored="minFeature",
    		censoredInt = NULL,
 		skylineReport=FALSE)	
 }

@@ -133,7 +133,7 @@ transformMSstatsToMSnSet<-function(data){
 #############################################
 #############################################
 
-dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE,address="", fillIncompleteRows=TRUE, FeatureSelection=FALSE, summaryMethod="linear",equalFeatureVar=TRUE, filterLogOfSum=TRUE, cutoffCensored="minRun",censoredInt=NULL, skylineReport=FALSE){
+dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE,address="", fillIncompleteRows=TRUE, FeatureSelection=FALSE, summaryMethod="linear",equalFeatureVar=TRUE, filterLogOfSum=TRUE, cutoffCensored="minFeature",censoredInt=NULL, skylineReport=FALSE){
   
   ## save process output in each step
   allfiles<-list.files()
@@ -201,10 +201,22 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   #### check whether the intensity has 0 value or negative value
   if(length(which(raw$Intensity<=0))>0 & !skylineReport){
-    processout<-rbind(processout,c("ERROR : There are some intensities which are zero or negative values. need to change them. - stop"))
+  	
+  	if(is.null(censoredInt)){
+  		processout<-rbind(processout,c("ERROR : There are some intensities which are zero or negative values. need to change them. - stop"))
     write.table(processout, file=finalfile,row.names=FALSE)
     
     stop("Intensity has 0 or negative values. Please check these intensities and change them. \n")
+  		
+  	}else{
+  		if(censoredInt=="NA"){
+  			processout<-rbind(processout,c("ERROR : There are some intensities which are zero or negative values. need to change them. - stop"))
+    write.table(processout, file=finalfile,row.names=FALSE)
+    
+    stop("Intensity has 0 or negative values. Please check these intensities and change them. \n")
+  		}	
+  	}
+    
   }
   
   #### however skyline report, keep zero and replace with 1,then relace with NA for truncated
@@ -3532,14 +3544,10 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 	## Method 2 : Tukey Median Polish	
 	if(summaryMethod=="TMP"){
 		
-		data<-data[!is.na(data$ABUNDANCE),]
+		#data<-data[!is.na(data$ABUNDANCE),]
    	 	data$PROTEIN<-factor(data$PROTEIN)
     	data$RUN<-factor(data$RUN)
     
-		if(label){
-			message("* For TMP(Tukey's median polish) summary with label-based experiment, ratio between endogenous intensity and reference intensity is used.")
-		}
-
 		result<-NULL
 	  
 		for(i in 1: nlevels(data$PROTEIN)){
@@ -3549,9 +3557,112 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
      		message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
 
       		sub$FEATURE<-factor(sub$FEATURE)	
-      		sub$RUN<-factor(sub$RUN)
+      		sub$feature.label<-paste(sub$FEATURE, sub$LABEL, sep="_")
       		sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")
-      			        
+      		
+      		## if all measurements are NA,
+      		if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){
+       			message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))
+        		next()
+      		}
+      		
+      		## remove run which has no measurement at all
+			subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY),]
+			count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)
+			norun<-setdiff(unique(data$RUN),count$RUN)
+				
+			if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))){ # removed NA rows already, if there is no overlapped run, error
+				sub<-sub[-which(sub$RUN %in% norun),]
+				sub$RUN<-factor(sub$RUN)
+			}
+					
+			## remove features which are completely NAs
+			subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+			countfeature<-xtabs(~FEATURE, subtemp)
+			namefeature<-names(countfeature)[countfeature==0]
+				
+			if(length(namefeature)!=0){
+				sub<-sub[-which(sub$FEATURE %in% namefeature),]
+				sub$FEATURE<-factor(sub$FEATURE)
+			}
+			
+			##### how to decide censored or not
+			if(!is.null(censoredInt)){
+				## 1. censored 
+				if(censoredInt=="0"){
+					sub$cen<-ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY==0,0,1)
+				}
+				
+				### 2. all censored missing
+				if(censoredInt=="NA"){
+					sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+				}
+			
+				##### cutoffCensored
+				## 1. put 0 to censored
+				if(cutoffCensored=="0"){
+					if(censoredInt=="NA"){
+						sub[is.na(sub$INTENSITY),"ABUNDANCE"]<-0
+					}
+				
+					if(censoredInt=="0"){
+						sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,"ABUNDANCE"]<-0
+					}
+				}
+			
+				## 2. put minimum in feature level to NA
+				if(cutoffCensored=="minFeature"){
+					if(censoredInt=="NA"){
+						cut<-aggregate(ABUNDANCE~feature.label,data=sub, function(x) min(x, na.rm=TRUE))
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
+
+						for(j in 1:length(unique(sub$feature.label))){
+							sub[is.na(sub$INTENSITY) & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+					
+					if(censoredInt=="0"){
+						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						cut<-aggregate(ABUNDANCE~feature.label,data=subtemptemp, FUN=min)
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
+
+						for(j in 1:length(unique(sub$feature.label))){
+							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0  & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+				}
+				
+				## 3. put minimum in RUN to NA
+				if(cutoffCensored=="minRun"){
+					if(censoredInt=="NA"){
+						cut<-aggregate(ABUNDANCE~run.label,data=sub, function(x) min(x, na.rm=TRUE))
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
+
+						for(j in 1:length(unique(sub$run.label))){
+							sub[is.na(sub$INTENSITY) & sub$run.label==cut$run.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+					
+					if(censoredInt=="0"){
+						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						cut<-aggregate(ABUNDANCE~run.label,data=subtemptemp, FUN=min)
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
+
+						for(j in 1:length(unique(sub$run.label))){
+							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$run.label==cut$run.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						}
+					}
+				}
+			}
+			
+			## then, finally remove NA in abundance
+			sub<-sub[!is.na(sub$ABUNDANCE),]
+					    
+					    
+					        
       		if(nlevels(sub$FEATURE)>1){ ## for more than 1 features
       			if(!label){ ## label-free
       			
@@ -3782,7 +3893,8 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 					next
 				}	
 				
-				## remove features which are completely NAs
+				## remove features which are completely NAs or zero
+				subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
 				countfeature<-xtabs(~FEATURE, subtemp)
 				namefeature<-names(countfeature)[countfeature==0]
 				
@@ -3802,7 +3914,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 					sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
 				}
 				
-				
+				##### cutoffCensored
 				## 1. put minimum in protein level to NA
 				#if(cutoffCensored=="minEachProtein"){
 				#	if(censoredInt=="NA"){
@@ -3820,8 +3932,10 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				if(cutoffCensored=="minFeature"){
 					if(censoredInt=="NA"){
 						cut<-aggregate(ABUNDANCE~feature.label,data=sub, function(x) min(x, na.rm=TRUE))
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$feature.label))){
+						for(j in 1:length(unique(cut$feature.label))){
 							sub[is.na(sub$INTENSITY) & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
@@ -3829,9 +3943,11 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 					if(censoredInt=="0"){
 						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
 						cut<-aggregate(ABUNDANCE~feature.label,data=subtemptemp, FUN=min)
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$feature.label))){
-							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
+						for(j in 1:length(unique(cut$feature.label))){
+							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0  & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
 				}
@@ -3840,8 +3956,10 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				if(cutoffCensored=="minRun"){
 					if(censoredInt=="NA"){
 						cut<-aggregate(ABUNDANCE~run.label,data=sub, function(x) min(x, na.rm=TRUE))
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$run.label))){
+						for(j in 1:length(unique(cut$run.label))){
 							sub[is.na(sub$INTENSITY) & sub$run.label==cut$run.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
@@ -3849,14 +3967,20 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 					if(censoredInt=="0"){
 						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
 						cut<-aggregate(ABUNDANCE~run.label,data=subtemptemp, FUN=min)
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$run.label))){
+						for(j in 1:length(unique(cut$run.label))){
 							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$run.label==cut$run.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
 				}	
 	
-
+				## when number of measurement is less than df, error for fitting
+				subtemp<-sub[!is.na(sub$ABUNDANCE),]
+				countdf<-nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+				
+				
 				### fit the model
 				if(length(unique(sub$FEATURE))==1){
 					
@@ -3864,7 +3988,11 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 					# need to check
 					fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
 				}else{
-					fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
+					if(countdf){
+						fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
+					}else{
+						fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
+					}
 				}
 				
 		
@@ -3916,7 +4044,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)
 				norun<-setdiff(unique(data$RUN),count$RUN)
 				
-				if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))){ # removed NA rows already, if there is no overlapped run, error
+				if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))!=0){ # removed NA rows already, if there is no overlapped run, error
 					sub<-sub[-which(sub$RUN %in% norun),]
 					sub$RUN<-factor(sub$RUN)
 				}
@@ -3927,16 +4055,25 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				
 					next
 				}	
+						
 				
-				## remove features which are completely NAs
+				## remove features which are (completely NAs or zero) 
+				subtemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0 ,]
 				countfeature<-xtabs(~FEATURE, subtemp)
 				namefeature<-names(countfeature)[countfeature==0]
 				
 				if(length(namefeature)!=0){
 					sub<-sub[-which(sub$FEATURE %in% namefeature),]
 					sub$FEATURE<-factor(sub$FEATURE)
-				}		
+				}
 				
+				if(nrow(sub)==0){
+				
+					message(paste("* All measurements are NAs or only one measurement per feature in ",levels(data$PROTEIN)[i], ". Can't summarize with censored intensities."))
+				
+					next
+				}	
+
 				##### how to decide censored or not
 				## 1. censored 
 				if(censoredInt=="0"){
@@ -3987,7 +4124,7 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				#	}
 				#}
 				
-				
+				##### cutoffCensored
 				## 1. put minimum in protein level to NA
 				#if(cutoffCensored=="minEachProtein"){
 				#	if(censoredInt=="NA"){
@@ -4005,17 +4142,21 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				if(cutoffCensored=="minFeature"){
 					if(censoredInt=="NA"){
 						cut<-aggregate(ABUNDANCE~FEATURE,data=sub, function(x) min(x, na.rm=TRUE))
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$FEATURE))){
+						for(j in 1:length(unique(cut$FEATURE))){
 							sub[is.na(sub$INTENSITY) & sub$FEATURE==cut$FEATURE[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
 					
 					if(censoredInt=="0"){
-						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0 ,]
 						cut<-aggregate(ABUNDANCE~FEATURE,data=subtemptemp, FUN=min)
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$FEATURE))){
+						for(j in 1:length(unique(cut$FEATURE))){
 							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$FEATURE==cut$FEATURE[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
@@ -4025,8 +4166,10 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 				if(cutoffCensored=="minRun"){
 					if(censoredInt=="NA"){
 						cut<-aggregate(ABUNDANCE~RUN,data=sub, function(x) min(x, na.rm=TRUE))
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$RUN))){
+						for(j in 1:length(unique(cut$RUN))){
 							sub[is.na(sub$INTENSITY) & sub$RUN==cut$RUN[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
@@ -4034,19 +4177,29 @@ modelBasedQCPlots<-function(data,type,axis.size=10,dot.size=3,text.size=7,legend
 					if(censoredInt=="0"){
 						subtemptemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
 						cut<-aggregate(ABUNDANCE~RUN,data=subtemptemp, FUN=min)
+						
+						## cutoff for each Run is little less than minimum abundance in a run.
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE
 
-						for(j in 1:length(unique(sub$RUN))){
+						for(j in 1:length(unique(cut$RUN))){
 							sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$RUN==cut$RUN[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]
 						}
 					}
 				}	
-	
-
+				
+				## when number of measurement is less than df, error for fitting
+				subtemp<-sub[!is.na(sub$ABUNDANCE),]
+				countdf<-nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+				
 				### fit the model
 				if(length(unique(sub$FEATURE))==1){
 					fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
 				}else{
-					fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+					if(countdf){
+						fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+					}else{
+						fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+					}
 				}
 				
 		

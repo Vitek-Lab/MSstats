@@ -1,3 +1,11 @@
+CHANGES IN VERSION 3.0.8
+-------------------------
+- dataProcess : when censoredInt=“0”, intensity=0 works even though skylineReport=FALSE.
+- dataProcess, with censored=“0” or “NA” : fix the bug for certain run has completely missing.
+- cutoffCensored=“minRun” or “minFeature” : cutoff for each Run or each feature is little less (99%) than minimum abundance.
+
+-summaryMethod=“TMP”, censored works. censoredInt=NA or 0, and cutoffCensored=0, minFeature, minRun
+
 CHANGES IN VERSION 3.0.3
 -------------------------
 - dataProcess : new option, skylineReport. for skyline MSstats report, there is ‘Truncated’ column. If Truncated==True, remove them. and keep zero value for summaryMethod=“skyline”.
