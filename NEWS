@@ -1,3 +1,14 @@
+CHANGES IN VERSION 3.0.9
+-------------------------
+- dataProcess 
+	- add options for ‘cutoffCensored=“minFeatureNRun”’.
+	- summaryMethods=“TMP” : output will have ‘more50missing’column.
+	- remove50missing=FALSE option : remove runs which has more than 50% of missing measurement. It will be affected for TMP, with censored option.
+	- MBimpute : impute censored by survival model (AFT) with cutoff censored value
+	- featureSubset option : “all”,”top3”, “highQuality”
+	- change the default.
+
+
 CHANGES IN VERSION 3.0.8
 -------------------------
 - dataProcess : when censoredInt=“0”, intensity=0 works even though skylineReport=FALSE.

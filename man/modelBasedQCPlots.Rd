@@ -48,7 +48,7 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 
 \examples{
 
-QuantData<-dataProcess(SRMRawData)
+QuantData<-dataProcess(SRMRawData, summaryMethod="linear", censoredInt=NULL)
 
 head(QuantData$ModelQC)
 
