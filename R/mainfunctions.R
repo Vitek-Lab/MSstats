@@ -5013,13 +5013,13 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,logBa
       
       sub<-data[data$Label==levels(data$Label)[i],]
       
-      if(logBase.pvalue==2){
-        temp<- -log2(sub$adj.pvalue)*sign(sub[,3])
-      }
+      #if(logBase.pvalue==2){
+      #  temp<- -log2(sub$adj.pvalue)*sign(sub[,3])
+      #}
       
-      if(logBase.pvalue==10){
+      #if(logBase.pvalue==10){
         temp<- -log10(sub$adj.pvalue)*sign(sub[,3])
-      }
+      #}
       
       final<-	data.frame(cbind(final,temp))
     }
@@ -5062,10 +5062,12 @@ groupComparisonPlots<-function(data=data,type=type,sig=0.05,FCcutoff=FALSE,logBa
     #my.colors[my.colors=="#FFFFFF"]<-"gold"
     my.colors<-c(my.colors,"grey") ## for NA
     
-    up<-ceiling(-log10(2^-y.limUp ))
-    temp<-10^(-sort(ceiling(seq(3,up,length=10)[c(1,2,3,5,10)]),decreasing = TRUE))
+    if(logBase.pvalue==2){ up<-ceiling(-log10(2^-y.limUp )) }
+    if(logBase.pvalue==10){ up<-ceiling(-log10(10^-y.limUp )) }
+    
+    temp<-10^(-sort(ceiling(seq(2,up,length=10)[c(1,2,3,5,10)]),decreasing = TRUE))
     breaks<-c(temp,sig)
-    neg.breaks <- log(breaks, 2)
+    neg.breaks <- log(breaks, 10)
     my.breaks  <- c(neg.breaks,0,-neg.breaks[6:1],101)			
     
     ### draw color key
