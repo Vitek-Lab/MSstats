@@ -1604,11 +1604,18 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   if(featureSubset=="all"){
  	 message("* Use all features that the dataset origianally has.")
+ 	 
+ 	 processout<-rbind(processout,c("* Use all features that the dataset origianally has."))
+     write.table(processout, file=finalfile, row.names=FALSE)
   } 
   
   
   if(featureSubset=="top3"){
   		message("* Use top3 features that have highest average of log2(intensity) across runs.")
+  		
+  		processout<-rbind(processout,c("* Use top3 features that have highest average of log2(intensity) across runs."))
+        write.table(processout, file=finalfile, row.names=FALSE)
+
   	 
   	 	## INTENSITY vs ABUNDANCE?
   		## how to decide top3 for DIA?
@@ -1659,6 +1666,9 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   if(featureSubset=="highQuality"){
   	  message("* Use feature selection algorithm in order to get high quality features.")
+  	  
+  	  processout<-rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
+      write.table(processout, file=finalfile, row.names=FALSE)
   	 
       tempfeature<-try(.FeatureSelection1(work,lambda,eta, address),silent=TRUE)
     
