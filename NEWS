@@ -1,3 +1,35 @@
+CHANGES IN VERSION 3.0.9
+-------------------------
+- dataProcess 
+	- add options for ‘cutoffCensored=“minFeatureNRun”’.
+	- summaryMethods=“TMP” : output will have ‘more50missing’column.
+	- remove50missing=FALSE option : remove runs which has more than 50% of missing measurement. It will be affected for TMP, with censored option.
+	- MBimpute : impute censored by survival model (AFT) with cutoff censored value
+	- featureSubset option : “all”,”top3”, “highQuality”
+	- change the default.
+-groupComparisonPlots
+	- heatmap, for logBase=10, fix the bug for setting breaks.
+
+
+CHANGES IN VERSION 3.0.8
+-------------------------
+- dataProcess : when censoredInt=“0”, intensity=0 works even though skylineReport=FALSE.
+- dataProcess, with censored=“0” or “NA” : fix the bug for certain run has completely missing.
+- cutoffCensored=“minRun” or “minFeature” : cutoff for each Run or each feature is little less (99%) than minimum abundance.
+
+-summaryMethod=“TMP”, censored works. censoredInt=NA or 0, and cutoffCensored=0, minFeature, minRun
+
+CHANGES IN VERSION 3.0.3
+-------------------------
+- dataProcess : new option, skylineReport. for skyline MSstats report, there is ‘Truncated’ column. If Truncated==True, remove them. and keep zero value for summaryMethod=“skyline”.
+- groupComparison : for skyline option, t.test, val.equal=TRUE, which is no adjustment for degree of freedom, just pooled variance.
+
+
+CHANGES IN VERSION 2.1.4
+-------------------------
+- Change the numbering of file name for plots. If the file names are already existing in the folder, automatically next number will be add at the end of file name. Therefore file name will not be overwritten, and we can keep all pdf files for plots.
+
+
 CHANGES IN VERSION 2.1.3
 -------------------------
 - fix the groupComparison for label-free experiments.

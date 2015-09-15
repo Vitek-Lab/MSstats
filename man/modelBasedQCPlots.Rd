@@ -1,18 +1,22 @@
 \name{modelBasedQCPlots}
 \alias{modelBasedQCPlots}
 \title{Visualization for model-based quality control in fitting model}
-\description{To check the assumption of model, modelBasedQCPlots takes the results after fitting models from function (\code{\link{groupComparison}}) as input and automatically generate two types of figures in pdf files as output : (1) normal quantile-quantile plot (specify "QQPlot" in option type) for checking normally distributed errors.; (2) residual plot (specify "ResidualPlot" in option type) for checking constant variance among different features.}
+\description{To check the assumption of linear model(summaryMethod="linear" and censoredInt=NULL), modelBasedQCPlots takes the results after fitting models from function (\code{\link{dataProcess}}) as input and automatically generate two types of figures in pdf files as output : (1) normal quantile-quantile plot (specify "QQPlot" in option type) for checking normally distributed errors.; (2) residual plot (specify "ResidualPlot" in option type) for checking constant variance among different features.}
 
 \usage{
-modelBasedQCPlots(data,type,axis.size=10,point.size=3,text.size=7,width=10, height=10,featureName=TRUE,feature.QQPlot="all",which.Protein="all",address="")
+modelBasedQCPlots(data,type,
+	axis.size=10,dot.size=3,text.size=7,legend.size=7,
+	width=10, height=10,
+	featureName=TRUE,feature.QQPlot="all",which.Protein="all",address="")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{data}{'ModelQC' in testing output from function groupComparison.}
+  \item{data}{result data.frame called "ModelQC" in output from function dataProcess.}
   \item{type}{choice of visualization. "QQPlots" represents normal quantile-quantile plot for each protein after fitting models. "ResidualPlots" represents a plot of residuals versus fitted values for each protein in the dataset.}
-  \item{axis.size}{size of axes labels, e.g. name of the comparisons and of targeted proteins in heatmap, and name of the comparisons in comparison plot. Default is 10.}
- \item{point.size}{size of points in the graph for residual plots. Default is 3.}
+  \item{axis.size}{size of axes labels. Default is 10.}
+ \item{dot.size}{size of points in the graph for residual plots and QQ plots. Default is 3.}
   \item{text.size}{size of labeling for feature names only in normal quantile-quantile plots separately for each feature. Default is 7.}
+  \item{legend.size}{size of legend for feature names only in residual plots. Default is 7.}
  \item{featureName}{for "ResidualPlot" only, TRUE show feature labeling and FALSE means no feature legend printing.}
  \item{feature.QQPlot}{"all"(Default) means that one normal quantile-quantile plot will be generated with across features of a protein. "byFeature" will generate normal quantile-quantile plots separately for each feature of a protein.}
   \item{width}{width of the saved file. Default is 10.}
@@ -29,7 +33,7 @@ modelBasedQCPlots(data,type,axis.size=10,point.size=3,text.size=7,width=10, heig
 
 }
 
-The input of this function is "ModelQC" in the testing results from function (\code{\link{groupComparison}}). The example result is \code{\link{testResultMultiComparisons}}.
+The input of this function is "ModelQC" in the results from function (\code{\link{dataProcess}}).
 }
 
 \author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
@@ -44,22 +48,15 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 
 \examples{
 
-## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
-comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
-comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
-comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
-comparison<-rbind(comparison1,comparison2, comparison3)
-row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
+QuantData<-dataProcess(SRMRawData, summaryMethod="linear", censoredInt=NULL)
 
-testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
-
-head(testResultMultiComparisons$ModelQC)
+head(QuantData$ModelQC)
 
 # normal quantile-quantile plots
-modelBasedQCPlots(data=testResultMultiComparisons$ModelQC,type="QQPlots",address="")
+modelBasedQCPlots(data=QuantData$ModelQC,type="QQPlots",address="")
 
 # residual plots
-modelBasedQCPlots(data=testResultMultiComparisons$ModelQC,type="ResidualPlots",address="")
+modelBasedQCPlots(data=QuantData$ModelQC,type="ResidualPlots",address="")
 
 }
 

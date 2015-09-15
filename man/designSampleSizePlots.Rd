@@ -20,6 +20,8 @@ designSampleSizePlots(data=data)
 Maintainer: Meena Choi (\email{choi67@purdue.edu})
 }
 \references{
+Meena Choi, Ching-Yun Chang, Timothy Clough, Daniel Broudy, Trevor Killeen, Brendan MacLean and Olga Vitek. "MSstats: an R package for statistical analysis of quantitative mass spectrometry-based proteomic experiments" \emph{Bioinformatics}, 30(17):2524-2526, 2014.
+
 Ching-Yun Chang, Paola Picotti, Ruth Huttenhain, Viola Heinzelmann-Schwarz, Marko Jovanovic, Ruedi Aebersold, Olga Vitek. "Protein significance analysis in selected reaction monitoring (SRM) measurements."  \emph{Molecular & Cellular Proteomics}, 11:M111.014662, 2012.
 
 Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Statistical protein quantification and significance analysis in label-free LC-M experiments with complex designs" \emph{BMC Bioinformatics}, 13:S16, 2012.
@@ -28,28 +30,29 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 \examples{
 # Based on the results of sample size calculation from function designSampleSize, we generate a series of sample size plots for number of biological replicates, or peptides, or transitions or power plot.
 
-head(QuantData) 
+QuantData<-dataProcess(SRMRawData)
+head(QuantData$ProcessedData)
+
+## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
+comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
+comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
+comparison<-rbind(comparison1,comparison2, comparison3)
+row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
+
+testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
+
 
 ## plot the calculated sample sizes for future experiments:
 
 #(1) Minimal number of biological replicates per condition
 
-result.sample<-designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+result.sample<-designSampleSize(data=testResultMultiComparisons$fittedmodel,numSample=TRUE,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
 designSampleSizePlots(data=result.sample)
 
-#(2) Minimal number of peptides per protein
+#(2) Power
 
-result.peptide<-designSampleSize(data=QuantData,numSample=2,numPep=TRUE,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
-designSampleSizePlots(data=result.peptide)
-
-#(3) Minimal number of transitions per peptide
-
-result.tran<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=TRUE,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)	
-designSampleSizePlots(data=result.tran)
-
-#(4) Power
-
-result.power<-designSampleSize(data=QuantData,numSample=2,numPep=3,numTran=4,desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
+result.power<-designSampleSize(data=testResultMultiComparisons$fittedmodel,numSample=2,desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
 designSampleSizePlots(data=result.power)
 
 

@@ -1,0 +1,14 @@
+
+citEntry(entry	= 'Article',
+	 title	= 'MSstats: an R package for statistical analysis of quantitative mass spectrometry-based proteomic experiments',
+	 author = c(
+         person('Meena', 'Choi', email='choi67@purdue.edu',
+                role = c('aut', 'cre'),
+                comment = 'enhancements, bug fixes, since 2013')
+         ),
+	 journal='Bioinformatics',
+	 volume='30',
+	 page='2524-2536',
+	 year = '2014',
+	 textVersion = 'M. Choi, C. Chang, T. Clough, D. Broudy, T. Killeen, B. MacLean, O. Vitek, MSstats: an R package for statistical analysis of quantitative mass spectrometry-based proteomic experiments, Bioinformatics. 30:2524-2536, 2014.'
+)
