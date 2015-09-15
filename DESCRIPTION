@@ -7,9 +7,13 @@ Description: A set of tools for statistical relative protein significance analys
 Author: Meena Choi <choi67@purdue.edu>, Ching-Yun Chang <chang54@purdue.edu>, Olga Vitek <ovitek@purdue.edu>
 Maintainer: Meena Choi <choi67@purdue.edu>
 License: Artistic-2.0
-Depends: R (>= 3.0),Rcpp
+Depends: R (>= 3.0),Rcpp,knitr
 Imports: lme4,marray,limma,gplots,ggplot2, preprocessCore,
         data.table,MSnbase, reshape, reshape2,survival, grid
 bioViews: Bioinformatics, MassSpectrometry, Proteomics, Software
 LazyData: yes
+URL: http://msstats.org
+BugReports: https://groups.google.com/forum/#!forum/msstats
+Sugests: knitr,rmarkdown
+VignetteBuilder: knitr
 Packaged: 2014-01-23 06:32:25 UTC; Meena
