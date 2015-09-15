@@ -1,0 +1,1946 @@
+is.na(fit.full)
+if(is.na(fit.full)) {#
+					next#
+				}else{#
+					## get variance component#
+#
+					if(class(fit.full)!="mer"){#
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
+					}else{#
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
+						}#
+					}#
+				}
+sigma.error<-NULL
+VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
+for (i in 1:length(data)){#
+			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.#
+			fit.full<-data[[i]]#
+#
+				## if fit.full==NA (class(fit.full)=="try-error)#
+				if(is.na(fit.full)) {#
+					next#
+				}else{#
+					## get variance component#
+#
+					if(class(fit.full)!="mer"){#
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
+					}else{#
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
+						}#
+					}#
+				}#
+		} ## end-loop
+sigma.error<-NULL
+VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
+data[[3]]
+data[[3]]<-NULL
+data[[3]]
+data
+data[[3]]<-NA
+data
+data[[3]]<-NULL
+data
+length(data)
+data[[4]]<-"a"
+data
+length(data)
+data[[5]]<-NULL
+data
+data[[6]]<-"b"
+data
+data[[7]]<-"error"
+data
+designSampleSize2<-function(data=data,labeled=TRUE,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=0.05,power=0.9,scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE){#
+#
+	nrepeats=3#
+	## save process output in each step#
+	allfiles<-list.files()#
+	filenaming<-"msstats"#
+	if(length(grep(filenaming,allfiles))==0){#
+		finalfile<-"msstats.log"#
+		processout<-NULL#
+	}else{#
+		num<-0#
+		finalfile<-"msstats.log"#
+#
+		while(is.element(finalfile,allfiles)){#
+			num<-num+1#
+			lastfilename<-finalfile ## in order to rea#
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")#
+		}#
+		finalfile<-lastfilename#
+		processout<-as.matrix(read.table(finalfile,header=T, sep="\t"))#
+	}#
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - designSampleSize function"," "),ncol=1))#
+	## check one TRUE or not#
+	if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){#
+		processout<-rbind(processout,c(paste("The required input - number of sample or features : Only one value should be TRUE. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("One of (numSample, numPep, numTran, power) needs to be TRUE")#
+	}#
+#
+	## labeled value#
+	if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){#
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'labeled' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	## all input#
+		processout<-rbind(processout,c(paste("number of sample = ",numSample,sep="")))#
+		processout<-rbind(processout,c(paste("number of peptide per protein = ",numPep,sep="")))#
+		processout<-rbind(processout,c(paste("number of transition per peptide = ", numTran,sep="")))#
+		processout<-rbind(processout,c(paste("Desired fold change = ",paste(desiredFC,collapse=" - "),sep="")))#
+		processout<-rbind(processout,c(paste("FDR = ",FDR,sep="")))#
+		processout<-rbind(processout,c(paste("Power = ", power,sep="")))#
+#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+	## for label-free experiment#
+	if (!labeled){#
+		sigma.error<-NULL	#
+		VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)#
+#
+		for (i in 1:length(data)){#
+			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.#
+			fit.full<-data[[i]]#
+#
+				## if fit.full==NA (class(fit.full)=="try-error)#
+				if(fit.full=="error") {#
+					next#
+				}else{#
+					## get variance component#
+#
+					if(class(fit.full)!="mer"){#
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
+					}else{#
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
+						}#
+					}#
+				}#
+		} ## end-loop#
+#
+#		VarComponent[is.na(VarComponent)]<-0	#
+		## for label-free DDA, there are lots of missingness and lots of zero SE. So, remove NA SE.#
+		median.sigma.error<-median(VarComponent[,"Error"],na.rm=TRUE)#
+		if(sum(!is.na(VarComponent[,"GroupBySubject"]))>0){#
+			median.sigma.subject<-median(VarComponent[,"GroupBySubject"],na.rm=TRUE)#
+		}else{#
+			if(sum(!is.na(VarComponent[,"Subject"]))>0){#
+				median.sigma.subject<-median(VarComponent[,"Subject"],na.rm=TRUE)#
+			}else{#
+				median.sigma.subject<-0#
+			}#
+		}#
+		####
+		processout<-rbind(processout,c("Calculated variance component. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		### power calculation#
+		if(isTRUE(power)){#
+			delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+			desiredFC<-2^delta#
+			m0_m1=99#
+			t<-delta/sqrt(2*median.sigma.error/numPep/numTran/numSample+median.sigma.subject/numSample)#
+   			 powerTemp<-seq(0,1,0.01)#
+    		power<-NULL#
+   			for(i in 1:length(t)){#
+    			diff<-qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]#
+    			min(abs(diff),na.rm=TRUE)#
+    			power[i]<-powerTemp[order(abs(diff))][1]#
+    		}#
+    		CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+    		####
+		processout<-rbind(processout,c("Power is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+    		out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)#
+    		return(out)#
+    	}#
+#
+		if(is.numeric(power)){#
+#
+			# Large portion of proteins are not changing#
+			m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99#
+			alpha<-power*FDR/(1+(1-FDR)*m0_m1)#
+#
+			### Num Sample calculation#
+			if (isTRUE(numSample)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numSample<-round((2*median.sigma.error/numPep/numTran+median.sigma.subject)/aa,0)#
+				CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of sample is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Peptide calculation#
+			if (isTRUE(numPep)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numPep<-round((2*median.sigma.error/numSample/numTran+median.sigma.subject/numSample)/aa,0)#
+				CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of peptide per protein is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Transition calculation#
+			if (isTRUE(numTran)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numTran<-round((2*median.sigma.error/numSample/numPep+median.sigma.subject/numSample)/aa,0)#
+				CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of transition per peptide is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+		} # when power is numeric#
+	} ## label-free#
+	## isotope labeled experiment#
+	if (labeled){#
+		sigma.error<-NULL	#
+		VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)#
+#
+		for (i in 1:length(data)){#
+			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.#
+			fit.full<-data[[i]]#
+#
+				## if fit.full==NA (class(fit.full)=="try-error)#
+				if(fit.full=="error") {#
+					next#
+#
+				}else{#
+#
+					if(class(fit.full)!="mer"){#
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
+					}else{#
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
+						}#
+					}#
+				}#
+		} ## end-loop#
+#
+		## label-based case, few of NA SE.#
+		VarComponent[is.na(VarComponent)]<-0	#
+		median.sigma.error<-median(VarComponent[,"Error"],na.rm=TRUE)#
+		if(sum(VarComponent[,"GroupBySubject"])>0){#
+			median.sigma.subject<-median(VarComponent[,"GroupBySubject"],na.rm=TRUE)#
+		}else{#
+			median.sigma.subject<-median(VarComponent[,"Subject"],na.rm=TRUE)#
+		}#
+		####
+		processout<-rbind(processout,c("Calculated variance component. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		### power calculation#
+		if(isTRUE(power)){#
+			delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+			desiredFC<-2^delta#
+			m0_m1=99#
+			t<-delta/sqrt((4*median.sigma.error/numPep/numTran/numSample)+(2*median.sigma.subject/numSample))#
+			powerTemp<-seq(0,1,0.01)#
+			power<-NULL#
+			for(i in 1:length(t)){#
+				diff<-qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]#
+				min(abs(diff),na.rm=TRUE)#
+				power[i]<-powerTemp[order(abs(diff))][1]#
+			}#
+    		CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+        	####
+		processout<-rbind(processout,c("Power is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+  			out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)#
+    		return(out)#
+    	}#
+#
+		if(is.numeric(power)){#
+			# Large portion of proteins are not changing#
+			m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99#
+			alpha<-power*FDR/(1+(1-FDR)*m0_m1)#
+#
+			### Num Sample calculation#
+			if(isTRUE(numSample)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numSample<-round(((4*median.sigma.error/numPep/numTran)+(2*median.sigma.subject))/aa,0)#
+				CV<-round((4*median.sigma.error/(numSample*numPep*numTran)+(2*median.sigma.subject/numSample))/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of sample is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Peptide calculation#
+			if(isTRUE(numPep)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numPep<-round((4*median.sigma.error/numSample/numTran+2*median.sigma.subject/numSample)/aa,0)#
+				CV<-round((4*median.sigma.error/(numSample*numPep*numTran)+2*median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of peptide per protein is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Transition calculation#
+			if(isTRUE(numTran)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numTran<-round((4*median.sigma.error/numSample/numPep+2*median.sigma.subject/numSample)/aa,0)#
+				CV<-round((4*median.sigma.error/(numSample*numPep*numTran)+2*median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of transition per peptide is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+		} # power is numeric#
+	} ## label-based#
+}
+groupComparison2<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE, scopeOfBioReplication="restricted", scopeOfTechReplication="expanded", interference=TRUE,equalFeatureVar=TRUE,missing.action = "nointeraction"){#
+#
+	## save process output in each step#
+	allfiles<-list.files()#
+	filenaming<-"msstats"#
+	if(length(grep(filenaming,allfiles))==0){#
+		finalfile<-"msstats.log"#
+		processout<-NULL#
+	}else{#
+		num<-0#
+		finalfile<-"msstats.log"#
+#
+		while(is.element(finalfile,allfiles)){#
+			num<-num+1#
+			lastfilename<-finalfile ## in order to rea#
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")#
+		}#
+		finalfile<-lastfilename#
+		processout<-as.matrix(read.table(finalfile, header=T, sep="\t"))#
+	}#
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - groupComparison function"," "),ncol=1))#
+	## check input is correct#
+	## data format#
+	rawinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")#
+	if(length(setdiff(toupper(rawinput),toupper(colnames(data))))==0){#
+		processout<-rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")#
+	}#
+	## contrast. matrix#
+	if(ncol(contrast.matrix)!=length(unique(data$GROUP_ORIGINAL))){#
+		processout<-rbind(processout,c(paste("The required input - contrast.matrix: the number of column and the number of group are not the same. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("Please check contrast matrix. The number of group in data set is different with columns of contrast.matrix.")#
+	}#
+	# check whether row.names of contrast.matrix.sub exists or not#
+	if(sum(is.null(row.names(contrast.matrix)))>0){#
+		processout<-rbind(processout,c(paste("The required input - contrast.matrix: need row names of contrast.matrix . - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("No row.names of comparison exist.\n")#
+	}#
+	## labeled value#
+	if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){#
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'labeled' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	if(sum(unique(data$LABEL) %in% "H")==0 & labeled==TRUE){#
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. labeled should be 'FALSE'. Therefore now use labeled=FALSE")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 message("Dataset is based on label-free experiment. MSstats will use \"labeled\"=FALSE.")#
+		 labeled<-FALSE#
+	}#
+	## other option value#
+	if(!(scopeOfTechReplication=="restricted" | scopeOfTechReplication=="expanded")){#
+		processout<-rbind(processout,c(paste("The required input - scopeOfTechReplication : 'scopeOfTechReplication' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("'scopeOfTechReplication' must be one of \"restricted\" or \"expanded\".#
+	")#
+	}#
+	if(!(scopeOfBioReplication=="restricted" | scopeOfBioReplication=="expanded")){#
+		processout<-rbind(processout,c(paste("The required input - scopeOfBioReplication : 'scopeOfBioReplication' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".#
+	")#
+	} #
+	if(!(interference==TRUE | interference==FALSE) | !is.logical(interference)){#
+		processout<-rbind(processout,c(paste("The required input - interference : 'interference' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'interference' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	if(!(equalFeatureVar==TRUE | equalFeatureVar==FALSE) | !is.logical(equalFeatureVar)){#
+		processout<-rbind(processout,c(paste("The required input - equalFeatureVar : 'equalFeatureVar' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		stop("'equalFeatureVar' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	if(equalFeatureVar==FALSE & (scopeOfBioReplication=="expanded" | scopeOfTechReplication=="expanded")){#
+		message("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication.")#
+		processout<-rbind(processout,c("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication."))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+	}#
+	if(!(missing.action %in% c("nointeraction", "impute", "remove"))){#
+		processout<-rbind(processout,c(paste("The required input - missing.action : 'missing.action' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'missing.action' must be one of \"nointeraction\", \"impute\", or \"remove\".")#
+	}#
+#
+	## all input#
+		processout<-rbind(processout,c(paste("labeled = ",labeled,sep="")))#
+		processout<-rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))#
+		processout<-rbind(processout,c(paste("scopeOfTechReplication = ", scopeOfTechReplication,sep="")))#
+		processout<-rbind(processout,c(paste("interference = ",interference,sep="")))#
+		processout<-rbind(processout,c(paste("equalFeatureVar = ",equalFeatureVar,sep="")))#
+#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+## check whether case-control(FALSE) or time-course(TRUE)#
+repeated<-.checkRepeated(data)#
+#
+	if(repeated){ #
+		processout<-rbind(processout,c(paste("Time course design of experiment - okay")))#
+	}else{#
+		processout<-rbind(processout,c(paste("Case control design of experiment - okay")))#
+#
+	}#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+## since case-control(FALSE) with fixed subject and random run will fit the crossed model#
+# we need to set subject_original to non-unique#
+#
+if(repeated==FALSE&scopeOfBioReplication=="restricted"&scopeOfTechReplication=="expanded"){#
+	test<-unique(data[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])#
+	test<- test[with(test, order(GROUP_ORIGINAL,SUBJECT_ORIGINAL)),]#
+	test$GROUP_ORIGINAL<-factor(test$GROUP_ORIGINAL)#
+	test1<-as.matrix(xtabs(~test[,1]))#
+	test$SUBJECT_ORIGINAL_NOUNIQUE<-as.numeric(unlist(apply(test1,1,function(x) seq(x))))#
+#
+	data$SUBJECT_ORIGINAL<-as.character(data$SUBJECT_ORIGINAL)#
+#
+	for (i in 1:length(unique(test$SUBJECT_ORIGINAL_NOUNIQUE))){#
+		list<-test$SUBJECT_ORIGINAL[test$SUBJECT_ORIGINAL_NOUNIQUE==i]#
+		data$SUBJECT_ORIGINAL[data$SUBJECT_ORIGINAL%in%list]<-i	#
+	}#
+#
+	data$SUBJECT_ORIGINAL<-factor(data$SUBJECT_ORIGINAL)#
+}#
+data$PROTEIN<-factor(data$PROTEIN)	#
+#
+## for final result report#
+out<-NULL#
+outsummary<-NULL#
+outfitted<-NULL#
+dataafterfit<-NULL#
+#
+##################################
+### how to handle missingness for endogenous#
+#
+data.l<-data[data$LABEL=="L",]#
+data.h<-data[data$LABEL=="H",]#
+#
+missingPeptides<-.checkMissFeature(data.l)#
+#
+protein.list = tapply ( data.l$FEATURE, data.l$PROTEIN, function ( x ) unique ( as.character ( x ) ) )#
+#
+missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )#
+## Impute for missing endogenous intensity#
+if ( missing.action == "impute" ) { #
+	if(length(missingPeptides) > 0){#
+		dataBySample <- tapply(data.l$ABUNDANCE, list(data.l$SUBJECT_ORIGINAL, data.l$FEATURE), function(x) min(x, na.rm = TRUE))#
+		dataBySample <- dataBySample[!(apply(dataBySample, 1, function(x) sum(is.na(x))) == ncol(dataBySample)), ]#
+#
+		if(!is.numeric(dataBySample)){ ## only one subject#
+			minValuePerSample <- apply(dataBySample, 1, function(x) min(x, na.rm = TRUE))#
+		}else{#
+			minValuePerSample<-min(dataBySample, na.rm=TRUE)#
+		}#
+		imputeValue <- mean(minValuePerSample[!is.infinite(minValuePerSample)], na.rm = TRUE)#
+#
+		for(i in 1:length(missingPeptides)){#
+			sub <- data.l[data.l$FEATURE == missingPeptides[i], ]#
+			t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))#
+			missingConds <- names(t)[which(t == 0 | is.na(t))]		#
+			data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue#
+		}#
+#
+		if(length(missingPeptides) > 0){#
+			number.missing <- length(missingPeptides)#
+			message(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))	#
+			processout<-rbind(processout,c(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = "")))#
+			write.table(processout, file=finalfile, row.names=FALSE)	#
+		}#
+	}#
+#	data<-rbindlist(list(data.l,data.h))#
+	data<-rbind(data.l,data.h)#
+#
+}#
+## even though it is not the case, user can do with no interaction ( no else command)#
+## #
+if ( missing.action == "remove" ){#
+	data<-data[-which(data$FEATURE %in% missingPeptides),]#
+#
+	message("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")#
+	processout<-rbind(processout,c("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model."))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+#
+}#
+## for assigning interference#
+missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )#
+#
+###
+	processout<-rbind(processout,c(paste("missing.action : ",missing.action," - okay",sep="")))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+###==================================================#
+### start to analyze by protein ID#
+#
+	### need original group information#
+	origGroup<-unique(data$GROUP_ORIGINAL)#
+for (i in 1:nlevels(data$PROTEIN)){#
+#
+	sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]#
+#
+	# it is important to remove NA first, before we have the correct structure for each factor#
+	sub<-sub[!is.na(sub$ABUNDANCE),]#
+#
+	sub$GROUP<-factor(sub$GROUP)#
+	sub$SUBJECT<-factor(sub$SUBJECT)#
+	sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	#
+	sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)#
+	sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)#
+	sub$FEATURE<-factor(sub$FEATURE)	#
+	sub$RUN<-factor(sub$RUN)#
+	singleFeature<-.checkSingleFeature(sub)#
+	singleSubject<-.checkSingleSubject(sub)#
+	TechReplicate<-.checkTechReplicate(sub) ## use for label-free model#
+#
+	MissGroupByFeature<-.checkMissGroupByFeature(sub)#
+	MissRunByFeature<-.checkMissRunByFeature(sub)#
+	MissSubjectByGroup<-.checkRunbyFeature(sub)#
+	UnequalSubject<-.checkUnequalSubject(sub)#
+	## need to assigning whether interaction term is included or not#
+	remove.interaction<-interference#
+if ( missing.action == "nointeraction" & missing.results [ i ]){#
+	remove.interaction = FALSE#
+	message("** ",paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))#
+	processout<-rbind(processout,c(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = "")))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+}#
+#
+	message(paste("Testing a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))#
+	if(singleFeature){#
+		message("** Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted.")#
+		processout<-rbind(processout,c(paste("Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted", sep = "")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		temp<-try(.fit.model.single(contrast.matrix,sub,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated,origGroup),silent=TRUE)#
+#
+	}	#
+	if(!singleFeature){#
+#
+# not sure it is correct and what it means#
+#	noRunFeature<-.checkRunbyFeature(sub)#
+#	if(noRunFeature) unbalanced=TRUE#
+	temp<-try(.fit.model(contrast.matrix,sub,labeled, scopeOfBioReplication,scopeOfTechReplication,interference=remove.interaction,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup),silent=TRUE)#
+#
+	}#
+## fix(apr 16)#
+	if(class(temp)=="try-error") {#
+		message("*** error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.")#
+		processout<-rbind(processout,c(paste("error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.", sep = "")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		tempresult<-list(result=NULL,valueresid=NULL, valuefitted=NULL, fittedmodel="error")#
+		for(k in 1:nrow(contrast.matrix)){	#
+			tempresult$result<-rbind(tempresult$result, data.frame(Protein=levels(data$PROTEIN)[i],Label=row.names(contrast.matrix)[k], logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA))#
+		}#
+	}else{#
+		tempresult<-temp#
+	}#
+#
+## comparison result table#
+#	out<-rbindlist(list(out,tempresult$result))#
+	out<-rbind(out,tempresult$result)#
+#
+## for checking model assumptions#
+## add residual and fitted after fitting the model#
+	if(class(temp)=="try-error") {#
+		if(nrow(sub)!=0){#
+			sub$residuals<-NA#
+			sub$fitted<-NA#
+		}#
+	}else{#
+		sub$residuals<-temp$valueresid#
+		sub$fitted<-temp$valuefitted#
+	}#
+	## order concerned#
+#	residuals<-data.frame(temp$valueresid)#
+#	fitted<-data.frame(temp$valuefitted)#
+#	sub<-merge(sub,residuals,by="row.names",all=T)#
+#	rownames(sub)<-sub$Row.names#
+#	sub<-merge(sub, fitted, by="row.names",all=T)#
+#	rownames(sub)<-data$Row.names#
+#
+#	dataafterfit<-rbindlist(list(dataafterfit,sub))#
+	dataafterfit<-rbind(dataafterfit,sub)#
+#
+## save fitted model#
+	outfitted<-c(outfitted, list(tempresult$fittedmodel))#
+#
+###
+	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+} ### end protein loop#
+#
+###
+	processout<-rbind(processout,c("Comparisons for all proteins are done.- okay"))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+##### finalize result#
+## need to FDR per comparison#
+out.all<-NULL#
+#
+out$Label<-as.character(out$Label)#
+for(i in 1:nrow(contrast.matrix)){#
+	outsub<-out[out$Label==row.names(contrast.matrix)[i],]#
+	outsub<-data.frame(outsub,adj.pvalue=p.adjust(outsub$pvalue,method="BH"))#
+#	out.all<-rbindlist(list(out.all, outsub))#
+	out.all<-rbind(out.all, outsub)#
+#
+}#
+out.all$Label<-factor(out.all$Label)#
+###
+	processout<-rbind(processout,c("Adjust p-values per comparison are calculated - okay."))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+temp<-data[!is.na(data[,"ABUNDANCE"]),]#
+#
+if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<#
+abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){#
+	colnames(out.all)[3]<-"log2FC"#
+}#
+#
+if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])>#
+abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){#
+	colnames(out.all)[3]<-"log10FC"#
+}#
+#
+	## change the format as data.frame#
+	out.all<-data.frame(out.all)#
+#
+###
+	processout<-rbind(processout,c("Group comparison is done. - okay"))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+finalout<-list(ComparisonResult=out.all, ModelQC=dataafterfit, fittedmodel=outfitted)#
+return(finalout)	#
+#
+}
+test2<-groupComparison2(contrast.matrix=comparison, data=QuantData)
+data<-test2$fittedmodel
+data
+?designSampleSize
+designSampleSize2(data=test2$fittedmodel,labeled=TRUE,numSample=TRUE,numPep=3,numTran=4,#
+desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+data<-test2$fittedmodel[[2]]
+fit.full<-test2$fittedmodel[[2]]
+fit.full=="error"
+fit.full
+class(fit.full)
+names(fit.full)
+attributes(fit.full)
+groupComparison2<-function(contrast.matrix=contrast.matrix,data=data,labeled=TRUE, scopeOfBioReplication="restricted", scopeOfTechReplication="expanded", interference=TRUE,equalFeatureVar=TRUE,missing.action = "nointeraction"){#
+#
+	## save process output in each step#
+	allfiles<-list.files()#
+	filenaming<-"msstats"#
+	if(length(grep(filenaming,allfiles))==0){#
+		finalfile<-"msstats.log"#
+		processout<-NULL#
+	}else{#
+		num<-0#
+		finalfile<-"msstats.log"#
+#
+		while(is.element(finalfile,allfiles)){#
+			num<-num+1#
+			lastfilename<-finalfile ## in order to rea#
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")#
+		}#
+		finalfile<-lastfilename#
+		processout<-as.matrix(read.table(finalfile, header=T, sep="\t"))#
+	}#
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - groupComparison function"," "),ncol=1))#
+	## check input is correct#
+	## data format#
+	rawinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")#
+	if(length(setdiff(toupper(rawinput),toupper(colnames(data))))==0){#
+		processout<-rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")#
+	}#
+	## contrast. matrix#
+	if(ncol(contrast.matrix)!=length(unique(data$GROUP_ORIGINAL))){#
+		processout<-rbind(processout,c(paste("The required input - contrast.matrix: the number of column and the number of group are not the same. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("Please check contrast matrix. The number of group in data set is different with columns of contrast.matrix.")#
+	}#
+	# check whether row.names of contrast.matrix.sub exists or not#
+	if(sum(is.null(row.names(contrast.matrix)))>0){#
+		processout<-rbind(processout,c(paste("The required input - contrast.matrix: need row names of contrast.matrix . - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("No row.names of comparison exist.\n")#
+	}#
+	## labeled value#
+	if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){#
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'labeled' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	if(sum(unique(data$LABEL) %in% "H")==0 & labeled==TRUE){#
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. labeled should be 'FALSE'. Therefore now use labeled=FALSE")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 message("Dataset is based on label-free experiment. MSstats will use \"labeled\"=FALSE.")#
+		 labeled<-FALSE#
+	}#
+	## other option value#
+	if(!(scopeOfTechReplication=="restricted" | scopeOfTechReplication=="expanded")){#
+		processout<-rbind(processout,c(paste("The required input - scopeOfTechReplication : 'scopeOfTechReplication' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("'scopeOfTechReplication' must be one of \"restricted\" or \"expanded\".#
+	")#
+	}#
+	if(!(scopeOfBioReplication=="restricted" | scopeOfBioReplication=="expanded")){#
+		processout<-rbind(processout,c(paste("The required input - scopeOfBioReplication : 'scopeOfBioReplication' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		stop("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".#
+	")#
+	} #
+	if(!(interference==TRUE | interference==FALSE) | !is.logical(interference)){#
+		processout<-rbind(processout,c(paste("The required input - interference : 'interference' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'interference' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	if(!(equalFeatureVar==TRUE | equalFeatureVar==FALSE) | !is.logical(equalFeatureVar)){#
+		processout<-rbind(processout,c(paste("The required input - equalFeatureVar : 'equalFeatureVar' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		stop("'equalFeatureVar' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	if(equalFeatureVar==FALSE & (scopeOfBioReplication=="expanded" | scopeOfTechReplication=="expanded")){#
+		message("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication.")#
+		processout<-rbind(processout,c("* Heterogeneous variation among intensities from different features (equalFeatureVar=FALSE) can be implemented only with restricted scope of replication. The result with expanded scope of replication will be implemented with equal variation of error among features. If you want to account for unequal variation of error for different peptide feature, please use restricted scope of both replication."))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+	}#
+	if(!(missing.action %in% c("nointeraction", "impute", "remove"))){#
+		processout<-rbind(processout,c(paste("The required input - missing.action : 'missing.action' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'missing.action' must be one of \"nointeraction\", \"impute\", or \"remove\".")#
+	}#
+#
+	## all input#
+		processout<-rbind(processout,c(paste("labeled = ",labeled,sep="")))#
+		processout<-rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))#
+		processout<-rbind(processout,c(paste("scopeOfTechReplication = ", scopeOfTechReplication,sep="")))#
+		processout<-rbind(processout,c(paste("interference = ",interference,sep="")))#
+		processout<-rbind(processout,c(paste("equalFeatureVar = ",equalFeatureVar,sep="")))#
+#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+## check whether case-control(FALSE) or time-course(TRUE)#
+repeated<-.checkRepeated(data)#
+#
+	if(repeated){ #
+		processout<-rbind(processout,c(paste("Time course design of experiment - okay")))#
+	}else{#
+		processout<-rbind(processout,c(paste("Case control design of experiment - okay")))#
+#
+	}#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+## since case-control(FALSE) with fixed subject and random run will fit the crossed model#
+# we need to set subject_original to non-unique#
+#
+if(repeated==FALSE&scopeOfBioReplication=="restricted"&scopeOfTechReplication=="expanded"){#
+	test<-unique(data[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])#
+	test<- test[with(test, order(GROUP_ORIGINAL,SUBJECT_ORIGINAL)),]#
+	test$GROUP_ORIGINAL<-factor(test$GROUP_ORIGINAL)#
+	test1<-as.matrix(xtabs(~test[,1]))#
+	test$SUBJECT_ORIGINAL_NOUNIQUE<-as.numeric(unlist(apply(test1,1,function(x) seq(x))))#
+#
+	data$SUBJECT_ORIGINAL<-as.character(data$SUBJECT_ORIGINAL)#
+#
+	for (i in 1:length(unique(test$SUBJECT_ORIGINAL_NOUNIQUE))){#
+		list<-test$SUBJECT_ORIGINAL[test$SUBJECT_ORIGINAL_NOUNIQUE==i]#
+		data$SUBJECT_ORIGINAL[data$SUBJECT_ORIGINAL%in%list]<-i	#
+	}#
+#
+	data$SUBJECT_ORIGINAL<-factor(data$SUBJECT_ORIGINAL)#
+}#
+data$PROTEIN<-factor(data$PROTEIN)	#
+#
+## for final result report#
+out<-NULL#
+outsummary<-NULL#
+outfitted<-NULL#
+dataafterfit<-NULL#
+#
+##################################
+### how to handle missingness for endogenous#
+#
+data.l<-data[data$LABEL=="L",]#
+data.h<-data[data$LABEL=="H",]#
+#
+missingPeptides<-.checkMissFeature(data.l)#
+#
+protein.list = tapply ( data.l$FEATURE, data.l$PROTEIN, function ( x ) unique ( as.character ( x ) ) )#
+#
+missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )#
+## Impute for missing endogenous intensity#
+if ( missing.action == "impute" ) { #
+	if(length(missingPeptides) > 0){#
+		dataBySample <- tapply(data.l$ABUNDANCE, list(data.l$SUBJECT_ORIGINAL, data.l$FEATURE), function(x) min(x, na.rm = TRUE))#
+		dataBySample <- dataBySample[!(apply(dataBySample, 1, function(x) sum(is.na(x))) == ncol(dataBySample)), ]#
+#
+		if(!is.numeric(dataBySample)){ ## only one subject#
+			minValuePerSample <- apply(dataBySample, 1, function(x) min(x, na.rm = TRUE))#
+		}else{#
+			minValuePerSample<-min(dataBySample, na.rm=TRUE)#
+		}#
+		imputeValue <- mean(minValuePerSample[!is.infinite(minValuePerSample)], na.rm = TRUE)#
+#
+		for(i in 1:length(missingPeptides)){#
+			sub <- data.l[data.l$FEATURE == missingPeptides[i], ]#
+			t <- tapply(sub$ABUNDANCE, sub$GROUP, function(x) sum(x > 0, na.rm = TRUE))#
+			missingConds <- names(t)[which(t == 0 | is.na(t))]		#
+			data.l[data.l$FEATURE %in% missingPeptides[i] & data.l$GROUP %in% missingConds, ]$ABUNDANCE <- imputeValue#
+		}#
+#
+		if(length(missingPeptides) > 0){#
+			number.missing <- length(missingPeptides)#
+			message(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = ""))	#
+			processout<-rbind(processout,c(paste("* There are ", number.missing, " features (", paste(missingPeptides, collapse = ", "), ") that are missing intensities for an entire condition.  Intensities in these conditions have been imputed with the minimum intensity across all samples.", sep = "")))#
+			write.table(processout, file=finalfile, row.names=FALSE)	#
+		}#
+	}#
+#	data<-rbindlist(list(data.l,data.h))#
+	data<-rbind(data.l,data.h)#
+#
+}#
+## even though it is not the case, user can do with no interaction ( no else command)#
+## #
+if ( missing.action == "remove" ){#
+	data<-data[-which(data$FEATURE %in% missingPeptides),]#
+#
+	message("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model.")#
+	processout<-rbind(processout,c("* The features that are missing intensities for an entire condition in Protein will be removed for fitting the model."))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+#
+}#
+## for assigning interference#
+missing.results = sapply ( protein.list, function ( x ) any ( x %in% missingPeptides ) )#
+#
+###
+	processout<-rbind(processout,c(paste("missing.action : ",missing.action," - okay",sep="")))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+###==================================================#
+### start to analyze by protein ID#
+#
+	### need original group information#
+	origGroup<-unique(data$GROUP_ORIGINAL)#
+for (i in 1:nlevels(data$PROTEIN)){#
+#
+	sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]#
+#
+	# it is important to remove NA first, before we have the correct structure for each factor#
+	sub<-sub[!is.na(sub$ABUNDANCE),]#
+#
+	sub$GROUP<-factor(sub$GROUP)#
+	sub$SUBJECT<-factor(sub$SUBJECT)#
+	sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	#
+	sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)#
+	sub$SUBJECT_NESTED<-factor(sub$SUBJECT_NESTED)#
+	sub$FEATURE<-factor(sub$FEATURE)	#
+	sub$RUN<-factor(sub$RUN)#
+	singleFeature<-.checkSingleFeature(sub)#
+	singleSubject<-.checkSingleSubject(sub)#
+	TechReplicate<-.checkTechReplicate(sub) ## use for label-free model#
+#
+	MissGroupByFeature<-.checkMissGroupByFeature(sub)#
+	MissRunByFeature<-.checkMissRunByFeature(sub)#
+	MissSubjectByGroup<-.checkRunbyFeature(sub)#
+	UnequalSubject<-.checkUnequalSubject(sub)#
+	## need to assigning whether interaction term is included or not#
+	remove.interaction<-interference#
+if ( missing.action == "nointeraction" & missing.results [ i ]){#
+	remove.interaction = FALSE#
+	message("** ",paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = ""))#
+	processout<-rbind(processout,c(paste(levels(data$PROTEIN)[i]," has some features that are missing intensities for an entire condition in Protein, The additive model (without interaction) will be fitted.", sep = "")))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+}#
+#
+	message(paste("Testing a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))#
+	if(singleFeature){#
+		message("** Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted.")#
+		processout<-rbind(processout,c(paste("Protein ",levels(data$PROTEIN)[i]," has only single transition, the simplied model is fitted", sep = "")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		temp<-try(.fit.model.single(contrast.matrix,sub,labeled,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,repeated,origGroup),silent=TRUE)#
+#
+	}	#
+	if(!singleFeature){#
+#
+# not sure it is correct and what it means#
+#	noRunFeature<-.checkRunbyFeature(sub)#
+#	if(noRunFeature) unbalanced=TRUE#
+	temp<-try(.fit.model(contrast.matrix,sub,labeled, scopeOfBioReplication,scopeOfTechReplication,interference=remove.interaction,repeated,MissGroupByFeature,MissRunByFeature,UnequalSubject,singleSubject,TechReplicate,equalFeatureVar,origGroup),silent=TRUE)#
+#
+	}#
+## fix(apr 16)#
+	if(class(temp)=="try-error") {#
+		message("*** error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.")#
+		processout<-rbind(processout,c(paste("error : can't analyze ", levels(data$PROTEIN)[i], " for comparison.", sep = "")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		tempresult<-list(result=NULL,valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)#
+		for(k in 1:nrow(contrast.matrix)){	#
+			tempresult$result<-rbind(tempresult$result, data.frame(Protein=levels(data$PROTEIN)[i],Label=row.names(contrast.matrix)[k], logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA))#
+		}#
+	}else{#
+		tempresult<-temp#
+	}#
+#
+## comparison result table#
+#	out<-rbindlist(list(out,tempresult$result))#
+	out<-rbind(out,tempresult$result)#
+#
+## for checking model assumptions#
+## add residual and fitted after fitting the model#
+	if(class(temp)=="try-error") {#
+		if(nrow(sub)!=0){#
+			sub$residuals<-NA#
+			sub$fitted<-NA#
+		}#
+	}else{#
+		sub$residuals<-temp$valueresid#
+		sub$fitted<-temp$valuefitted#
+	}#
+	## order concerned#
+#	residuals<-data.frame(temp$valueresid)#
+#	fitted<-data.frame(temp$valuefitted)#
+#	sub<-merge(sub,residuals,by="row.names",all=T)#
+#	rownames(sub)<-sub$Row.names#
+#	sub<-merge(sub, fitted, by="row.names",all=T)#
+#	rownames(sub)<-data$Row.names#
+#
+#	dataafterfit<-rbindlist(list(dataafterfit,sub))#
+	dataafterfit<-rbind(dataafterfit,sub)#
+#
+## save fitted model#
+	outfitted<-c(outfitted, list(tempresult$fittedmodel))#
+#
+###
+	processout<-rbind(processout,c(paste("Finished a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")")))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+} ### end protein loop#
+#
+###
+	processout<-rbind(processout,c("Comparisons for all proteins are done.- okay"))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+##### finalize result#
+## need to FDR per comparison#
+out.all<-NULL#
+#
+out$Label<-as.character(out$Label)#
+for(i in 1:nrow(contrast.matrix)){#
+	outsub<-out[out$Label==row.names(contrast.matrix)[i],]#
+	outsub<-data.frame(outsub,adj.pvalue=p.adjust(outsub$pvalue,method="BH"))#
+#	out.all<-rbindlist(list(out.all, outsub))#
+	out.all<-rbind(out.all, outsub)#
+#
+}#
+out.all$Label<-factor(out.all$Label)#
+###
+	processout<-rbind(processout,c("Adjust p-values per comparison are calculated - okay."))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+temp<-data[!is.na(data[,"ABUNDANCE"]),]#
+#
+if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<#
+abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){#
+	colnames(out.all)[3]<-"log2FC"#
+}#
+#
+if(abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])>#
+abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])){#
+	colnames(out.all)[3]<-"log10FC"#
+}#
+#
+	## change the format as data.frame#
+	out.all<-data.frame(out.all)#
+#
+###
+	processout<-rbind(processout,c("Group comparison is done. - okay"))#
+	write.table(processout, file=finalfile, row.names=FALSE)#
+finalout<-list(ComparisonResult=out.all, ModelQC=dataafterfit, fittedmodel=outfitted)#
+return(finalout)	#
+#
+}
+designSampleSize2<-function(data=data,labeled=TRUE,numSample=numSample,numPep=numPep,numTran=numTran,desiredFC=desiredFC,FDR=0.05,power=0.9,scopeOfBioReplication="restricted",interference=TRUE,equalFeatureVar=TRUE){#
+#
+	nrepeats=3#
+	## save process output in each step#
+	allfiles<-list.files()#
+	filenaming<-"msstats"#
+	if(length(grep(filenaming,allfiles))==0){#
+		finalfile<-"msstats.log"#
+		processout<-NULL#
+	}else{#
+		num<-0#
+		finalfile<-"msstats.log"#
+#
+		while(is.element(finalfile,allfiles)){#
+			num<-num+1#
+			lastfilename<-finalfile ## in order to rea#
+			finalfile<-paste(paste(filenaming,num,sep="-"),".log",sep="")#
+		}#
+		finalfile<-lastfilename#
+		processout<-as.matrix(read.table(finalfile,header=T, sep="\t"))#
+	}#
+	processout<-rbind(processout,as.matrix(c(" "," ","MSstats - designSampleSize function"," "),ncol=1))#
+	## check one TRUE or not#
+	if( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ){#
+		processout<-rbind(processout,c(paste("The required input - number of sample or features : Only one value should be TRUE. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("One of (numSample, numPep, numTran, power) needs to be TRUE")#
+	}#
+#
+	## labeled value#
+	if(!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)){#
+		processout<-rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+		 stop("'labeled' must be one of TRUE or FALSE as a logical value.")#
+	}#
+	## all input#
+		processout<-rbind(processout,c(paste("number of sample = ",numSample,sep="")))#
+		processout<-rbind(processout,c(paste("number of peptide per protein = ",numPep,sep="")))#
+		processout<-rbind(processout,c(paste("number of transition per peptide = ", numTran,sep="")))#
+		processout<-rbind(processout,c(paste("Desired fold change = ",paste(desiredFC,collapse=" - "),sep="")))#
+		processout<-rbind(processout,c(paste("FDR = ",FDR,sep="")))#
+		processout<-rbind(processout,c(paste("Power = ", power,sep="")))#
+#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+	## for label-free experiment#
+	if (!labeled){#
+		sigma.error<-NULL	#
+		VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)#
+#
+		for (i in 1:length(data)){#
+			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.#
+			fit.full<-data[[i]]#
+#
+				## if fit.full==NA (class(fit.full)=="try-error)#
+				if(is.null(fit.full)) {#
+					## !!!!! but if we have NULL for last protein?#
+					next#
+				}else{#
+					## get variance component#
+#
+					if(class(fit.full)!="mer"){#
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
+					}else{#
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
+						}#
+					}#
+				}#
+		} ## end-loop#
+#
+#		VarComponent[is.na(VarComponent)]<-0	#
+		## for label-free DDA, there are lots of missingness and lots of zero SE. So, remove NA SE.#
+		median.sigma.error<-median(VarComponent[,"Error"],na.rm=TRUE)#
+		if(sum(!is.na(VarComponent[,"GroupBySubject"]))>0){#
+			median.sigma.subject<-median(VarComponent[,"GroupBySubject"],na.rm=TRUE)#
+		}else{#
+			if(sum(!is.na(VarComponent[,"Subject"]))>0){#
+				median.sigma.subject<-median(VarComponent[,"Subject"],na.rm=TRUE)#
+			}else{#
+				median.sigma.subject<-0#
+			}#
+		}#
+		####
+		processout<-rbind(processout,c("Calculated variance component. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		### power calculation#
+		if(isTRUE(power)){#
+			delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+			desiredFC<-2^delta#
+			m0_m1=99#
+			t<-delta/sqrt(2*median.sigma.error/numPep/numTran/numSample+median.sigma.subject/numSample)#
+   			 powerTemp<-seq(0,1,0.01)#
+    		power<-NULL#
+   			for(i in 1:length(t)){#
+    			diff<-qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]#
+    			min(abs(diff),na.rm=TRUE)#
+    			power[i]<-powerTemp[order(abs(diff))][1]#
+    		}#
+    		CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+    		####
+		processout<-rbind(processout,c("Power is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+    		out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)#
+    		return(out)#
+    	}#
+#
+		if(is.numeric(power)){#
+#
+			# Large portion of proteins are not changing#
+			m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99#
+			alpha<-power*FDR/(1+(1-FDR)*m0_m1)#
+#
+			### Num Sample calculation#
+			if (isTRUE(numSample)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numSample<-round((2*median.sigma.error/numPep/numTran+median.sigma.subject)/aa,0)#
+				CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of sample is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Peptide calculation#
+			if (isTRUE(numPep)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numPep<-round((2*median.sigma.error/numSample/numTran+median.sigma.subject/numSample)/aa,0)#
+				CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of peptide per protein is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Transition calculation#
+			if (isTRUE(numTran)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numTran<-round((2*median.sigma.error/numSample/numPep+median.sigma.subject/numSample)/aa,0)#
+				CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of transition per peptide is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+		} # when power is numeric#
+	} ## label-free#
+	## isotope labeled experiment#
+	if (labeled){#
+		sigma.error<-NULL	#
+		VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)#
+#
+		for (i in 1:length(data)){#
+			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.#
+			fit.full<-data[[i]]#
+#
+				## if fit.full==NA (class(fit.full)=="try-error)#
+				if(is.null(fit.full)) {#
+					next#
+#
+				}else{#
+#
+					if(class(fit.full)!="mer"){#
+						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
+					}else{#
+						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
+						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
+						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
+							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
+						}#
+						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
+							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
+						}#
+					}#
+				}#
+		} ## end-loop#
+#
+		## label-based case, few of NA SE.#
+		VarComponent[is.na(VarComponent)]<-0	#
+		median.sigma.error<-median(VarComponent[,"Error"],na.rm=TRUE)#
+		if(sum(VarComponent[,"GroupBySubject"])>0){#
+			median.sigma.subject<-median(VarComponent[,"GroupBySubject"],na.rm=TRUE)#
+		}else{#
+			median.sigma.subject<-median(VarComponent[,"Subject"],na.rm=TRUE)#
+		}#
+		####
+		processout<-rbind(processout,c("Calculated variance component. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+		### power calculation#
+		if(isTRUE(power)){#
+			delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+			desiredFC<-2^delta#
+			m0_m1=99#
+			t<-delta/sqrt((4*median.sigma.error/numPep/numTran/numSample)+(2*median.sigma.subject/numSample))#
+			powerTemp<-seq(0,1,0.01)#
+			power<-NULL#
+			for(i in 1:length(t)){#
+				diff<-qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]#
+				min(abs(diff),na.rm=TRUE)#
+				power[i]<-powerTemp[order(abs(diff))][1]#
+			}#
+    		CV<-round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)#
+        	####
+		processout<-rbind(processout,c("Power is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+  			out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)#
+    		return(out)#
+    	}#
+#
+		if(is.numeric(power)){#
+			# Large portion of proteins are not changing#
+			m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99#
+			alpha<-power*FDR/(1+(1-FDR)*m0_m1)#
+#
+			### Num Sample calculation#
+			if(isTRUE(numSample)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numSample<-round(((4*median.sigma.error/numPep/numTran)+(2*median.sigma.subject))/aa,0)#
+				CV<-round((4*median.sigma.error/(numSample*numPep*numTran)+(2*median.sigma.subject/numSample))/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of sample is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Peptide calculation#
+			if(isTRUE(numPep)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numPep<-round((4*median.sigma.error/numSample/numTran+2*median.sigma.subject/numSample)/aa,0)#
+				CV<-round((4*median.sigma.error/(numSample*numPep*numTran)+2*median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of peptide per protein is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+#
+			### Num Transition calculation#
+			if(isTRUE(numTran)){#
+				delta<-log2(seq(desiredFC[1],desiredFC[2],0.025))#
+				desiredFC<-2^delta#
+				z_alpha<-qnorm(1-alpha/2)#
+				z_beta<-qnorm(power)#
+				aa<-(delta/(z_alpha+z_beta))^2#
+				numTran<-round((4*median.sigma.error/numSample/numPep+2*median.sigma.subject/numSample)/aa,0)#
+				CV<-round((4*median.sigma.error/(numSample*numPep*numTran)+2*median.sigma.subject/numSample)/desiredFC,3)#
+				####
+		processout<-rbind(processout,c("The number of transition per peptide is calculated. - okay"))#
+		write.table(processout, file=finalfile, row.names=FALSE)#
+#
+				out<-data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)#
+				return(out)#
+			}#
+		} # power is numeric#
+	} ## label-based#
+}
+test2<-groupComparison2(contrast.matrix=comparison, data=QuantData)
+test2$fittedmodel
+designSampleSize2(data=test2$fittedmodel,labeled=TRUE,numSample=TRUE,numPep=3,numTran=4,#
+desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+designSampleSize(data=QuantDat,numSample=TRUE,numPep=3,numTran=4,#
+desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+designSampleSize(data=QuantData,numSample=TRUE,numPep=3,numTran=4,#
+desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+library(MSstats)
+library(lme4)
+head(DDARawData)
+quant<-dataProcess(DDARawData)
+head(quant)
+quant1<-quant$ProcessedData
+head(quant1)
+data2<-quant1[quant1$PROTEIN=="bovine",]
+head(data2)
+quant1<-quant$RunlevelData
+head(quant1)
+data2<-quant1[quant1$PROTEIN=="bovine",]
+head(data2)
+data2<-quant1[quant1$Protein=="bovine",]
+head(data2)
+fit<-lmer(LogIntensities~(1|GROUP),data=data2)
+summary(fit)
+fit<-lmer(LogIntensities~1+(1|GROUP),data=data2)
+summary(fit)
+head(data2)
+class(data2$GROUP)
+data2$GROUP<-as.numeric(as.character(data2$GROUP))
+class(data2$GROUP)
+head(data2)
+fit<-lmer(LogIntensities~(1|GROUP),data=data2)
+summary(fit)
+?lmer
+fit<-lmer(LogIntensities~(1|GROUP),data=data2,REML=FALSE)
+summary(fit)
+load("/Users/Meena/Dropbox/Research/Meena-MSstatsv3-test/spike-data/label_free_MCP/20150613/input1_topn/work.RData")
+head(work)
+i=3
+data<-work
+data$PROTEIN<-factor(data$PROTEIN)
+data$RUN<-factor(data$RUN)
+sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]
+message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+sub$FEATURE<-factor(sub$FEATURE)
+sub$feature.label<-paste(sub$FEATURE, sub$LABEL, sep="_")
+sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")
+nrow(sub)==sum(is.na(sub$ABUNDANCE))
+sum(is.na(sub$ABUNDANCE)
+)
+nrow(sub)
+120/8
+subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+subtemp
+count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)
+count
+unique(data$RUN)
+subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY),]
+dim(subtemp)
+head(subtemp)
+numFea<-xtabs(~run.label, subtemp)
+numFea
+length(unique(subtemp$FEATURE))
+numFea<-numFea/length(unique(subtemp$FEATURE))
+numFea
+numFea<-numFea<=0.5
+numFea
+numFea<-xtabs(~RUN, subtemp)
+numFea<-numFea/length(unique(subtemp$FEATURE))
+numFea<-numFea<=0.5
+numFea
+removerunid<-names(numFea)[numFea]
+removerunid
+sub<-sub[-which(sub$RUN %in% removerunid),]
+dim(sub)
+sub$RUN<-factor(sub$RUN)
+sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+sub
+data<-work
+data$LABEL<-factor(data$LABEL)#
+    label<-nlevels(data$LABEL)==2#
+   	# set ref which is distinguish reference and endogenous. any reference=0. endogenous is the same as RUN#
+	if(label){#
+		data$ref<-0#
+		data$ref[data$LABEL!="H"]<-data$RUN[data$LABEL!="H"]#
+		data$ref<-factor(data$ref)#
+#		unique(data[,c("RUN","LABEL","GROUP","ref")])#
+	}
+data$PROTEIN<-factor(data$PROTEIN)#
+    	data$RUN<-factor(data$RUN)#
+		result<-NULL
+i
+sub<-data[data$PROTEIN==levels(data$PROTEIN)[i],]#
+     		message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))#
+#
+      		sub$FEATURE<-factor(sub$FEATURE)	#
+      		sub$feature.label<-paste(sub$FEATURE, sub$LABEL, sep="_")#
+      		sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")#
+      		## if all measurements are NA,#
+      		if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){#
+       			message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))#
+        		next()#
+      		}
+subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]#
+			count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)#
+			norun<-setdiff(unique(data$RUN),count$RUN)#
+			if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))){ # removed NA rows already, if there is no overlapped run, error#
+				sub<-sub[-which(sub$RUN %in% norun),]#
+				sub$RUN<-factor(sub$RUN)#
+			}#
+			## remove features which are completely NAs#
+			subtemp<-sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]#
+			countfeature<-xtabs(~FEATURE, subtemp)#
+			namefeature<-names(countfeature)[countfeature==0]#
+			if(length(namefeature)!=0){#
+				sub<-sub[-which(sub$FEATURE %in% namefeature),]#
+				sub$FEATURE<-factor(sub$FEATURE)#
+			}
+sub
+sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+head(sub)
+tail(sub)
+cut<-aggregate(ABUNDANCE~feature.label,data=sub, function(x) min(x, na.rm=TRUE))#
+						## cutoff for each Run is little less than minimum abundance in a run.#
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE#
+#
+						for(j in 1:length(unique(sub$feature.label))){#
+							sub[is.na(sub$INTENSITY) & sub$feature.label==cut$feature.label[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]#
+						}
+sub
+tail(sub)
+cut
+subtemp<-sub[!is.na(sub$ABUNDANCE),]
+countdf<-nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+countdf
+library(survival)
+fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
+fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+fittest
+fit <- survreg(Surv(time,status) ~ age + I(age^2), data=stanford2, #
+	dist='lognormal')
+with(stanford2, plot(age, time, xlab='Age', ylab='Days', #
+	xlim=c(0,65), ylim=c(.1, 10^5), log='y', type='n'))
+with(stanford2, points(age, time, pch=c(2,4)[status+1], cex=.7))
+pred <- predict(fit, newdata=list(age=1:65), type='quantile', #
+	         p=c(.1, .5, .9))
+matlines(1:65, pred, lty=c(2,1,2), col=1)
+head(sub)
+tail(sub)
+subtemp<-sub[sub$cen==0,]
+head(subtemp)
+predit(fittest, newdata=subtemp)
+predict(fittest, newdata=subtemp)
+predict(fittest, newdata=sub)
+head(sub)
+predict(fittest, newdata=sub, type="response")
+tail(sub)
+predict(fittest, newdata=subtemp)
+sub<-data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+head(sub)
+datafeature<-data
+ylimUp=40#
+ylimDown=0#
+x.axis.size=10#
+y.axis.size=10#
+text.size=4#
+text.angle=0#
+legend.size=7#
+dot.size.profile=2#
+width=10#
+height=10
+y.limup<-30#
+    if(is.numeric(ylimUp)) y.limup<-ylimUp #
+    ## ylimDown#
+    y.limdown=-1#
+    if(is.numeric(ylimDown)) y.limdown<-ylimDown #
+    datafeature<-datafeature[with(datafeature,order(GROUP_ORIGINAL,SUBJECT_ORIGINAL,LABEL)),]#
+    datafeature$RUN<-factor(datafeature$RUN,levels=unique(datafeature$RUN),labels=seq(1,length(unique(datafeature$RUN))))#
+    datafeature$RUN<-as.numeric(datafeature$RUN)#
+    tempGroupName<-unique(datafeature[,c("GROUP_ORIGINAL","RUN")])#
+    groupAxis<-as.numeric(xtabs(~GROUP_ORIGINAL,tempGroupName))#
+    cumGroupAxis<-cumsum(groupAxis)#
+    lineNameAxis<-cumGroupAxis[-nlevels(datafeature$GROUP_ORIGINAL)]#
+    groupName<-data.frame(RUN=c(0,lineNameAxis)+groupAxis/2+0.5,y=rep(y.limup-1,length(groupAxis)),Name=levels(datafeature$GROUP_ORIGINAL))#
+    if(length(unique(datafeature$LABEL))==2){#
+      datafeature$LABEL<-factor(datafeature$LABEL,labels=c("Reference","Endogenous"))	#
+    }else{#
+      if(unique(datafeature$LABEL)=="L"){#
+        datafeature$LABEL<-factor(datafeature$LABEL,labels=c("Endogenous"))	#
+      }#
+      if(unique(datafeature$LABEL)=="H"){#
+        datafeature$LABEL<-factor(datafeature$LABEL,labels=c("Reference"))#
+      }#
+    }
+sub$FEATURE<-factor(as.character(sub$FEATURE))	#
+      sub$SUBJECT<-factor(sub$SUBJECT)	#
+      sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	#
+      sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)#
+      sub$PEPTIDE<-factor(as.character(sub$PEPTIDE))
+## if all measurements are NA,#
+      if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){#
+        message(paste("Can't the Profile plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))#
+        next()#
+      }#
+      # seq for peptide and transition#
+      b<-unique(sub[,c("PEPTIDE","FEATURE")])#
+      b<-b[with(b,order(PEPTIDE,FEATURE)),] ## add because if there are missing value, orders are different.#
+      temp1<-xtabs(~b[,1])#
+      ss<-NULL#
+      s<-NULL#
+      for(j in 1:length(temp1)){#
+        temp3<-rep(j,temp1[j])#
+        s<-c(s,temp3)#
+        temp2<-seq(1,temp1[j])#
+        ss<-c(ss,temp2)	#
+      }
+library(ggplot2)
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))#
+        ## y-axis labeling#
+        temp<-sub[!is.na(sub[,"ABUNDANCE"]) & !is.na(sub[,"INTENSITY"]),]#
+        temptest<-abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])#
+        if(temptest){#
+          ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))	#
+        }else{#
+          ptemp<-ptemp+scale_y_continuous('Log10-intensities',limit=c(y.limdown, y.limup))#
+        }#
+        ## draw point here,#
+        ## if there are imputed data#
+        if(any(is.element(colnames(sub),"imputed"))){#
+			ptemp<-ptemp+geom_point(data=sub,aes(x=RUN, y=ABUNDANCE,shape=imputed, size=imputed))+scale_shape_manual(values=c(20,4),labels=c("Detected data","Imputed data"))+scale_size_manual(values=c(1.5,2), guide="none")+guides(color=guide_legend(title=paste("# peptide:",nlevels(sub$PEPTIDE)),ncol=3), shape=guide_legend(title=NULL))#
+		}else{#
+			ptemp<-ptemp+guides(color=guide_legend(title=paste("# peptide:",nlevels(sub$PEPTIDE)),ncol=3))#
+		}#
+		print(ptemp)
+i
+sub<-datafeature[datafeature$PROTEIN==levels(datafeature$PROTEIN)[i],]#
+      sub$FEATURE<-factor(as.character(sub$FEATURE))	#
+      sub$SUBJECT<-factor(sub$SUBJECT)	#
+      sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	#
+      sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)#
+      sub$PEPTIDE<-factor(as.character(sub$PEPTIDE))
+sub<-data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+sub
+sub<-data[data$PROTEIN==unique(data$PROTEIN)[i],]
+sub
+sub$FEATURE<-factor(sub$FEATURE)
+if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){#
+       				message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))#
+        			next#
+      			}#
+				## remove run which has no measurement at all#
+				subtemp<-sub[!is.na(sub$INTENSITY),]#
+				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)#
+				norun<-setdiff(unique(data$RUN),count$RUN)#
+				if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))!=0){ # removed NA rows already, if there is no overlapped run, error#
+					sub<-sub[-which(sub$RUN %in% norun),]#
+					sub$RUN<-factor(sub$RUN)#
+				}
+## remove features which are (completely NAs or zero) #
+				subtemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0 ,]#
+				countfeature<-xtabs(~FEATURE, subtemp)#
+				namefeature<-names(countfeature)[countfeature==0]#
+				if(length(namefeature)!=0){#
+					sub<-sub[-which(sub$FEATURE %in% namefeature),]#
+					sub$FEATURE<-factor(sub$FEATURE)#
+				}
+sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+sub
+cut<-aggregate(ABUNDANCE~FEATURE,data=sub, function(x) min(x, na.rm=TRUE))#
+						## cutoff for each Run is little less than minimum abundance in a run.#
+						cut$ABUNDANCE<-0.99*cut$ABUNDANCE#
+#
+						for(j in 1:length(unique(cut$FEATURE))){#
+							sub[is.na(sub$INTENSITY) & sub$FEATURE==cut$FEATURE[j],"ABUNDANCE"]<-cut$ABUNDANCE[j]#
+						}
+subtemp<-sub[!is.na(sub$ABUNDANCE),]
+countdf<-nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+head(sub)
+sub<-data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+head(sub)
+sub$FEATURE<-factor(as.character(sub$FEATURE))	#
+      sub$SUBJECT<-factor(sub$SUBJECT)	#
+      sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	#
+      sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)#
+      sub$PEPTIDE<-factor(as.character(sub$PEPTIDE))
+# seq for peptide and transition#
+      b<-unique(sub[,c("PEPTIDE","FEATURE")])#
+      b<-b[with(b,order(PEPTIDE,FEATURE)),] ## add because if there are missing value, orders are different.#
+      temp1<-xtabs(~b[,1])#
+      ss<-NULL#
+      s<-NULL#
+      for(j in 1:length(temp1)){#
+        temp3<-rep(j,temp1[j])#
+        s<-c(s,temp3)#
+        temp2<-seq(1,temp1[j])#
+        ss<-c(ss,temp2)	#
+      }
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))
+ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+ptemp<-ptemp+guides(color=guide_legend(title=paste("# peptide:",nlevels(sub$PEPTIDE)),ncol=3))
+print(ptemp)
+ptemp
+cumGroupAxis
+ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)
+ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)
+ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")
+ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)
+sub$RUN<-factor(sub$RUN,levels=unique(data$RUN),labels=seq(1,length(unique(data$RUN))))
+sub$RUN<-as.numeric(sub$RUN)
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))
+ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+ptemp
+head(sub)
+ptemp<-ggplot(aes_string(x='RUN', y='pred', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))#
+        ## y-axis labeling#
+        ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+print(ptemp)
+tail(sub)
+sub[sub$cen==0,"ABUNDANCE"]<-sub[sub$cen==0,"pred"]
+tail(sub)
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))#
+        ## y-axis labeling#
+        ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+print(ptemp)
+i
+data$PROTEIN<-factor(data$PROTEIN)
+data$RUN<-factor(data$RUN)
+sub<-data[data$PROTEIN==unique(data$PROTEIN)[i],]
+## if all measurements are NA,#
+      			if(nrow(sub)==sum(is.na(sub$ABUNDANCE))){#
+       				message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))#
+        			next#
+      			}#
+				## remove run which has no measurement at all#
+				subtemp<-sub[!is.na(sub$INTENSITY),]#
+				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)#
+				norun<-setdiff(unique(data$RUN),count$RUN)#
+				if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))!=0){ # removed NA rows already, if there is no overlapped run, error#
+					sub<-sub[-which(sub$RUN %in% norun),]#
+					sub$RUN<-factor(sub$RUN)#
+				}
+subtemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0 ,]#
+				countfeature<-xtabs(~FEATURE, subtemp)#
+				namefeature<-names(countfeature)[countfeature==0]#
+				if(length(namefeature)!=0){#
+					sub<-sub[-which(sub$FEATURE %in% namefeature),]#
+					sub$FEATURE<-factor(sub$FEATURE)#
+				}
+sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+sub
+head(data)
+sub<-data[data$PROTEIN==unique(data$PROTEIN)[i],]
+sub
+sub$FEATURE<-factor(sub$FEATURE)
+subtemp<-sub[!is.na(sub$INTENSITY),]#
+				count<-aggregate(ABUNDANCE~RUN,data=subtemp, length)#
+				norun<-setdiff(unique(data$RUN),count$RUN)#
+				if(length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))!=0){ # removed NA rows already, if there is no overlapped run, error#
+					sub<-sub[-which(sub$RUN %in% norun),]#
+					sub$RUN<-factor(sub$RUN)#
+				}
+subtemp<-sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0 ,]#
+				countfeature<-xtabs(~FEATURE, subtemp)#
+				namefeature<-names(countfeature)[countfeature==0]#
+				if(length(namefeature)!=0){#
+					sub<-sub[-which(sub$FEATURE %in% namefeature),]#
+					sub$FEATURE<-factor(sub$FEATURE)#
+				}
+sub
+sub$cen<-ifelse(is.na(sub$INTENSITY),0,1)
+cut.run<-aggregate(ABUNDANCE~run.label,data=sub, function(x) min(x, na.rm=TRUE))#
+						cut.run$ABUNDANCE<-0.99*cut.run$ABUNDANCE#
+						## cutoff for each feature is little less than minimum abundance in a run.#
+#
+						cut.fea<-aggregate(ABUNDANCE~feature.label,data=sub, function(x) min(x, na.rm=TRUE))#
+						cut.fea$ABUNDANCE<-0.99*cut.fea$ABUNDANCE#
+						if(length(unique(sub$feature.label))>1){#
+							for(j in 1:length(unique(sub$feature.label))){#
+								for(k in 1:length(unique(sub$run.label))){#
+									# get smaller value for min Run and min Feature#
+									finalcut<-min(cut.fea$ABUNDANCE[j],cut.run$ABUNDANCE[k])#
+									sub[is.na(sub$INTENSITY) & sub$feature.label==cut.fea$feature.label[j] & sub$run.label==cut.run$run.label[k],"ABUNDANCE"]<-finalcut#
+								}#
+							}#
+						}
+sub$FEATURE<-factor(sub$FEATURE)	#
+      		sub$feature.label<-paste(sub$FEATURE, sub$LABEL, sep="_")#
+      		sub$run.label<-paste(sub$RUN, sub$LABEL, sep="_")
+cut.run<-aggregate(ABUNDANCE~run.label,data=sub, function(x) min(x, na.rm=TRUE))#
+						cut.run$ABUNDANCE<-0.99*cut.run$ABUNDANCE#
+						## cutoff for each feature is little less than minimum abundance in a run.#
+#
+						cut.fea<-aggregate(ABUNDANCE~feature.label,data=sub, function(x) min(x, na.rm=TRUE))#
+						cut.fea$ABUNDANCE<-0.99*cut.fea$ABUNDANCE
+if(length(unique(sub$feature.label))>1){#
+							for(j in 1:length(unique(sub$feature.label))){#
+								for(k in 1:length(unique(sub$run.label))){#
+									# get smaller value for min Run and min Feature#
+									finalcut<-min(cut.fea$ABUNDANCE[j],cut.run$ABUNDANCE[k])#
+									sub[is.na(sub$INTENSITY) & sub$feature.label==cut.fea$feature.label[j] & sub$run.label==cut.run$run.label[k],"ABUNDANCE"]<-finalcut#
+								}#
+							}#
+						}
+tail(sub)
+fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
+fittest<-survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+fittest
+sub<-data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+head(sub)
+tail(sub)
+sub$SUBJECT<-factor(sub$SUBJECT)	#
+      sub$GROUP_ORIGINAL<-factor(sub$GROUP_ORIGINAL)	#
+      sub$SUBJECT_ORIGINAL<-factor(sub$SUBJECT_ORIGINAL)#
+      sub$PEPTIDE<-factor(as.character(sub$PEPTIDE))#
+	  sub$RUN<-factor(sub$RUN,levels=unique(data$RUN),labels=seq(1,length(unique(data$RUN))))#
+      sub$RUN<-as.numeric(sub$RUN)
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))#
+        ## y-axis labeling#
+        ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+print(ptemp)
+ptemp<-ggplot(aes_string(x='RUN', y='pred', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))#
+        ## y-axis labeling#
+        ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+print(ptemp)
+sub[sub$cen==0,"ABUNDANCE"]<-sub[sub$cen==0,"pred"]
+ptemp<-ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+facet_grid(~LABEL)+geom_point(size=dot.size.profile)+geom_line(size=0.5)+scale_colour_manual(values=unique(s))+scale_linetype_manual(values=ss,guide="none")+scale_x_continuous('MS runs',breaks=cumGroupAxis)+annotate("text",x=groupName$RUN,y=groupName$y,label=groupName$Name,size=text.size,angle=text.angle)+geom_vline(xintercept=lineNameAxis+0.5,colour="grey",linetype="longdash")+labs(title=unique(sub$PROTEIN))+theme(#
+          panel.background=element_rect(fill='white', colour="black"),#
+          legend.key=element_rect(fill='white',colour='white'),#
+          panel.grid.minor = element_blank(),#
+          strip.background=element_rect(fill='gray95'),	#
+          strip.text.x=element_text(colour=c("#00B0F6"),size=14),#
+          axis.text.x=element_text(size=x.axis.size,colour="black"),#
+          axis.text.y=element_text(size=y.axis.size,colour="black"),#
+          axis.ticks=element_line(colour="black"),#
+          axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),#
+          axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),#
+          title=element_text(size=x.axis.size+8,vjust=1.5),#
+          legend.position="top",#
+          legend.text=element_text(size=legend.size))#
+        ## y-axis labeling#
+        ptemp<-ptemp+scale_y_continuous('Log2-intensities',limit=c(y.limdown, y.limup))
+print(ptemp)
+tail(sub)
+?tapply
+load("/Users/Meena/Dropbox/Research/Meena-MSstatsv3-test/spike-data/iprg/20150818_MQ/TestingResult/work.RData")
+.gettop3<-function(sub){#
+	subtemp<-sub[!is.na(sub$Intensity),]#
+	if(nrow(subtemp)==0) break#
+	## from raw scale #
+	maxvalue<-aggregate(Intensity~FEATURE,data=sub, function(x) mean(x, na.rm=TRUE))#
+	maxvalue<-maxvalue[order(maxvalue$Intensity, decreasing=T),]#
+#
+	## choose top n#
+	maxfeature<-maxvalue$FEATURE[1:n]#
+#
+	return(maxfeature)#
+}
+head(work)
+temp<-aggregate(.~PROTEIN,data=work, FUN=function(x){#
+	subtemp<-x[!is.na(x$INTENSITY),]#
+	if(nrow(subtemp)==0) break#
+	## from raw scale #
+	maxvalue<-aggregate(INTENSITY~FEATURE,data=sub, function(x) mean(x, na.rm=TRUE))#
+	maxvalue<-maxvalue[order(maxvalue$INTENSITY, decreasing=T),]#
+#
+	## choose top n#
+	maxfeature<-maxvalue$FEATURE[1:n]#
+#
+	return(maxfeature)#
+#
+})
+temp<-aggregate(.~PROTEIN,data=work, FUN=function(x){#
+	subtemp<-x[!is.na(x$INTENSITY),]#
+	if(nrow(subtemp)==0) break#
+	## from raw scale #
+	maxvalue<-aggregate(INTENSITY~FEATURE,data=x, function(x) mean(x, na.rm=TRUE))#
+	maxvalue<-maxvalue[order(maxvalue$INTENSITY, decreasing=T),]#
+#
+	## choose top n#
+	maxfeature<-maxvalue$FEATURE[1:n]#
+#
+	return(maxfeature)#
+#
+})
+temp<-aggregate(PROTEIN~.,data=work, FUN=function(x){#
+	subtemp<-x[!is.na(x$INTENSITY),]#
+	if(nrow(subtemp)==0) break#
+	## from raw scale #
+	maxvalue<-aggregate(INTENSITY~FEATURE,data=x, function(x) mean(x, na.rm=TRUE))#
+	maxvalue<-maxvalue[order(maxvalue$INTENSITY, decreasing=T),]#
+#
+	## choose top n#
+	maxfeature<-maxvalue$FEATURE[1:n]#
+#
+	return(maxfeature)#
+#
+})
