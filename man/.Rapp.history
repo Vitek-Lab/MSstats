@@ -1,0 +1,2 @@
+install.packages(pkgs="/Users/Meena/Dropbox/MSstats_GitHub_private/MSstats_3.0.10.tar.gz",repos=NULL,type="source")
+library(MSstats)
