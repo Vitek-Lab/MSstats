@@ -3,7 +3,6 @@ exportPattern("^[[:alpha:]]+")
 import(limma)
 import(lme4)
 import(reshape)
-import(reshape2)
 import(survival)
 import(marray)
 import(preprocessCore)
@@ -11,8 +10,7 @@ import(data.table)
 import(ggplot2)
 import(gplots)
 import(MSnbase)
-import(Rcpp)
-import(grid)
+
 
 
 
