@@ -364,6 +364,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   work$GROUP_ORIGINAL<-factor(work$GROUP_ORIGINAL)
   work$SUBJECT_ORIGINAL<-factor(work$SUBJECT_ORIGINAL,levels=unique(work$SUBJECT_ORIGINAL))
+  work$LABEL <- unique(work$LABEL, levels=unique(work$LABEL))
   
   work[work$LABEL=="L","GROUP"]<-work[work$LABEL=="L","GROUP_ORIGINAL"]
   work[work$LABEL=="L","SUBJECT"]<-work[work$LABEL=="L","SUBJECT_ORIGINAL"]
