@@ -133,7 +133,7 @@ transformMSstatsToMSnSet<-function(data){
 #############################################
 #############################################
 
-dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE,address="", fillIncompleteRows=TRUE, featureSubset="all", summaryMethod="TMP",equalFeatureVar=TRUE, filterLogOfSum=TRUE, censoredInt="NA",cutoffCensored="minFeatureNRun", MBimpute=TRUE,remove50missing=FALSE,skylineReport=FALSE){
+dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE,address="", fillIncompleteRows=TRUE, featureSubset="all", summaryMethod="TMP",equalFeatureVar=TRUE, filterLogOfSum=TRUE, censoredInt="NA",cutoffCensored="minFeatureNRun", MBimpute=TRUE,remove50missing=FALSE,skylineReport=FALSE, featureSelectionGoal='TPR.TNR'){
   
   ## save process output in each step
   allfiles<-list.files()
@@ -1671,17 +1671,8 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   	  processout<-rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
       write.table(processout, file=finalfile, row.names=FALSE)
     
-      if(nlevels(work$LABEL)==2) {
-        message("*** error : High quality selection will accomodate the label-based experiment soon, but not now. Now use all features.")
-      
-        processout<-rbind(processout,c(paste("error : High quality selection will accomodate the label-based experiment soon, but not now. Now use all features.")))
-        write.table(processout, file=finalfile, row.names=FALSE)
-      
-        work<-work
-      
-      }else{
         work<-FeatureSelection(work)
-      }
+      
   }
   
   
