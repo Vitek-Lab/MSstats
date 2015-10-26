@@ -172,27 +172,34 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   #### Check correct option or input
   
   #### check right column in input
- 
-  	requiredinput<-c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
+  
+  requiredinput <- c("ProteinName", "PeptideSequence", "PrecursorCharge", 
+                     "FragmentIon", "ProductCharge", "IsotopeLabelType", 
+                     "Condition", "BioReplicate", "Run", "Intensity")
 
-  
+  ### [THT: disambiguation for PeptideSequence & PeptideModifiedSequence - begin]
   ## PeptideModifiedSequence is also allowed.
-  tempinput<-setdiff(toupper(requiredinput),toupper(colnames(raw)))
-  
-  if(sum(length(tempinput)!=0 & tempinput!="PEPTIDESEQUENCE")>0){
-    processout<-rbind(processout,c(paste("ERROR : The required input : ",paste(tempinput[tempinput!="PEPTIDESEQUENCE"],collapse=", ")," are not provided in input - stop")))
-    write.table(processout, file=finalfile,row.names=FALSE)
-    
+  requiredInputUpper <- toupper(requiredinput)
+  providedInputUpper <- toupper(colnames(raw))
+  if all(requiredInputUpper %in% providedInputUpper) {
+    processout <- rbind(processout, c("The required input : provided - okay"))
+    write.table(processout, file = finalfile, row.names = FALSE)
+  } else if (all(setdiff(requiredInputUpper, "PEPTIDESEQUENCE") %in% providedInputUpper) 
+             && "PEPTIDEMODIFIEDSEQUENCE" %in% providedInputUpper) {
+    processout <- rbind(processout, c("The required input : provided - okay"))
+    write.table(processout, file = finalfile, row.names = FALSE)
+    # if PeptideModifiedSequence is provided instead of PeptideSequence, 
+    # change the column name as PeptideSequence
+    colnames(raw)[which(providedInputUpper == "PEPTIDEMODIFIEDSEQUENCE")] <- "PeptideSequence"
+  } else {
+    missedInput <- which(!(requiredInputUpper %in% providedInputUpper))
+    processout <- rbind(processout, c(paste("ERROR : The required input : ", 
+                                            paste(requiredinput[missedInput], collapse = ", "), 
+                                            " are not provided in input - stop")))
+    write.table(processout, file = finalfile, row.names = FALSE)
     stop("Please check the required input. The required input needs (ProteinName, PeptideSequence (or PeptideModifiedSequence), PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, Condition, BioReplicate, Run, Intensity)")
-  }else{
-    processout<-rbind(processout,c("The required input : provided - okay"))
-    write.table(processout, file=finalfile,row.names=FALSE)
   }
-  
-  ## if "PeptideModifiedSequence", change the name as PeptideSequence
-  if(is.element(toupper("PeptideModifiedSequence"), toupper(colnames(raw)))){
-    colnames(raw)[toupper(colnames(raw))==toupper("PeptideModifiedSequence")]<-"PeptideSequence"	
-  }
+  ### [THT: disambiguation for PeptideSequence & PeptideModifiedSequence - end]
   
   ####  check whether class of intensity is factor or chaterer, if yes, neec to chage as numeric
   if(is.factor(raw$Intensity) | is.character(raw$Intensity)){	
@@ -344,6 +351,8 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   }
   
   ## change light, heavy -> L,H
+  ### [THT: should check if users really provide light/heavy, L/H, l/h, or something else ]
+  ### [THT: should also check if users provide only H (instead of L)]
   raw.temp$ISOTOPELABELTYPE<-factor(raw.temp$ISOTOPELABELTYPE)
   if(nlevels(raw.temp$ISOTOPELABELTYPE)==2){
     levels(raw.temp$ISOTOPELABELTYPE)<-c("H","L")
@@ -384,6 +393,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   ## now, INTENSITY keeps original values.
     
+  ### [THT: should check intensity between 0-1 as well...]
   ## change zero with 1 for log transformation
   ## NA means no observation. assume that spectral tools are not report if no observation. zero means detected but zero. 
   work[!is.na(work$ABUNDANCE) & work$ABUNDANCE==0,"ABUNDANCE"]<-1
@@ -393,6 +403,8 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
     
   ## based on logTrans option, assign log transformation
   ## remove log2 or log10 intensity
+  ### [THT: add one more conidtion to have the program complain if a user 
+  ### provide unexpected value for logTrans]
   if(logTrans==2){
     work$ABUNDANCE<-log2(work$ABUNDANCE)
   } else if(logTrans==10){
@@ -453,7 +465,8 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   processout<-rbind(processout,c(paste("fillIncompleteRows = ",fillIncompleteRows,sep="")))
   write.table(processout, file=finalfile, row.names=FALSE)
   
-  
+  ### [THT: better to write a function for single method, and call that function
+  ### here and for the case with multuple methods]
   ## only 1 method
   
   if(!checkMultirun){
@@ -520,6 +533,9 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
           } ## end fillIncompleteRows options
         } ## end loop for run ID
         
+        ### [THT: this part can probably be merged into the above. 
+        ### Also, it might be better to check fillIncompleteRows earlier
+        ### and terminate the process when it's FALSE]
         if(fillIncompleteRows){
           
           # merge with work
@@ -1263,7 +1279,8 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   ############################################################
   ## Normalization : 
-  
+  ### [THT: if (!all(normalization %in% c("NONE", "FALSE", "EQUALIZEMEDIANS", "QUANTILE", "GLOBALSTANDARDS")))]
+  ### [THT: send a warning message if the user mixes "NONE" with any of the last three choices]
   if(!(normalization=="NONE" | normalization=="FALSE" | normalization=="EQUALIZEMEDIANS" | normalization=="QUANTILE" | normalization=="GLOBALSTANDARDS")){
     processout<-rbind(processout,c(paste("The required input - normalization : 'normalization' value is wrong. - stop")))
     write.table(processout, file=finalfile, row.names=FALSE)
@@ -1311,6 +1328,11 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
       
       median.run<-tapply(work$ABUNDANCE,work$RUN, function(x) median(x,na.rm=TRUE))
       
+      ### [THT: should we adjust for overall median or median of medians? 
+      ### Current implementation uses overall median, and those complete runs play
+      ### a major role. I add the median of medians in the next 2 lines as reference]
+      median.run.method <- aggregate(ABUNDANCE ~ RUN + METHOD, data = work, median, na.rm = TRUE)
+      median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$METHOD, median, na.rm = TRUE)
       median.method<-tapply(work$ABUNDANCE,work$METHOD, function(x) median(x,na.rm=TRUE))
       
       nmethod<-unique(work$METHOD)
@@ -1565,7 +1587,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
     
     l<-subset(work,LABEL=="L")
     
-    # add ProtFeature and ProtPeptide, because the shared peptides appear in multiple proteinss
+    # add ProtFeature and ProtPeptide, because the shared peptides appear in multiple proteins
     l$ProtFeature<-paste(l$PROTEIN,l$FEATURE,sep="/")	
     l$ProtPeptide<-paste(l$PROTEIN,l$PEPTIDE,sep="/")	
     
@@ -1617,7 +1639,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
         write.table(processout, file=finalfile, row.names=FALSE)
 
   	 
-  	 	## INTENSITY vs ABUNDANCE?
+  	 	## INTENSITY vs ABUNDANCE? [THT: make more sense to use ABUNDANCE]
   		## how to decide top3 for DIA?
 	
 		### 2015.09.05
@@ -1805,7 +1827,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   temp1<-xtabs(~GROUP_ORIGINAL,data=temp)
   summary.s[2,]<-temp1
   
-  ## # of tehcnical replicates
+  ## # of technical replicates
   c.tech<-round(summary.s[1,]/(summary.s[2,]* length(unique(work$METHOD))))
   #summary.s[3,]<-ifelse(c.tech==1,0,c.tech)
   summary.s[3,]<-c.tech
