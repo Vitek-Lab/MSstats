@@ -373,6 +373,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   work$GROUP_ORIGINAL<-factor(work$GROUP_ORIGINAL)
   work$SUBJECT_ORIGINAL<-factor(work$SUBJECT_ORIGINAL,levels=unique(work$SUBJECT_ORIGINAL))
+  work$LABEL <- unique(work$LABEL, levels=unique(work$LABEL))
   
   work[work$LABEL=="L","GROUP"]<-work[work$LABEL=="L","GROUP_ORIGINAL"]
   work[work$LABEL=="L","SUBJECT"]<-work[work$LABEL=="L","SUBJECT_ORIGINAL"]
@@ -1691,19 +1692,17 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   	  
   	  processout<-rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
       write.table(processout, file=finalfile, row.names=FALSE)
-  	 
-      tempfeature<-try(.FeatureSelection1(work,lambda,eta, address),silent=TRUE)
     
-      if(class(tempfeature)=="try-error") {
-        message("*** error : can't select the best features. Now use all features.")
+      if(nlevels(work$LABEL)==2) {
+        message("*** error : High quality selection will accomodate the label-based experiment soon, but not now. Now use all features.")
       
-        processout<-rbind(processout,c(paste("error : can't select the best features. Now use all features.")))
+        processout<-rbind(processout,c(paste("error : High quality selection will accomodate the label-based experiment soon, but not now. Now use all features.")))
         write.table(processout, file=finalfile, row.names=FALSE)
       
         work<-work
       
       }else{
-        work<-tempfeature
+        work<-FeatureSelection(work)
       }
   }
   
