@@ -1,7 +1,7 @@
 
 ###########Function of FeatureSelection###########
 
-FeatureSelection <- function(work, featureSelectionGoal='TPR.TNR'){
+.featureSelection <- function(work, featureSelectionGoal='TPR.TNR'){
 
 if(featureSelectionGoal='TPR.TNR'){ #1.1
 
@@ -227,4 +227,6 @@ if(featureSelectionGoal='Interference'){ #2.1
                                          } #2.1
 
 
-                                   } #End of function 'FeatureSelection'
+
+
+} #End of function 'FeatureSelection'

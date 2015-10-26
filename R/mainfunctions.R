@@ -1702,14 +1702,12 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
         work<-work
       
       }else{
-        work<-FeatureSelection(work)
+        work<-.featureSelection(work)
       }
   }
   
   
-  
-  
-  
+    
   ####### check missingness 
   ####### transitions are completely missing in one condition : missingness #######
   if (nlevels(work$LABEL)==1){
