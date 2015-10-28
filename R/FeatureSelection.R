@@ -157,7 +157,7 @@
 			N.Prot <- nlevels(work$PROTEIN)
 
 			# Create the data frame storing the selected features of each Protein
-			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector())
+			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector(), Rank=vector(), Filter=vector())
 			Index.FS <- 0
 
 			###Rank the peptides for each protein
@@ -167,27 +167,38 @@
 				N.Pep <- length(unique(DDA.1$PEPTIDE))
 
 				#$ Create a data frame storing the assessment of the noise for each peptide
-				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep))
+				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
 
 				## Assess the within-group variation for each peptide##
 
 				for(j in 1:N.Pep){ # DDA_1.4
 
 					DDA.Pep <- subset(DDA.1, PEPTIDE==unique(PEPTIDE)[j])
-					LM.DDA <- lm(ABUNDANCE ~ GROUP, data=DDA.Pep)
+					LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
 					Pep.Out[j, 'Peptide'] <- as.character(unique(DDA.Pep$PEPTIDE))
-					Pep.Out[j, 'Model.Based.Error'] <- summary(LM.DDA)$sigma
-                  
+					
+					## If there are missing values such that only one condition is left, the model based error score is not calculable
+					if(class(LM.DDA)=='try-error'){ #DDA_1.5
+						Pep.Out[j, 'Model.Based.Error'] <- NA
+					} else {
+						Pep.Out[j, 'Model.Based.Error'] <- summary(LM.DDA)$sigma
+                	} #DDA_1.5
+                	
 				} # DDA_1.4 (End of loop for each peptide)
 
-				###We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
-				N.Select <- max(round(length(unique(DDA.1$PEPTIDE))/3), 1)
+				## We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
+				## We automatically excluded the precursors whose model-based error is not able to be quantified. This would be there are a lot of missing peaks at this precursor
+				N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3), 1)
 				Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
-				Pep.Select <- Pep.Out[Pep.Out$Rank <= N.Select, 'Peptide']
+				Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
+				Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
 
-				###Pull out the selected peptides to the designated data frame
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Select), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Select), 'Peptide'] <- Pep.Select
+				## Pull out the results to the designated data frame, and flag the noisy peptide
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Peptide'] <- Pep.Out$Peptide
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Model.Based.Error'] <- Pep.Out$Model.Based.Error
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Rank'] <- Pep.Out$Rank
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Filter'] <- Pep.Out$Flag
 				Index.FS <- Index.FS+N.Select   
 				                                              
 			} # DDA_1.3 (End of loop for proteins)
@@ -196,17 +207,18 @@
 			work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='_')            
 			FeatureSelection.Out$Protein_Peptide <- paste(FeatureSelection.Out$Protein, FeatureSelection.Out$Peptide, sep='_')
           
-			###Create the label for selected, or removed, peptides
+			## Create the label for selected, or removed, peptides
 			work$Filter <- NA; 
-			work[work$Protein_Peptide %in% unique(FeatureSelection.Out$Protein_Peptide), 'Filter'] <- 'Selected'
-			work[!(work$Protein_Peptide %in% unique(FeatureSelection.Out$Protein_Peptide)), 'Filter'] <- 'Flagged'
+			Selection <- unique(FeatureSelection.Out[FeatureSelection.Out$Filter=='Selected','Protein_Peptide'])
+			work[work$Protein_Peptide %in% Selection, 'Filter'] <- 'Selected'
+			work[!(work$Protein_Peptide %in% Selection), 'Filter'] <- 'Flagged'
 			work$Protein_Peptide <- NULL
 			work <- subset(work, Filter=='Selected')
 		
 		} #1.2.2  : End of the DDA experiment (TPR.TNR)
 
 
-		#Label-based experiments (TPN.TNR)
+		## Label-based experiments (TPN.TNR)
 		if(nlevels(work$LABEL)==2){#L.1
 
 			N.Prot <- nlevels(work$PROTEIN)
@@ -245,13 +257,13 @@
 
 				} #L.3 : Finish the loop over the peptides
 
-            	#After normalizing the heavy, the batch effect should have been corrected.
-             	#Assess the within-group variation for each feature
+            	## After normalizing the heavy, the batch effect should have been corrected.
+             	## Assess the within-group variation for each feature
             
                 N.Feature <- length(unique(sub$FEATURE))
                 sub$FEATURE <- factor(sub$FEATURE, levels=unique(sub$FEATURE))
 
-                #Create a data frame to store the error score of each feature
+                ## Create a data frame to store the error score of each feature
                 F.Out.L <- data.frame(Feature=vector(), Error.score=vector(), Label=vector())  
                 F.Out.H <- data.frame(Feature=vector(), Error.score=vector(), Label=vector())  
 
@@ -259,11 +271,11 @@
 
                 	Feature <- subset(sub, FEATURE==unique(FEATURE)[m])
 
-                	#Work on heavy and light separately as the model is different
+                	## Work on heavy and light separately as the model is different
                 	Feature.H <- subset(Feature, LABEL=='H')
                 	Feature.L <- subset(Feature, LABEL=='L')
 
-                	#If there are less than 2 abundances in one group, the linear model has error message.
+                	## If there are less than 2 abundances in one group, the linear model has error message.
                 	LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL, data=Feature.L),silent=TRUE)
                 	
                   	if(class(LM.L)=="try-error") {  #L.5.1
@@ -288,23 +300,23 @@
 
 				}   #L.5 : End of loop for computing the error scores at each feature
 
-                #Rank the features based on the error scores. Rank 1 means the most noisy.
+                ## Rank the features based on the error scores. Rank 1 means the most noisy.
                 F.Out.L$Rank <- rank(-F.Out.L$Error.score)
                 F.Out.H$Rank <- rank(-F.Out.H$Error.score)
 
-                #Flag the worst one-third features on heavy and light, respectively 
-                #The reproducibility-optimized cutoff requires much running time so we do not use it for now.
+                ## Flag the worst one-third features on heavy and light, respectively 
+                ## The reproducibility-optimized cutoff requires much running time so we do not use it for now.
                 Cut.L <- round(dim(F.Out.L)[1]/3); Cut.H <- round(dim(F.Out.H)[1]/3) 
 
                 F.Out.L$Flag <- "OK"; F.Out.H$Flag <- "OK"
                 F.Out.L[F.Out.L$Rank<=Cut.L, 'Flag'] <- "Noisy"
                 F.Out.H[F.Out.H$Rank<=Cut.H, 'Flag'] <- "Noisy"
 
-                #The features with too many missing values so that the error scores are NA are also flagged
+                ## The features with too many missing values so that the error scores are NA are also flagged
                 F.Out.L[is.na(F.Out.L$Error.score), 'Flag'] <- "Noisy"
                 F.Out.H[is.na(F.Out.H$Error.score), 'Flag'] <- "Noisy"
 
-                #Put the results in a data frame which contains the results for all proteins
+                ## Put the results in a data frame which contains the results for all proteins
                 Out.L[(Index+1):(Index+N.Feature), 'Protein'] <- as.character(unique(sub$PROTEIN))
                 Out.L[(Index+1):(Index+N.Feature), 2:6] <- F.Out.L
 
