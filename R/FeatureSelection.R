@@ -158,7 +158,7 @@ if(featureSelectionGoal=='TPR.TNR'){ #1.1
    N.Prot <- nlevels(work$PROTEIN)
 
    #Create the data frame storing the selected features of each Protein
-   FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector())
+   FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector(), Rank=vector(), Filter=vector())
    Index.FS <- 0
 
        ###Rank the peptides for each protein
@@ -168,7 +168,7 @@ if(featureSelectionGoal=='TPR.TNR'){ #1.1
        N.Pep <- length(unique(DDA.1$PEPTIDE))
 
        #Create a data frame storing the assessment of the noise for each peptide
-       Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep))
+       Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
 
            
            ##Assess the within-group variation for each peptide##
@@ -176,21 +176,38 @@ if(featureSelectionGoal=='TPR.TNR'){ #1.1
            for(j in 1:N.Pep){ #DDA_1.4
 
            DDA.Pep <- subset(DDA.1, PEPTIDE==unique(PEPTIDE)[j])
-           LM.DDA <- lm(ABUNDANCE ~ GROUP, data=DDA.Pep)
+           LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
            Pep.Out[j, 'Peptide'] <- as.character(unique(DDA.Pep$PEPTIDE))
+
+           ###If there are missing values such that only one condition is left, the model based error score is not calculable
+           if(class(LM.DDA)=='try-error'){ #DDA_1.5
+
+           Pep.Out[j, 'Model.Based.Error'] <- NA
+
+           } else{
+           
            Pep.Out[j, 'Model.Based.Error'] <- summary(LM.DDA)$sigma
                   
+                                          } #DDA_1.5
                              } #DDA_1.4 (End of loop for each peptide)
 
            ###We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
-           N.Select <- max(round(length(unique(DDA.1$PEPTIDE))/3), 1)
+           ###We automatically excluded the precursors whose model-based error is not able to be quantified. This would be there are a lot of missing peaks at this precursor 
+           N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3), 1)
            Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
-           Pep.Select <- Pep.Out[Pep.Out$Rank <= N.Select, 'Peptide']
+           Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
+           Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
 
-           ###Pull out the selected peptides to the designated data frame
-           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Select), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
-           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Select), 'Peptide'] <- Pep.Select
-           Index.FS <- Index.FS+N.Select                                                 
+
+           ###Pull out the results to the designated data frame, and flag the noisy peptide
+           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
+           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Peptide'] <- Pep.Out$Peptide
+           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Model.Based.Error'] <- Pep.Out$Model.Based.Error
+           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Rank'] <- Pep.Out$Rank
+           FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Filter'] <- Pep.Out$Flag
+
+           Index.FS <- Index.FS+N.Pep             
+                                    
                           } #DDA_1.3 (End of loop for proteins)
 
 
@@ -200,8 +217,9 @@ if(featureSelectionGoal=='TPR.TNR'){ #1.1
           
           ###Create the label for selected, or removed, peptides
           work$Filter <- NA; 
-          work[work$Protein_Peptide %in% unique(FeatureSelection.Out$Protein_Peptide), 'Filter'] <- 'Selected'
-          work[!(work$Protein_Peptide %in% unique(FeatureSelection.Out$Protein_Peptide)), 'Filter'] <- 'Flagged'
+          Selection <- unique(FeatureSelection.Out[FeatureSelection.Out$Filter=='Selected','Protein_Peptide'])
+          work[work$Protein_Peptide %in% Selection, 'Filter'] <- 'Selected'
+          work[!(work$Protein_Peptide %in% Selection), 'Filter'] <- 'Flagged'
           work$Protein_Peptide <- NULL
           work <- subset(work, Filter=='Selected')
                                                                  } #1.2.2 
