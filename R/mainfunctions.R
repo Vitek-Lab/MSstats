@@ -133,7 +133,7 @@ transformMSstatsToMSnSet<-function(data){
 #############################################
 #############################################
 
-dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE,address="", fillIncompleteRows=TRUE, featureSubset="all", summaryMethod="TMP",equalFeatureVar=TRUE, filterLogOfSum=TRUE, censoredInt="NA",cutoffCensored="minFeatureNRun", MBimpute=TRUE,remove50missing=FALSE,skylineReport=FALSE){
+dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStandards=NULL, betweenRunInterferenceScore=FALSE,address="", fillIncompleteRows=TRUE, featureSubset="all", summaryMethod="TMP",equalFeatureVar=TRUE, filterLogOfSum=TRUE, censoredInt="NA",cutoffCensored="minFeatureNRun", MBimpute=TRUE,remove50missing=FALSE,skylineReport=FALSE, featureSelectionGoal='TPR.TNR'){
   
   ## save process output in each step
   allfiles<-list.files()
@@ -364,6 +364,7 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   
   work$GROUP_ORIGINAL<-factor(work$GROUP_ORIGINAL)
   work$SUBJECT_ORIGINAL<-factor(work$SUBJECT_ORIGINAL,levels=unique(work$SUBJECT_ORIGINAL))
+  work$LABEL <- unique(work$LABEL, levels=unique(work$LABEL))
   
   work[work$LABEL=="L","GROUP"]<-work[work$LABEL=="L","GROUP_ORIGINAL"]
   work[work$LABEL=="L","SUBJECT"]<-work[work$LABEL=="L","SUBJECT_ORIGINAL"]
@@ -1669,20 +1670,9 @@ dataProcess<-function(raw,logTrans=2, normalization="equalizeMedians",nameStanda
   	  
   	  processout<-rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
       write.table(processout, file=finalfile, row.names=FALSE)
-  	 
-      tempfeature<-try(.FeatureSelection1(work,lambda,eta, address),silent=TRUE)
     
-      if(class(tempfeature)=="try-error") {
-        message("*** error : can't select the best features. Now use all features.")
+        work<-FeatureSelection(work)
       
-        processout<-rbind(processout,c(paste("error : can't select the best features. Now use all features.")))
-        write.table(processout, file=finalfile, row.names=FALSE)
-      
-        work<-work
-      
-      }else{
-        work<-tempfeature
-      }
   }
   
   
