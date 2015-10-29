@@ -154,7 +154,7 @@
 		if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)==1){ #1.2.2
 
 			# In DDA (shotgun) experiment, there is no need to filter out bad fragments in each peptide
-			N.Prot <- nlevels(work$PROTEIN)
+			N.Prot <- length(unique(work$PROTEIN))
 
 			# Create the data frame storing the selected features of each Protein
 			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector(), Rank=vector(), Filter=vector())
@@ -192,6 +192,8 @@
 				Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
 				Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
 				Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
+				Pep.Out[is.na(Pep.Out$Model.Based.Error), 'Flag'] <- 'Noisy'
+
 
 				## Pull out the results to the designated data frame, and flag the noisy peptide
 				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
@@ -199,7 +201,7 @@
 				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Model.Based.Error'] <- Pep.Out$Model.Based.Error
 				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Rank'] <- Pep.Out$Rank
 				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Filter'] <- Pep.Out$Flag
-				Index.FS <- Index.FS+N.Select   
+				Index.FS <- Index.FS+N.Pep   
 				                                              
 			} # DDA_1.3 (End of loop for proteins)
 
@@ -498,7 +500,7 @@
 
 	return(work)
 
-} #End of function 'FeatureSelection'
+} #End of function '.feature_selection'
 
 #featureSelectionGoal is either 'TPR.TNR' or 'RemoveInterference'
 
