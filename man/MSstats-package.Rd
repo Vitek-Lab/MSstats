@@ -7,8 +7,8 @@
 \details{
 \tabular{ll}{
 Package: \tab MSstats\cr
-Version: \tab 3.0.12\cr
-Date: \tab 2015-10-09\cr
+Version: \tab 3.2.1\cr
+Date: \tab 2015-10-28\cr
 License: \tab Artistic-2.0 \cr
 LazyLoad: \tab yes\cr
 }
@@ -17,7 +17,7 @@ The package includes four main sections: I. explanatory data analysis (data pre-
 Examples of data in MSstats are (1) example of required input data format from label-based SRM experiment \code{\link{SRMRawData}}; (2) example of required input data format from DDA experiment \code{\link{DDARawData}}; (3) example of required input data format from label-free SWATH experiment \code{\link{DIARawData}}.
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\author{Meena Choi, Tsung-Heng Tsai, Lin-Yang Cheng, Ching-Yun Chang,  Olga Vitek. 
 
 Maintainer: Meena Choi (\email{choi67@purdue.edu})
 }
