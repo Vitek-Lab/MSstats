@@ -2,15 +2,15 @@
 ###########Function of FeatureSelection###########
 #Input is the data frame 'work' after conducting normalization
 #Output is the data frame 'work' after removing noisy features 
-#featureSelectionGoal is either 'TPR.TNR' or 'RemoveInterference'
-#'TPR.TNR' selects the features more likely to enhance the true positive rate
-#'RemoveInterference' selects features with reproducible quantification. The with peptide like PTM which has different pattern but reproducible will likely be kept in this options. 
+#featureSubset is either 'highQuality_Significance' or 'highQuality_Reproducibility'
+#'highQuality_Significance' selects the features more likely to enhance the true positive rate
+#'highQuality_Reproducibility' selects features with reproducible quantification. The with peptide like PTM which has different pattern but reproducible will likely be kept in this options. 
 
 
 
-.feature_selection <- function(work, featureSelectionGoal='TPR.TNR'){
+.feature_selection <- function(work, featureSubset='highQuality_Significance'){
 
-	if(featureSelectionGoal=='TPR.TNR'){ #1.1
+	if(toupper(featureSubset)=='HIGHQUALITY_SIGNIFICANCE'){ #1.1
 
   		#Label-free experiments (SWATH)
 		if(nlevels(work$LABEL)==1 & length(unique(work$TRANSITION))>1){ #1.2
@@ -219,7 +219,7 @@
 			work$Protein_Peptide <- NULL
 			work <- subset(work, Filter=='Selected')
 		
-		} #1.2.2  : End of the DDA experiment (TPR.TNR)
+		} #1.2.2  : End of the DDA experiment (Significance)
 
 
 		## Label-based experiments (TPN.TNR)
@@ -351,13 +351,13 @@
             work$Prot_F <- NULL
             work <- subset(work, Filter=='Selected')
 
-		}#L.1 : End of the label-based experiment (TPR.TNR)
+		}#L.1 : End of the label-based experiment (Significance)
 
 	}#1.1 : End of option 'TPR.TNR'
 
 
 	#Choose the subset of features for removing the interference
-	if(featureSelectionGoal=='RemoveInterference'){ #2.1
+	if(toupper(featureSubset)=='HIGHQUALITY_REPRODUCIBILITY'){ #2.1
 
     	#Label-free experiment
     	if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)==1){ #F.1
@@ -486,10 +486,10 @@
                                    } #F.5
              #End of loop for computing the average amount of interference at each peptide
 
-          #Retain the best 50% peptides with most reproducible quantification
-          M2 <- median(Inter.Pep$Avg.Inter, na.rm=TRUE)
-          Keep50 <- Inter.Pep[Inter.Pep$Avg.Inter <= M2, 'Protein_Peptide']
-          work.3 <- subset(work.2, Protein_Peptide %in% Keep50)
+          #Retain the best 40% peptides with most reproducible quantification
+          M2 <- quantile(Inter.Pep$Avg.Inter, na.rm=TRUE, probs=0.4)
+          Keep40 <- Inter.Pep[Inter.Pep$Avg.Inter <= M2, 'Protein_Peptide']
+          work.3 <- subset(work.2, Protein_Peptide %in% Keep40)
 
           work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
 
@@ -633,11 +633,11 @@
 
 		} #2.4 : End of case for label-based experiment (Remove interference)
 
-	} #2.1 : End of the option 'RemoveInterference'
+	} #2.1 : End of the option 'HighQuality_Reproducibility'
 
 	return(work)
 
 } #End of function '.feature_selection'
 
-#featureSelectionGoal is either 'TPR.TNR' or 'RemoveInterference'
+#featureSubset is either 'HighQuality_Significance' or 'HighQuality_Reproducibility'
 
