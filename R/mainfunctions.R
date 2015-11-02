@@ -1630,7 +1630,7 @@ dataProcess  <-  function(raw,
 
   	}
   
-	if (toupper(featureSubset)=="HIGHQUALITY_SIGNIFICANCE" | "HIGHQUALITY_REPRODUCIBILITY") {
+	if (is.element(toupper(featureSubset), c("HIGHQUALITY_SIGNIFICANCE", "HIGHQUALITY_REPRODUCIBILITY"))) {
   	  	message("* Use feature selection algorithm in order to get high quality features.")
   	  
   	  	processout <- rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
