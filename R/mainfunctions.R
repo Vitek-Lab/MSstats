@@ -1636,7 +1636,7 @@ dataProcess  <-  function(raw,
   	  	processout <- rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
       	write.table(processout, file=finalfile, row.names=FALSE)
 	
-	  	work <- .feature_selection(work)
+	  	work <- .feature_selection(work, featureSubset)
 	}
   
 	## check missingness 

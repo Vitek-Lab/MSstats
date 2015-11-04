@@ -8,7 +8,7 @@
 
 
 
-.feature_selection <- function(work, featureSubset='highQuality_Significance'){
+.feature_selection <- function(work, featureSubset){
 
 	if(toupper(featureSubset)=='HIGHQUALITY_SIGNIFICANCE'){ #1.1
 
