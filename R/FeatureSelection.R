@@ -27,6 +27,9 @@
 				tem <- subset(work, PROTEIN==unique(PROTEIN)[i])
 				N.Pep <- length(unique(tem$PEPTIDE)) 
 				
+				## show progress
+				message(paste("Selection features or peptides for protein ", unique(tem$PROTEIN), "(", i, " of ", N.Prot, ")"))
+				
 				#Create a data frame storing the assessment of the noise for each peptide
 				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep))
 
@@ -168,7 +171,10 @@
 				DDA.1 <- subset(work, PROTEIN == unique(PROTEIN)[i])
 				N.Pep <- length(unique(DDA.1$PEPTIDE))
 
-				#$ Create a data frame storing the assessment of the noise for each peptide
+				## show progress
+				message(paste("Selection features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+				
+				## Create a data frame storing the assessment of the noise for each peptide
 				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
 
 				## Assess the within-group variation for each peptide##
@@ -238,7 +244,10 @@
 				sub <- subset(work, PROTEIN==unique(PROTEIN)[i])
 				N.Pep <- length(unique(sub$PEPTIDE)) 
 				sub$ABUNDANCE.N <- NA     
-
+				
+				## show progress
+				message(paste("Selection features or peptides for protein ", unique(sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
+				
 				#Normalize the heavy label for each peptide as peptide-by-run interaction is commonly seen
 				for(j in 1:N.Pep){ #L.3
 
@@ -377,8 +386,11 @@
           #loop over each protein
           for(i in 1:N.Prot){ #F.2
 
-          sub1 <- subset(work, PROTEIN==unique(PROTEIN)[i])
-          N.Pep <- length(unique(sub1$PEPTIDE))
+          	sub1 <- subset(work, PROTEIN==unique(PROTEIN)[i])
+          	N.Pep <- length(unique(sub1$PEPTIDE))
+          
+          ## show progress
+			message(paste("Selection features or peptides for protein ", unique(sub1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 
              #Compute the score of interference at each fragment of each peptide
              for(j in 1:N.Pep){ #F.3 
@@ -499,7 +511,7 @@
           
 
                                                                 }#F.1
-      #End of label-free experiment on removing irreproducible features
+        #End of label-free experiment on removing irreproducible features
 
 
 
@@ -519,6 +531,9 @@
        			Sub <- subset(work, PROTEIN==unique(PROTEIN)[i])
        			N.Pep <- length(unique(Sub$PEPTIDE))
        			
+       			## show progress
+				message(paste("Selection features or peptides for protein ", unique(Sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
+				
            		#Loop for the peptides in this protein
            		for(j in 1:N.Pep){ #2.4.2
 
