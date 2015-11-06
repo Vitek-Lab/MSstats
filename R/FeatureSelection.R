@@ -222,7 +222,7 @@
 		} #1.2.2  : End of the DDA experiment (Significance)
 
 
-		## Label-based experiments (TPN.TNR)
+		## Label-based experiments (Significance)
 		if(nlevels(work$LABEL)==2){#L.1
 
 			N.Prot <- nlevels(work$PROTEIN)
@@ -501,10 +501,13 @@
                                                                 }#F.1
       #End of label-free experiment on removing irreproducible features
 
+
+
+
     	#Label-based experiments
     	if(nlevels(work$LABEL)==2){ #2.4
 
-    		N.Prot <- nlevels(work$PROTEIN)
+    		N.Prot <- length(unique((work$PROTEIN)))
 
     		#Create a data frame storing the output
     		Out <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector(), Label=vector(), Interference.Score=vector())   
@@ -543,7 +546,7 @@
 
                     	#If there is only one feature in this peptide, no reproducibility can be assess
 						if(N.Feature==1){
-							Error <- 0
+							Error <- 10000
 						}else{    
 							Res <- data_w[,k] - TMP.Run
 							Error <- var(Res, na.rm=TRUE)
@@ -564,7 +567,8 @@
 
             		Sub2.L$RUN <- factor(Sub2.L$RUN, levels=unique(Sub2.L$RUN))
             		Sub2.L$FEATURE <- factor(Sub2.L$FEATURE, levels=unique(Sub2.L$FEATURE))
-            
+                        Sub2.L <- subset(Sub2.L, GROUP!=0)  
+
             		#Apply TMP to estimate the run effect
             		data_w.L = dcast(RUN ~ FEATURE, data=Sub2.L, value.var='ABUNDANCE', keep=TRUE)
 					rownames(data_w.L) <- data_w.L$RUN
@@ -581,7 +585,7 @@
 
 						#If there is only one feature in this peptide, no reproducibility can be assess
 						if(N.Feature==1){
-							Error <- 0
+							Error <- 10000
 						}else{    
 							Res <- data_w.L[,k] - TMP.Run.L
 							Error.L <- var(Res, na.rm=TRUE)
