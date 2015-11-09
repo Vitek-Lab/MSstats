@@ -18,7 +18,13 @@
 			N.Prot <- nlevels(work$PROTEIN)
 
                   #Need to check if it is a time-course or case control
-                  Time.Course <- .checkRepeated(work) 
+                  Time.Course <- .checkRepeated(work)
+
+                  #Check if the experiment is of the case of single subject
+                  Single.Subj <- .checkSingleSubject(work) 
+
+                  #Check whether there are technical replicates or not
+                  Tech.Rep <- .checkTechReplicate(work)
 
 			#Create the data frame storing the selected features of each Protein
 			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector())
@@ -46,31 +52,51 @@
            			tem2 <- subset(tem, PEPTIDE==unique(PEPTIDE)[j])
            			tem2$FEATURE <- factor(tem2$FEATURE, levels=unique(tem2$FEATURE))
 
-					#Determine how many features to pick in this peptide
+				#Determine how many features to pick in this peptide
            			N.Feature <- length(unique(tem2$FEATURE)); Top40 <- round(N.Feature*0.4)         
           			N.Select <- max(2, Top40)
           			
            			#Create a data frame storing the variance(error) for each feature 
            			F.Out <- data.frame(Feature=rep(NA, N.Feature), Error=rep(NA, N.Feature))
 
-         			#The peptide with less than 3 fragments will not be considered.
+         			#The peptide with less than 2 fragments will unlikely be kept.
          			if(N.Feature>=N.Select){ #1.4.1
          				
             			#The features are ranked by the error variation        
             			for(k in 1:N.Feature){ #1.5
                                  
-                                 if(Time.Course){ #1.5.2
-                                 #Time-course study: Subject and Group are scrossed 
-             				 tem.tc <- subset(tem2, FEATURE==unique(FEATURE)[k])
-                                     #Having subject either random or fixed yield the same mean squred of error 
-                         		 LM.tc <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem.tc)
+                                 if(Time.Course & !Single.Subj){ #1.5.2
+                                 #Time-course study (with more than one bio-replicates): Subject and Group are scrossed 
+             		         tem.tc <- subset(tem2, FEATURE==unique(FEATURE)[k])
+
+                                    if(Tech.Rep){ #1.5.3 
+                                    #With technical replicates, assess the within-subject variation
+                         			LM.tc <- lm(ABUNDANCE ~ GROUP * SUBJECT, data=tem.tc)
+
+                                 } else {
+                                    #Without technical replicates
+                                     	#Having subject either random or fixed yield the same mean squred of error, if there is no technical replicates 
+                         		 	LM.tc <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem.tc)
+                                 } #1.5.3
+
+
             				 F.Out[k, 'Feature'] <- as.character(unique(tem.tc$FEATURE))
             				 F.Out[k, 'Error'] <- summary(LM.tc)$sigma
             
                               } else {
                                  #Case-Control: Subject is nested under each level of the Group 
             				 tem.f <- subset(tem2, FEATURE==unique(FEATURE)[k])
-            				 LM.f <- lm(ABUNDANCE ~ GROUP, data=tem.f)
+
+                                     if(Tech.Rep & !Single.Subj){ #1.5.4
+                                          #With technical replicates, noise is defined as the within-subject variation
+                                     	LM.f <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem.f)
+
+                                     } else {
+            				      #Without technical replicates
+                                     	LM.f <- lm(ABUNDANCE ~ GROUP, data=tem.f)
+
+                                     } #1.5.4  
+                                   
             				 F.Out[k, 'Feature'] <- as.character(unique(tem.f$FEATURE))
             				 F.Out[k, 'Error'] <- summary(LM.f)$sigma
             
@@ -86,15 +112,32 @@
             			#Compute the noise defined by the model, after blocking for features, of this peptide
             			tem2.2$FEATURE <- factor(tem2.2$FEATURE, levels=unique(tem2.2$FEATURE))
 
-                                 if(Time.Course){ #1.4.3
-               			   #Time-Course Study
-                                 LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT, data=tem2.2)
+                                 if(Time.Course & !Single.Subj){ #1.4.3
+               			   #Time-Course Study with more than one bio-replicates
+
+                                 	if(Tech.Rep){ #1.4.3.1
+                                    #With technical replicates 
+                                    LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT + GROUP:SUBJECT, data=tem2.2)
+
+                              	} else {
+                                    #Without technical replicates
+                                 	LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT, data=tem2.2)
+
+                              	} #1.4.3.1
 
                               } else {
                                  #Case-Control
-            			   LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP, data=tem2.2)
+
+                              	if(Tech.Rep & !Single.Subj){ #1.4.3.2
+                                    #With technical replicates
+                                    LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT, data=tem2.2)
+
+                              	} else {
+            			      #Without technical replicates
+                                    LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP, data=tem2.2)
             
-                              }
+                              	} #1.4.3.2
+                              } #1.4.3
 
             			Pep.Out[j, 'Peptide'] <- as.character(unique(tem2.2$PEPTIDE))
             			Pep.Out[j, 'Model.Based.Error'] <- summary(LM.Pep)$sigma
@@ -107,17 +150,35 @@
             			Index.f <- Index.f+N.Select
  
          			} else {
-
          				#The case of peptides with less than 2 features
-                              	if(Time.Course){
-                                    #Time-Course study 
-                                    LM.Pep2 <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem2)
+
+                              if(Time.Course & !Single.Subj){ #1.4.4
+                              #Time-Course study 
+                                    if(Tech.Rep){ #1.4.4.1
+                                    #With technical replicates    
+                                       
+                                          LM.Pep2 <- lm(ABUNDANCE ~ GROUP * SUBJECT, data=tem2)
+ 
+                                     } else {
+                                     #Without technical replicates
+
+                                          LM.Pep2 <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem2)
+
+                                     } #1.4.4.1
 
                               } else {
-                                    #Case-Control
+                              #Case-Control
+                              	if(Tech.Rep & !Single.Subj){ #1.4.4.2
+                                    #With technical replicates
+            			      LM.Pep2 <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem2)
+
+                                    } else {   
+                                    #Without technical replicates   
             			      LM.Pep2 <- lm(ABUNDANCE ~ GROUP, data=tem2)
 
-                              }
+                                    } #1.4.4.2
+
+                              } #1.4.4
 
             			Pep.Out[j, 'Peptide'] <- as.character(unique(tem2$PEPTIDE))
             			Pep.Out[j, 'Model.Based.Error'] <- 3*summary(LM.Pep2)$sigma
@@ -140,7 +201,9 @@
 
 
           		## Select the best one-fourth of the peptide now. (Deciding the optimal number of the peptides chosen takes too much time, but we are working on reducing its computation time.)
-          		N.Select.Pep <- max(round(dim(Pep.Out)[1]/4+0.1), 1)
+                  ##We prefer taking the best 40 percent if there are less than 7 peptides    
+      		N40 <- ifelse(dim(Pep.Out)[1]<=6, round(dim(Pep.Out)[1]*0.4+0.01), round(dim(Pep.Out)[1]/4+0.1))
+                  N.Select.Pep <- max(N40, 1)
           		Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)   
           		Selected.Pep <- Pep.Out[Pep.Out$Rank <= N.Select.Pep, 'Peptide']
           		
@@ -184,6 +247,10 @@
                   #Decide whether the experiment is time-course or case control
                   TC <- .checkRepeated(work)
 
+			#Determine if there is only one subject and if there is any technical replicates
+                  Single.Subject <- .checkSingleSubject(work)
+			Technical.Rep <- .checkTechReplicate(work)
+
 			###Rank the peptides for each protein
 			for(i in 1:N.Prot){ #DDA_1.3
 
@@ -202,14 +269,30 @@
 
 					DDA.Pep <- subset(DDA.1, PEPTIDE==unique(PEPTIDE)[j])
 
-                              if(TC){ #DDA_1.4.1
-                                    #Time-course experiment
+                              if(TC & !Single.Subject){ #DDA_1.4.1
+                              #Time-course experiment with more than one bio-replicates
+
+                              	if(Technical.Rep){ #DDA_1.4.1.1
+                                    #With technical replicates                              	
+                                    LM.DDA <- try(lm(ABUNDANCE ~ GROUP * SUBJECT, data=DDA.Pep), silent=TRUE)
+
+                                    } else {
+                                    #Without technical replicates
                               	LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
 
+                                    } #DDA_1.4.1.1
                               } else {
-                                    #Case-Control
-						LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
+                              #Case-Control
 
+                                    if(Technical.Rep & !Single.Subject){ #DDA_1.4.1.2
+                                    #With technical replicates
+                                    LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
+
+                                    } else {
+                        		#Without technical replicates or with only one bio-replicates
+   						LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
+
+                                    } #DDA_1.4.1.2
                               } #DDA_1.4.1
 
 					Pep.Out[j, 'Peptide'] <- as.character(unique(DDA.Pep$PEPTIDE))
@@ -225,7 +308,7 @@
 
 				## We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
 				## We automatically excluded the precursors whose model-based error is not able to be quantified. This would be due to too many missing values such that only one condition has the peaks
-				N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3+0.1), 1)
+				N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3+0.01), 1)
 				Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
 				Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
 				Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
@@ -265,6 +348,10 @@
                   #Determine whether the experiment is time-course or case control
                   TC.SRM <- .checkRepeated(work)
 
+			#Determine if there is only one subject and if there is any technical replicates
+                  SS.SRM <- .checkSingleSubject(work)
+			TR.SRM <- .checkTechReplicate(work)
+
 			#Create a data frame to store the error score of each protein and feature
 			Out.L <- data.frame(Protein=vector(), Feature=vector(), Error.score=vector(), Label=vector(), Rank=vector(), Flag=vector())  
 			Out.H <- data.frame(Protein=vector(), Feature=vector(), Error.score=vector(), Label=vector(), Rank=vector(), Flag=vector())  
@@ -287,7 +374,7 @@
 					N.Run <- length(unique(temp$RUN))
 
 					#Compute the overall median on heavy
-					Median <- median(temp[temp$LABEL=='H', 'ABUNDANCE'], na.rm=FALSE)
+					Median <- median(temp[temp$LABEL=='H', 'ABUNDANCE'], na.rm=TRUE)
          
              
 					#Normalize the heavy and apply the same shifts on the light counterpart, on each run 
@@ -322,12 +409,30 @@
 
                 	## If there are less than 2 abundances in one group, the linear model has error message.
 
-                  if(TC.SRM){ #L.5.0
-                        #Time-course study
-                		LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
+                  if(TC.SRM & !SS.SRM){ #L.5.0
+                        #Time-course study with more than one bio-replicates
+
+                        if(TR.SRM){ #L.5.0.1
+                        #With technical replicates
+                        	LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL * SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
+
+                        } else {
+                        #Without technical replicates
+                			LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
+
+                        } #L.5.0.1
                   } else {
                         #Case control
+
+                        if(TR.SRM & !SS.SRM){ #L.5.0.2
+      			#With technical replictates and more than one bio-replicates
+                		LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
+
+                        } else {
+                        #Without technical replicates or only with single subject
                 		LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL, data=Feature.L),silent=TRUE)
+
+                        } #L.5.0.2
                 	} #L.5.0
 
                   	if(class(LM.L)=="try-error") {  #L.5.1
@@ -336,7 +441,7 @@
 						Sigma.L <- summary(LM.L)$sigma   
 					}  #L.5.1
 
-                  #Heavy peptides have ideally constant abundance no matter time-course or case control
+                  #Heavy peptides have ideally constant abundance, after the adjustment we have done, no matter time-course or case control
                 	LM.H <- try(suppressWarnings(lm(ABUNDANCE.N ~ 1, data=Feature.H)),silent=TRUE)
                 	
                   	if(class(LM.H)=="try-error") {  #L.5.2
