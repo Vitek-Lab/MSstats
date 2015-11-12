@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.2.3
+-------------------------
+- bug for normalization=‘globanstandards’ in dataProcess. Even though wrong normalization options, data processing is kept going. Make the process stop if wrong input for normalization
+- fix the bug with nameStandards=‘protein name’. (only peptide names worked with 3.2.2.)
+
+
 CHANGES IN VERSION 3.0.12
 -------------------------
 - remove vignetter folder to remove install and build error in Bioconductor

@@ -309,7 +309,16 @@ dataProcess  <-  function(raw,
   		processout <- rbind(processout,c(paste("censoredInt : ",as.character(censoredInt), sep="")))
     	write.table(processout, file=finalfile, row.names=FALSE)
 	}
-  
+	
+	## [THT: if (!all(normalization %in% c("NONE", "FALSE", "EQUALIZEMEDIANS", "QUANTILE", "GLOBALSTANDARDS")))]
+	## [THT: send a warning message if the user mixes "NONE" with any of the last three choices]
+	if (!(normalization=="NONE" | normalization=="FALSE" | normalization=="EQUALIZEMEDIANS" | normalization=="QUANTILE" | normalization=="GLOBALSTANDARDS")) {
+		processout <- rbind(processout,c(paste("The required input - normalization : 'normalization' value is wrong. - stop")))
+		write.table(processout, file=finalfile, row.names=FALSE)
+    
+		stop("'normalization' must be one of \"None\", \"FALSE\", \"equalizeMedians\", \"quantile\", or \"globalStandards\". Please assign 'normalization' again.")
+	} 
+
 	## need the names of global standards
 	if (!is.element("NONE",normalization) & !is.element("FALSE",normalization) & is.element("GLOBALSTANDARDS",normalization) & is.null(nameStandards)) {
     
@@ -1259,16 +1268,7 @@ dataProcess  <-  function(raw,
   
 	## Normalization ##
 	## ------------- ##
-	 
-	## [THT: if (!all(normalization %in% c("NONE", "FALSE", "EQUALIZEMEDIANS", "QUANTILE", "GLOBALSTANDARDS")))]
-	## [THT: send a warning message if the user mixes "NONE" with any of the last three choices]
-	if (!(normalization=="NONE" | normalization=="FALSE" | normalization=="EQUALIZEMEDIANS" | normalization=="QUANTILE" | normalization=="GLOBALSTANDARDS")) {
-		processout <- rbind(processout,c(paste("The required input - normalization : 'normalization' value is wrong. - stop")))
-		write.table(processout, file=finalfile, row.names=FALSE)
-    
-		message("'normalization' must be one of \"None\", \"FALSE\", \"equalizeMedians\", \"quantile\", or \"globalStandards\". Here \"equalizeMedian\" will be used. If you want different normalization, please assign 'normalization' again.")
-	} 
-  
+	   
 	## Normalization : option 0. none
 	if (is.element("NONE",normalization) | is.element("FALSE",normalization)) { # after 'toupper', FALSE becomes character.
 		processout <- rbind(processout, c("Normalization : no normalization - okay"))
@@ -1494,11 +1494,11 @@ dataProcess  <-  function(raw,
       		namePeptide <- tempPeptide[tempPeptide$PEPTIDESEQUENCE == nameStandards[i], "PEPTIDE"]
       
 			if (length(namePeptide)!=0) {
-				tempStandard <- work[work$PEPTIDE==namePeptide,]
+				tempStandard <- work[work$PEPTIDE == namePeptide,]
 			} else {
         
         		## if Proteins
-        		nameProtein <- allProtein[grep(nameStandards[i],allProtein)]
+        		nameProtein <- allProtein[allProtein == nameStandards[i]] # if we use 'grep', can' find the proteins name with some symbol, such as 'sp|P30153|2AAA_HUMAN'
         
         		if (length(nameProtein)!=0) {
           			tempStandard <- work[work$PROTEIN==nameProtein,]
@@ -1526,7 +1526,7 @@ dataProcess  <-  function(raw,
     	combine <- subset(combine, select=-c(RUN))
     
     	## get mean among global standards
-    	allmean <- apply(combine,1,mean)
+    	allmean <- apply(combine,1, function(x) mean(x, na.rm=TRUE))
     	## allmean[is.na(allmean)] <- 0
     
     	allmeantemp <- data.frame(RUN=names(allmean),allmean)
