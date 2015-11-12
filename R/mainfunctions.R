@@ -1881,6 +1881,10 @@ dataProcess  <-  function(raw,
 	 
   	## return work data.frame	and run quantification
 	
+	#Align the run quantification data
+	rqall <- rqall[order(rqall$Protein, as.numeric(as.character(rqall$RUN))),]
+    rownames(rqall) <- NULL
+	
 	processedquant <- list(ProcessedData=work, RunlevelData=rqall, SummaryMethod=summaryMethod, ModelQC=rqmodelqc, PredictBySurvival=workpred)
 	
     return(processedquant)
