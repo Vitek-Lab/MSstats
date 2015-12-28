@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.3.1
+-------------------------
+- fix the bug for volcano plot in groupComparisonPlots, with logbase=2.
+
+
+
 CHANGES IN VERSION 3.2.3
 -------------------------
 - bug for normalization=‘globanstandards’ in dataProcess. Even though wrong normalization options, data processing is kept going. Make the process stop if wrong input for normalization

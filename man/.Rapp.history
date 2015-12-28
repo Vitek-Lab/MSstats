@@ -1,2 +1,16 @@
 install.packages(pkgs="/Users/Meena/Dropbox/MSstats_GitHub_private/MSstats_3.0.10.tar.gz",repos=NULL,type="source")
 library(MSstats)
+install.packages(pkgs="/Users/Meena/Dropbox/MSstats_GitHub_private/MSstats_3.2.2.tar.gz",repos=NULL,type="source")
+library(MSstats)
+?dataProcess
+load("/Users/Meena/Dropbox/Research/Meena-MSstatsv3-test/spike-data/DDA_latinsquare/20150618/input1_topn/raw.RData")
+raw.all.MSstats.TMP<-dataProcess(raw,normalization=FALSE,summaryMethod="TMP",censoredInt=NULL,MBimpute=FALSE, featureSubset="highQuality_significance")
+dataProcess(raw.all.MSstats.TMP, type="profileplot")
+dataProcess(raw.all.MSstats.TMP, type="ProfilePlot")
+dataProcess(raw.all.MSstats.TMP, type="ProfilePlots")
+dataProcessPlots(raw.all.MSstats.TMP, type="ProfilePlots")
+dataProcessPlots(raw.all.MSstats.TMP, type="ProfilePlot")
+getwd()
+?dataProcess
+raw.all.MSstats.TMP<-dataProcess(raw,normalization=FALSE,summaryMethod="TMP",censoredInt=NULL,MBimpute=FALSE, featureSubset="highQuality")
+dataProcessPlots(raw.all.MSstats.TMP, type="ProfilePlot")

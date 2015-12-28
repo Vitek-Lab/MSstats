@@ -1967,8 +1967,8 @@ dataProcessPlots <- function(data=data,
 				datafeature <- datafeature[which(datafeature$PROTEIN %in% temp.name), ]
 				datafeature$PROTEIN <- factor(datafeature$PROTEIN)
       
-				datarun <- datarun[which(datarun$PROTEIN %in% temp.name), ]
-				datarun$PROTEIN <- factor(datarun$PROTEIN)
+				datarun <- datarun[which(datarun$Protein %in% temp.name), ]
+				datarun$PROTEIN <- factor(datarun$Protein)
 		}
     
     	## assign upper or lower limit
@@ -1991,7 +1991,7 @@ dataProcessPlots <- function(data=data,
 		cumGroupAxis <- cumsum(groupAxis)
 		lineNameAxis <- cumGroupAxis[-nlevels(datafeature$GROUP_ORIGINAL)]
     
-		groupName <- data.frame(RUN=c(0, lineNameAxis) + groupAxis / 2 + 0.5, y=rep(y.limup-1, length(groupAxis)), Name=levels(datafeature$GROUP_ORIGINAL))
+		groupName <- data.frame(RUN=c(0, lineNameAxis) + groupAxis / 2 + 0.5, ABUNDANCE=rep(y.limup-1, length(groupAxis)), Name=levels(datafeature$GROUP_ORIGINAL))
     
 		if (length(unique(datafeature$LABEL)) == 2) {
 			datafeature$LABEL <- factor(datafeature$LABEL, labels=c("Reference", "Endogenous"))	
@@ -2068,8 +2068,11 @@ dataProcessPlots <- function(data=data,
         			temp2 <- seq(1, temp1[j])
         			ss <- c(ss, temp2)	
       			}
+      			
+				## for annotation of condition
+      			groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], PEPTIDE=unique(sub$PEPTIDE)[1])
 
-				if (toupper(featureName)=="TRANSITION") {
+				if (toupper(featureName) == "TRANSITION") {
         
        	 			## 1st plot for original plot
         			ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'), data=sub)+
@@ -2079,9 +2082,9 @@ dataProcessPlots <- function(data=data,
         					scale_colour_manual(values=s)+
         					scale_linetype_manual(values=ss, guide="none")+
         					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
-        					annotate("text", x=groupName$RUN, y=groupName$y, label=groupName$Name, size=text.size, angle=text.angle)+
         					geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash")+
         					labs(title=unique(sub$PROTEIN))+
+        					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
         					theme(
 								panel.background=element_rect(fill='white', colour="black"),
           						legend.key=element_rect(fill='white', colour='white'),
@@ -2135,9 +2138,9 @@ dataProcessPlots <- function(data=data,
         					scale_colour_manual(values=unique(s))+
         					scale_linetype_manual(values=ss, guide="none")+
         					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
-        					annotate("text", x=groupName$RUN, y=groupName$y, label=groupName$Name, size=text.size, angle=text.angle)+
         					geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
         					labs(title=unique(sub$PROTEIN))+
+        					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
         					theme(
           						panel.background=element_rect(fill='white', colour="black"),
           						legend.key=element_rect(fill='white', colour='white'),
@@ -2190,9 +2193,9 @@ dataProcessPlots <- function(data=data,
         					scale_colour_manual(values=unique(s), guide="none")+
         					scale_linetype_manual(values=ss, guide="none")+
         					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
-        					annotate("text", x=groupName$RUN, y=groupName$y, label=groupName$Name, size=text.size, angle=text.angle)+
         					geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
         					labs(title=unique(sub$PROTEIN))+
+        					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
         					theme(
           						panel.background=element_rect(fill='white', colour="black"),
           						legend.key=element_rect(fill='white', colour='white'),
@@ -2291,6 +2294,9 @@ dataProcessPlots <- function(data=data,
        				temp2 <- seq(1, temp1[j])
         			ss <- c(ss, temp2)	
      			}
+     			
+     			## for annotation of condition
+      			groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], analysis="Run summary")
       
       			if (haverun) {
         			subrun <- datarun[datarun$Protein == levels(datafeature$PROTEIN)[i], ]
@@ -2328,9 +2334,9 @@ dataProcessPlots <- function(data=data,
 								scale_size_manual(values=c(1, 2))+
 								scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2), guide="none")+
 								scale_x_continuous('MS runs',breaks=cumGroupAxis)+
-								annotate("text", x=groupName$RUN, y=groupName$y, label=groupName$Name, size=text.size, angle=text.angle)+
 								geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
 								labs(title=unique(final$PROTEIN))+
+								geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
 								theme(
 									panel.background=element_rect(fill='white', colour="black"),
 									legend.key=element_rect(fill='white', colour='white'),
@@ -2424,7 +2430,7 @@ dataProcessPlots <- function(data=data,
     	cumGroupAxis <- cumsum(groupAxis)
     	lineNameAxis <- cumGroupAxis[-nlevels(datafeature$GROUP_ORIGINAL)]
     
-    	groupName <- data.frame(RUN=c(0, lineNameAxis)+groupAxis / 2+  0.5, y=rep(y.limup-1, length(groupAxis)), Name=levels(datafeature$GROUP_ORIGINAL))
+    	groupName <- data.frame(RUN=c(0, lineNameAxis)+groupAxis / 2 + 0.5, ABUNDANCE=rep(y.limup-1, length(groupAxis)), Name=levels(datafeature$GROUP_ORIGINAL))
     
     	## all protein
     	ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=datafeature)+
@@ -2432,9 +2438,9 @@ dataProcessPlots <- function(data=data,
     			geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
     			scale_fill_manual(values=label.color, guide="none")+
     			scale_x_discrete('MS runs', breaks=cumGroupAxis)+
-    			annotate("text", x=groupName$RUN, y=groupName$y, label=groupName$Name, size=text.size, angle=text.angle)+
     			geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
     			labs(title="All proteins")+
+    			geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
     			theme(
       				panel.background=element_rect(fill='white', colour="black"),
       				legend.key=element_rect(fill='white', colour='white'),
@@ -2510,9 +2516,9 @@ dataProcessPlots <- function(data=data,
       				geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
       				scale_fill_manual(values=label.color, guide="none")+
       				scale_x_discrete('MS runs', breaks=cumGroupAxis)+
-      				annotate("text", x=groupName$RUN, y=groupName$y, label=groupName$Name, size=text.size, angle=text.angle)+
       				geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
       				labs(title=unique(sub$PROTEIN))+
+      				geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
       				theme(
         				panel.background=element_rect(fill='white', colour="black"),
         				legend.key=element_rect(fill='white', colour='white'),
@@ -3016,7 +3022,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,data=data) {
     		message(paste("Testing a comparison for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(rqall$Protein)),")"))
     
      	## fit the model 
-     	temp <- try(.fit.model.single(contrast.matrix,sub,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,singleSubject,repeated,origGroup),silent=TRUE)
+     	temp <- try(.fit.model.single(contrast.matrix,sub,TechReplicate,singleSubject,repeated,origGroup),silent=TRUE)
      	
      }
 
@@ -4766,155 +4772,99 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 
 
 ########################################################
-.fit.model.single <- function(contrast.matrix,data,scopeOfTechReplication,scopeOfBioReplication,TechReplicate,singleSubject,repeated,origGroup) {
+.fit.model.single <- function(contrast.matrix,
+						data,
+						TechReplicate,
+						singleSubject,
+						repeated,
+						origGroup) {
   
-  ## input : output of run quantification
+  	## input : output of run quantification
   	
 	data2 <- data
     data2$GROUP <- factor(data2$GROUP)
     data2$SUBJECT <- factor(data2$SUBJECT)
     
-    # when subject is fixed, it is ok using lm function.
+    ## when subject is fixed, it is ok using lm function.
     
-    # when single feature, consider technical replicates for time-course.
-    
-    if (scopeOfBioReplication=="restricted") {
-      
-      # case-control: impossible for GROUP+SUBJECT for case-control (parameter for the last SUBJECT is NA even though with technical replicates)
-      if (!repeated) { ## case-control
-        if (!TechReplicate | singleSubject) {
-          fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
-        }else{
-          fit.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)
-          
-        }
-      }else{ ### repeated==TRUE, time-course
-      	if (singleSubject) {
-          fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
-      	}else{ ## no single subject
-        	if (!TechReplicate) {
-          		fit.full <- lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)
-        	}else{
-          		fit.full <- lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT, data = data2) ## SUBJECT==SUBJECT_NESTED here
-        	}
-        }
-      } ## time-course
-      
-      ## get parameter from model
-      fixedPara <- .getParameterFixed(fit.full)
-      
-      #### each comparison
-      allout <- NULL
-      
-      for(k in 1:nrow(contrast.matrix)) {
-        
-        # choose each comparison
-        contrast.matrix.sub <- matrix(contrast.matrix[k,], nrow=1)
-        row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
-        
-        GroupComparisonAgreement <- .chechGroupComparisonAgreement(data2,contrast.matrix.sub)
-        
-        if (GroupComparisonAgreement$sign==TRUE) {
-          message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-          out <- data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast <- .make.contrast.free.single(fit.full,contrast.matrix.sub,data2)
-          out <- .estimableFixedRandom(fixedPara,contrast)
-          
-          ## any error for out, just NA
-          if (is.null(out)) {
-            out <- data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out <- data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
-        }
-        
-        allout <- rbind(allout, out)
-        
-      } # end loop for contrast
-      
-    } ## restricted, fixed subject	
-    
-    
-    if (scopeOfBioReplication=="expanded") {
-      
-      # case-control
-      if (!repeated) {
-         if (!TechReplicate | singleSubject) {
-           fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
-         }else{
-          fit.full <- lmer(ABUNDANCE ~ GROUP+(1|SUBJECT) , data = data2)
-          df.full <- lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)$df.residual
+    ## when single feature, consider technical replicates for time-course.
+   
+    ## case-control
+    if (!repeated) {
+    	if (!TechReplicate | singleSubject) {
+           	fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
+         } else {
+          	fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data = data2)
+          	df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)$df.residual
          }
         
-      }else{ ## time-course
+    } else { ## time-course
       	if (singleSubject) {
-          fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
-      	}else{ ## no single subject
+          	fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
+      	} else { ## no single subject
         	if (!TechReplicate) {
-          	fit.full <- lmer(ABUNDANCE ~ GROUP+(1|SUBJECT) , data = data2)
-          	df.full <- lm(ABUNDANCE ~ GROUP+SUBJECT , data = data2)$df.residual
-        	}else{
-          	fit.full <- lmer(ABUNDANCE ~ GROUP+(1|SUBJECT)+(1|GROUP:SUBJECT), data = data2) ## SUBJECT==SUBJECT_NESTED here
-          	df.full <- lm(ABUNDANCE ~ GROUP+SUBJECT+GROUP:SUBJECT , data = data2)$df.residual
+          		fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data = data2)
+          		df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)$df.residual
+        	} else {
+          		fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = data2) ## SUBJECT==SUBJECT_NESTED here
+          		df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT , data = data2)$df.residual
         	}
-        }
-      } ## time-course
+        }	
+    } ## time-course
       
-      ## get parameter from model
-      	if (class(fit.full)=="lm") {
-			Para <- .getParameterFixed(fit.full)
-		}else{
-			Para <- .getParameterRandom(fit.full,df.full)
-		}
+	## get parameter from model
+    if (class(fit.full) == "lm") {
+		Para <- .getParameterFixed(fit.full)
+	} else {
+		Para <- .getParameterRandom(fit.full, df.full)
+	}
       
       
-      #### each comparison
-      allout <- NULL
+    ## each comparison
+    allout <- NULL
       
-      for(k in 1:nrow(contrast.matrix)) {
+    for(k in 1:nrow(contrast.matrix)) {
         
-        # choose each comparison
-        contrast.matrix.sub <- matrix(contrast.matrix[k,], nrow=1)
+        ## choose each comparison
+        contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
         row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
         
-        GroupComparisonAgreement <- .chechGroupComparisonAgreement(data2,contrast.matrix.sub)
+        GroupComparisonAgreement <- .chechGroupComparisonAgreement(data2, contrast.matrix.sub)
         
-        if (GroupComparisonAgreement$sign==TRUE) {
-          message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+        if (GroupComparisonAgreement$sign) {
+          	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
           
-          out <- data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
-        }else{
-          contrast <- .make.contrast.free.single(fit.full,contrast.matrix.sub,data2)
-          out <- .estimableFixedRandom(Para,contrast)
+          	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA)		
+        } else {
+          	contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
+          	out <- .estimableFixedRandom(Para, contrast)
           
-          ## any error for out, just NA
-          if (is.null(out)) {
-            out <- data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-          }else{
-            out <- data.frame(Protein=unique(data2$PROTEIN),Label=row.names(contrast.matrix.sub),out)	
-          }
+          	## any error for out, just NA
+          	if (is.null(out)) {
+            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
+          	} else {
+            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), out)	
+          	}
         }
         
         allout <- rbind(allout, out)
         
-      } # end loop for comparion
+    } ## end loop for comparion
       
-    }	## expanded, random subject
-    
+  	if (class(fit.full)=="lm") {  ## lm model
+    	finalresid <- fit.full$residuals
+    	finalfitted <- fit.full$fitted.values
+  	} else {   ## lmer model
+    	finalresid <- resid(fit.full)
+    	finalfitted <- fitted(fit.full)
+  	}
   
-  if (class(fit.full)=="lm") {  ### lm model
-    finalresid <- fit.full$residuals
-    finalfitted <- fit.full$fitted.values
-  }else{   ### lmer model
-    finalresid <- resid(fit.full)
-    finalfitted <- fitted(fit.full)
-  }
-  
-  finalout <- list(result=allout,valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
-  return(finalout)
+  	finalout <- list(result=allout, valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
+  	return(finalout)
   
 } ## .fit.model.single
+
+
 
 #############################################
 .ttest.logsum <- function(contrast.matrix,data,origGroup) {
@@ -4972,256 +4922,284 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 #############################################
 
 
-groupComparisonPlots <- function(data=data,type=type,sig=0.05,FCcutoff=FALSE,logBase.pvalue=10,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4, legend.size=7,ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", width=10, height=10, which.Comparison="all", address="") {
+groupComparisonPlots <- function(data=data,
+				type=type,
+				sig=0.05,
+				FCcutoff=FALSE,
+				logBase.pvalue=10,
+				ylimUp=FALSE,
+				ylimDown=FALSE,
+				xlimUp=FALSE,
+				x.axis.size=10,
+				y.axis.size=10,
+				dot.size=3,
+				text.size=4, 
+				legend.size=7,
+				ProteinName=TRUE,
+				ProteinNameLoc=1, 
+				numProtein=100, 
+				clustering="both", 
+				width=10, 
+				height=10, 
+				which.Comparison="all", 
+				address="") {
   
-  ## save process output in each step
-  allfiles <- list.files()
-  filenaming <- "msstats"
+	## save process output in each step
+  	allfiles <- list.files()
+  	filenaming <- "msstats"
   
-  if (length(grep(filenaming,allfiles))==0) {
+  	if (length(grep(filenaming,allfiles)) == 0) {
     
-    finalfile <- "msstats.log"
-    processout <- NULL
+    	finalfile <- "msstats.log"
+    	processout <- NULL
     
-  }else{
+  	} else {
     
-    num <- 0
-    finalfile <- "msstats.log"
+    	num <- 0
+    	finalfile <- "msstats.log"
     
-    while(is.element(finalfile,allfiles)) {
-      num <- num+1
-      lastfilename <- finalfile ## in order to rea
-      finalfile <- paste(paste(filenaming,num,sep="-"),".log",sep="")
-    }
+    	while(is.element(finalfile, allfiles)) {
+      		num <- num + 1
+      		lastfilename <- finalfile ## in order to rea
+      		finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
+    	}
     
-    finalfile <- lastfilename
-    processout <- as.matrix(read.table(finalfile, header=T, sep="\t"))
-  }
+    	finalfile <- lastfilename
+    	processout <- as.matrix(read.table(finalfile, header=T, sep="\t"))
+  	}	
   
-  processout <- rbind(processout,as.matrix(c(" "," ","MSstats - groupComparisonPlots function"," "),ncol=1))
+  	processout <- rbind(processout, as.matrix(c(" ", " ", "MSstats - groupComparisonPlots function", " "), ncol=1))
   
   
-  ### make upper letter
-  type <- toupper(type)
+  	## make upper letter
+  	type <- toupper(type)
   
-  if (length(setdiff(type,c("HEATMAP","VOLCANOPLOT","COMPARISONPLOT")))!=0) {
+  	if (length(setdiff(type, c("HEATMAP", "VOLCANOPLOT", "COMPARISONPLOT"))) != 0) {
     
-    processout <- rbind(processout,c(paste("Input for type=",type,". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".",sep="")))
-    write.table(processout, file=finalfile,row.names=FALSE)
+    	processout <- rbind(processout, c(paste("Input for type=", type, ". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".", sep="")))
+    	write.table(processout, file=finalfile, row.names=FALSE)
     
-    stop(paste("Input for type=",type,". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".",sep=""))
-  }
+    	stop(paste("Input for type=", type, ". However,'type' should be one of \"Heatmap\", \"VolcanoPlot\",\"ComparisonPlot\".", sep=""))
+  	}
   
-  ##### check logBase.pvalue is 2,10 or not
-  if (logBase.pvalue!=2 & logBase.pvalue!=10) {
-    processout <- rbind(processout,c("ERROR : (-) Logarithm transformation for adjusted p-values : log2 or log10 only - stop"))
-    write.table(processout, file=finalfile,row.names=FALSE)
+  	## check logBase.pvalue is 2,10 or not
+  	if (logBase.pvalue != 2 & logBase.pvalue != 10) {
+    	processout <- rbind(processout, c("ERROR : (-) Logarithm transformation for adjusted p-values : log2 or log10 only - stop"))
+    	write.table(processout, file=finalfile, row.names=FALSE)
     
-    stop("Only -log2 or -log10 for logarithm transformation for adjusted p-values are posssible.\n")
-  }
+    	stop("Only -log2 or -log10 for logarithm transformation for adjusted p-values are posssible.\n")
+  	}
   
+  	## choose comparison to draw plots
   
-  #### choose comparison to draw plots
-  
-  if (which.Comparison!="all") {
-    ## check which.comparison is name of comparison
-    if (is.character(which.Comparison)) {
+  	if (which.Comparison != "all") {
+    	## check which.comparison is name of comparison
+    	if (is.character(which.Comparison)) {
       
-      temp.name <- which.Comparison
+      		temp.name <- which.Comparison
       
-      ## message if name of comparison is wrong.
-      if (length(setdiff(temp.name,unique(data$Label)))>0)
+      		## message if name of comparison is wrong.
+      		if (length(setdiff(temp.name, unique(data$Label))) > 0) {
         
-        processout <- rbind(processout,paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "),sep=" "))
-      write.table(processout, file=finalfile,row.names=FALSE)
+        		processout <- rbind(processout, paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "), sep=" "))
+      			write.table(processout, file=finalfile, row.names=FALSE)
       
-      stop(paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "),sep=" "))
-    }
-    
-    
-    ## check which.comparison is order number of comparison
-    if (is.numeric(which.Comparison)) {
+      			stop(paste("Please check labels of comparions. Result does not have this comparison. -", paste(temp.name, collapse=", "), sep=" "))
+      		}
+    	}
+     
+    	## check which.comparison is order number of comparison
+    	if (is.numeric(which.Comparison)) {
       
-      temp.name <- levels(data$Label)[which.Comparison]
+    		temp.name <- levels(data$Label)[which.Comparison]
       
-      ## message if name of comparison is wrong.
-      if (length(levels(data$Label))<max(which.Comparison))
-        stop(paste("Please check your selection of comparisons. There are ", length(levels(data$Label))," comparisons in this result.",sep=" "))
-    }
+      		## message if name of comparison is wrong.
+      		if (length(levels(data$Label))<max(which.Comparison)) {
+        		stop(paste("Please check your selection of comparisons. There are ", length(levels(data$Label)), " comparisons in this result.", sep=" "))
+        	}
+    	}  
     
+   	 	## use only assigned proteins
+    	data <- data[which(data$Label %in% temp.name), ]
     
-    ## use only assigned proteins
-    data <- data[which(data$Label %in% temp.name),]
+   	 	data$Protein <- factor(data$Protein)
+    	data$Label <- factor(data$Label)
+  	} else {
     
-    data$Protein <- factor(data$Protein)
-    data$Label <- factor(data$Label)
-  }else{
-    
-    data$Protein <- factor(data$Protein)
-    data$Label <- factor(data$Label)
-  }
+    	data$Protein <- factor(data$Protein)
+    	data$Label <- factor(data$Label)
+  	}
   
   
-  #######################
-  ## Heatmap
-  #######################
+  	#######################
+  	## Heatmap
+  	#######################
   
-  if (type=="HEATMAP") {
+  	if (type == "HEATMAP") {
     
-    #### check whether there is only one protein or not,
-    if (length(unique(data$Protein))<=1) {
-      stop("At least two proteins are needed for heatmaps.")
-    }
+    	## check whether there is only one protein or not,
+    	if (length(unique(data$Protein)) <= 1) {
+      		stop("At least two proteins are needed for heatmaps.")
+    	}
     
-    #### check whether there is only one comparison or not,
-    if (length(unique(data$Label))<=1) {
-      stop("At least two comparisons are needed for heatmaps.")
-    }
+    	## check whether there is only one comparison or not,
+    	if (length(unique(data$Label)) <= 1) {
+      		stop("At least two comparisons are needed for heatmaps.")
+    	}
     
-    if (logBase.pvalue==2) {
-      y.limUp  <- 30
-    }
+    	if (logBase.pvalue == 2) {
+      		y.limUp  <- 30
+    	}
     
-    if (logBase.pvalue==10) {
-      y.limUp  <- 10
-    }
+    	if (logBase.pvalue == 10) {
+      		y.limUp  <- 10
+    	}
     
-    if (is.numeric(ylimUp)) y.limUp <- ylimUp 
+    	if (is.numeric(ylimUp)) y.limUp <- ylimUp 
     
-    ## when NA, change it
-    #data$adj.pvalue[is.na(data$adj.pvalue)] <- 1 ## missing will be grey
+   		## when NA, change it
+    	#data$adj.pvalue[is.na(data$adj.pvalue)] <- 1 ## missing will be grey
     
-    if (logBase.pvalue==2) {
-      data$adj.pvalue[data$adj.pvalue<2^(-y.limUp)] <- 2^(-y.limUp)
-    }
+    	if (logBase.pvalue == 2) {
+      		data$adj.pvalue[data$adj.pvalue<2^(-y.limUp)] <- 2^(-y.limUp)
+    	}
     
-    if (logBase.pvalue==10) {
-      data$adj.pvalue[data$adj.pvalue<10^(-y.limUp)] <- 10^(-y.limUp)
-    }
+    	if (logBase.pvalue == 10) {
+      		data$adj.pvalue[data$adj.pvalue<10^(-y.limUp)] <- 10^(-y.limUp)
+    	}
     
     
-    ## if FCcutoff is assigned, make p-value insignificant.
-    if (is.numeric(FCcutoff)) {
-      if (colnames(data)[3]=="log2FC") {
-        data$adj.pvalue[data[,3]<log2(FCcutoff) & data[,3]>(-log2(FCcutoff)) ] <- 1
-      }
-      if (colnames(data)[3]=="log10FC") {
-        data$adj.pvalue[data[,3]<log10(FCcutoff) & data[,3]>(-log10(FCcutoff))] <- 1
-      }
-    }
+    	## if FCcutoff is assigned, make p-value insignificant.
+   		if (is.numeric(FCcutoff)) {
+      		if (colnames(data)[3] == "log2FC") {
+        		data$adj.pvalue[data[, 3] < log2(FCcutoff) & data[, 3] > (-log2(FCcutoff)) ] <- 1
+      		}
+      		if (colnames(data)[3] == "log10FC") {
+        		data$adj.pvalue[data[, 3] < log10(FCcutoff) & data[, 3] > (-log10(FCcutoff))] <- 1
+      		}
+    	}
     
-    final <- NULL
+    	final <- NULL
     
-    ### based on p-value
-    for (i in 1:nlevels(data$Label)) {
+        ## based on p-value
+    	for (i in 1:nlevels(data$Label)) {
       
-      sub <- data[data$Label==levels(data$Label)[i],]
+      		sub <- data[data$Label == levels(data$Label)[i], ]
       
-      #if (logBase.pvalue==2) {
-      #  temp <-  -log2(sub$adj.pvalue)*sign(sub[,3])
-      #}
+      		if (logBase.pvalue==2) {
+      		  temp <-  -log2(sub$adj.pvalue)*sign(sub[,3])
+      		}
       
-      #if (logBase.pvalue==10) {
-        temp <-  -log10(sub$adj.pvalue)*sign(sub[,3])
-      #}
+      		if (logBase.pvalue==10) {
+        		temp <-  -log10(sub$adj.pvalue)*sign(sub[,3])
+      		}
       
-      final <- 	data.frame(cbind(final,temp))
-    }
+      		final <- data.frame(cbind(final,temp))
+    	}
     
-    obj <- final
-    data$Protein <- factor(data$Protein)
-    rownames(obj) <- levels(data$Protein)
-    colnames(obj) <- levels(data$Label)
+    	obj <- final
+    	data$Protein <- factor(data$Protein)
+    	rownames(obj) <- levels(data$Protein)
+    	colnames(obj) <- levels(data$Label)
     
-    ## remove if whole rows or columns are NA
-    obj <- obj[rowSums(!is.na(obj))!=0, colSums(!is.na(obj))!=0]
+    	## remove if whole rows or columns are NA
+    	obj <- obj[rowSums(!is.na(obj)) != 0, colSums(!is.na(obj)) != 0]
     
-    ### clustering for order
-    tempobj <- obj
-    tempobj[is.na(tempobj)] <- 50
+    	## clustering for order
+    	tempobj <- obj
+    	tempobj[is.na(tempobj)] <- 50
     
-    if (toupper(clustering)=='PROTEIN') {
-      obj <- obj[hclust(dist(tempobj),method="ward.D")$order,]
-    }
-    if (toupper(clustering)=='COMPARISON') {
-      obj <- obj[hclust(dist(t(tempobj)),method="ward.D")$order,]
-    }
-    if (toupper(clustering)=='BOTH') {
-      obj <- obj[hclust(dist(tempobj),method="ward.D")$order,hclust(dist(t(tempobj)),method="ward.D")$order]
-    }
-    if (toupper(clustering)=='NONE') {
-      obj <- obj
-    }
+    	if (toupper(clustering) == 'PROTEIN') {
+      		obj <- obj[hclust(dist(tempobj), method="ward.D")$order, ]
+   	 	}
+    	if (toupper(clustering) == 'COMPARISON') {
+      		obj <- obj[hclust(dist(t(tempobj)), method="ward.D")$order, ]
+    	}
+   	    if (toupper(clustering) == 'BOTH') {
+      		obj <- obj[hclust(dist(tempobj), method="ward.D")$order, hclust(dist(t(tempobj)), method="ward.D")$order]
+    	}
+    	if (toupper(clustering) == 'NONE') {
+      		obj <- obj
+    	}
     
-    rm(tempobj)
+    	rm(tempobj)
     
-    ## change the order
-    #obj$id <- seq(1:nrow(obj))
-    #obj <- obj[order(obj$id,decreasing=TRUE),]
-    #obj <- subset(obj, select=-c(id))
+    	## change the order
+    	#obj$id <- seq(1:nrow(obj))
+    	#obj <- obj[order(obj$id,decreasing=TRUE),]
+    	#obj <- subset(obj, select=-c(id))
     
-    ## color scale
-    blue.red.18  <-  maPalette(low = "blue", high = "red", mid = "black", k = 12)
-    my.colors  <- blue.red.18
-    #my.colors[my.colors=="#FFFFFF"] <- "gold"
-    my.colors <- c(my.colors,"grey") ## for NA
+    	## color scale
+    	blue.red.18  <-  maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    	my.colors  <- blue.red.18
+    	#my.colors[my.colors=="#FFFFFF"] <- "gold"
+    	my.colors <- c(my.colors,"grey") ## for NA
     
-    if (logBase.pvalue==2) { up <- ceiling(-log10(2^-y.limUp )) }
-    if (logBase.pvalue==10) { up <- ceiling(-log10(10^-y.limUp )) }
+    	## color scale is fixed with log 10 based. then change break for log 2 based
+    	up <- 10 
+    		
+    	temp <- 10^(-sort(ceiling(seq(2, up, length=10)[c(1, 2, 3, 5, 10)]), decreasing = TRUE))
+    	breaks <- c(temp,sig)
+    	
+    	if (logBase.pvalue == 10) {
+    		
+    		neg.breaks  <-  log(breaks, 10)
+    		my.breaks   <-  c(neg.breaks, 0, -neg.breaks[6:1], 101)	
+    		
+		} else if(logBase.pvalue == 2) {
+			
+			neg.breaks  <-  log(breaks, 2)
+    		my.breaks   <-  c(neg.breaks, 0, -neg.breaks[6:1], 101)	
+    		
+		}
+   
+    	## draw color key
+    	blocks <- c(-breaks, 1, breaks[6:1])
+    	x.at <- seq(-0.05, 1.05, length.out=13)
     
-    temp <- 10^(-sort(ceiling(seq(2,up,length=10)[c(1,2,3,5,10)]),decreasing = TRUE))
-    breaks <- c(temp,sig)
-    neg.breaks  <-  log(breaks, 10)
-    my.breaks   <-  c(neg.breaks,0,-neg.breaks[6:1],101)			
-    
-    ### draw color key
-    blocks <- c(-breaks,1, breaks[6:1])
-    x.at <- seq(-0.05,1.05,length.out=13)
+    	## maximum number of proteins per heatmap
+    	namepro <- rownames(obj)
+    	totalpro <- length(namepro)
+    	numheatmap <- totalpro %/% numProtein +1
     
     
-    ### maximum number of proteins per heatmap
-    namepro <- rownames(obj)
-    totalpro <- length(namepro)
-    numheatmap <- totalpro %/% numProtein +1
-    
-    
-    # If there are the file with the same name, add next numbering at the end of file name
-    if (address!=FALSE) {
-      allfiles <- list.files()
+    	## If there are the file with the same name, add next numbering at the end of file name
+   	 	if (address != FALSE) {
+      		allfiles <- list.files()
       
-      num <- 0
-      filenaming <- paste(address,"Heatmap",sep="")
-      finalfile <- paste(address,"Heatmap.pdf",sep="")
+      		num <- 0
+      		filenaming <- paste(address, "Heatmap", sep="")
+      		finalfile <- paste(address, "Heatmap.pdf", sep="")
       
-      while(is.element(finalfile,allfiles)) {
-        num <- num+1
-        finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-      }	
+      		while(is.element(finalfile, allfiles)) {
+        		num <- num + 1
+        		finalfile <- paste(paste(filenaming, num, sep="-"), ".pdf", sep="")
+      		}	
       
-      pdf(finalfile, width=width, height=height)
-    }
+      		pdf(finalfile, width=width, height=height)
+    	}
     
-    par(mar=c(3,3,3,3), mfrow=c(3,1),oma=c(3,0,3,0))
-    plot.new()
-    image(z = matrix(seq(1:(length(my.colors)-1)), ncol = 1), col = my.colors[-length(my.colors)], xaxt = "n", yaxt = "n")
-    mtext("Color Key", side=3,line=1, cex=3)
-    mtext("(sign) Adjusted p-value", side=1,line=3,at=0.5, cex=1.7)
-    mtext(blocks,side=1,line=1,at=x.at, cex=1)
+    	par(mar=c(3,3,3,3), mfrow=c(3,1),oma=c(3,0,3,0))
+    	plot.new()
+   		image(z = matrix(seq(1:(length(my.colors) - 1)), ncol = 1), col = my.colors[-length(my.colors)], xaxt = "n", yaxt = "n")
+   	 	mtext("Color Key", side=3,line=1, cex=3)
+    	mtext("(sign) Adjusted p-value", side=1, line=3,at=0.5, cex=1.7)
+    	mtext(blocks, side=1, line=1, at=x.at, cex=1)
     
-    ### draw heatmap
+    	## draw heatmap
     
-    ### loop for numProtein
-    for(j in 1:numheatmap) {
+    	## loop for numProtein
+    	for(j in 1:numheatmap) {
       
-      ## get the number proteins needed
-      if (j!=numheatmap) {
-        tempobj <- obj[((j-1)*numProtein+1):(j*numProtein),]
-      }else{
-        tempobj <- obj[((j-1)*numProtein+1):nrow(obj),]
-      }
+      		## get the number proteins needed
+      		if (j != numheatmap) {
+        		tempobj <- obj[((j-1) * numProtein + 1):(j * numProtein), ]
+      		} else {
+        		tempobj <- obj[((j-1) * numProtein + 1):nrow(obj), ]
+      		}
       
-      par(oma=c(3,0,0,4))
-      heatmap.2(as.matrix(tempobj),
+      		par(oma=c(3,0,0,4))
+     		heatmap.2(as.matrix(tempobj),
                 col=my.colors,
                 Rowv=FALSE,
                 Colv=FALSE,
@@ -5231,303 +5209,358 @@ groupComparisonPlots <- function(data=data,type=type,sig=0.05,FCcutoff=FALSE,log
                 na.color="grey", ## missing value will be grey
                 cexCol=(x.axis.size/10),cexRow=(y.axis.size/10), # assign text.size as option
                 key=FALSE,
-                lhei=c(0.1,0.9),lwid=c(0.1,0.9)
-      )
+                lhei=c(0.1,0.9),
+                lwid=c(0.1,0.9)
+      		)   
       
-      
-    } ## end loop for heatmap
+    	} 
+    	## end loop for heatmap
     
-    if (address!=FALSE) dev.off()
-  }
+    	if (address!=FALSE) dev.off()
+  	}
   
   
-  #######################
-  ## VolcanoPlot
-  #######################
-  if (type=="VOLCANOPLOT") {
+ 	#######################
+  	## VolcanoPlot
+  	#######################
+  	if (type == "VOLCANOPLOT") {
     
-    # If there are the file with the same name, add next numbering at the end of file name		
-    if (address!=FALSE) {
-      allfiles <- list.files()
+    	## If there are the file with the same name, add next numbering at the end of file name		
+    	if (address != FALSE) {
+      		allfiles <- list.files()
       
-      num <- 0
-      filenaming <- paste(address,"VolcanoPlot",sep="")
-      finalfile <- paste(address,"VolcanoPlot.pdf",sep="")
+      		num <- 0
+      		filenaming <- paste(address, "VolcanoPlot", sep="")
+      		finalfile <- paste(address, "VolcanoPlot.pdf", sep="")
       
-      while(is.element(finalfile,allfiles)) {
-        num <- num+1
-        finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-      }	
+      		while(is.element(finalfile, allfiles)) {
+        		num <- num + 1
+        		finalfile <- paste(paste(filenaming, num, sep="-"), ".pdf", sep="")
+      		}	
       
-      pdf(finalfile, width=width, height=height)
-    }
+      		pdf(finalfile, width=width, height=height)
+    	}
     
-    if (logBase.pvalue==2) {
-      y.limUp  <- 30
-    }
+    	if (logBase.pvalue == 2) {
+      		y.limUp  <- 30
+    	}
     
-    if (logBase.pvalue==10) {
-      y.limUp  <- 10
-    }
+    	if (logBase.pvalue == 10) {
+     	 	y.limUp  <- 10
+    	}
     
-    if (is.numeric(ylimUp)) y.limUp <- ylimUp 
+    	if (is.numeric(ylimUp)) y.limUp <- ylimUp 
     
-    ## remove the result, NA
-    data <- data[!is.na(data$adj.pvalue),]
+    	## remove the result, NA
+    	data <- data[!is.na(data$adj.pvalue),]
     
-    ### group for coloring dots
-    if (!FCcutoff) {  
-      data[data$adj.pvalue>=sig,"colgroup"] <- "black"
-      data[data$adj.pvalue<sig & data[,3]>0,"colgroup"] <- "red"
-      data[data$adj.pvalue<sig & data[,3]<0,"colgroup"] <- "blue" 
-    }
+    	## group for coloring dots
+    	if (!FCcutoff) {  
+      		data[data$adj.pvalue >= sig, "colgroup"] <- "black"
+      		data[data$adj.pvalue < sig & data[, 3] > 0, "colgroup"] <- "red"
+      		data[data$adj.pvalue < sig & data[, 3] < 0, "colgroup"] <- "blue" 
+    	}
     
-    if (is.numeric(FCcutoff)) {
-      data$colgroup <- "black"
+    	if (is.numeric(FCcutoff)) {
+      		data$colgroup <- "black"
       
-      if (colnames(data)[3]=="log2FC") {
-        data[data$adj.pvalue<sig & data[,3]>log2(FCcutoff),"colgroup"] <- "red"
-        data[data$adj.pvalue<sig & data[,3]<(-log2(FCcutoff)),"colgroup"] <- "blue"
-      }
+      		if (colnames(data)[3] == "log2FC") {
+        		data[data$adj.pvalue < sig & data[, 3] > log2(FCcutoff), "colgroup"] <- "red"
+        		data[data$adj.pvalue < sig & data[, 3] < (-log2(FCcutoff)), "colgroup"] <- "blue"
+      		}
       
-      if (colnames(data)[3]=="log10FC") {
-        data[data$adj.pvalue<sig & data[,3]>log10(FCcutoff),"colgroup"] <- "red"
-        data[data$adj.pvalue<sig & data[,3]<(-log10(FCcutoff)),"colgroup"] <- "blue"
-      }
-    }
+      		if (colnames(data)[3] == "log10FC") {
+        		data[data$adj.pvalue < sig & data[, 3] > log10(FCcutoff), "colgroup"] <- "red"
+        		data[data$adj.pvalue < sig & data[, 3] < (-log10(FCcutoff)), "colgroup"] <- "blue"
+      		}
+    	}
     
-    data$colgroup <- factor(data$colgroup, levels=c("black","blue","red"))
+     	data$colgroup <- factor(data$colgroup, levels=c("black", "blue", "red"))
     
-    ## for multiple volcano plots, 
-    for(i in 1:nlevels(data$Label)) {
+    	## for multiple volcano plots, 
+    	for(i in 1:nlevels(data$Label)) {
       
-      sub <- data[data$Label==levels(data$Label)[i],]
+      		sub <- data[data$Label == levels(data$Label)[i], ]
       
-      if (logBase.pvalue==2) {
-        sub$adj.pvalue[sub$adj.pvalue<2^(-y.limUp)] <- 2^(-y.limUp)
-      }
+      		if (logBase.pvalue == 2) {
+        		sub$adj.pvalue[sub$adj.pvalue < 2^(-y.limUp)] <- 2^(-y.limUp)
+      		}
       
-      if (logBase.pvalue==10) {
-        sub$adj.pvalue[sub$adj.pvalue<10^(-y.limUp)] <- 10^(-y.limUp)
-      }
+      		if (logBase.pvalue == 10) {
+        		sub$adj.pvalue[sub$adj.pvalue < 10^(-y.limUp)] <- 10^(-y.limUp)
+      		}
       
-      sub <- as.data.frame(sub)
+      		sub <- as.data.frame(sub)
       
-      ## ylimUp
-      if (logBase.pvalue==2) {
-        y.limup <- ceiling(max(-log2(sub[!is.na(sub$adj.pvalue),"adj.pvalue"])))
-        if (y.limup < (-log2(sig))) y.limup <-  (-log2(sig)+1) ## for too small y.lim
-      }
+      		## ylimUp
+      		if (logBase.pvalue == 2) {
+        		y.limup <- ceiling(max(-log2(sub[!is.na(sub$adj.pvalue), "adj.pvalue"])))
+        		if (y.limup < (-log2(sig))) {
+        			y.limup <- (-log2(sig) + 1) ## for too small y.lim
+        		}
+      		}
       
-      if (logBase.pvalue==10) {
-        y.limup <- ceiling(max(-log10(sub[!is.na(sub$adj.pvalue),"adj.pvalue"])))
-        if (y.limup < (-log10(sig))) y.limup <-  (-log10(sig)+1) ## for too small y.lim
-      }
+     	 	if (logBase.pvalue == 10) {
+        		y.limup <- ceiling(max(-log10(sub[!is.na(sub$adj.pvalue), "adj.pvalue"])))
+        		if (y.limup < (-log10(sig))) {
+        			y.limup <- (-log10(sig) + 1) ## for too small y.lim
+        		}
+      		}
+       
+      		## ylimDown
+      		y.limdown <- 0 ## default is zero
+      		if (is.numeric(ylimDown)) {
+      			y.limdown <- ylimDown
+      		}
+      
+      		## x.lim
+      		x.lim <- ceiling(max(abs(sub[!is.na(sub[, 3]), 3]))) ## log2FC or log10FC
+      		if (x.lim < 3) {
+      			x.lim <- 3
+      		}
+      		if (is.numeric(xlimUp)) {
+      			x.lim <- xlimUp
+      		}
+      
+      		## for assigning x in ggplot2
+      		subtemp <- sub
+      		colnames(subtemp)[3] <- "logFC"
+      
+      		if (logBase.pvalue == 2) {
+        		subtemp$log2adjp <- (-log2(subtemp$adj.pvalue))
+      		}
+      
+      		if (logBase.pvalue == 10) {
+        		subtemp$log10adjp <- (-log10(subtemp$adj.pvalue))
+        	}
+      
+      		## Plotting
+      		if (logBase.pvalue == 2) {
+        		ptemp <- ggplot()+
+        				geom_point(aes_string(x='logFC', y='log2adjp', color='colgroup', label='Protein'), size=dot.size, data=subtemp)+
+        				scale_colour_manual(values=c("black", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
+        				scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+
+        				labs(title=unique(sub$Label))
+      		}
+      
+      		if (logBase.pvalue == 10) {
+        		ptemp <- ggplot()+
+        				geom_point(aes_string(x='logFC', y='log10adjp', color='colgroup', label='Protein'), size=dot.size, data=subtemp)+
+        				scale_colour_manual(values=c("black", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
+        				scale_y_continuous('-Log10 (adjusted p-value)', limit=c(y.limdown, y.limup))+
+        				labs(title=unique(sub$Label))
+      		}
       
       
-      ## ylimDown
-      y.limdown <- 0 ## default is zero
-      if (is.numeric(ylimDown)) y.limdown <- ylimDown
+     		## x-axis labeling
+      		if (colnames(sub)[3] == "log2FC") {
+      			ptemp <- ptemp+scale_x_continuous('Log2 fold change', limit=c(-x.lim, x.lim))
+      		}
+      		if (colnames(sub)[3] == "log10FC") {
+      			ptemp <- ptemp+scale_x_continuous('Log10 fold change', limit=c(-x.lim, x.lim))
+      		}
       
-      ## x.lim
-      x.lim <- ceiling(max(abs(sub[!is.na(sub[,3]),3]))) ## log2FC or log10FC
-      if (x.lim<3) x.lim <- 3
-      if (is.numeric(xlimUp)) x.lim <- xlimUp
-      
-      ### for assigning x in ggplot2
-      subtemp <- sub
-      colnames(subtemp)[3] <- "logFC"
-      #setnames(subtemp,3,"logFC")	
-      
-      if (logBase.pvalue==2) {
-        subtemp$log2adjp <- (-log2(subtemp$adj.pvalue))
-      }
-      
-      if (logBase.pvalue==10) {
-        subtemp$log10adjp <- (-log10(subtemp$adj.pvalue))
+     		## add protein name
+      		if (ProteinName) {
+        		if (logBase.pvalue == 2) {
+          			ptemp <- ptemp+geom_text(aes_string(x='logFC', y='log2adjp', label='Protein'), data=subtemp, color="black", hjust=0.5-sign(sub[, 3])*ProteinNameLoc, vjust=0.5, size=text.size)
+        		}
         
-      }
+        		if (logBase.pvalue == 10) {
+          			ptemp <- ptemp+geom_text(aes_string(x='logFC', y='log10adjp',label='Protein'), data=subtemp, color="black", hjust=0.5-sign(sub[, 3])*ProteinNameLoc, vjust=0.5, size=text.size)
+        		}
+      		} 
       
-      ### Plotting
-      if (logBase.pvalue==2) {
-        ptemp <- ggplot()+geom_point(aes_string(x='logFC', y='log2adjp',color='colgroup',label='Protein'),size=dot.size, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))
-      }
+      		## For legend of linetype for cutoffs
+      		## first assign line type
+      		ltypes <- c("type1"="twodash", "type2"="dotted")
       
-      if (logBase.pvalue==10) {
-        ptemp <- ggplot()+geom_point(aes_string(x='logFC', y='log10adjp',color='colgroup',label='Protein'),size=dot.size, data=subtemp)+scale_colour_manual(values=c("black","blue","red"),limits=c("black","blue","red"),breaks=c("black","blue","red"),labels=c("No regulation","Down-regulated","Up-regulated"))+scale_y_continuous('-Log10 (adjusted p-value)', limit=c(y.limdown, y.limup))+labs(title=unique(sub$Label))
-      }
-      
-      
-      ## x-axis labeling
-      if (colnames(sub)[3]=="log2FC") ptemp <- ptemp+scale_x_continuous('Log2 fold change',limit=c(-x.lim,x.lim))
-      if (colnames(sub)[3]=="log10FC") ptemp <- ptemp+scale_x_continuous('Log10 fold change',limit=c(-x.lim,x.lim))
-      
-      ## add protein name
-      if (ProteinName) {
-        if (logBase.pvalue==2) {
-          ptemp <- ptemp+geom_text(aes_string(x='logFC', y='log2adjp',label='Protein'),data=subtemp,color="black",guide="none",hjust=0.5-sign(sub[,3])*ProteinNameLoc, vjust=0.5,size=text.size)
-        }
+      		## cutoff lines, FDR only
+     		if (!FCcutoff) { 
+        		if (logBase.pvalue == 2) {
+          			sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log2adjp=(-log2(sig)))
+          
+          			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp'), linetype="twodash", colour="darkgrey", size=0.6)+
+          					scale_linetype_manual(values=ltypes, labels=paste("Adj p-value cutoff(", sig, ")", sep=""))
+       	 		}
         
-        if (logBase.pvalue==10) {
-          ptemp <- ptemp+geom_text(aes_string(x='logFC', y='log10adjp',label='Protein'),data=subtemp,color="black",guide="none",hjust=0.5-sign(sub[,3])*ProteinNameLoc, vjust=0.5,size=text.size)
-        }
-      } 
-      
-      ## For legend of linetype for cutoffs
-      ## first assign line type
-      ltypes <- c("type1"="twodash","type2"="dotted")
-      
-      ## cutoff lines, FDR only
-      if (!FCcutoff) { 
-        if (logBase.pvalue==2) {
-          sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log2adjp=(-log2(sig)))
+        		if (logBase.pvalue == 10) {
+          			sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log10adjp=(-log10(sig)))
           
-          pfinal <- ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'), linetype="twodash", colour="darkgrey",size=0.6)+scale_linetype_manual(values=ltypes,labels=paste("Adj p-value cutoff(",sig,")",sep=""))
-        }
+         	 		pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp'), linetype="twodash", colour="darkgrey", size=0.6)+
+         	 				scale_linetype_manual(values=ltypes, labels=paste("Adj p-value cutoff(", sig, ")", sep=""))
+        		}				
+      		}
+      
+      		## cutoff lines, FDR and Fold change cutoff
+      		if (is.numeric(FCcutoff)) {
+        		if (colnames(sub)[3] == "log2FC") {
+          			if (logBase.pvalue == 2) {
+            
+           				## three different lines
+            			sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
+            			FCcutpos <- data.frame(logFC=log2(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
+            			FCcutneg <- data.frame(logFC=(-log2(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
+            
+            			## three lines, with order color first and then assign linetype manual
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp'), linetype="twodash", colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log2adjp'), linetype='dotted', colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log2adjp'), linetype='dotted', colour="darkgrey", size=0.6)+
+            				guides(colour=guide_legend(order=1), linetype=guide_legend(order=2))+
+            				scale_linetype_manual(values=ltypes, labels=c(paste("Adj p-value cutoff(", sig, ")", sep=""), paste("Fold change cutoff(", FCcutoff, ")", sep="")))
+          			}
+          
+          			if (logBase.pvalue == 10) {
+            
+            			## three different lines
+            			sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)))
+            			FCcutpos <- data.frame(logFC=log2(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10))
+            			FCcutneg <- data.frame(logFC=(-log2(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10))
+            
+            			## three lines, with order color first and then assign linetype manual
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp'), linetype="twodash", colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log10adjp'), linetype='dotted', colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log10adjp'), linetype='dotted', colour="darkgrey", size=0.6)+
+            				guides(colour=guide_legend(order=1), linetype=guide_legend(order=2))+
+            				scale_linetype_manual(values=ltypes, labels=c(paste("Adj p-value cutoff(", sig, ")", sep=""), paste("Fold change cutoff(", FCcutoff, ")", sep="")))
+          			}        
+        		}
         
-        if (logBase.pvalue==10) {
-          sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=20), log10adjp=(-log10(sig)))
+        		if (colnames(sub)[3] == "log10FC") {
+          			if (logBase.pvalue == 2) {
+            
+            			## three different lines
+            			sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
+            			FCcutpos <- data.frame(logFC=log10(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
+            			FCcutneg <- data.frame(logFC=(-log10(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
+            
+            			## three lines, with order color first and then assign linetype manual
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp'), linetype="twodash", colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log2adjp'), linetype='dotted', colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log2adjp'), linetype="dotted", colour="darkgrey", size=0.6)+
+            				guides(colour=guide_legend(order=1), linetype=guide_legend(order=2))+
+            				scale_linetype_manual(values=ltypes, labels=c(paste("Adj p-value cutoff(", sig, ")", sep=""), paste("Fold change cutoff(", FCcutoff, ")", sep="")))
+          			}
           
-          pfinal <- ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log10adjp'), linetype="twodash", colour="darkgrey",size=0.6)+scale_linetype_manual(values=ltypes,labels=paste("Adj p-value cutoff(",sig,")",sep=""))
-        }				
-      }
+          			if (logBase.pvalue == 10) {
+            
+            			## three different lines
+            			sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)))
+            			FCcutpos <- data.frame(logFC=log10(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10))
+            			FCcutneg <- data.frame(logFC=(-log10(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10))
+            
+            			## three lines, with order color first and then assign linetype manual
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp') ,linetype="twodash", colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log10adjp'), linetype='dotted', colour="darkgrey", size=0.6)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log10adjp'), linetype="dotted", colour="darkgrey", size=0.6)+
+            				guides(colour=guide_legend(order=1), linetype=guide_legend(order=2))+
+            				scale_linetype_manual(values=ltypes, labels=c(paste("Adj p-value cutoff(", sig, ")", sep=""), paste("Fold change cutoff(", FCcutoff, ")", sep="")))
+          			}    
+        		}
+     		 }
       
-      # cutoff lines, FDR and Fold change cutoff
-      if (is.numeric(FCcutoff)) {
-        if (colnames(sub)[3]=="log2FC") {
-          if (logBase.pvalue==2) {
-            
-            ## three different lines
-            sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
-            FCcutpos <- data.frame(logFC=log2(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
-            FCcutneg <- data.frame(logFC=(-log2(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
-            
-            ## three lines, with order color first and then assign linetype manual
-            pfinal <- ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
-          }
-          
-          if (logBase.pvalue==10) {
-            
-            ## three different lines
-            sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)))
-            FCcutpos <- data.frame(logFC=log2(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10))
-            FCcutneg <- data.frame(logFC=(-log2(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10))
-            
-            ## three lines, with order color first and then assign linetype manual
-            pfinal <- ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log10adjp'),linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log10adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log10adjp'), linetype='dotted',colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
-          }
-          
-        }
-        
-        if (colnames(sub)[3]=="log10FC") {
-          if (logBase.pvalue==2) {
-            
-            ## three different lines
-            sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)))
-            FCcutpos <- data.frame(logFC=log10(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10))
-            FCcutneg <- data.frame(logFC=(-log10(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10))
-            
-            ## three lines, with order color first and then assign linetype manual
-            pfinal <- ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log2adjp') ,linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log2adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log2adjp'),linetype="dotted",colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
-          }
-          
-          if (logBase.pvalue==10) {
-            
-            ## three different lines
-            sigcut <- data.frame(logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)))
-            FCcutpos <- data.frame(logFC=log10(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10))
-            FCcutneg <- data.frame(logFC=(-log10(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10))
-            
-            ## three lines, with order color first and then assign linetype manual
-            pfinal <- ptemp+geom_line(data=sigcut,aes_string(x='logFC',y='log10adjp') ,linetype="twodash",colour="darkgrey",size=0.6)+geom_line(data=FCcutpos,aes_string(x='logFC',y='log10adjp'),linetype='dotted',colour="darkgrey",size=0.6)+geom_line(data=FCcutneg,aes_string(x='logFC',y='log10adjp'),linetype="dotted",colour="darkgrey",size=0.6)+guides(colour=guide_legend(order=1),linetype=guide_legend(order=2))+scale_linetype_manual(values=ltypes,labels=c(paste("Adj p-value cutoff(",sig,")",sep=""),paste("Fold change cutoff(",FCcutoff,")",sep="")))
-          }
-          
-        }
-      }
+      		pfinal <- pfinal+theme(
+        		panel.background = element_rect(fill='white', colour="black"),
+        		panel.grid.minor = element_blank(),
+        		axis.text.x = element_text(size=x.axis.size, colour="black"),
+        		axis.text.y = element_text(size=y.axis.size, colour="black"),
+        		axis.ticks = element_line(colour="black"),
+        		axis.title.x = element_text(size=x.axis.size+5, vjust=-0.4),
+        		axis.title.y = element_text(size=y.axis.size+5, vjust=0.3),
+        		title = element_text(size=x.axis.size+8, vjust=1.5),
+        		legend.position="bottom",
+        		legend.key = element_rect(fill='white', colour='white'),
+        		legend.text = element_text(size=legend.size),
+        		legend.title = element_blank()
+        		)
       
-      pfinal <- pfinal+theme(
-        panel.background=element_rect(fill='white', colour="black"),
-        panel.grid.minor = element_blank(),
-        axis.text.x=element_text(size=x.axis.size,colour="black"),
-        axis.text.y=element_text(size=y.axis.size,colour="black"),
-        axis.ticks=element_line(colour="black"),
-        axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
-        axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
-        title=element_text(size=x.axis.size+8,vjust=1.5),
-        legend.position="bottom",
-        legend.key=element_rect(fill='white',colour='white'),
-        legend.text=element_text(size=legend.size),
-        legend.title=element_blank())
-      
-      print(pfinal)
-    } ## end-loop
+      		print(pfinal)
+    	} ## end-loop
     
-    if (address!=FALSE) dev.off()
-  }	
+    	if (address!=FALSE) dev.off()
+	}	
   
-  #######################
-  ## Comparison Plot
-  #######################
-  if (type=="COMPARISONPLOT") {
+  	#######################
+  	## Comparison Plot
+  	#######################
+  	if (type == "COMPARISONPLOT") {
     
+    	datatemp <- data[!is.na(data$adj.pvalue), ]
+    	datatemp$Protein <- factor(datatemp$Protein)
     
-    datatemp <- data[!is.na(data$adj.pvalue),]
-    datatemp$Protein <- factor(datatemp$Protein)
-    setnames(datatemp,3,"logFC")
+    	## If there are the file with the same name, add next numbering at the end of file name		
+    	if (address!=FALSE) {
+     		allfiles <- list.files()
+      
+      		num <- 0
+      		filenaming <- paste(address, "ComparisonPlot", sep="")
+      		finalfile <- paste(address, "ComparisonPlot.pdf", sep="")
+      
+      		while(is.element(finalfile, allfiles)) {
+        		num <- num+1
+        		finalfile <- paste(paste(filenaming, num, sep="-"), ".pdf", sep="")
+      		}	
+      
+      		pdf(finalfile, width=width, height=height)
+   		}
     
-    # If there are the file with the same name, add next numbering at the end of file name		
-    if (address!=FALSE) {
-      allfiles <- list.files()
+   	 	for (i in 1:nlevels(datatemp$Protein)) {
       
-      num <- 0
-      filenaming <- paste(address,"ComparisonPlot",sep="")
-      finalfile <- paste(address,"ComparisonPlot.pdf",sep="")
+      		sub <- datatemp[datatemp$Protein==levels(datatemp$Protein)[i], ] 		
+      		#sub$ciw <- qt(1-sig/2,sub$DF)*sub$SE
+      		## adjust for multiple comparison within protein
+      		sub$ciw <- qt(1-sig/(2*nrow(sub)), sub$DF)*sub$SE
       
-      while(is.element(finalfile,allfiles)) {
-        num <- num+1
-        finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-      }	
+      		sub <- as.data.frame(sub)
+      		
+      		## for assigning x in ggplot2
+      		colnames(sub)[3] <- "logFC"
       
-      pdf(finalfile, width=width, height=height)
-    }
+      		## ylimUp
+      		y.limup <- ceiling(max(sub$logFC + sub$ciw))
+      		if (is.numeric(ylimUp)) {
+      			y.limup <- ylimUp 
+      		}
+      
+      		## ylimDown
+      		y.limdown <- floor(min(sub$logFC - sub$ciw))
+      		if (is.numeric(ylimDown)) {
+      			y.limdown <- ylimDown 
+      		}
+      
+      		ptemp <- ggplot(aes_string(x='Label', y='logFC'), data=sub)+
+      			geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw), data=sub, width=0.1, colour="red")+
+      			geom_point(size=dot.size, colour="darkred")+
+      			scale_x_discrete('Comparison')+
+      			geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
+      			labs(title=levels(datatemp$Protein)[i])+
+      			theme(
+        			panel.background=element_rect(fill='white', colour="black"),
+        			panel.grid.major.y = element_line(colour="grey95"),
+        			panel.grid.minor.y = element_blank(),
+        			axis.text.x = element_text(size=x.axis.size, colour="black"),
+        			axis.text.y = element_text(size=y.axis.size, colour="black"),
+        			axis.ticks = element_line(colour="black"),
+        			axis.title.x = element_text(size=x.axis.size+5, vjust=-0.4),
+        			axis.title.y = element_text(size=y.axis.size+5, vjust=0.3),
+        			title = element_text(size=x.axis.size+8, vjust=1.5)
+        			)
+      
+      		if (colnames(data)[3] == "log2FC") {
+      			ptemp <- ptemp+scale_y_continuous("Log2-Fold Change", limit=c(y.limdown, y.limup))
+      		}
+     	 	if (colnames(data)[3] == "log10FC") {
+     	 		ptemp <- ptemp+scale_y_continuous("Log10-Fold Change", limit=c(y.limdown, y.limup))
+     	 	}
+      
+      		print(ptemp)
+		
+		} ## end-loop
     
-    for (i in 1:nlevels(datatemp$Protein)) {
-      
-      sub <- datatemp[datatemp$Protein==levels(datatemp$Protein)[i],] 		
-      #sub$ciw <- qt(1-sig/2,sub$DF)*sub$SE
-      ## adjust for multiple comparison within protein
-      sub$ciw <- qt(1-sig/(2*nrow(sub)),sub$DF)*sub$SE
-      
-      sub <- as.data.frame(sub)
-      
-      ## ylimUp
-      y.limup <- ceiling(max(sub$logFC+sub$ciw))
-      if (is.numeric(ylimUp)) y.limup <- ylimUp 
-      
-      ## ylimDown
-      y.limdown <- floor(min(sub$logFC-sub$ciw))
-      if (is.numeric(ylimDown)) y.limdown <- ylimDown 
-      
-      ptemp <- ggplot(aes_string(x='Label', y='logFC'), data=sub)+geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw),data=sub, width=0.1,colour="red")+geom_point(size=dot.size,colour="darkred")+scale_x_discrete('Comparison')+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+labs(title=levels(datatemp$Protein)[i])+theme(
-        panel.background=element_rect(fill='white', colour="black"),
-        panel.grid.major.y = element_line(colour="grey95"),
-        panel.grid.minor.y = element_blank(),
-        axis.text.x=element_text(size=x.axis.size,colour="black"),
-        axis.text.y=element_text(size=y.axis.size,colour="black"),
-        axis.ticks=element_line(colour="black"),
-        axis.title.x=element_text(size=x.axis.size+5,vjust=-0.4),
-        axis.title.y=element_text(size=y.axis.size+5,vjust=0.3),
-        title=element_text(size=x.axis.size+8,vjust=1.5))
-      
-      if (colnames(data)[3]=="log2FC") ptemp <- ptemp+scale_y_continuous("Log2-Fold Change",limit=c(y.limdown, y.limup))
-      if (colnames(data)[3]=="log10FC") ptemp <- ptemp+scale_y_continuous("Log10-Fold Change",limit=c(y.limdown, y.limup))
-      
-      print(ptemp)
-    } ## end-loop
-    
-    if (address!=FALSE) dev.off()
-  } ## end Comparison plot
-  
+   	 	if (address!=FALSE) {
+    		dev.off()
+    	}
+  	} ## end Comparison plot
 }
 
 
@@ -5539,366 +5572,162 @@ groupComparisonPlots <- function(data=data,type=type,sig=0.05,FCcutoff=FALSE,log
 #############################################
 
 
-designSampleSize <- function(data=data,desiredFC=desiredFC,FDR=0.05,numSample=TRUE,power=0.9) {
+designSampleSize <- function(data=data,
+						desiredFC=desiredFC,
+						FDR=0.05,
+						numSample=TRUE,
+						power=0.9) {
   
-  # numPep=numPep,numTran=numTran
- 
-  labeled=FALSE
-  scopeOfBioReplication="expanded"
-  interference=TRUE
-  equalFeatureVar=TRUE
+  	labeled <- FALSE
+  	scopeOfBioReplication <- "expanded"
+  	interference <- TRUE
+  	equalFeatureVar <- TRUE
   
-  #nrepeats=3
+  	## save process output in each step
+  	allfiles <- list.files()
+  	filenaming <- "msstats"
   
-  ## save process output in each step
-  allfiles <- list.files()
-  filenaming <- "msstats"
-  
-  
-  if (length(grep(filenaming,allfiles))==0) {
+  	if (length(grep(filenaming, allfiles)) == 0) {
     
-    finalfile <- "msstats.log"
-    processout <- NULL
+    	finalfile <- "msstats.log"
+    	processout <- NULL
     
-  }else{
+  	} else {
     
-    num <- 0
-    finalfile <- "msstats.log"
+    	num <- 0
+    	finalfile <- "msstats.log"
     
-    while(is.element(finalfile,allfiles)) {
-      num <- num+1
-      lastfilename <- finalfile ## in order to rea
-      finalfile <- paste(paste(filenaming,num,sep="-"),".log",sep="")
-    }
+    	while(is.element(finalfile, allfiles)) {
+      		num <- num + 1
+      		lastfilename <- finalfile ## in order to rea
+      		finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
+    	}
     
-    finalfile <- lastfilename
-    processout <- as.matrix(read.table(finalfile,header=T, sep="\t"))
-  }
+    	finalfile <- lastfilename
+    	processout <- as.matrix(read.table(finalfile, header=T, sep="\t"))
+  	}
   
-  processout <- rbind(processout,as.matrix(c(" "," ","MSstats - designSampleSize function"," "),ncol=1))
+  	processout <- rbind(processout, as.matrix(c(" ", " ", "MSstats - designSampleSize function", " "), ncol=1))
   
+  	processout <- rbind(processout, c(paste("Desired fold change = ", paste(desiredFC, collapse=" - "), sep="")))
+  	processout <- rbind(processout, c(paste("FDR = ", FDR, sep="")))
+  	processout <- rbind(processout, c(paste("Power = ", power, sep="")))
   
+  	write.table(processout, file=finalfile, row.names=FALSE)
   
-  
-  ## check one TRUE or not
-  #if ( sum(isTRUE(numSample),isTRUE(numPep),isTRUE(numTran),isTRUE(power))!=1 ) {
-#    processout <- rbind(processout,c(paste("The required input - number of sample or features : Only one value should be TRUE. - stop")))
-#    write.table(processout, file=finalfile, row.names=FALSE)
+  	## for label-free experiment
+  	#if (!labeled) {
     
-#    stop("One of (numSample, numPep, numTran, power) needs to be TRUE")
-#  }
-  
-  ## labeled value
-#  if (!(labeled==TRUE | labeled==FALSE) | !is.logical(labeled)) {
-#    processout <- rbind(processout,c(paste("The required input - labeled : 'labeled' value is wrong. - stop")))
-#    write.table(processout, file=finalfile, row.names=FALSE)
+    	sigma.error <- NULL	
+    	VarComponent <- data.frame(Protein=seq(1, length(data)), Error=NA, Subject=NA, GroupBySubject=NA)
     
-#    stop("'labeled' must be one of TRUE or FALSE as a logical value.")
-#  }\
-  
-  
-  ## all input
-#  processout <- rbind(processout,c(paste("number of sample = ",numSample,sep="")))
-#  processout <- rbind(processout,c(paste("number of peptide per protein = ",numPep,sep="")))
-#  processout <- rbind(processout,c(paste("number of transition per peptide = ", numTran,sep="")))
-  processout <- rbind(processout,c(paste("Desired fold change = ",paste(desiredFC,collapse=" - "),sep="")))
-  processout <- rbind(processout,c(paste("FDR = ",FDR,sep="")))
-  processout <- rbind(processout,c(paste("Power = ", power,sep="")))
-  
-  write.table(processout, file=finalfile, row.names=FALSE)
-  
-  ## for label-free experiment
-  if (!labeled) {
-    
-    sigma.error <- NULL	
-    VarComponent <- data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
-    
-    for (i in 1:length(data)) {
+    	for (i in 1:length(data)) {
       
-      # note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
+      		# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
       
-      fit.full <- data[[i]]
+      		fit.full <- data[[i]]
       
-      ## if fit.full==NA (class(fit.full)=="try-error)
-      if (is.null(fit.full)) {
-        ## !!!!! but if we have NULL for last protein?
-        next
+      		## if fit.full==NA (class(fit.full)=="try-error)
+      		if (is.null(fit.full)) {
+        		## !!!!! but if we have NULL for last protein?
+        		next
         
-      }else{
+      		} else {
         
-        ## get variance component
+        		## get variance component
         
-        if (class(fit.full)!="mer") {
-          VarComponent[i,"Error"] <- summary(fit.full)$sigma^2
-        }else{
-          stddev  <-  c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
-          VarComponent[i,"Error"] <- stddev[names(stddev)==""]^2
-          if (sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0) {
-            VarComponent[i,"Subject"] <- stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2
-          }
-          if (sum(names(stddev)%in%"SUBJECT.(Intercept)")>0) {
-            VarComponent[i,"Subject"] <- stddev[names(stddev)=="SUBJECT.(Intercept)"]^2
-          }
-          if (sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0) {
-            VarComponent[i,"GroupBySubject"] <- stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2
-          }
-        }
-      }
+        		if (class(fit.full) != "mer") {
+          			VarComponent[i, "Error"] <- summary(fit.full)$sigma^2
+        		} else {
+          			stddev  <-  c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
+         	 		VarComponent[i, "Error"] <- stddev[names(stddev) == ""]^2
+         	 	
+          			if (sum(names(stddev) %in% "SUBJECT_NESTED.(Intercept)") > 0) {
+            			VarComponent[i, "Subject"] <- stddev[names(stddev) == "SUBJECT_NESTED.(Intercept)"]^2
+          			}
+          			if (sum(names(stddev) %in% "SUBJECT.(Intercept)") > 0) {
+            			VarComponent[i, "Subject"] <- stddev[names(stddev) == "SUBJECT.(Intercept)"]^2
+          			}
+          			if (sum(names(stddev) %in% "SUBJECT:GROUP.(Intercept)") > 0) {
+            			VarComponent[i, "GroupBySubject"] <- stddev[names(stddev) == "SUBJECT:GROUP.(Intercept)"]^2
+          			}
+        		}
+      		}  
+    	} ## end-loop
+    
+    	#		VarComponent[is.na(VarComponent)] <- 0	
+    	## for label-free DDA, there are lots of missingness and lots of zero SE. So, remove NA SE.
+    	median.sigma.error <- median(VarComponent[, "Error"], na.rm=TRUE)
+    
+   	 	if (sum(!is.na(VarComponent[, "GroupBySubject"])) > 0) {
+    	
+    		median.sigma.subject <- median(VarComponent[, "GroupBySubject"], na.rm=TRUE)
       
-    } ## end-loop
+    	} else {
+      		if (sum(!is.na(VarComponent[, "Subject"])) > 0) {
+        		median.sigma.subject <- median(VarComponent[, "Subject"], na.rm=TRUE)
+     		} else {
+        		median.sigma.subject <- 0
+      		}
+    	}
     
-    #		VarComponent[is.na(VarComponent)] <- 0	
-    ## for label-free DDA, there are lots of missingness and lots of zero SE. So, remove NA SE.
-    median.sigma.error <- median(VarComponent[,"Error"],na.rm=TRUE)
-    if (sum(!is.na(VarComponent[,"GroupBySubject"]))>0) {
-      median.sigma.subject <- median(VarComponent[,"GroupBySubject"],na.rm=TRUE)
-    }else{
-      if (sum(!is.na(VarComponent[,"Subject"]))>0) {
-        median.sigma.subject <- median(VarComponent[,"Subject"],na.rm=TRUE)
-      }else{
-        median.sigma.subject <- 0
-      }
-    }
-    
-    ###
-    processout <- rbind(processout,c("Calculated variance component. - okay"))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    
-    ### power calculation
-    if (isTRUE(power)) {
-      delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-      desiredFC <- 2^delta
-      m0_m1=99
-      t <- delta/sqrt(2*median.sigma.error/numSample+median.sigma.subject/numSample)
-      #t <- delta/sqrt(2*median.sigma.error/numPep/numTran/numSample+median.sigma.subject/numSample)
-      powerTemp <- seq(0,1,0.01)
+    	##
+    	processout <- rbind(processout, c("Calculated variance component. - okay"))
+    	write.table(processout, file=finalfile, row.names=FALSE)
+        
+    	## power calculation
+    	if (isTRUE(power)) {
+      		delta <- log2(seq(desiredFC[1], desiredFC[2], 0.025))
+      		desiredFC <- 2^delta
+      		m0_m1=99
+     		t <- delta/sqrt(2*median.sigma.error/numSample+median.sigma.subject/numSample)
+      		#t <- delta/sqrt(2*median.sigma.error/numPep/numTran/numSample+median.sigma.subject/numSample)
+     		powerTemp <- seq(0, 1, 0.01)
       
-      power <- NULL
-      for(i in 1:length(t)) {
-        diff <- qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]
-        min(abs(diff),na.rm=TRUE)
-        power[i] <- powerTemp[order(abs(diff))][1]
-      }
+      		power <- NULL
+      		for(i in 1:length(t)) {
+       	 		diff <- qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]
+        		min(abs(diff), na.rm=TRUE)
+        		power[i] <- powerTemp[order(abs(diff))][1]
+      		}
       
-      CV <- round((2*median.sigma.error/(numSample)+median.sigma.subject/numSample)/desiredFC,3)
+      		CV <- round((2*median.sigma.error/(numSample)+median.sigma.subject/numSample)/desiredFC, 3)
+     
+      		###
+     		processout <- rbind(processout, c("Power is calculated. - okay"))
+      		write.table(processout, file=finalfile, row.names=FALSE)
+      
+      		out <- data.frame(desiredFC, numSample, FDR, power=power, CV)
 
-      #CV <- round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
+      		return(out)
+    	}	
+    
+		if (is.numeric(power)) {
       
-      ###
-      processout <- rbind(processout,c("Power is calculated. - okay"))
-      write.table(processout, file=finalfile, row.names=FALSE)
+      		## Large portion of proteins are not changing
+      		m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99
+      		alpha <- power*FDR/(1+(1-FDR)*m0_m1)
       
-      out <- data.frame(desiredFC,numSample,FDR,power=power,CV)
-      #out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)
+      		## Num Sample calculation
+      		if (isTRUE(numSample)) {
+        		delta <- log2(seq(desiredFC[1], desiredFC[2], 0.025))
+        		desiredFC <- 2^delta
+        		z_alpha <- qnorm(1-alpha/2)
+        		z_beta <- qnorm(power)
+        		aa <- (delta/(z_alpha+z_beta))^2
+        		numSample <- round((2*median.sigma.error+median.sigma.subject)/aa,0)
+        		CV <- round((2*median.sigma.error/(numSample)+median.sigma.subject/numSample)/desiredFC,3)
 
-      return(out)
-      
-    }
-    
-    if (is.numeric(power)) {
-      
-      # Large portion of proteins are not changing
-      m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99
-      alpha <- power*FDR/(1+(1-FDR)*m0_m1)
-      
-      ### Num Sample calculation
-      if (isTRUE(numSample)) {
-        delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-        desiredFC <- 2^delta
-        z_alpha <- qnorm(1-alpha/2)
-        z_beta <- qnorm(power)
-        aa <- (delta/(z_alpha+z_beta))^2
-        numSample <- round((2*median.sigma.error+median.sigma.subject)/aa,0)
-        CV <- round((2*median.sigma.error/(numSample)+median.sigma.subject/numSample)/desiredFC,3)
- #       numSample <- round((2*median.sigma.error/numPep/numTran+median.sigma.subject)/aa,0)
- #       CV <- round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
+	  			##
+        		processout <- rbind(processout, c("The number of sample is calculated. - okay"))
+        		write.table(processout, file=finalfile, row.names=FALSE)
         
-        ###
-        processout <- rbind(processout,c("The number of sample is calculated. - okay"))
-        write.table(processout, file=finalfile, row.names=FALSE)
-        
-        out <- data.frame(desiredFC,numSample,FDR,power,CV)
-        #out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
-        return(out)
-      }
+        		out <- data.frame(desiredFC,numSample,FDR,power,CV)
+       	 		return(out)
+      		}
       
-      ### Num Peptide calculation
-#      if (isTRUE(numPep)) {
-#        delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-#        desiredFC <- 2^delta
-#        z_alpha <- qnorm(1-alpha/2)
- #       z_beta <- qnorm(power)
-#        aa <- (delta/(z_alpha+z_beta))^2
-#        numPep <- round((2*median.sigma.error/numSample/numTran+median.sigma.subject/numSample)/aa,0)
-#        CV <- round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
-        
-        ###
-#        processout <- rbind(processout,c("The number of peptide per protein is calculated. - okay"))
-#        write.table(processout, file=finalfile, row.names=FALSE)
-        
-#        out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
-#        return(out)
-#      }
-      
-      ### Num Transition calculation
-#      if (isTRUE(numTran)) {
-#        delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-#        desiredFC <- 2^delta
-#        z_alpha <- qnorm(1-alpha/2)
-#        z_beta <- qnorm(power)
- #       aa <- (delta/(z_alpha+z_beta))^2
- #       numTran <- round((2*median.sigma.error/numSample/numPep+median.sigma.subject/numSample)/aa,0)
- #       CV <- round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
-        
-        ###
-#        processout <- rbind(processout,c("The number of transition per peptide is calculated. - okay"))
-#        write.table(processout, file=finalfile, row.names=FALSE)
-        
-#        out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
-#        return(out)
-#      }
-     } # when power is numeric
-  } ## label-free
-  
-  
-  ## isotope labeled experiment
-  if (labeled) {
-    
-    sigma.error <- NULL	
-    VarComponent <- data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
-    
-    for (i in 1:length(data)) {
-      
-      # note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
-      
-      fit.full <- data[[i]]
-      
-      ## if fit.full==NA (class(fit.full)=="try-error)
-      if (is.null(fit.full)) {
-        next
-        
-      }else{
-        
-        if (class(fit.full)!="mer") {
-          VarComponent[i,"Error"] <- summary(fit.full)$sigma^2
-        }else{
-          stddev  <-  c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
-          VarComponent[i,"Error"] <- stddev[names(stddev)==""]^2
-          if (sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0) {
-            VarComponent[i,"Subject"] <- stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2
-          }
-          if (sum(names(stddev)%in%"SUBJECT.(Intercept)")>0) {
-            VarComponent[i,"Subject"] <- stddev[names(stddev)=="SUBJECT.(Intercept)"]^2
-          }
-          if (sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0) {
-            VarComponent[i,"GroupBySubject"] <- stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2
-          }
-        }
-      }
-    } ## end-loop
-    
-    ## label-based case, few of NA SE.
-    VarComponent[is.na(VarComponent)] <- 0	
-    median.sigma.error <- median(VarComponent[,"Error"],na.rm=TRUE)
-    if (sum(VarComponent[,"GroupBySubject"])>0) {
-      median.sigma.subject <- median(VarComponent[,"GroupBySubject"],na.rm=TRUE)
-    }else{
-      median.sigma.subject <- median(VarComponent[,"Subject"],na.rm=TRUE)
-    }
-    
-    ###
-    processout <- rbind(processout,c("Calculated variance component. - okay"))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    
-    
-    ### power calculation
-    if (isTRUE(power)) {
-      delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-      desiredFC <- 2^delta
-      m0_m1=99
-      t <- delta/sqrt((4*median.sigma.error/numPep/numTran/numSample)+(2*median.sigma.subject/numSample))
-      
-      powerTemp <- seq(0,1,0.01)
-      power <- NULL
-      
-      for(i in 1:length(t)) {
-        diff <- qnorm(powerTemp)+qnorm(1-powerTemp*FDR/(1+(1-FDR)*m0_m1)/2)-t[i]
-        min(abs(diff),na.rm=TRUE)
-        power[i] <- powerTemp[order(abs(diff))][1]
-      }
-      
-      CV <- round((2*median.sigma.error/(numSample*numPep*numTran)+median.sigma.subject/numSample)/desiredFC,3)
-      
-      ###
-      processout <- rbind(processout,c("Power is calculated. - okay"))
-      write.table(processout, file=finalfile, row.names=FALSE)
-      
-      out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power=power,CV)
-      return(out)
-    }
-    
-    if (is.numeric(power)) {
-      
-      # Large portion of proteins are not changing
-      m0_m1=99 ## it means m0/m1=99, m0/(m0+m1)=0.99
-      alpha <- power*FDR/(1+(1-FDR)*m0_m1)
-      
-      ### Num Sample calculation
-      if (isTRUE(numSample)) {
-        delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-        desiredFC <- 2^delta
-        z_alpha <- qnorm(1-alpha/2)
-        z_beta <- qnorm(power)
-        aa <- (delta/(z_alpha+z_beta))^2
-        numSample <- round(((4*median.sigma.error/numPep/numTran)+(2*median.sigma.subject))/aa,0)
-        CV <- round((4*median.sigma.error/(numSample*numPep*numTran)+(2*median.sigma.subject/numSample))/desiredFC,3)
-        
-        ###
-        processout <- rbind(processout,c("The number of sample is calculated. - okay"))
-        write.table(processout, file=finalfile, row.names=FALSE)
-        
-        out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
-        return(out)
-      }
-      
-      ### Num Peptide calculation
-      if (isTRUE(numPep)) {
-        delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-        desiredFC <- 2^delta
-        z_alpha <- qnorm(1-alpha/2)
-        z_beta <- qnorm(power)
-        aa <- (delta/(z_alpha+z_beta))^2
-        numPep <- round((4*median.sigma.error/numSample/numTran+2*median.sigma.subject/numSample)/aa,0)
-        CV <- round((4*median.sigma.error/(numSample*numPep*numTran)+2*median.sigma.subject/numSample)/desiredFC,3)
-        
-        ###
-        processout <- rbind(processout,c("The number of peptide per protein is calculated. - okay"))
-        write.table(processout, file=finalfile, row.names=FALSE)
-        
-        out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
-        return(out)
-      }
-      
-      ### Num Transition calculation
-      if (isTRUE(numTran)) {
-        delta <- log2(seq(desiredFC[1],desiredFC[2],0.025))
-        desiredFC <- 2^delta
-        z_alpha <- qnorm(1-alpha/2)
-        z_beta <- qnorm(power)
-        aa <- (delta/(z_alpha+z_beta))^2
-        numTran <- round((4*median.sigma.error/numSample/numPep+2*median.sigma.subject/numSample)/aa,0)
-        CV <- round((4*median.sigma.error/(numSample*numPep*numTran)+2*median.sigma.subject/numSample)/desiredFC,3)
-        
-        ###
-        processout <- rbind(processout,c("The number of transition per peptide is calculated. - okay"))
-        write.table(processout, file=finalfile, row.names=FALSE)
-        
-        out <- data.frame(desiredFC,numSample,numPep,numTran,FDR,power,CV)
-        return(out)
-      }
-    } # power is numeric
-  } ## label-based
+		} # when power is numeric
+  	#} ## label-free
 }
 
 
@@ -5910,64 +5739,36 @@ designSampleSize <- function(data=data,desiredFC=desiredFC,FDR=0.05,numSample=TR
 
 designSampleSizePlots <- function(data=data) {
   
-  if (length(unique(data$numSample))>1) index <- "numSample"
-#  if (length(unique(data$numPep))>1) index <- "numPep"
-#  if (length(unique(data$numTran))>1) index <- "numTran"
-  if (length(unique(data$power))>1) index <- "power"
+  	if (length(unique(data$numSample)) > 1) index <- "numSample"
+  	if (length(unique(data$power)) > 1) index <- "power"
   
-  if (length(unique(data$numSample))==1 & length(unique(data$power))==1) index <- "numSample"
+  	if (length(unique(data$numSample)) == 1 & length(unique(data$power)) == 1) index <- "numSample"
   
-  text.size <- 1.2	
-  axis.size <- 1.3	
-  lab.size <- 1.7
+  	text.size <- 1.2	
+  	axis.size <- 1.3	
+  	lab.size <- 1.7
   
-  if (index=="numSample") {
+  	if (index == "numSample") {
     
-    with(data, {
-      plot(desiredFC,numSample,lwd=2,xlab="",ylab="",cex.axis=axis.size,type="l",xaxt="n")})
-    axis(1,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=seq(min(data$desiredFC),max(data$desiredFC),0.05),cex.axis=axis.size)
-    axis(3,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=data$CV[which(data$desiredFC%in%seq(min(data$desiredFC),max(data$desiredFC),0.05))],cex.axis=axis.size)
-    mtext("Coefficient of variation, CV",3,line=2.5,cex=lab.size)
-    mtext("Desired fold change",1,line=3.5,cex=lab.size)
-    mtext("Minimal number of biological replicates",2,line=2.5,cex=lab.size)
-    legend("topright",c(paste("FDR is",unique(data$FDR),sep=" "),paste("Statistical power is",unique(data$power),sep=" ")),bty="n",cex=text.size)
-  }
+    	with(data, {
+      		plot(desiredFC, numSample, lwd=2, xlab="", ylab="", cex.axis=axis.size, type="l", xaxt="n")})
+    		axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05), cex.axis=axis.size)
+    		axis(3, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), labels=data$CV[which(data$desiredFC %in% seq(min(data$desiredFC), max(data$desiredFC), 0.05))], cex.axis=axis.size)
+    		mtext("Coefficient of variation, CV", 3, line=2.5, cex=lab.size)
+    		mtext("Desired fold change", 1, line=3.5, cex=lab.size)
+    		mtext("Minimal number of biological replicates", 2, line=2.5, cex=lab.size)
+    		legend("topright", c(paste("FDR is", unique(data$FDR), sep=" "), paste("Statistical power is", unique(data$power), sep=" ")), bty="n", cex=text.size)
+  	}
   
-  # if (index=="numPep") {
+   if (index == "power") {
     
-    # with(data, {
-      # plot(desiredFC,numPep,lwd=2,xlab="",ylab="",cex.axis=axis.size,type="l",xaxt="n")})
-    # axis(1,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=seq(min(data$desiredFC),max(data$desiredFC),0.05),cex.axis=axis.size)
-    # axis(3,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=data$CV[which(data$desiredFC%in%seq(min(data$desiredFC),max(data$desiredFC),0.05))],cex.axis=axis.size)
-    # mtext("Coefficient of variation, CV",3,line=2.5,cex=lab.size)
-    # mtext("Desired fold change",1,line=3.5,cex=lab.size)
-    # mtext("Minimal number of peptides",2,line=2.5,cex=lab.size)
-    # legend("topright",c(paste("Number of replicates is",unique(data$numSample),sep=" "),paste("Number of transitions is",unique(data$numTran),sep=" "),paste("FDR is",unique(data$FDR),sep=" "),paste("Statistical power is",unique(data$power),sep=" ")),bty="n",cex=text.size)
-  # }
-  
-  # if (index=="numTran") {
-    
-    # with(data, {
-      # plot(desiredFC,numTran,lwd=2,xlab="",ylab="",cex.axis=axis.size,type="l",xaxt="n")})
-    # axis(1,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=seq(min(data$desiredFC),max(data$desiredFC),0.05),cex.axis=axis.size)
-    # axis(3,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=data$CV[which(data$desiredFC%in%seq(min(data$desiredFC),max(data$desiredFC),0.05))],cex.axis=axis.size)
-    # mtext("Coefficient of variation, CV",3,line=2.5,cex=lab.size)
-    # mtext("Desired fold change",1,line=3.5,cex=lab.size)
-    # mtext("Minimal number of transitions",2,line=2.5,cex=lab.size)
-    # legend("topright",c(paste("Number of replicates is",unique(data$numSample),sep=" "),paste("Number of peptides is",unique(data$numPep),sep=" "),paste("FDR is",unique(data$FDR),sep=" "),paste("Statistical power is",unique(data$power),sep=" ")),bty="n",cex=text.size)
-  # }
-  
-  if (index=="power") {
-    
-    with(data, {
-      plot(desiredFC,power,lwd=2,xlab="",ylab="",cex.axis=axis.size,type="l",xaxt="n")})
-    axis(1,at=seq(min(data$desiredFC),max(data$desiredFC),0.05),labels=seq(min(data$desiredFC),max(data$desiredFC),0.05),cex.axis=axis.size)
-    mtext("Desired fold change",1,line=3.5,cex=lab.size)
-    mtext("Power",2,line=2.5,cex=lab.size)
-    legend("bottomright",c(paste("Number of replicates is",unique(data$numSample),sep=" "),paste("FDR is",unique(data$FDR),sep=" ")),bty="n",cex=text.size)
-  }
-  
-  #	dev.off()
+    	with(data, {
+      		plot(desiredFC, power, lwd=2, xlab="", ylab="", cex.axis=axis.size, type="l", xaxt="n")})
+    		axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05), cex.axis=axis.size)
+    		mtext("Desired fold change", 1, line=3.5, cex=lab.size)
+    		mtext("Power", 2, line=2.5, cex=lab.size)
+    		legend("bottomright", c(paste("Number of replicates is", unique(data$numSample), sep=" "), paste("FDR is", unique(data$FDR), sep=" ")), bty="n", cex=text.size)
+  	}
 }
 
 
