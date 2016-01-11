@@ -371,7 +371,7 @@ dataProcess  <-  function(raw,
   
 	work$GROUP_ORIGINAL <- factor(work$GROUP_ORIGINAL)
 	work$SUBJECT_ORIGINAL <- factor(work$SUBJECT_ORIGINAL, levels=unique(work$SUBJECT_ORIGINAL))
-	work$LABEL <- unique(work$LABEL, levels=unique(work$LABEL))
+	work$LABEL <- factor(work$LABEL, levels=unique(work$LABEL))
   
 	work[work$LABEL=="L", "GROUP"] <- work[work$LABEL=="L", "GROUP_ORIGINAL"]
 	work[work$LABEL=="L", "SUBJECT"] <- work[work$LABEL=="L", "SUBJECT_ORIGINAL"]
@@ -476,10 +476,10 @@ dataProcess  <-  function(raw,
       
       		### if there is missing rows
       		if ( flagmissing ) {
-        		processout <- rbind(processout,c("CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with â€™NAâ€™. The incomplete rows are listed below."))
+        		processout <- rbind(processout,c("CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with a£á?NAa£á?. The incomplete rows are listed below."))
         		write.table(processout, file=finalfile,row.names=FALSE)
         
-        		message("CAUTION : the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with â€™NAâ€™. The incomplete rows are listed below.")
+        		message("CAUTION : the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with a£á?NAa£á?. The incomplete rows are listed below.")
         
         		## first, which run has missing	
         		runstructure <- apply ( structure, 2, function ( x ) sum ( is.na ( x ) ) ) > 0
@@ -701,10 +701,10 @@ dataProcess  <-  function(raw,
       
       		## if there is missing rows for endogenous
       		if ( flagmissing.l | flagmissing.h) {
-        		processout <- rbind(processout,c("CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with â€™NAâ€™. The incomplete rows are listed below."))
+        		processout <- rbind(processout,c("CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with a£á?NAa£á?. The incomplete rows are listed below."))
         		write.table(processout, file=finalfile, row.names=FALSE)
         
-       			message("CAUTION : the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with â€™NAâ€™. The incomplete rows are listed below.")
+       			message("CAUTION : the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with a£á?NAa£á?. The incomplete rows are listed below.")
         
         		## endogenous intensities
         		if (flagmissing.l) {
@@ -1096,10 +1096,10 @@ dataProcess  <-  function(raw,
             
             			## if there is missing rows for endogenous
             			if (flagmissing.l | flagmissing.h) {
-              				processout <- rbind(processout,c("CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with â€™NAâ€™. The incomplete rows are listed below."))
+              				processout <- rbind(processout,c("CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with a£á?NAa£á?. The incomplete rows are listed below."))
               				write.table(processout, file=finalfile, row.names=FALSE)
               
-              				message("CAUTION : the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with â€™NAâ€™. The incomplete rows are listed below.")
+              				message("CAUTION : the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with a£á?NAa£á?. The incomplete rows are listed below.")
               
              				## endogenous intensities
               				if (flagmissing.l) {
@@ -4157,7 +4157,7 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 			
 			if (nrow(sub)==0) {
 				
-				message(paste("* All replicates in ",levels(data$PROTEIN)[i], " have any missing values. Can't summarize by log2 (sum of intensities)."))
+				message(paste("* All replicates in ",levels(data$PROTEIN)[i], " have at least one missing value. Can't summarize by log2 (sum of intensities)."))
 				
 				next
 			}
@@ -4208,12 +4208,16 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 			if (!singlesubject) {
 				
 				## 4. average per subject
-				sublogsum <- aggregate(subsum$logsum,list(SUBJECT_ORIGINAL=subsum$SUBJECT_ORIGINAL),mean, na.rm=TRUE)
-				colnames(sublogsum)[2] <- "LogIntensities"
+                        ##MC: If there is one summary per subject, how could the group-by-subject be fitted in time-course study?
+                        ##MC: Also, in the end of dataProcess, the run quantification is ordered by 'Run'.
+                        ##MC: Shouldn't this be one summary per run so that this is comparable with TMP?
+		#		sublogsum <- aggregate(subsum$logsum,list(SUBJECT_ORIGINAL=subsum$SUBJECT_ORIGINAL),mean, na.rm=TRUE)
+	#			colnames(sublogsum)[2] <- "LogIntensities"
 		
 				## 5. make output
-				sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=sublogsum$LogIntensities, SUBJECT_ORIGINAL=sublogsum$SUBJECT_ORIGINAL)
-				
+		#		sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=sublogsum$LogIntensities, SUBJECT_ORIGINAL=sublogsum$SUBJECT_ORIGINAL)
+				sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=subsum$logsum, RUN=subsum$RUN)
+
 			}else{
 				
 				## make output per run

@@ -2,525 +2,15 @@
 ###########Function of FeatureSelection###########
 #Input is the data frame 'work' after conducting normalization
 #Output is the data frame 'work' after removing noisy features 
-#featureSubset is either 'highQuality_Significance' or 'highQuality_Reproducibility'
-#'highQuality_Significance' selects the features more likely to enhance the true positive rate
-#'highQuality_Reproducibility' selects features with reproducible quantification. The with peptide like PTM which has different pattern but reproducible will likely be kept in this options. 
+#This process removes the irreproducible features across the MS runs
 
 
+.feature_selection <- function(work, LeaveOneOut=FALSE){
 
-.feature_selection <- function(work, featureSubset='highQuality_Significance'){
-
-	if(toupper(featureSubset)=='HIGHQUALITY_SIGNIFICANCE'){ #1.1
-
-  		#Label-free experiments (SWATH)
-		if(nlevels(work$LABEL)==1 & length(unique(work$TRANSITION))>1){ #1.2
-
-			N.Prot <- nlevels(work$PROTEIN)
-
-                  #Need to check if it is a time-course or case control
-                  Time.Course <- .checkRepeated(work)
-
-                  #Check if the experiment is of the case of single subject
-                  Single.Subj <- .checkSingleSubject(work) 
-
-                  #Check whether there are technical replicates or not
-                  Tech.Rep <- .checkTechReplicate(work)
-
-			#Create the data frame storing the selected features of each Protein
-			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector())
-			Index.FS <- 0
-  
-			#Conduct the feature selection for each protein
-			for(i in 1:N.Prot){ #1.3
-
-				tem <- subset(work, PROTEIN==unique(PROTEIN)[i])
-				N.Pep <- length(unique(tem$PEPTIDE)) 
-				
-				## show progress
-				message(paste("Selection features or peptides for protein ", unique(tem$PROTEIN), "(", i, " of ", N.Prot, ")"))
-				
-				#Create a data frame storing the assessment of the noise for each peptide
-				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep))
-
-				#Also, create the data frames storing the retained features in each peptide
-				Retained.Feature <- data.frame(Peptide=vector(), Feature=vector()); Index.f <- 0
-
-        		#In each peptide, select the max(Top 2, Top 40%) of the features based on the noise
-        		#Then within-group variation is calculated, after blocking the features, for each peptide
-        		for(j in 1:N.Pep){ #1.4
-           
-           			tem2 <- subset(tem, PEPTIDE==unique(PEPTIDE)[j])
-           			tem2$FEATURE <- factor(tem2$FEATURE, levels=unique(tem2$FEATURE))
-
-				#Determine how many features to pick in this peptide
-           			N.Feature <- length(unique(tem2$FEATURE)); Top40 <- round(N.Feature*0.4)         
-          			N.Select <- max(2, Top40)
-          			
-           			#Create a data frame storing the variance(error) for each feature 
-           			F.Out <- data.frame(Feature=rep(NA, N.Feature), Error=rep(NA, N.Feature))
-
-         			#The peptide with less than 2 fragments will unlikely be kept.
-         			if(N.Feature>=N.Select){ #1.4.1
-         				
-            			#The features are ranked by the error variation        
-            			for(k in 1:N.Feature){ #1.5
-                                 
-                                 if(Time.Course & !Single.Subj){ #1.5.2
-                                 #Time-course study (with more than one bio-replicates): Subject and Group are scrossed 
-             		         tem.tc <- subset(tem2, FEATURE==unique(FEATURE)[k])
-
-                                    if(Tech.Rep){ #1.5.3 
-                                    #With technical replicates, assess the within-subject variation
-                         			LM.tc <- lm(ABUNDANCE ~ GROUP * SUBJECT, data=tem.tc)
-
-                                 } else {
-                                    #Without technical replicates
-                                     	#Having subject either random or fixed yield the same mean squred of error, if there is no technical replicates 
-                         		 	LM.tc <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem.tc)
-                                 } #1.5.3
-
-
-            				 F.Out[k, 'Feature'] <- as.character(unique(tem.tc$FEATURE))
-            				 F.Out[k, 'Error'] <- summary(LM.tc)$sigma
-            
-                              } else {
-                                 #Case-Control: Subject is nested under each level of the Group 
-            				 tem.f <- subset(tem2, FEATURE==unique(FEATURE)[k])
-
-                                     if(Tech.Rep & !Single.Subj){ #1.5.4
-                                          #With technical replicates, noise is defined as the within-subject variation
-                                     	LM.f <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem.f)
-
-                                     } else {
-            				      #Without technical replicates
-                                     	LM.f <- lm(ABUNDANCE ~ GROUP, data=tem.f)
-
-                                     } #1.5.4  
-                                   
-            				 F.Out[k, 'Feature'] <- as.character(unique(tem.f$FEATURE))
-            				 F.Out[k, 'Error'] <- summary(LM.f)$sigma
-            
-                                      } #1.5.2
-                        } #1.5 
-            
-           				F.Out$Rank <- rank(F.Out$Error)
-
-            			#We work on the max(Top2, Top40) features of this peptide
-           				Keep.Feature <- F.Out[F.Out$Rank <= N.Select,'Feature']
-            			tem2.2 <- subset(tem2, FEATURE %in% Keep.Feature)
-
-            			#Compute the noise defined by the model, after blocking for features, of this peptide
-            			tem2.2$FEATURE <- factor(tem2.2$FEATURE, levels=unique(tem2.2$FEATURE))
-
-                                 if(Time.Course & !Single.Subj){ #1.4.3
-               			   #Time-Course Study with more than one bio-replicates
-
-                                 	if(Tech.Rep){ #1.4.3.1
-                                    #With technical replicates 
-                                    LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT + GROUP:SUBJECT, data=tem2.2)
-
-                              	} else {
-                                    #Without technical replicates
-                                 	LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT, data=tem2.2)
-
-                              	} #1.4.3.1
-
-                              } else {
-                                 #Case-Control
-
-                              	if(Tech.Rep & !Single.Subj){ #1.4.3.2
-                                    #With technical replicates
-                                    LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP + SUBJECT, data=tem2.2)
-
-                              	} else {
-            			      #Without technical replicates
-                                    LM.Pep <- lm(ABUNDANCE ~ FEATURE + GROUP, data=tem2.2)
-            
-                              	} #1.4.3.2
-                              } #1.4.3
-
-            			Pep.Out[j, 'Peptide'] <- as.character(unique(tem2.2$PEPTIDE))
-            			Pep.Out[j, 'Model.Based.Error'] <- summary(LM.Pep)$sigma
-
-            			#Store which fragments were retained in this peptide
-            			Retained.Feature[(Index.f+1):(Index.f+N.Select), 'Peptide'] <- as.character(unique(tem2$PEPTIDE))
-            			Retained.Feature[(Index.f+1):(Index.f+N.Select), 'Feature'] <- Keep.Feature
-
-            			#Update the current index at 'Retained.Feature'
-            			Index.f <- Index.f+N.Select
- 
-         			} else {
-         				#The case of peptides with less than 2 features
-
-                              if(Time.Course & !Single.Subj){ #1.4.4
-                              #Time-Course study 
-                                    if(Tech.Rep){ #1.4.4.1
-                                    #With technical replicates    
-                                       
-                                          LM.Pep2 <- lm(ABUNDANCE ~ GROUP * SUBJECT, data=tem2)
- 
-                                     } else {
-                                     #Without technical replicates
-
-                                          LM.Pep2 <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem2)
-
-                                     } #1.4.4.1
-
-                              } else {
-                              #Case-Control
-                              	if(Tech.Rep & !Single.Subj){ #1.4.4.2
-                                    #With technical replicates
-            			      LM.Pep2 <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=tem2)
-
-                                    } else {   
-                                    #Without technical replicates   
-            			      LM.Pep2 <- lm(ABUNDANCE ~ GROUP, data=tem2)
-
-                                    } #1.4.4.2
-
-                              } #1.4.4
-
-            			Pep.Out[j, 'Peptide'] <- as.character(unique(tem2$PEPTIDE))
-            			Pep.Out[j, 'Model.Based.Error'] <- 3*summary(LM.Pep2)$sigma
-
-            			#Store which fragments were retained in this peptide
-            			Retained.Feature[(Index.f+1), 'Peptide'] <- as.character(unique(tem2$PEPTIDE))
-            			Retained.Feature[(Index.f+1), 'Feature'] <- as.character(unique(tem2$FEATURE))
-
-            			#Update the current index at 'Retained.Feature'
-            			Index.f <- Index.f+1
-            				
-            			
-
-        				warning(paste('The Peptide', unique(tem2$PEPTIDE), 'is likely to be removed since it has less than 2 fragments. This is our rule imposed in the SWATH experiment.', sep=' '))
-
-					} #1.4.1
-
-				} #1.4
-                  #End of loop for peptides
-
-
-          		## Select the best one-fourth of the peptide now. (Deciding the optimal number of the peptides chosen takes too much time, but we are working on reducing its computation time.)
-                  ##We prefer taking the best 40 percent if there are less than 7 peptides    
-      		N40 <- ifelse(dim(Pep.Out)[1]<=6, round(dim(Pep.Out)[1]*0.4+0.01), round(dim(Pep.Out)[1]/4+0.1))
-                  N.Select.Pep <- max(N40, 1)
-          		Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)   
-          		Selected.Pep <- Pep.Out[Pep.Out$Rank <= N.Select.Pep, 'Peptide']
-          		
-          		## Pull out the selected features in this peptide        
-          		Selected.Feature <- subset(Retained.Feature, Peptide %in% Selected.Pep)     
-          
-          		## Put the selected features (peptides) of this proteins into the desinated data frame
-          		N.F <- dim(Selected.Feature)[1]
-          		FeatureSelection.Out[(Index.FS+1):(Index.FS+N.F), 'Protein'] <- as.character(unique(tem$PROTEIN))
-          		FeatureSelection.Out[(Index.FS+1):(Index.FS+N.F), 'Peptide'] <- Selected.Feature$Peptide
-          		FeatureSelection.Out[(Index.FS+1):(Index.FS+N.F), 'Feature'] <- Selected.Feature$Feature
-
-          		Index.FS <- Index.FS+N.F 
-			} #1.3 (end of loop for proteins)
-
-			## If not all of the peptides are proteotypic, some proteins may have the same peptides
-			work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')            
-			FeatureSelection.Out$Protein_Feature <- paste(FeatureSelection.Out$Protein, FeatureSelection.Out$Feature, sep='_')
-          
-			## Create the label for selected, or removed, features
-			work$Filter <- NA; 
-			work[work$Protein_Feature %in% unique(FeatureSelection.Out$Protein_Feature), 'Filter'] <- 'Selected'
-			work[!(work$Protein_Feature %in% unique(FeatureSelection.Out$Protein_Feature)), 'Filter'] <- 'Flagged'
-			work$Protein_Feature <- NULL
-		  
-			###If we want to remove the bad features directly
-			work <- subset(work, Filter=='Selected')
-           
-		} # 1.2 : End of label-free SWATH experiment
-
-		#Label-free experiments (Shotun; DDA)
-		if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)==1){ #1.2.2
-
-			# In DDA (shotgun) experiment, there is no need to filter out bad fragments in each peptide
-			N.Prot <- length(unique(work$PROTEIN))
-
-			# Create the data frame storing the selected features of each Protein
-			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector(), Rank=vector(), Filter=vector())
-			Index.FS <- 0
-
-                  #Decide whether the experiment is time-course or case control
-                  TC <- .checkRepeated(work)
-
-			#Determine if there is only one subject and if there is any technical replicates
-                  Single.Subject <- .checkSingleSubject(work)
-			Technical.Rep <- .checkTechReplicate(work)
-
-			###Rank the peptides for each protein
-			for(i in 1:N.Prot){ #DDA_1.3
-
-				DDA.1 <- subset(work, PROTEIN == unique(PROTEIN)[i])
-				N.Pep <- length(unique(DDA.1$PEPTIDE))
-
-				## show progress
-				message(paste("Selection features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
-				
-				## Create a data frame storing the assessment of the noise for each peptide
-				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
-
-				## Assess the noise based on model for each peptide##
-
-				for(j in 1:N.Pep){ # DDA_1.4
-
-					DDA.Pep <- subset(DDA.1, PEPTIDE==unique(PEPTIDE)[j])
-
-                              if(TC & !Single.Subject){ #DDA_1.4.1
-                              #Time-course experiment with more than one bio-replicates
-
-                              	if(Technical.Rep){ #DDA_1.4.1.1
-                                    #With technical replicates                              	
-                                    LM.DDA <- try(lm(ABUNDANCE ~ GROUP * SUBJECT, data=DDA.Pep), silent=TRUE)
-
-                                    } else {
-                                    #Without technical replicates
-                              	LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
-
-                                    } #DDA_1.4.1.1
-                              } else {
-                              #Case-Control
-
-                                    if(Technical.Rep & !Single.Subject){ #DDA_1.4.1.2
-                                    #With technical replicates
-                                    LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
-
-                                    } else {
-                        		#Without technical replicates or with only one bio-replicates
-   						LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
-
-                                    } #DDA_1.4.1.2
-                              } #DDA_1.4.1
-
-					Pep.Out[j, 'Peptide'] <- as.character(unique(DDA.Pep$PEPTIDE))
-					
-					## If there are missing values such that only one condition is left, the model based error score is not calculable
-					if(class(LM.DDA)=='try-error'){ #DDA_1.5
-						Pep.Out[j, 'Model.Based.Error'] <- NA
-					} else {
-						Pep.Out[j, 'Model.Based.Error'] <- summary(LM.DDA)$sigma
-                	} #DDA_1.5
-                	
-				} # DDA_1.4 (End of loop for each peptide)
-
-				## We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
-				## We automatically excluded the precursors whose model-based error is not able to be quantified. This would be due to too many missing values such that only one condition has the peaks
-				N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3+0.01), 1)
-				Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
-				Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
-				Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
-				Pep.Out[is.na(Pep.Out$Model.Based.Error), 'Flag'] <- 'Noisy'
-
-
-				## Pull out the results to the designated data frame, and flag the noisy peptide
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Peptide'] <- Pep.Out$Peptide
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Model.Based.Error'] <- Pep.Out$Model.Based.Error
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Rank'] <- Pep.Out$Rank
-				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Filter'] <- Pep.Out$Flag
-				Index.FS <- Index.FS+N.Pep   
-				                                              
-			} # DDA_1.3 (End of loop for proteins)
-
-			## If not all of the peptides are proteotypic, some proteins may have the same peptides
-			work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='_')            
-			FeatureSelection.Out$Protein_Peptide <- paste(FeatureSelection.Out$Protein, FeatureSelection.Out$Peptide, sep='_')
-          
-			## Create the label for selected, or removed, peptides
-			work$Filter <- NA; 
-			Selection <- unique(FeatureSelection.Out[FeatureSelection.Out$Filter=='Selected','Protein_Peptide'])
-			work[work$Protein_Peptide %in% Selection, 'Filter'] <- 'Selected'
-			work[!(work$Protein_Peptide %in% Selection), 'Filter'] <- 'Flagged'
-			work$Protein_Peptide <- NULL
-			work <- subset(work, Filter=='Selected')
-		
-		} #1.2.2  : End of the DDA experiment (Significance)
-
-
-		## Label-based experiments (Significance)
-		if(nlevels(work$LABEL)==2){#L.1
-
-			N.Prot <- nlevels(work$PROTEIN)
-
-                  #Determine whether the experiment is time-course or case control
-                  TC.SRM <- .checkRepeated(work)
-
-			#Determine if there is only one subject and if there is any technical replicates
-                  SS.SRM <- .checkSingleSubject(work)
-			TR.SRM <- .checkTechReplicate(work)
-
-			#Create a data frame to store the error score of each protein and feature
-			Out.L <- data.frame(Protein=vector(), Feature=vector(), Error.score=vector(), Label=vector(), Rank=vector(), Flag=vector())  
-			Out.H <- data.frame(Protein=vector(), Feature=vector(), Error.score=vector(), Label=vector(), Rank=vector(), Flag=vector())  
-			Index <- 0
-
-			#Loop over the proteins
-			for(i in 1:N.Prot){ #L.2
-
-				sub <- subset(work, PROTEIN==unique(PROTEIN)[i])
-				N.Pep <- length(unique(sub$PEPTIDE)) 
-				sub$ABUNDANCE.N <- NA     
-				
-				## show progress
-				message(paste("Selection features or peptides for protein ", unique(sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
-				
-				#Normalize the heavy label for each peptide as peptide-by-run interaction is commonly seen
-				for(j in 1:N.Pep){ #L.3
-
-					temp <- subset(sub, PEPTIDE==unique(PEPTIDE)[j])
-					N.Run <- length(unique(temp$RUN))
-
-					#Compute the overall median on heavy
-					Median <- median(temp[temp$LABEL=='H', 'ABUNDANCE'], na.rm=TRUE)
-         
-             
-					#Normalize the heavy and apply the same shifts on the light counterpart, on each run 
-					for(k in 1:N.Run){ #L.4
-
-						temp[temp$LABEL=='L' & temp$RUN==k, 'ABUNDANCE'] <- temp[temp$LABEL=='L' & temp$RUN==k, 'ABUNDANCE']- median(temp[temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'], na.rm=TRUE) + Median
-						temp[temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'] <- temp[temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE']- median(temp[temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'], na.rm=TRUE) + Median
-
-					} #L.4
-
-					sub[sub$PEPTIDE==unique(sub$PEPTIDE)[j], 'ABUNDANCE.N'] <- temp$ABUNDANCE
-
-				} #L.3 : Finish the loop over the peptides on the adjustment (normalization)
-
-            	## After normalizing the heavy, the batch effect should have been corrected, if there were any.
-             	## Assess the model-based noise for each feature
-            
-                N.Feature <- length(unique(sub$FEATURE))
-                sub$FEATURE <- factor(sub$FEATURE, levels=unique(sub$FEATURE))
-
-                ## Create a data frame to store the error score of each feature
-                F.Out.L <- data.frame(Feature=vector(), Error.score=vector(), Label=vector())  
-                F.Out.H <- data.frame(Feature=vector(), Error.score=vector(), Label=vector())  
-
-                for(m in 1:N.Feature){  #L.5
-
-                	Feature <- subset(sub, FEATURE==unique(FEATURE)[m])
-
-                	## Work on heavy and light separately as the model is different
-                	Feature.H <- subset(Feature, LABEL=='H')
-                	Feature.L <- subset(Feature, LABEL=='L')
-
-                	## If there are less than 2 abundances in one group, the linear model has error message.
-
-                  if(TC.SRM & !SS.SRM){ #L.5.0
-                        #Time-course study with more than one bio-replicates
-
-                        if(TR.SRM){ #L.5.0.1
-                        #With technical replicates
-                        	LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL * SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
-
-                        } else {
-                        #Without technical replicates
-                			LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
-
-                        } #L.5.0.1
-                  } else {
-                        #Case control
-
-                        if(TR.SRM & !SS.SRM){ #L.5.0.2
-      			#With technical replictates and more than one bio-replicates
-                		LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=Feature.L),silent=TRUE)
-
-                        } else {
-                        #Without technical replicates or only with single subject
-                		LM.L <- try(lm(ABUNDANCE.N ~ GROUP_ORIGINAL, data=Feature.L),silent=TRUE)
-
-                        } #L.5.0.2
-                	} #L.5.0
-
-                  	if(class(LM.L)=="try-error") {  #L.5.1
-						Sigma.L <- NA
-					} else {
-						Sigma.L <- summary(LM.L)$sigma   
-					}  #L.5.1
-
-                  #Heavy peptides have ideally constant abundance, after the adjustment we have done, no matter time-course or case control
-                	LM.H <- try(suppressWarnings(lm(ABUNDANCE.N ~ 1, data=Feature.H)),silent=TRUE)
-                	
-                  	if(class(LM.H)=="try-error") {  #L.5.2
-						Sigma.H <- NA
-					} else {
-						Sigma.H <- suppressWarnings(summary(LM.H))$sigma   
-					}  #L.5.2
-                         
-			F.Out.L[m, 'Feature'] <- as.character(unique(Feature$FEATURE))
-                	F.Out.L[m, 'Error.score'] <- Sigma.L; F.Out.L[m, 'Label'] <- 'L'
-
-                	F.Out.H[m, 'Feature'] <- as.character(unique(Feature$FEATURE))
-                	F.Out.H[m, 'Error.score'] <- Sigma.H; F.Out.H[m, 'Label'] <- 'H' 
-
-				}   #L.5 : End of loop for computing the error scores at each feature
-
-                ## Rank the features based on the error scores. Rank 1 means the most noisy.
-                F.Out.L$Rank <- rank(-F.Out.L$Error.score)
-                F.Out.H$Rank <- rank(-F.Out.H$Error.score)
-
-                ## Flag the worst one-third features on light and one-fourth on heavy
-                ## The reproducibility-optimized cutoff requires much running time so we do not use it for now.
-                Cut.L <- round(dim(F.Out.L)[1]/3); Cut.H <- round(dim(F.Out.H)[1]/4) 
-
-                F.Out.L$Flag <- "OK"; F.Out.H$Flag <- "OK"
-                F.Out.L[F.Out.L$Rank<=Cut.L, 'Flag'] <- "Noisy"
-                F.Out.H[F.Out.H$Rank<=Cut.H, 'Flag'] <- "Noisy"
-
-                ## The features with too many missing values so that the error scores are NA are also flagged
-                F.Out.L[is.na(F.Out.L$Error.score), 'Flag'] <- "Noisy"
-                F.Out.H[is.na(F.Out.H$Error.score), 'Flag'] <- "Noisy"
-
-                ## Put the results in a data frame which contains the results for all proteins
-                Out.L[(Index+1):(Index+N.Feature), 'Protein'] <- as.character(unique(sub$PROTEIN))
-                Out.L[(Index+1):(Index+N.Feature), 2:6] <- F.Out.L
-
-                Out.H[(Index+1):(Index+N.Feature), 'Protein'] <- as.character(unique(sub$PROTEIN))
-                Out.H[(Index+1):(Index+N.Feature), 2:6] <- F.Out.H
-
-                #Update the index
-                Index <- Index+N.Feature
-
-			} #L.2 : End of loop over the proteins
-
-                 
-            #For shared peptide it creates same peptide sequence, so use protein-feature instead
-            Out.L$Prot_F <- paste(Out.L$Protein, Out.L$Feature, sep='_')
-            Out.H$Prot_F <- paste(Out.H$Protein, Out.H$Feature, sep='_')
-
-            #Only the features both selected at Heavy and Light are kept
-            L.list <- Out.L[Out.L$Flag=='OK', 'Prot_F']
-            H.list <- Out.H[Out.H$Flag=='OK', 'Prot_F']
-            Keep <- intersect(L.list, H.list)
-
-            work$Prot_F <- paste(work$PROTEIN, work$FEATURE, sep='_')
-
-            work$Filter <- NA
-            work[work$Prot_F %in% Keep, 'Filter'] <- 'Selected'
-            work[!(work$Prot_F %in% Keep), 'Filter'] <- 'Flagged'
-
-            work$Prot_F <- NULL
-            work <- subset(work, Filter=='Selected')
-
-		}#L.1 : End of the label-based experiment (Significance)
-
-	}#1.1 : End of option 'Significance'
-
-
-	#Choose the subset of features for removing the interference
-	if(toupper(featureSubset)=='HIGHQUALITY_REPRODUCIBILITY'){ #2.1
-
-    	#Label-free experiment
-    	if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)==1){ #F.1
-      #DDA 
-        	stop("This is a Label-free DDA experiment. Please use \"TPR.TNR\" as the input for the featureSelectionGoal. DDA experiment only quantifies until the peptide level so the reproducibility of each peptide cannot be assessed.")
-                              
-		} else if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)>1) {
-      #DIA  
-
+	
+  	#Label-free experiments (SWATH)
+	if(nlevels(work$LABEL)==1 & length(unique(work$TRANSITION))>1){ #1.2
+    
        #We can merely work on one peptide at a time
        N.Prot <- nlevels(work$PROTEIN) 
        
@@ -653,15 +143,116 @@
           #data frame 'work.3' contain the selected features and 'work' is the data frame to be returned 
           work <- work.3
 
+	   
+		} # 1.2 : End of label-free SWATH experiment
+
+		#Label-free experiments (Shotun; DDA)
+		if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)==1){ #1.2.2
+
+			# In DDA (shotgun) experiment, there is no need to filter out bad fragments in each peptide
+			N.Prot <- length(unique(work$PROTEIN))
+
+			# Create the data frame storing the selected features of each Protein
+			FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector(), Rank=vector(), Filter=vector())
+			Index.FS <- 0
+
+                  #Decide whether the experiment is time-course or case control
+                  TC <- .checkRepeated(work)
+
+			#Determine if there is only one subject and if there is any technical replicates
+                  Single.Subject <- .checkSingleSubject(work)
+			Technical.Rep <- .checkTechReplicate(work)
+
+			###Rank the peptides for each protein
+			for(i in 1:N.Prot){ #DDA_1.3
+
+				DDA.1 <- subset(work, PROTEIN == unique(PROTEIN)[i])
+				N.Pep <- length(unique(DDA.1$PEPTIDE))
+
+				## show progress
+				message(paste("Selection features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+				
+				## Create a data frame storing the assessment of the noise for each peptide
+				Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
+
+				## Assess the noise based on model for each peptide##
+
+				for(j in 1:N.Pep){ # DDA_1.4
+
+					DDA.Pep <- subset(DDA.1, PEPTIDE==unique(PEPTIDE)[j])
+
+                              if(TC & !Single.Subject){ #DDA_1.4.1
+                              #Time-course experiment with more than one bio-replicates
+
+                              	if(Technical.Rep){ #DDA_1.4.1.1
+                                    #With technical replicates                              	
+                                    LM.DDA <- try(lm(ABUNDANCE ~ GROUP * SUBJECT, data=DDA.Pep), silent=TRUE)
+
+                                    } else {
+                                    #Without technical replicates
+                              	LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
+
+                                    } #DDA_1.4.1.1
+                              } else {
+                              #Case-Control
+
+                                    if(Technical.Rep & !Single.Subject){ #DDA_1.4.1.2
+                                    #With technical replicates
+                                    LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
+
+                                    } else {
+                        		#Without technical replicates or with only one bio-replicates
+   						LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
+
+                                    } #DDA_1.4.1.2
+                              } #DDA_1.4.1
+
+					Pep.Out[j, 'Peptide'] <- as.character(unique(DDA.Pep$PEPTIDE))
+					
+					## If there are missing values such that only one condition is left, the model based error score is not calculable
+					if(class(LM.DDA)=='try-error'){ #DDA_1.5
+						Pep.Out[j, 'Model.Based.Error'] <- NA
+					} else {
+						Pep.Out[j, 'Model.Based.Error'] <- summary(LM.DDA)$sigma
+                	} #DDA_1.5
+                	
+				} # DDA_1.4 (End of loop for each peptide)
+
+				## We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
+				## We automatically excluded the precursors whose model-based error is not able to be quantified. This would be due to too many missing values such that only one condition has the peaks
+				N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3+0.01), 1)
+				Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
+				Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
+				Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
+				Pep.Out[is.na(Pep.Out$Model.Based.Error), 'Flag'] <- 'Noisy'
+
+
+				## Pull out the results to the designated data frame, and flag the noisy peptide
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Peptide'] <- Pep.Out$Peptide
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Model.Based.Error'] <- Pep.Out$Model.Based.Error
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Rank'] <- Pep.Out$Rank
+				FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Filter'] <- Pep.Out$Flag
+				Index.FS <- Index.FS+N.Pep   
+				                                              
+			} # DDA_1.3 (End of loop for proteins)
+
+			## If not all of the peptides are proteotypic, some proteins may have the same peptides
+			work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='_')            
+			FeatureSelection.Out$Protein_Peptide <- paste(FeatureSelection.Out$Protein, FeatureSelection.Out$Peptide, sep='_')
           
+			## Create the label for selected, or removed, peptides
+			work$Filter <- NA; 
+			Selection <- unique(FeatureSelection.Out[FeatureSelection.Out$Filter=='Selected','Protein_Peptide'])
+			work[work$Protein_Peptide %in% Selection, 'Filter'] <- 'Selected'
+			work[!(work$Protein_Peptide %in% Selection), 'Filter'] <- 'Flagged'
+			work$Protein_Peptide <- NULL
+			work <- subset(work, Filter=='Selected')
+		
+		} #1.2.2  : End of the DDA experiment 
 
-                                                                }#F.1
-        #End of label-free experiment on removing irreproducible features
-
-
-
-
-    	#Label-based experiments
+		## Label-based experiments
+  	#Label-based experiments
     	if(nlevels(work$LABEL)==2){ #2.4
 
     		N.Prot <- length(unique((work$PROTEIN)))
@@ -694,9 +285,9 @@
             		data_w = dcast(RUN ~ FEATURE, data=Sub2.H, value.var='ABUNDANCE', keep=TRUE)
   					rownames(data_w) <- data_w$RUN
   	      			data_w <- data_w[,-1]
-  	      			data_w[data_w==1]<-NA
+  	      			data_w[data_w<=1] <- NA
 
-  					TMP <- medpolish(data_w, na.rm=TRUE, eps = 0.01, maxiter = 100, trace.iter = FALSE)
+  					TMP <- medpolish(data_w, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
 	      			TMP.Run <- TMP$overall + TMP$row
 
             		N.Feature <- length(unique(Sub2.H$FEATURE))
@@ -704,9 +295,10 @@
             		#Calculate the variance of the residuals for each feature
                  	for(k in 1:N.Feature){ #2.4.3
 
-                    	#If there is only one feature in this peptide, no reproducibility can be assess
+                    	#If there is only one feature in this peptide, no reproducibility can be assessed
 						if(N.Feature==1){
-							Error <- 10000
+                                          #No need to remove this peptide at this moment
+							Error <- 0
 						}else{    
 							Res <- data_w[,k] - TMP.Run
 							Error <- var(Res, na.rm=TRUE)
@@ -719,7 +311,7 @@
 						Out[(Index+1), 'Interference.Score'] <- Error
 
 						Index <- Index+1
-					} #2.4.3 : End of loop for calculating the interference score for each feature
+					} #2.4.3 : End of loop for calculating the interference score for each feature in this peptide at heavy
 
 
             		#Light peptide
@@ -733,9 +325,9 @@
             		data_w.L = dcast(RUN ~ FEATURE, data=Sub2.L, value.var='ABUNDANCE', keep=TRUE)
 					rownames(data_w.L) <- data_w.L$RUN
 					data_w.L <- data_w.L[,-1]
-					data_w.L[data_w.L==1]<-NA
+					data_w.L[data_w.L<=1]<-NA
 
-					TMP.L <- medpolish(data_w.L, na.rm=TRUE, eps = 0.01, maxiter = 100, trace.iter = FALSE)
+					TMP.L <- medpolish(data_w.L, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
 					TMP.Run.L <- TMP.L$overall + TMP.L$row
 
 					N.Feature <- length(unique(Sub2.L$FEATURE))
@@ -743,9 +335,9 @@
 					#Calculate the variance of the residuals for each feature on Light
 					for(k in 1:N.Feature){ #2.4.3.2
 
-						#If there is only one feature in this peptide, no reproducibility can be assess
+						#If there is only one feature in this peptide, no reproducibility can be assess. The removals of this single features will be decided by the consensus later.
 						if(N.Feature==1){
-							Error <- 10000
+							Error <- 0
 						}else{    
 							Res <- data_w.L[,k] - TMP.Run.L
 							Error.L <- var(Res, na.rm=TRUE)
@@ -758,7 +350,7 @@
 						Out[(Index+1), 'Interference.Score'] <- Error.L
 
 						Index <- Index+1
-					} #2.4.3.2 : End of loop for calculating the interference score for each feature on Light     
+					} #2.4.3.2 : End of loop for calculating the interference score for each feature at this peptide on Light     
 
 				} #2.4.2 : End of loop for the peptides
        
@@ -768,20 +360,39 @@
       		#Preparing for the case of shared peptide, we use the column Protein_Feature
        		Out$Prot.F <- paste(Out$Protein, Out$Feature, sep='_') 
        
-       		#Flag the worst one-third of the light transition and one-fourth of the heavy
-       		#Again, how to optimally decide the cutoff is an ongoing research. It is a trade-off between optimum and expensive calculation
+       		#The heuristic approach now is to keep searching the cutoff until the percentage of the improvement is less than 30%, but do not remove more than half of the features and remove at least a quarter of them
+                  Out.L <- subset(Out, Label=='L'); Out.H <- subset(Out, Label=='H')
+                  Q <- quantile(Out.L$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
+                  Change <- diff(Q)/Q[-1]; Change.half <- Change[-(1:11)]
+                  P <- which(Change.half>0.3); K <- min(P, na.rm=TRUE); P95 <- which(names(Change.half)=='95%')
 
-       		Out.L <- subset(Out, Label=='L'); Out.H <- subset(Out, Label=='H')
-       		L.Cut <- quantile(Out.L$Interference.Score, probs = (2/3), na.rm=TRUE)
-       		H.Cut <- quantile(Out.H$Interference.Score, probs = (3/4), na.rm=TRUE)
-       
-       		Out.L$Flag <- 'OK'; Out.H$Flag <- 'OK'
+                  name.P <- ifelse(K>P95, '90%', names(Change.half[K-1]))
+                  name.P <- ifelse(K!=1, name.P, '55%')
+
+                  L.Cut <- Q[name.P]
+
+                  #For the internal standard, remove no more than 20% of the features as they are supposed to be of good quality
+                  Q.H <- quantile(Out.H$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
+                  Change.H <- diff(Q.H)/Q.H[-1]; Change.H.half <- Change.H[-(1:11)]
+                  P.H <- which(Change.H.half>0.25); K2 <- min(P.H, na.rm=TRUE); P85 <- which(names(Change.H.half)=='85%')
+
+			if(K2==Inf){
+				name.P.H <- '90%'
+                  } else {
+
+	                  name.P.H <- ifelse(K2<P85, '80%', names(Change.H.half[K2-1])); 
+      	 		H.Cut <- Q.H[name.P.H]
+            	}
+      
+                  ##Remove the irreproducible features, which is the first step of the removal.      
+       		Out.L$Flag.Repro <- 'OK'; Out.H$Flag.Repro <- 'OK'
        		Out.L[is.na(Out.L$Interference.Score), 'Interference.Score'] <- 10000 
        		Out.H[is.na(Out.H$Interference.Score), 'Interference.Score'] <- 10000 
 
-       		Out.L[Out.L$Interference.Score >= L.Cut, 'Flag'] <- 'Noisy' 
-       		Out.H[Out.H$Interference.Score >= H.Cut, 'Flag'] <- 'Noisy' 
+       		Out.L[Out.L$Interference.Score >= L.Cut, 'Flag.Repro'] <- 'Noisy' 
+       		Out.H[Out.H$Interference.Score >= H.Cut, 'Flag.Repro'] <- 'Noisy' 
 
+                  ##Extract the remaining features befoer proceeding to the next step
        		Keep.L <- Out.L[Out.L$Interference.Score < L.Cut, 'Prot.F']
        		Keep.H <- Out.H[Out.H$Interference.Score < H.Cut, 'Prot.F']
        
@@ -789,19 +400,286 @@
        		Keep <- intersect(Keep.L, Keep.H)
        		work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')
 
-       		work$Filter <- NA
-       		work[work$Protein_Feature %in% Keep, 'Filter'] <- 'Selected'
-       		work[!(work$Protein_Feature %in% Keep), 'Filter'] <- 'Flagged'
-       		work$Protein_Feature <- NULL
-       		work <- subset(work, Filter=='Selected')
+                  #Keep a column of record. Perhaps it may be of interest to see what the reason is the features were removed, reproducibility or consistency.
+       		work$Filter.Repro <- NA
+       		work[work$Protein_Feature %in% Keep, 'Filter.Repro'] <- 'Keep'
+       		work[!(work$Protein_Feature %in% Keep), 'Filter.Repro'] <- 'Flagged'
+                   
+                  #Remove the features due to the reproducibility
+                  work.keep <- subset(work, Protein_Feature %in% Keep)
 
+                  #Also remove the peptide where there is only one transition remained
+			#When every transitions but one is interfered, it is more often than not the whole peptide is interfered.
+                  #Do not assume all the peptides are proteotypic
+			#Only do so when a lot of proteins were quantified
+			Total.Protein <- length(unique(work$PROTEIN))     
+			#if(Total.Feature > 50){             
+                  	work.keep$Protein.Peptide <- paste(work.keep$PROTEIN, work.keep$PEPTIDE, sep='.')                  
+                  	Freq <- tapply(work.keep$FEATURE, work.keep$Protein.Peptide, function(x) length(unique(x)))
+ 				OneFeature <- names(Freq[Freq==1])	
+                  	work.keep <- subset(work.keep, !(Protein.Peptide %in% OneFeature))
+                  #}
+                  work.keep$Protein.Feature <-NULL; work.keep$Protein.Peptide <- NULL 
+	
+		if(LeaveOneOut==TRUE){#LOO		  
+                  #First it is safer to factorize each categorical variable, for which we use, since some of the levels are gone.
+                  #This step is precautionary for some potential, but rare, errors.
+                  work.keep$PROTEIN <- factor(work.keep$PROTEIN); work.keep$FEATURE <- factor(work.keep$FEATURE)
+                  work.keep$PEPTIDE <- factor(work.keep$PEPTIDE)
+                  work.keep$GROUP_ORIGINAL <- factor(work.keep$GROUP_ORIGINAL)
+                  work.keep$SUBJECT_ORIGINAL <- factor(work.keep$SUBJECT_ORIGINAL)
+                  work.keep$RUN <- factor(work.keep$RUN); work.keep$GROUP <- factor(work.keep$GROUP)
+
+                  N.Protein <- length(unique(work.keep$PROTEIN))
+                  #The normalized intensity after correcting the peptide-by-run interaction
+                  work.keep$ABUNDANCE.N <- NA
+
+			#Store the results of the leave-one-out, and also store the values of the initial error as E0
+                  LOO <- data.frame(Protein=vector(), Feature=vector(), Remove_Order=vector(), Improve=vector(), Error=vector())
+                  Index <- 0; E0 <- vector()
+
+                  #Analyze one protein at a time
+                  for(c in 1:N.Protein){ #2.5.0
+
+                  temp <- subset(work.keep, PROTEIN==unique(PROTEIN)[c])
+                  N.peptide <- length(unique(temp$PEPTIDE))
+			temp$FEATURE <- factor(temp$FEATURE)
+                  temp$PEPTIDE <- factor(temp$PEPTIDE)
+
+                  #Normalize the internal standard for each peptide to adjust the peptide-specific deviation
+                  	for(j in 1:N.peptide){ #2.5.1
+
+				Temp2 <- subset(temp, PEPTIDE==unique(PEPTIDE)[j])
+				N.Run <- length(unique(Temp2$RUN))
+
+				#Compute the overall median on internal standard
+				Median <- median(Temp2[Temp2$GROUP==0, 'ABUNDANCE'], na.rm=TRUE)
+
+				      #Equalize the median of the internal standard at each run, and apply the same shifts on its counterpart at the endogenous
+					for(k in 1:N.Run){ #2.5.2
+
+					temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='L' & temp$RUN==k, 'ABUNDANCE.N'] <- temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='L' & temp$RUN==k, 'ABUNDANCE']- median(temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'], na.rm=TRUE) + Median
+					temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE.N'] <- temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE']- median(temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'], na.rm=TRUE) + Median
+
+					} #2.5.2
+
+				} #2.5.1 : Finish the loop over the peptides on the adjustment (normalization)
+
+                  
+
+                        #Start the leave-one-out algorithm
+                  	list.f <- unique(temp$FEATURE)
+                  	N.Feature <- length(list.f)
+                  
+				#After the peptides with internal standards are 'normalized', there is only need for modeling the light (without the internal standard)
+				temp.L <- subset(temp, GROUP!=0)
+				temp.L$RUN <- factor(temp.L$RUN); temp.L$FEATURE <- factor(temp.L$FEATURE)
+
+
+                        #Estimate of the random error when every feature presents
+                        data.TMP = dcast(RUN ~ FEATURE, data=temp.L, value.var='ABUNDANCE.N', keep=TRUE)
+				data.TMP <- data.TMP[,-1]
+                        data.TMP[data.TMP <=1] <- NA
+                        Out.TMP <- medpolish(data.TMP, maxiter=100, trace.iter=FALSE, na.rm=TRUE)
+                        Error.0 <- sd(Out.TMP$residuals, na.rm=TRUE); E0[c] <- Error.0
+
+
+                        #leave-one-out can only be meaningfully conducted when there are more than 2 features
+                        if(N.Feature >2){ #2.5.A
+                        W.Pep <- data.frame(Protein=vector(), Feature=vector(), Remove_Order=vector(), Improve=vector(), Error=vector())
+
+				#Record the initial error estimates
+                        W.Pep[1, 'Protein'] <- as.character(unique(temp.L$PROTEIN))
+                        W.Pep[1, 'Feature'] <- 'All Features'; W.Pep[1, 'Remove_Order'] <- NA
+			      W.Pep[1, 'Error'] <- round(Error.0, digits=4); W.Pep[1, 'Improve'] <- NA
+                        
+
+					#Determine the worst feature one at a time
+                              #The number of iterations is at most (N.Feature-2) as the leave-one-out cannot be conducted when 2 features left
+					for(iter in 1:(N.Feature-2)){ #2.5.2
+
+                              #The feature contributed the most when it is removed
+					Error.I <- vector()
+                              Error.Decline <- vector()
+                              K <- N.Feature-iter+1
+                              
+						for(I in 1:K){ #2.5.3
+
+						Leave <- list.f[I]
+                              	sub3 <- subset(temp.L, FEATURE!=Leave)
+                              	M_sub3 = dcast(RUN ~ FEATURE, data=sub3, value.var='ABUNDANCE.N', keep=TRUE)
+                              	M_sub3 <- M_sub3[,-1]; M_sub3[M_sub3 <= 1] <- NA
+                              	Out.sub3 <- medpolish(M_sub3, maxiter=1000, trace.iter=FALSE, na.rm=TRUE)
+                              	Error.I[I] <- sd(Out.sub3$res, na.rm=TRUE)
+						Error.Decline[I] <- (Error.0-Error.I[I])/Error.0
+
+                              	} #2.5.3
+
+                              #Index of the worst feature
+                              Location <- which(Error.Decline==max(Error.Decline, na.rm=TRUE))
+                             	Worst.Feature <- list.f[Location]
+					Error.Worst <- Error.I[Location]
+                              Increment <- Error.Decline[Location]
+
+                              W.Pep[(iter+1), 'Protein'] <- as.character(unique(temp.L$PROTEIN))
+                              W.Pep[(iter+1), 'Feature'] <- as.character(Worst.Feature)
+                              W.Pep[(iter+1), 'Remove_Order'] <- iter
+					W.Pep[(iter+1), 'Error'] <- round(Error.Worst, digits=4)
+                              W.Pep[(iter+1), 'Improve'] <- round(Increment, digits=3)
+					#At the end of this iteration, the worst feature is removed from the data frame
+                              Error.0 <- Error.Worst
+                              temp.L <- subset(temp.L, FEATURE != Worst.Feature)
+ 					list.f <- unique(temp.L$FEATURE)                             
+ 
+                              }#2.5.2 (End of iterations of leave-one-out in this protein)
+                  
+ 			n.row <- dim(W.Pep)[1] 
+                  LOO[(Index+1):(Index+n.row),] <- W.Pep
+                  Index <- Index + n.row                 
+ 
+                  } else { #The case of two-feature proteins
+                  LOO[(Index+1),] <- c(as.character(unique(temp.L$PROTEIN)), 'No more than 2 features', NA, NA, Error.0)
+                  Index <- Index+1
+                  } #2.5.A
+
+			print(paste(c, 'out of total', N.Protein, 'proteins (', as.character(unique(W.Pep$Protein)), ')are done for leave-one-out.', sep=' '))
+
+                  } #2.5.0
+                  #End of loop for proteins       
+         
+                  
+				#Remove the features with obvious interference
+                        Error0 <- quantile(E0, probs=seq(0,1,0.05), na.rm=TRUE)
+                        Improve <- quantile(as.numeric(LOO$Improve), probs=seq(0,1,0.05), na.rm=TRUE)
+                        E40 <- Error0['40%']; E20 <- Error0['20%']; E60 <- Error0['60%']; E30 <- Error0['30%']
+				IM60 <- Improve['60%']; IM80 <- Improve['80%']; IM85 <- Improve['85%']
+                        Remove.Protein <- vector(); Remove.Feature <- vector(); Keep.Protein <- vector(); Consistent.Protein <- vector()
+                        Index.RP <- 0; Index.RF <- 0; Index.KP <- 0; Index.CP <- 0
+                        LOO$P.F <- paste(LOO$Protein, LOO$Feature, sep='.')
+				LOO$Peptide.1 <-  sub("(.*?)_(.*?)_.*", "\\1", LOO$Feature)
+				LOO$Peptide.2 <-  sub("(.*?)_(.*?)_.*", "\\2", LOO$Feature)
+				LOO$Peptide <-  paste(LOO$Peptide.1, LOO$Peptide.2, sep='_')
+
+				for(k in 1:N.Protein){ #2.6
+
+                        sub <- subset(LOO, Protein==unique(LOO$Protein)[k])
+                        Name <- as.character(unique(sub$Protein))
+                        DIM <- dim(sub)[1]; N.Pep <- length(unique(sub))
+                        N.Pep <- length(unique(sub$Peptide))-1
+ 
+				#Case of 2-feature protein
+				if(DIM == 1){ #2.7
+			
+     					if(sub$Error >= E40){ #2.7.1
+					Remove.Protein[Index.RP+1] <- Name
+					Index.RP <- Index.RP+1
+                                                   } #2.7.1
+	                  #Case of 3-feature protein
+                        } else if(DIM == 2) { 
+
+					if(sub$Error[2] >=E40){ #2.7.2
+					Remove.Protein[Index.RP+1] <- Name
+      				Index.RP <- Index.RP+1
+
+					} else if(sub$Error[1] < E20){
+					Keep.Protein[Index.KP+1] <- Name
+					Index.KP <- Index.KP+1
+
+					} else if(sub$Error[1] > E40 & sub$Error[2] <= E40){
+					Remove.Feature[Index.RF+1] <- as.character(sub$P.F[2])
+  					} #2.7.2
+
+				#Case of more than 3 features	(more than 1 peptide)
+				} else {
+
+					if(sub$Error[1] <= E30){ #2.7.3
+					Keep.Protein[Index.KP+1] <- Name
+					Index.KP <- Index.KP+1
+					
+					} else if(sub$Error[1] > E30 & sub$Error[1] <= E60){
+
+						#Large improvement at the end of any peptide is an indication of different but consistent profiles from different peptides
+						Pep <- sub[-1,]; Key <- vector(); Index.K <- 0
+						for(p in 1:N.Pep){
+
+						Pep.1 <- subset(Pep, Peptide==unique(Pep$Peptide)[p])
+						if(dim(Pep.1)[1] > 1){Key[Index.K+1] <- Pep.1$Improve[length(Pep.1$Improve)]} else {Key[Index.K+1] <- 0}
+						Index.K <- Index.K+1
+
+                                                      }
+
+							if(max(Key, na.rm=TRUE) >= IM80){
+							Consistent.Protein[Index.CP+1] <- Name
+							Index.CP <- Index.CP+1
+							} else {
+							suppressWarnings(I <- min(which(Pep$Error < E30), na.rm=TRUE))
+
+								if(I==Inf){ #Remove the whole protein if the error never be small
+								Remove.Protein[Index.RP+1] <- Name
+								Index.RP <- Index.RP+1
+								} else {
+                                          	Gone <- Pep[1:(I-1), 'P.F']; G <- length(Gone)
+                                          	Remove.Feature[(Index.RF+1):(Index.RF+G)] <- as.character(Gone) 
+								Index.RF <- Index.RF + G
+								}
+							}
+							
+
+					} else if(sub$Error[1] > E60){
+
+						#Large improvement at the end of any peptide is an indication of different but consistent profiles from different peptides
+						Pep <- sub[-1,]; Key <- vector(); Index.K <- 0
+						for(p in 1:N.Pep){
+
+						Pep.1 <- subset(Pep, Peptide==unique(Pep$Peptide)[p])
+						if(dim(Pep.1)[1] > 1){Key[Index.K+1] <- Pep.1$Improve[length(Pep.1$Improve)]} else {Key[Index.K+1] <- 0}
+						Index.K <- Index.K+1
+
+                                                      }
+
+							if(max(Key, na.rm=TRUE) >= IM85){
+							Consistent.Protein[Index.CP+1] <- Name
+							Index.CP <- Index.CP+1 
+
+							} else {
+
+							suppressWarnings(I40 <- min(which(Pep$Error <= E40), na.rm=TRUE))
+								if(I40==Inf){
+								Remove.Protein[Index.RP+1] <- Name
+								Index.RP <- Index.RP+1
+								} else{
+                                          	Gone2 <- Pep[1:(I-1), 'P.F']; G2 <- length(Gone2)
+                                          	Remove.Feature[(Index.RF+1):(Index.RF+G2)] <- as.character(Gone2) 
+								Index.RF <- Index.RF + G2
+								}
+							}
+
+					} #2.7.3
+
+
+				} #2.7
+                      
+
+                                         } #2.6 End of loop of the proteins
+
+				Remove.P <- setdiff(setdiff(Remove.Protein, Keep.Protein), Consistent.Protein)
+		            		
+       		      work.keep.LOO <- subset(work.keep, !(PROTEIN %in% Remove.P))
+				work.keep.LOO$Protein.Feature <- paste(work.keep.LOO$PROTEIN, work.keep.LOO$FEATURE, sep='.')
+				work.keep.LOO2 <- subset(work.keep.LOO, !(Protein.Feature %in% Remove.Feature))
+				work.keep.LOO2$Protein_Feature <- NULL; work.keep.LOO2$ABUNDANCE.N <- NULL; work.keep.LOO2$Protein.Feature <- NULL
+       		      work <- work.keep.LOO2
+			} #LOO
+
+			work <- work.keep
 		} #2.4 : End of case for label-based experiment (Remove interference)
 
-	} #2.1 : End of the option 'HighQuality_Reproducibility'
-
+	#Factorize some important variables because some of the levels have been removed
+	work$PROTEIN <- factor(work$PROTEIN, levels=unique(work$PROTEIN))
+	work$PEPTIDE <- factor(work$PEPTIDE, levels=unique(work$PEPTIDE))
+	work$FEATURE <- factor(work$FEATURE, levels=unique(work$FEATURE))
 	return(work)
 
 } #End of function '.feature_selection'
 
-#featureSubset is either 'HighQuality_Significance' or 'HighQuality_Reproducibility'
 
