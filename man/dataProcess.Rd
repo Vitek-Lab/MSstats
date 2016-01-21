@@ -13,8 +13,10 @@ dataProcess(raw,logTrans=2,
 		equalFeatureVar=TRUE,
 		filterLogOfSum=TRUE,
 		censoredInt="NA",
-		cutoffCensored="minFeatureNRun",
+		cutoffCensored="minFeature",
 		MBimpute=TRUE,
+		original_scale=FALSE,
+		logsum=FALSE,
 		remove50missing=FALSE,
 		skylineReport=FALSE)	
 }
@@ -31,8 +33,10 @@ dataProcess(raw,logTrans=2,
 \item{equalFeatureVar}{only for summaryMethod="linear". default is TRUE. Logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. FALSE means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.}
 \item{filterLogOfSum}{For summaryMethod="logOfSum" option, TRUE (default) will filter out the runs which have any missing value. FALSE will not remove any run or features.} 
 \item{censoredInt}{Missing values are censored or at random. 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. '0' uses zero intensities as censored intensity. In this case, NA intensities are missing at random. The output from Skyline should use '0'. Null assumes that all NA intensites are randomly missing.}
-\item{cutoffCensored}{Cutoff value for censoring. only with censoredInt='NA' or '0'. Default is 'minFeatureNRun', which use the smallest between minimum value of corresponding feature and minimum value of corresponding run. 'minFeature' uses minimum value for each feature.'minRun' uses minumum value for each run.}
+\item{cutoffCensored}{Cutoff value for censoring. only with censoredInt='NA' or '0'. Default is 'minFeature', which uses minimum value for each feature.'minFeatureNRun' uses the smallest between minimum value of corresponding feature and minimum value of corresponding run. 'minRun' uses minumum value for each run. }
 \item{MBimpute}{only for summaryMethod="TMP" and censoredInt='NA' or '0'. TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
+\item{original_scale}{Default is FALSE, which uses log transformed intensity for TMP. TRUE uses original intensitiesy for TMP.}
+\item{logsum}{Default is FALSE, which uses log of sum intensities after residuals from TMP.}
 \item{remove50missing}{only for summaryMethod="TMP". TRUE removes the runs which have more than 50\% missing values. FALSE is default.}
 \item{skylineReport}{default is FALSE. 'TRUE' means raw (input) data set from Skyline MSstats input format, which includes 'Truncated' column and can distinguish zero value and NA (missing values). Zero values in 'Intensity' column will be kept for 'skyline' summary method. Otherwise, they will be replaced with one in order to log transform.}
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
