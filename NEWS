@@ -1,7 +1,8 @@
 CHANGES IN VERSION 3.3.2
 -------------------------
 - ProteinName=TRUE in groupComparisonPlots shows only the name of significant proteins, adjusting location. ggrepel package is used.
-- update featureSubset option in dataProcess
+- change featureSubset option in ‘dataProcess’ for selecting high quality features. featureSubset=‘highQuality’
+- Fix the bug for ‘fillIncompleteRows=TRUE’ for label-based experiments.
 
 
 CHANGES IN VERSION 3.3.1
