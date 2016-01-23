@@ -2,10 +2,10 @@
 ###########Function of FeatureSelection###########
 #Input is the data frame 'work' after conducting normalization
 #Output is the data frame 'work' after removing noisy features 
-#This process removes the irreproducible features across the MS runs
+#This process removes features with interference across the MS runs
+#RemoveWholeProt==TRUE allows the algorithm to remove the whole protein if deem interfered
 
-
-.feature_selection <- function(work, LeaveOneOut=FALSE){
+.feature_selection <- function(work, LeaveOneOut=FALSE, RemoveWholeProt=FALSE){
 
 	
   	#Label-free experiments (SWATH)
@@ -33,7 +33,7 @@
              sub2 <- subset(sub1, PEPTIDE==unique(PEPTIDE)[j])
              sub2$FEATURE <- factor(sub2$FEATURE, levels=unique(sub2$FEATURE))
 
-             #First, remove the bottom 30% fragments of each peptide
+             #First, remove the bottom 30% fragments with the lowest average abundance of each peptide
              M1 <- tapply(sub2$ABUNDANCE, sub2$FEATURE, function(x) mean(x, na.rm=TRUE)) 
              Top70.Cut <- round(length(M1)*0.7) 
              Keep.Top70 <- names(M1[rank(-M1)<=Top70.Cut])
@@ -50,7 +50,7 @@
   	       data_tmp <- data_tmp[,-1]
   	       data_tmp[data_tmp==1]<-NA
 
-  		 TMP <- medpolish(data_tmp, na.rm=TRUE, eps = 0.01, maxiter = 100, trace.iter = FALSE)
+  		 TMP <- medpolish(data_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
 	       TMP.Run <- TMP$overall + TMP$row           
 
                 #Calculate the score of interference on each fragment
@@ -73,25 +73,29 @@
                              } #F.2
           #End of loop over each protein
 
-          #Overall, the 30% most irreproducible features are gone
-          Interference.Score$Protein_Feature <- paste(Interference.Score$Protein, Interference.Score$Feature, sep='_')
+          #Overall, the percentage of most interfered features are removed was determined by where the decrease of the interference stabalized
+          Interference.Score$Protein_Feature <- paste(Interference.Score$Protein, Interference.Score$Feature, sep='.')
           Interference.Score$Rank.Overall <- rank(Interference.Score$Interference) 
-          Top70.2 <- round(dim(Interference.Score)[1]*0.7)
-          
-          Interfere <- Interference.Score[Interference.Score$Rank <= Top70.2,]
+	    QQ <- quantile(Interference.Score$Interference, probs=seq(0,1,0.05))
+          QQ2 <- diff(QQ); QQ3 <- QQ2/QQ[-1]
+	    #Stop at where the improvement is less than 20%. Remove 50% most interfered features if this cutoff cannot be determined by this criteria
+	    suppressWarnings(Pos <- max(which(QQ3 < 0.2)))
+	    Cut <- '60%'; if(Pos != -Inf){Cut <- names(QQ3[Pos])}; if(Pos < 8){Cut <- '40%'}
+	    Cut.Noise <- QQ[Cut]	              
+          Interfere <- Interference.Score[Interference.Score$Interference < Cut.Noise,]
 
-          #Whichever peptides only has one feature left should be removed as it indicates this peptide is irreproducibility
-          Interfere$Protein_Peptide <- paste(Interfere$Protein, Interfere$Peptide, sep='_')
+          #Whichever peptides only has one feature left should be removed as it indicates this peptide is likely interfered
+          Interfere$Protein_Peptide <- paste(Interfere$Protein, Interfere$Peptide, sep='.')
           Table <- table(Interfere$Protein_Peptide)
           Drop <- names(Table[Table==1])
           Interfere <- subset(Interfere, !(Protein_Peptide %in% Drop))
 
           #Now use the remaining features to compute the average amount of interference on each peptide
-          #Retain 50% most reproducible peptide. We prepare the case where not all of the peptides are proteotypic
+          #Remove the most interfered peptide. We prepare the case where not all of the peptides are proteotypic
           Keep <- unique(Interfere$Protein_Feature)
-          work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')
+          work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='.')
           work.2 <- subset(work, Protein_Feature %in% Keep)
-          work.2$Protein_Peptide <- paste(work.2$PROTEIN, work.2$PEPTIDE, sep='_')
+          work.2$Protein_Peptide <- paste(work.2$PROTEIN, work.2$PEPTIDE, sep='.')
 
           
           N.Peptide <- length(unique(work.2$Protein_Peptide))
@@ -100,11 +104,12 @@
           Inter.Pep <- data.frame(Protein_Peptide=vector(), Avg.Inter=vector())
           Index.Pep <- 0
 
-             #Work on one protein at a time. 
+             #Work on one peptide at a time. 
              for(h in 1:N.Peptide){  #F.5
   
              temp1 <- subset(work.2, Protein_Peptide==unique(Protein_Peptide)[h])
-             N.temp1 <- length(unique(temp1$FEATURE))           
+             N.temp1 <- length(unique(temp1$FEATURE)) 
+		 temp1$RUN <- factor(temp1$RUN, levels=unique(temp1$RUN)); temp1$FEATURE <- factor(temp1$FEATURE, levels=unique(temp1$FEATURE))          
 
              #Use TMP to do robust run quantification
              data_pep = dcast(RUN ~ FEATURE, data=temp1, value.var='ABUNDANCE', keep=TRUE)
@@ -112,7 +117,7 @@
   	       data_pep <- data_pep[,-1]
   	       data_pep[data_pep==1]<-NA
 
-  		 TMP2 <- medpolish(data_pep, na.rm=TRUE, eps = 0.01, maxiter = 100, trace.iter = FALSE)         
+  		 TMP2 <- medpolish(data_pep, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)         
              
              #Create a vector to save the interference score for each feature
              Inter <- vector()
@@ -133,16 +138,52 @@
                                    } #F.5
              #End of loop for computing the average amount of interference at each peptide
 
-          #Retain the best 40% peptides with most reproducible quantification
-          M2 <- quantile(Inter.Pep$Avg.Inter, na.rm=TRUE, probs=0.4)
-          Keep40 <- Inter.Pep[Inter.Pep$Avg.Inter <= M2, 'Protein_Peptide']
+          #Remove the most interfered peptides
+          MM <- quantile(Inter.Pep$Avg.Inter, na.rm=TRUE, probs=seq(0,1,0.05))
+          MM2 <- diff(MM); MM3 <- MM2/MM[-1]
+	    Pos2 <- max(which(MM3<0.2))	
+	    Cut2 <- '90%'; if(Pos2 != -Inf){Cut2 <- names(MM3)[Pos2]}; if(Pos2 < 10){Cut2 <- '50%'}
+	    Cut.Inter <- MM[Cut2]
+          Keep40 <- Inter.Pep[Inter.Pep$Avg.Inter <= Cut.Inter, 'Protein_Peptide']
           work.3 <- subset(work.2, Protein_Peptide %in% Keep40)
 
-          work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
+			##If we do not allow any of the proteins being totally removed, we keep the most abundant peptide if it is totally removed
+			if(RemoveWholeProt==FALSE){ #F.7
+			
+				Prot2 <- unique(work.3$PROTEIN); Prot1 <- unique(work$PROTEIN); Loss <- setdiff(Prot1, Prot2)
+				work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='.') 
+				Keep.Peptide <- vector(); IK <- 0
 
-          #data frame 'work.3' contain the selected features and 'work' is the data frame to be returned 
-          work <- work.3
+				if(length(Loss)>0){
+					sub.Loss <- subset(work, PROTEIN %in% Loss)
+					N2.Prot <- length(unique(sub.Loss$PROTEIN)) 
+					for(j in 1:N2.Prot){
 
+					subsub.Loss <- subset(sub.Loss, PROTEIN==unique(sub.Loss$PROTEIN)[j])
+					N.Pep2 <- length(unique(subsub.Loss$PEPTIDE))
+					#Get the most abundant peptide of this protein
+					AVG.Pep <- tapply(subsub.Loss$ABUNDANCE, subsub.Loss$Protein_Peptide, function(x) mean(x, na.rm=TRUE))
+					Top1 <- names(AVG.Pep[rank(-AVG.Pep)==1])
+					Keep.Peptide[IK+1] <- Top1; IK <- IK+1
+					}
+				work.keep <- subset(work, Protein_Peptide %in% Keep.Peptide)
+				work.4 <- rbind(work.3, work.keep)
+				work.4$Protein_Feature <- NULL; work.4$Protein_Peptide <- NULL
+				work <- work.4
+
+				} else {
+				#The case of no proteins was totally removed
+				work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
+				work <- work.3
+				}
+			} else {
+
+	          work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
+
+      	    #data frame 'work.3' contain the selected features and 'work' is the data frame to be returned 
+          	    work <- work.3
+
+                   } #F.7
 	   
 		} # 1.2 : End of label-free SWATH experiment
 
@@ -360,31 +401,22 @@
       		#Preparing for the case of shared peptide, we use the column Protein_Feature
        		Out$Prot.F <- paste(Out$Protein, Out$Feature, sep='_') 
        
-       		#The heuristic approach now is to keep searching the cutoff until the percentage of the improvement is less than 30%, but do not remove more than half of the features and remove at least a quarter of them
+       		#The heuristic approach now is to keep searching the cutoff until the improvement is less than 25%
                   Out.L <- subset(Out, Label=='L'); Out.H <- subset(Out, Label=='H')
                   Q <- quantile(Out.L$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
                   Change <- diff(Q)/Q[-1]; Change.half <- Change[-(1:11)]
-                  P <- which(Change.half>0.3); K <- min(P, na.rm=TRUE); P95 <- which(names(Change.half)=='95%')
-
-                  name.P <- ifelse(K>P95, '90%', names(Change.half[K-1]))
-                  name.P <- ifelse(K!=1, name.P, '55%')
-
-                  L.Cut <- Q[name.P]
+                  suppressWarnings(P <- max(which(Change<0.25), na.rm=TRUE));
+	    		Cut <- '60%'; if(P != -Inf){Cut <- names(Change[P])}; if(P < 10){Cut <- '50%'}
+	    		L.Cut <- Q[Cut]
 
                   #For the internal standard, remove no more than 20% of the features as they are supposed to be of good quality
                   Q.H <- quantile(Out.H$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
-                  Change.H <- diff(Q.H)/Q.H[-1]; Change.H.half <- Change.H[-(1:11)]
-                  P.H <- which(Change.H.half>0.25); K2 <- min(P.H, na.rm=TRUE); P85 <- which(names(Change.H.half)=='85%')
-
-			if(K2==Inf){
-				name.P.H <- '90%'
-                  } else {
-
-	                  name.P.H <- ifelse(K2<P85, '80%', names(Change.H.half[K2-1])); 
-      	 		H.Cut <- Q.H[name.P.H]
-            	}
-      
-                  ##Remove the irreproducible features, which is the first step of the removal.      
+                  Change.H <- diff(Q.H)/Q.H[-1];
+                  suppressWarnings(P.H <- max(which(Change.H<0.25), na.rm=TRUE))
+			Cut.H <- '80%'; if(P.H != -Inf){Cut.H <- names(Change.H[P.H])}; if(P.H < 14){Cut.H <- '70%'}
+      	 	H.Cut <- Q.H[Cut.H]
+            	      
+                  ##Remove features with interference, which is the first step of the removal.      
        		Out.L$Flag.Repro <- 'OK'; Out.H$Flag.Repro <- 'OK'
        		Out.L[is.na(Out.L$Interference.Score), 'Interference.Score'] <- 10000 
        		Out.H[is.na(Out.H$Interference.Score), 'Interference.Score'] <- 10000 
@@ -392,7 +424,7 @@
        		Out.L[Out.L$Interference.Score >= L.Cut, 'Flag.Repro'] <- 'Noisy' 
        		Out.H[Out.H$Interference.Score >= H.Cut, 'Flag.Repro'] <- 'Noisy' 
 
-                  ##Extract the remaining features befoer proceeding to the next step
+                  ##Extract the remaining features before proceeding to the next step
        		Keep.L <- Out.L[Out.L$Interference.Score < L.Cut, 'Prot.F']
        		Keep.H <- Out.H[Out.H$Interference.Score < H.Cut, 'Prot.F']
        
@@ -419,8 +451,95 @@
  				OneFeature <- names(Freq[Freq==1])	
                   	work.keep <- subset(work.keep, !(Protein.Peptide %in% OneFeature))
                   #}
-                  work.keep$Protein.Feature <-NULL; work.keep$Protein.Peptide <- NULL 
-	
+
+      
+          		N.Peptide <- length(unique(work.keep$Protein.Peptide))
+
+          		#Create a data frame storing the average amount of interference at each peptide
+          		Inter.Pep <- data.frame(Protein.Peptide=vector(), Avg.Inter=vector())
+          		Index.Pep <- 0
+
+             	#Work on one peptide at a time. 
+             	for(h in 1:N.Peptide){  #F.5
+  
+             	temp1 <- subset(work.keep, Protein.Peptide==unique(Protein.Peptide)[h] & LABEL=='L')
+             	N.temp1 <- length(unique(temp1$FEATURE)) 
+		 	temp1$RUN <- factor(temp1$RUN, levels=unique(temp1$RUN)); temp1$FEATURE <- factor(temp1$FEATURE, levels=unique(temp1$FEATURE))    
+
+             	#Use TMP to do robust run quantification
+             	data_pep2 = dcast(RUN ~ FEATURE, data=temp1, value.var='ABUNDANCE', keep=TRUE)
+  		 	rownames(data_pep2) <- data_pep2$RUN
+  	       	data_pep2 <- data_pep2[,-1]
+  	       	data_pep2[data_pep2==1]<-NA
+
+ 	 		TMP2 <- medpolish(data_pep2, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)         
+             
+            	#Create a vector to save the interference score for each feature
+             	Inter <- vector()
+
+                	#Calculate the score of interference on each fragment
+                	#In fact, var(data_tmp[,k]-TMP.Run)=var(TMP$res[,k])
+                	for(k in 1:N.temp1){ #F.6
+             
+                  Inter[k] <- var(TMP2$res[,k], na.rm=TRUE)
+
+                                      } #F.6
+                	#End of loop for quantifying the amount of interference at each feature at this peptide
+ 
+                	Inter.Pep[(Index.Pep+1), 'Protein.Peptide'] <- as.character(unique(temp1$Protein.Peptide))                 
+                	Inter.Pep[(Index.Pep+1), 'Avg.Inter'] <- mean(Inter, na.rm=TRUE)               
+
+                	Index.Pep <- Index.Pep+1
+                                   } #F.5
+               	 #End of loop for computing the average amount of interference at each peptide
+
+           	   	 #Remove the most interfered peptides
+          	  	 MM <- quantile(Inter.Pep$Avg.Inter, na.rm=TRUE, probs=seq(0,1,0.05))
+         	   	 MM2 <- diff(MM); MM3 <- MM2/MM[-1]
+	    	    	 Pos2 <- max(which(MM3<0.2))	
+	    	    	 Cut2 <- '90%'; if(Pos2 != -Inf){Cut2 <- names(MM3)[Pos2]}; if(Pos2 < 12){Cut2 <- '60%'}
+	    	    	 Cut.Inter <- MM[Cut2]
+          	    	 Keep40 <- Inter.Pep[Inter.Pep$Avg.Inter <= Cut.Inter, 'Protein.Peptide']
+          	    	 work.keep2 <- subset(work.keep, Protein.Peptide %in% Keep40)
+
+
+			##If we do not allow any of the proteins being totally removed, we keep the most abundant peptide if it is totally removed
+			if(RemoveWholeProt==FALSE){ #S.7
+			
+				Prot2 <- unique(work.keep2$PROTEIN); Prot1 <- unique(work$PROTEIN); Loss <- setdiff(Prot1, Prot2)
+				work$Protein.Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='.') 
+				Keep.Peptide <- vector(); IK <- 0
+
+				if(length(Loss)>0){
+					sub.Loss <- subset(work, PROTEIN %in% Loss)
+					N2.Prot <- length(unique(sub.Loss$PROTEIN)) 
+					for(j in 1:N2.Prot){
+
+					subsub.Loss <- subset(sub.Loss, PROTEIN==unique(sub.Loss$PROTEIN)[j])
+					N.Pep2 <- length(unique(subsub.Loss$PEPTIDE))
+					#Get the most abundant peptide of this protein
+					AVG.Pep <- tapply(subsub.Loss$ABUNDANCE, subsub.Loss$Protein.Peptide, function(x) mean(x, na.rm=TRUE))
+					Top1 <- names(AVG.Pep[rank(-AVG.Pep)==1])
+					Keep.Peptide[IK+1] <- Top1; IK <- IK+1
+					}
+				 work.keepPep <- subset(work, Protein.Peptide %in% Keep.Peptide)
+				 work.4 <- rbind(work.keep2, work.keepPep)
+				 work.4$Protein_Feature <- NULL; work.4$Protein.Peptide <- NULL
+				 work.keep2 <- work.4
+
+				 } else {
+				 #The case of no proteins was totally removed
+				 work.keep2$Protein_Feature <- NULL; work.keep2$Protein.Peptide <- NULL
+				 
+				 }
+			 } else {
+
+	             work.keep2$Protein_Feature <- NULL; work.3$Protein.Peptide <- NULL
+
+                   } #S.7	
+
+
+
 		if(LeaveOneOut==TRUE){#LOO		  
                   #First it is safer to factorize each categorical variable, for which we use, since some of the levels are gone.
                   #This step is precautionary for some potential, but rare, errors.
@@ -669,9 +788,13 @@
 				work.keep.LOO2 <- subset(work.keep.LOO, !(Protein.Feature %in% Remove.Feature))
 				work.keep.LOO2$Protein_Feature <- NULL; work.keep.LOO2$ABUNDANCE.N <- NULL; work.keep.LOO2$Protein.Feature <- NULL
        		      work <- work.keep.LOO2
-			} #LOO
+			} else { 
 
-			work <- work.keep
+			work <- work.keep2
+
+			}#LOO
+
+			
 		} #2.4 : End of case for label-based experiment (Remove interference)
 
 	#Factorize some important variables because some of the levels have been removed
