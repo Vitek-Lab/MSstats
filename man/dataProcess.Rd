@@ -9,6 +9,7 @@ dataProcess(raw,logTrans=2,
 		betweenRunInterferenceScore=FALSE, address="",
 		fillIncompleteRows=TRUE,
 		featureSubset="all",
+		remove_proteins_with_interference=FALSE,
 		summaryMethod="TMP",
 		equalFeatureVar=TRUE,
 		filterLogOfSum=TRUE,
@@ -29,6 +30,7 @@ dataProcess(raw,logTrans=2,
  \item{betweenRunInterferenceScore}{interference is detected by a between-run-interference score. TRUE means the scores are generated automatically and stored in a .csv file. FALSE(default) means no scores are generated.}
  \item{fillIncompleteRows}{If the input dataset has incomplete rows, TRUE(default) adds the rows with intensity value=NA for missing peaks. FALSE reports error message with list of features which have incomplete rows. }
   \item{featureSubset}{"all"(default) uses all features that the data set has. "top3" uses top 3 features which have highest average of log2(intensity) across runs. "highQuality" selects the most informative features which agree the pattern of the average features across the runs.}
+  \item{remove_proteins_with_interference}{TRUE allows the algorithm to remove the proteins if deem interfered. FALSE (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide.}
 \item{summaryMethod}{"TMP"(default) means Tukey's median polish, which is robust estimation method. "linear" uses linear mixed model. "logOfSum" conducts log2 (sum of intensities) per run.}
 \item{equalFeatureVar}{only for summaryMethod="linear". default is TRUE. Logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. FALSE means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.}
 \item{filterLogOfSum}{For summaryMethod="logOfSum" option, TRUE (default) will filter out the runs which have any missing value. FALSE will not remove any run or features.} 

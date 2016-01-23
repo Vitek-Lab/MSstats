@@ -122,6 +122,11 @@ dataProcessPlots <- function(data=data,
     	if (any(is.element(colnames(datafeature),"SuggestToFilter"))) {
     		datafeature$SuggestToFilter <- NULL
     	}
+    	
+    	## remove the column called 'Fiter.Repro' if there.
+    	if (any(is.element(colnames(datafeature),"Filter.Repro"))) {
+    		datafeature$Filter.Repro <- NULL
+    	}
         
    		## save the plots as pdf or not
     	## If there are the file with the same name, add next numbering at the end of file name		

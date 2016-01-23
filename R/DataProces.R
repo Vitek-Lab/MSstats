@@ -11,6 +11,7 @@ dataProcess  <-  function(raw,
 						address="", 
 						fillIncompleteRows=TRUE, 
 						featureSubset="all",
+						remove_proteins_with_interference=FALSE,
 						summaryMethod="TMP",
 						equalFeatureVar=TRUE, 
 						filterLogOfSum=TRUE,
@@ -1508,7 +1509,7 @@ dataProcess  <-  function(raw,
   	  	processout <- rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
       	write.table(processout, file=finalfile, row.names=FALSE)
 	
-	  	work <- .feature_selection(work, LeaveOneOut=FALSE)
+	  	work <- .feature_selection(work, leave_one_out=FALSE, remove_proteins_with_interference)
 	}
   
 	## check missingness 
