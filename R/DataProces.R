@@ -1504,7 +1504,7 @@ dataProcess  <-  function(raw,
   	}
   
 	if (featureSubset == "highQuality") {
-  	  	message("* Use feature selection algorithm in order to get high quality features.")
+  	  	message("* Use feature selection algorithm in order to remove features with interference.")
   	  
   	  	processout <- rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
       	write.table(processout, file=finalfile, row.names=FALSE)

@@ -24,7 +24,7 @@
           	N.Pep <- length(unique(sub1$PEPTIDE))
           
           	## show progress
-			message(paste("Selection features or peptides for protein ", unique(sub1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+			message(paste("Selecting features or peptides for protein ", unique(sub1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 
             #Compute the score of interference at each fragment of each peptide
             for(j in 1:N.Pep){ #F.3 
@@ -212,7 +212,7 @@
 			N.Pep <- length(unique(DDA.1$PEPTIDE))
 
 			## show progress
-			message(paste("Selection features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+			message(paste("Selecting features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 				
 			## Create a data frame storing the assessment of the noise for each peptide
 			Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
@@ -310,7 +310,7 @@
        		N.Pep <- length(unique(Sub$PEPTIDE))
        			
        		## show progress
-			message(paste("Selection features or peptides for protein ", unique(Sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
+			message(paste("Selecting features or peptides for protein ", unique(Sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
 				
            	#Loop for the peptides in this protein
            	for(j in 1:N.Pep){ #2.4.2
