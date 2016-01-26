@@ -1,3 +1,8 @@
+CHANGES IN VERSION 3.3.4
+-------------------------
+- fix the bug for featureSubset=‘highQuality’ with label-based experiment.
+
+
 CHANGES IN VERSION 3.3.3
 -------------------------
 - add new option, remove_proteins_with_interference=FALSE (default), in dataProcess. whether it allows to remove proteins if deem interfered or not.
@@ -8,6 +13,7 @@ CHANGES IN VERSION 3.3.2
 - ProteinName=TRUE in groupComparisonPlots shows only the name of significant proteins, adjusting location. ggrepel package is used.
 - change featureSubset option in ‘dataProcess’ for selecting high quality features. featureSubset=‘highQuality’
 - Fix the bug for ‘fillIncompleteRows=TRUE’ for label-based experiments.
+- change ‘quantification’ function. use run summarization from dataProcess. If there are technical replicates, use median run summarization for each subject.
 
 
 CHANGES IN VERSION 3.3.1

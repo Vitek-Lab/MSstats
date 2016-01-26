@@ -49,9 +49,8 @@ dataProcess(raw,logTrans=2,
 \item{raw : See \code{\link{SRMRawData}} for the required data structure of raw (input) data.}
 \item{logTrans : if logTrans=2, the measurement of Variable ABUNDANCE is log-transformed with base 2. Same apply to logTrans=10.}
 \item{normalization : if normalization=TRUE and logTrans=2, the measurement of Variable ABUNDANCE is log-transformed with base 2 and normalized. Same as for logTrans=10.}
-\item{featureSubset : After the data was normalized, we deeply looked at each single feature (which is a precursor in DDA, a fragment in DIA, and a transition in SRM) and quantify its un-explainable variation. Ultimately, we remove the features which does not fit the experimental design or the ones with little reproducibility.}
+\item{featureSubset : After the data was normalized, we deeply looked at each single feature (which is a precursor in DDA, a fragment in DIA, and a transition in SRM) and quantify its un-explainable variation. Ultimately, we remove the features with interference.}
 \item{equalFeatureVar : If the unequal variation of error for different peptide features is detected, then a possible solution is to account for the unequal error variation by means of a procedure called iteratively re-weighted least squares. equalFeatureVar=FALSE performs an iterative fitting procedure, in which features are weighted inversely proportionaly to the variation in their intensities, so that feature with large variation are given less importance in the estimation of parameters in the model.}
-\item{missing.action : When peak intensities from all replicates in a condition are missing for at least one feature, missing.action="MBimpute" will impute by model-based imputation.}
 }
 }
 
