@@ -8,6 +8,7 @@ import(marray)
 import(preprocessCore)
 import(data.table)
 import(ggplot2)
+import(ggrepel)
 import(gplots)
 import(MSnbase)
 

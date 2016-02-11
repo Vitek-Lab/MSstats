@@ -9,12 +9,15 @@ dataProcess(raw,logTrans=2,
 		betweenRunInterferenceScore=FALSE, address="",
 		fillIncompleteRows=TRUE,
 		featureSubset="all",
+		remove_proteins_with_interference=FALSE,
 		summaryMethod="TMP",
 		equalFeatureVar=TRUE,
 		filterLogOfSum=TRUE,
 		censoredInt="NA",
-		cutoffCensored="minFeatureNRun",
+		cutoffCensored="minFeature",
 		MBimpute=TRUE,
+		original_scale=FALSE,
+		logsum=FALSE,
 		remove50missing=FALSE,
 		skylineReport=FALSE)	
 }
@@ -26,13 +29,16 @@ dataProcess(raw,logTrans=2,
   \item{nameStandards}{vector of global standard peptide names. only for normalization with global standard peptides. }
  \item{betweenRunInterferenceScore}{interference is detected by a between-run-interference score. TRUE means the scores are generated automatically and stored in a .csv file. FALSE(default) means no scores are generated.}
  \item{fillIncompleteRows}{If the input dataset has incomplete rows, TRUE(default) adds the rows with intensity value=NA for missing peaks. FALSE reports error message with list of features which have incomplete rows. }
-   \item{featureSubset}{"all"(default) uses all features that the data set has. "top3" uses top 3 features which have highest average of log2(intensity) across runs. "highQuality" selects the most informative features which agree the pattern of the average features across the runs. }
+  \item{featureSubset}{"all"(default) uses all features that the data set has. "top3" uses top 3 features which have highest average of log2(intensity) across runs. "highQuality" selects the most informative features which agree the pattern of the average features across the runs.}
+  \item{remove_proteins_with_interference}{TRUE allows the algorithm to remove the proteins if deem interfered. FALSE (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide.}
 \item{summaryMethod}{"TMP"(default) means Tukey's median polish, which is robust estimation method. "linear" uses linear mixed model. "logOfSum" conducts log2 (sum of intensities) per run.}
 \item{equalFeatureVar}{only for summaryMethod="linear". default is TRUE. Logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. FALSE means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.}
 \item{filterLogOfSum}{For summaryMethod="logOfSum" option, TRUE (default) will filter out the runs which have any missing value. FALSE will not remove any run or features.} 
 \item{censoredInt}{Missing values are censored or at random. 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. '0' uses zero intensities as censored intensity. In this case, NA intensities are missing at random. The output from Skyline should use '0'. Null assumes that all NA intensites are randomly missing.}
-\item{cutoffCensored}{Cutoff value for censoring. only with censoredInt='NA' or '0'. Default is 'minFeatureNRun', which use the smallest between minimum value of corresponding feature and minimum value of corresponding run. 'minFeature' uses minimum value for each feature.'minRun' uses minumum value for each run.}
+\item{cutoffCensored}{Cutoff value for censoring. only with censoredInt='NA' or '0'. Default is 'minFeature', which uses minimum value for each feature.'minFeatureNRun' uses the smallest between minimum value of corresponding feature and minimum value of corresponding run. 'minRun' uses minumum value for each run. }
 \item{MBimpute}{only for summaryMethod="TMP" and censoredInt='NA' or '0'. TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
+\item{original_scale}{Default is FALSE, which uses log transformed intensity for TMP. TRUE uses original intensitiesy for TMP.}
+\item{logsum}{Default is FALSE, which uses log of sum intensities after residuals from TMP.}
 \item{remove50missing}{only for summaryMethod="TMP". TRUE removes the runs which have more than 50\% missing values. FALSE is default.}
 \item{skylineReport}{default is FALSE. 'TRUE' means raw (input) data set from Skyline MSstats input format, which includes 'Truncated' column and can distinguish zero value and NA (missing values). Zero values in 'Intensity' column will be kept for 'skyline' summary method. Otherwise, they will be replaced with one in order to log transform.}
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
@@ -43,8 +49,8 @@ dataProcess(raw,logTrans=2,
 \item{raw : See \code{\link{SRMRawData}} for the required data structure of raw (input) data.}
 \item{logTrans : if logTrans=2, the measurement of Variable ABUNDANCE is log-transformed with base 2. Same apply to logTrans=10.}
 \item{normalization : if normalization=TRUE and logTrans=2, the measurement of Variable ABUNDANCE is log-transformed with base 2 and normalized. Same as for logTrans=10.}
+\item{featureSubset : After the data was normalized, we deeply looked at each single feature (which is a precursor in DDA, a fragment in DIA, and a transition in SRM) and quantify its un-explainable variation. Ultimately, we remove the features with interference.}
 \item{equalFeatureVar : If the unequal variation of error for different peptide features is detected, then a possible solution is to account for the unequal error variation by means of a procedure called iteratively re-weighted least squares. equalFeatureVar=FALSE performs an iterative fitting procedure, in which features are weighted inversely proportionaly to the variation in their intensities, so that feature with large variation are given less importance in the estimation of parameters in the model.}
-\item{missing.action : When peak intensities from all replicates in a condition are missing for at least one feature, missing.action="MBimpute" will impute by model-based imputation.}
 }
 }
 
