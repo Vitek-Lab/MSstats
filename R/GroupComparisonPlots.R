@@ -193,7 +193,7 @@ groupComparisonPlots <- function(data=data,
       		obj <- obj[hclust(dist(tempobj), method="ward.D")$order, ]
    	 	}
     	if (toupper(clustering) == 'COMPARISON') {
-      		obj <- obj[hclust(dist(t(tempobj)), method="ward.D")$order, ]
+      		obj <- obj[, hclust(dist(t(tempobj)), method="ward.D")$order]
     	}
    	    if (toupper(clustering) == 'BOTH') {
       		obj <- obj[hclust(dist(tempobj), method="ward.D")$order, hclust(dist(t(tempobj)), method="ward.D")$order]

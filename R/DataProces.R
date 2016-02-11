@@ -2032,7 +2032,7 @@ dataProcess  <-  function(raw,
 								}
 							}
 
-							for(j in 1:length(unique(sub$feature.label))) {
+							for(j in 1:length(unique(cut$feature.label))) {
 								sub[is.na(sub$INTENSITY) & sub$feature.label==cut$feature.label[j],"ABUNDANCE"] <- cut$ABUNDANCE[j]
 							}
 						}
@@ -2052,7 +2052,7 @@ dataProcess  <-  function(raw,
 								}
 							}
 						
-							for(j in 1:length(unique(sub$feature.label))) {
+							for(j in 1:length(unique(cut$feature.label))) {
 								sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0  & sub$feature.label==cut$feature.label[j],"ABUNDANCE"] <- cut$ABUNDANCE[j]
 							}
 						}
@@ -2074,7 +2074,7 @@ dataProcess  <-  function(raw,
 							## cutoff for each Run is little less than minimum abundance in a run.
 							cut$ABUNDANCE <- 0.99*cut$ABUNDANCE
 
-							for(j in 1:length(unique(sub$run.label))) {
+							for(j in 1:length(unique(cut$run.label))) {
 								sub[is.na(sub$INTENSITY) & sub$run.label==cut$run.label[j],"ABUNDANCE"] <- cut$ABUNDANCE[j]
 							}
 						}
@@ -2084,7 +2084,7 @@ dataProcess  <-  function(raw,
 							cut <- aggregate(ABUNDANCE~run.label,data=subtemptemp, FUN=min)
 							cut$ABUNDANCE <- 0.99*cut$ABUNDANCE
 
-							for(j in 1:length(unique(sub$run.label))) {
+							for(j in 1:length(unique(cut$run.label))) {
 								sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0 & sub$run.label==cut$run.label[j],"ABUNDANCE"] <- cut$ABUNDANCE[j]
 							}
 						}
@@ -2114,9 +2114,9 @@ dataProcess  <-  function(raw,
 							cut.run$ABUNDANCE <- 0.99*cut.run$ABUNDANCE
 						
 						
-							if (length(unique(sub$feature.label))>1) {
-								for(j in 1:length(unique(sub$feature.label))) {
-									for(k in 1:length(unique(sub$run.label))) {
+							if (length(unique(cut.fea$feature.label))>1) {
+								for(j in 1:length(unique(cut.fea$feature.label))) {
+									for(k in 1:length(unique(cut.run$run.label))) {
 										# get smaller value for min Run and min Feature
 										finalcut <- min(cut.fea$ABUNDANCE[j],cut.run$ABUNDANCE[k])
 								
@@ -2145,9 +2145,9 @@ dataProcess  <-  function(raw,
 							cut.run <- aggregate(ABUNDANCE~run.label,data=subtemptemp, FUN=min)
 							cut.run$ABUNDANCE <- 0.99*cut.run$ABUNDANCE
 	
-							if (length(unique(sub$feature.label))>1) {
-								for(j in 1:length(unique(sub$feature.label))) {
-									for(k in 1:length(unique(sub$run.label))) {
+							if (length(unique(cut.fea$feature.label))>1) {
+								for(j in 1:length(unique(cut.fea$feature.label))) {
+									for(k in 1:length(unique(cut.run$run.label))) {
 										# get smaller value for min Run and min Feature
 										finalcut <- min(cut.fea$ABUNDANCE[j],cut.run$ABUNDANCE[k])
 								
