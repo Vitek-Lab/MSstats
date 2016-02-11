@@ -1,61 +1,3 @@
-is.na(fit.full)
-if(is.na(fit.full)) {#
-					next#
-				}else{#
-					## get variance component#
-#
-					if(class(fit.full)!="mer"){#
-						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
-					}else{#
-						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
-						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
-						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
-							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
-						}#
-						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
-							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
-						}#
-						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
-							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
-						}#
-					}#
-				}
-sigma.error<-NULL
-VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
-for (i in 1:length(data)){#
-			# note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.#
-			fit.full<-data[[i]]#
-#
-				## if fit.full==NA (class(fit.full)=="try-error)#
-				if(is.na(fit.full)) {#
-					next#
-				}else{#
-					## get variance component#
-#
-					if(class(fit.full)!="mer"){#
-						VarComponent[i,"Error"]<-summary(fit.full)$sigma^2#
-					}else{#
-						stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))#
-						VarComponent[i,"Error"]<-stddev[names(stddev)==""]^2#
-						if(sum(names(stddev)%in%"SUBJECT_NESTED.(Intercept)")>0){#
-							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT_NESTED.(Intercept)"]^2#
-						}#
-						if(sum(names(stddev)%in%"SUBJECT.(Intercept)")>0){#
-							VarComponent[i,"Subject"]<-stddev[names(stddev)=="SUBJECT.(Intercept)"]^2#
-						}#
-						if(sum(names(stddev)%in%"SUBJECT:GROUP.(Intercept)")>0){#
-							VarComponent[i,"GroupBySubject"]<-stddev[names(stddev)=="SUBJECT:GROUP.(Intercept)"]^2#
-						}#
-					}#
-				}#
-		} ## end-loop
-sigma.error<-NULL
-VarComponent<-data.frame(Protein=seq(1,length(data)),Error=NA,Subject=NA,GroupBySubject=NA)
-data[[3]]
-data[[3]]<-NULL
-data[[3]]
-data
-data[[3]]<-NA
 data
 data[[3]]<-NULL
 data
@@ -1944,3 +1886,15 @@ temp<-aggregate(PROTEIN~.,data=work, FUN=function(x){#
 	return(maxfeature)#
 #
 })
+message(paste('All features in proteins', as.character(Loss), 'have interference. We keep the most abundant peptide.' sep=' '))
+Loss <-c('abd', 'def')
+message(paste('All features in proteins', as.character(Loss), 'have interference. We keep the most abundant peptide.' sep=' '))
+message(paste('All features in proteins', as.character(Loss), 'have interference. We keep the most abundant peptide.' , sep=' '))
+Loss
+as.character(Loss)
+message(paste('All features in proteins', Loss, 'have interference. We keep the most abundant peptide.' , sep=' '))
+message(paste('All features in proteins', paste(Loss,collapse = ", "), 'have interference. We keep the most abundant peptide.' , sep=' '))
+message('All features in proteins ', paste(Loss,collapse = ", "), 'have interference. We keep the most abundant peptide.')
+message('All features in proteins ', paste(Loss,collapse = ", "), ' have interference. We keep the most abundant peptide.')
+message('All features in proteins (', paste(Loss,collapse = ", "), ') have interference. We keep the most abundant peptide.')
+install.packages(pkgs="/Users/Meena/Dropbox/MSstats_GitHub_private/MSstats_3.3.3.tar.gz",repos=NULL,type="source")

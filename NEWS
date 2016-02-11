@@ -1,3 +1,35 @@
+CHANGES IN VERSION 3.3.4
+-------------------------
+- fix the bug for featureSubset=‘highQuality’ with label-based experiment.
+
+
+CHANGES IN VERSION 3.3.3
+-------------------------
+- add new option, remove_proteins_with_interference=FALSE (default), in dataProcess. whether it allows to remove proteins if deem interfered or not.
+
+
+CHANGES IN VERSION 3.3.2
+-------------------------
+- ProteinName=TRUE in groupComparisonPlots shows only the name of significant proteins, adjusting location. ggrepel package is used.
+- change featureSubset option in ‘dataProcess’ for selecting high quality features. featureSubset=‘highQuality’
+- Fix the bug for ‘fillIncompleteRows=TRUE’ for label-based experiments.
+- change ‘quantification’ function. use run summarization from dataProcess. If there are technical replicates, use median run summarization for each subject.
+
+
+CHANGES IN VERSION 3.3.1
+-------------------------
+- fix the bug for volcano plot in groupComparisonPlots, with logbase=2.
+- update all plots for ggplot2
+- Change the default for ‘cutoffCensored’. Now the default is “minFeature”.
+- for imputing the censored peak intensities, remove the features which has only 1 measurement for survreg function.
+
+
+CHANGES IN VERSION 3.2.3
+-------------------------
+- bug for normalization=‘globanstandards’ in dataProcess. Even though wrong normalization options, data processing is kept going. Make the process stop if wrong input for normalization
+- fix the bug with nameStandards=‘protein name’. (only peptide names worked with 3.2.2.)
+
+
 CHANGES IN VERSION 3.0.12
 -------------------------
 - remove vignetter folder to remove install and build error in Bioconductor

@@ -4,11 +4,26 @@
 \description{To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, groupComparisonPlots takes testing results from function (\code{\link{groupComparison}}) as input and automatically generate three types of figures in pdf files as output : (1) volcano plot (specify "VolcanoPlot" in option type) for each comparison separately; (2) heatmap (specify "Heatmap" in option type) for multiple comparisons ; (3) comparison plot (specify "ComparisonPlot" in option type) for multiple comparisons per protein.}
 
 \usage{
-groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,
-	logBase.pvalue=10,ylimUp=FALSE,ylimDown=FALSE,xlimUp=FALSE,
-	x.axis.size=10,y.axis.size=10,dot.size=3,text.size=4,legend.size=7,
-	ProteinName=TRUE,ProteinNameLoc=1, numProtein=100, clustering="both", 
-	width=10, height=10, which.Comparison="all", address="")
+groupComparisonPlots(data=data,
+		type=type,
+		sig=0.05,
+		FCcutoff=FALSE,
+		logBase.pvalue=10,
+		ylimUp=FALSE,
+		ylimDown=FALSE,
+		xlimUp=FALSE,
+		x.axis.size=10,
+		y.axis.size=10,
+		dot.size=3,
+		text.size=4,
+		legend.size=13,
+		ProteinName=TRUE,
+		numProtein=100, 
+		clustering="both", 
+		width=10, 
+		height=10, 
+		which.Comparison="all", 
+		address="")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -25,8 +40,7 @@ groupComparisonPlots(data=data,type=type,sig=0.05,FCcutoff=FALSE,
   \item{dot.size}{size of dots in volcano plot and comparison plot. Default is 3.}
  \item{text.size}{size of ProteinName label in the graph for Volcano Plot. Default is 4.}
   \item{legend.size}{size of legend for color at the bottom of volcano plot.  Default is 7.}
-  \item{ProteinName}{for volcano plot only, whether display protein names or not. TRUE (default) means protein names are displayed next to the testing results. FALSE means no protein names are displayed.}
-  \item{ProteinNameLoc}{for volcano plot only, assign the distance between the point and the displayed protein name. Default is 1.}
+  \item{ProteinName}{for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.}
    \item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180. }
    \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
   \item{width}{width of the saved file. Default is 10.}
