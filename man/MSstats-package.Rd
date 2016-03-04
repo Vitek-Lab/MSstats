@@ -7,7 +7,7 @@
 \details{
 \tabular{ll}{
 Package: \tab MSstats\cr
-Version: \tab 3.3.6\cr
+Version: \tab 3.3.7\cr
 Date: \tab 2016-02-10\cr
 License: \tab Artistic-2.0 \cr
 LazyLoad: \tab yes\cr
