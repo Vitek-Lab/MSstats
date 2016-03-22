@@ -1,6 +1,14 @@
 CHANGES IN VERSION 3.3.8
 -------------------------
 - normalization : overall median -> median of medians. For all workflow for MSstats, the result should not be changed. But, log(sum) will have slightly different result.
+- flag about missingness and imputation
+	- RunlevelData from dataProcess include two or three more columns 		
+		1) NumMeasuredFeature : number of measured features in a run
+		2) Missing percentage : number of measured features/total number of features by run
+		3) NumImputedFeature : number of imputed intensities in a run. This column is shown only if users allow to impute the missing value.
+	- ComparisonResult from groupComparison : one or two columns will be added.
+		1) MissingPercentage : number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) by protein
+		2) ImputationPercentage : number of imputed intensities/total number of intensities by protein
 
 
 CHANGES IN VERSION 3.3.4
