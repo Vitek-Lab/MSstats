@@ -1181,14 +1181,9 @@ dataProcess  <-  function(raw,
 		if (nlevels(work$LABEL) == 1) {
 			## Constant normalization by endogenous per method
       
-			median.run <- tapply(work$ABUNDANCE,work$RUN, function(x) median(x,na.rm=TRUE))
-      
-			## [THT: should we adjust for overall median or median of medians? 
-			## Current implementation uses overall median, and those complete runs play
-			## a major role. I add the median of medians in the next 2 lines as reference]
+			## [MC : use median of medians]
 			median.run.method  <-  aggregate(ABUNDANCE ~ RUN + METHOD, data = work, median, na.rm = TRUE)
 			median.method  <-  tapply(median.run.method$ABUNDANCE, median.run.method$METHOD, median, na.rm = TRUE)
-			median.method <- tapply(work$ABUNDANCE, work$METHOD, function(x) median(x,na.rm=TRUE))
       
 			nmethod <- unique(work$METHOD)
       
@@ -1197,7 +1192,7 @@ dataProcess  <-  function(raw,
         
 				for (i in 1:length(namerun)) {
 					## ABUNDANCE is normalized
-					work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"]-median.run[names(median.run) == namerun[i]] + median.method[j]
+					work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]
 				}
 			}
 		}
@@ -1207,8 +1202,10 @@ dataProcess  <-  function(raw,
       
 			## Constant normalization by heavy standard per method
 			h <- work[work$LABEL == "H", ]
-      		median.run <- tapply(h$ABUNDANCE,h[,"RUN"], function(x) median(x,na.rm=TRUE))
-      		median.method <- tapply(h$ABUNDANCE,h$METHOD, function(x) median(x,na.rm=TRUE))
+      		      		
+      		## [MC : use median of medians]
+			median.run.method  <-  aggregate(ABUNDANCE ~ RUN + METHOD, data = h, median, na.rm = TRUE)
+			median.method  <-  tapply(median.run.method$ABUNDANCE, median.run.method$METHOD, median, na.rm = TRUE)
       
       		nmethod <- unique(work$METHOD)
       
@@ -1217,7 +1214,7 @@ dataProcess  <-  function(raw,
         
         		for (i in 1:length(namerun)) {
           			## ABUNDANCE is normalized
-          			work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"]-median.run[names(median.run) == namerun[i]] + median.method[j]
+          			work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]
         		}
       		} # end loop method		
     	} # for labe-based 
@@ -2230,21 +2227,35 @@ dataProcess  <-  function(raw,
 					if (!is.null(censoredInt)) {
 						if (censoredInt=="NA") {
 							subtemp <- sub[!is.na(sub$INTENSITY),]
+							subtempimpute <- sub[is.na(sub$INTENSITY),]
+							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
 						}
 					
 						if (censoredInt=="0") {
 							subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+							subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,]
+							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE!=0, ]
 						}
+						
+						numFea <- xtabs(~RUN, subtemp)
+						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+						numFeaTF <- numFeaPercentage >= 0.5
+					
+						numimpute <- xtabs(~RUN, subtempimpute)
+					
+						sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+					
 					}else{
 						subtemp <- sub[!is.na(sub$INTENSITY),]
+						
+						numFea <- xtabs(~RUN, subtemp)
+						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+						numFeaTF <- numFeaPercentage >= 0.5
+										
+						sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF)
+						
 					}
-					
-					numFea <- xtabs(~RUN, subtemp)
-					numFea <- numFea/length(unique(subtemp$FEATURE))
-					numFea <- numFea<=0.5
-					
-					sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), more50missing=numFea)
-			
+								
       				result <- rbind(result, sub.result)
       			
       			}else{ ## labeled
@@ -2279,19 +2290,35 @@ dataProcess  <-  function(raw,
         			# count # feature per run
         			if (!is.null(censoredInt)) {
 						if (censoredInt=="NA") {
-							subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY),]
+							subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY), ]
+							subtempimpute <- sub[sub$LABEL=="L" & is.na(sub$INTENSITY),]
+							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
 						}
 					
 						if (censoredInt=="0") {
-							subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+							subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0, ]
+							subtempimpute <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY==0, ]
+							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE!=0, ]
 						}
-					}
+						
+      					numFea <- xtabs(~RUN, subtemp)
+						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+						numFeaTF <- numFeaPercentage >= 0.5
 					
-					numFea <- xtabs(~RUN, subtemp)
-					numFea <- numFea/length(unique(subtemp$FEATURE))
-					numFea <- numFea<=0.5
+						numimpute <- xtabs(~RUN, subtempimpute)
+					
+						sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=reformresult$ABUNDANCE, RUN=reformresult$RUN, NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
 
-      				sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=reformresult$ABUNDANCE, RUN=reformresult$RUN, more50missing=numFea)
+					}else{
+						subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY), ]
+						
+						numFea <- xtabs(~RUN, subtemp)
+						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+						numFeaTF <- numFeaPercentage >= 0.5
+					
+						sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=reformresult$ABUNDANCE, RUN=reformresult$RUN, NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF)
+
+					}
       				
       				result <- rbind(result, sub.result)
       			}
@@ -2312,28 +2339,40 @@ dataProcess  <-  function(raw,
       			
 				## single feature, use original values
 				
-				
       			subtemp <- sub[!is.na(sub$ABUNDANCE),]
       			
       			if (!is.null(censoredInt)) {
       				if (censoredInt=="NA") {
-						subtempcount <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY),]
+						subtempcount <- sub[!is.na(sub$INTENSITY),]
+						subtempimpute <- sub[is.na(sub$INTENSITY),]
+						subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
 					}
 					
 					if (censoredInt=="0") {
-						subtempcount <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+						subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,]
+						subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE!=0, ]
 					}
+						
+					numFea <- xtabs(~RUN, subtempcount)
+					numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+					numFeaTF <- numFeaPercentage >= 0.5
+					
+					numimpute <- xtabs(~RUN, subtempimpute)
+			
+					sub.result <- data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN, NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+      			
 				}else{
 					subtempcount <- subtemp
+					
+					numFea <- xtabs(~RUN, subtempcount)
+					numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+					numFeaTF <- numFeaPercentage >= 0.5
+					
+      				sub.result <- data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN, NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF)
+      				
 				}
 
-				
-				numFea <- xtabs(~RUN, subtempcount)
-				numFea <- numFea/length(unique(subtempcount$FEATURE))
-				numFea <- numFea<=0.5
-					
-      			sub.result <- data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN,  more50missing=numFea)
-      				
       			result <- rbind(result, sub.result)
       		}
       	}  ## loop for proteins

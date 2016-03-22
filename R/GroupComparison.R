@@ -123,7 +123,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
  
   	## need original group information
   	rqall <- data$RunlevelData
-
+	processall <- data$ProcessedData
+	
   	origGroup <- unique(rqall$GROUP_ORIGINAL)
   
   	for (i in 1:nlevels(rqall$Protein)) {
@@ -192,11 +193,34 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	} else {
       		tempresult <- temp
     	}
-    
+    	
+    	temptempresult <- tempresult$result
+    	    	
+    	## need to add information about % missingness and %imputation
+    	subtemp <- processall[processall$PROTEIN == unique(sub$PROTEIN), ]
+    	
+		totalncell <- length(unique(subtemp$FEATURE)) * length(unique(subtemp$RUN))
+    	
+    	## total # missing
+    	MissingPercentage <- 1 - sum(sub$NumMeasuredFeature) / totalncell
+
+    	if(any(is.element(colnames(sub), "NumImputedFeature"))){
+    		ImputationPercentage <- sum(sub$NumImputedFeature) / totalncell
+    		
+    		temptempresult <- data.frame(temptempresult, MissingPercentage=MissingPercentage, ImputationPercentage=ImputationPercentage)
+    		
+    	}else{
+    		
+    	    temptempresult <- data.frame(temptempresult, MissingPercentage=MissingPercentage)
+
+    	}
+    	nrow(subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE != 0, ])
+
     	## comparison result table
     	#	out <- rbindlist(list(out,tempresult$result))
-    	out <- rbind(out,tempresult$result)
-    
+    	out <- rbind(out, temptempresult)
+
+
     	## for checking model assumptions
     	## add residual and fitted after fitting the model
     	if (class(temp) == "try-error") {
@@ -267,6 +291,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	## change the format as data.frame
   	out.all <- data.frame(out.all)
   
+  	## change order of columns, 
+  	if(any(is.element(colnames(out.all), "ImputationPercentage"))){
+    	out.all <- out.all[, c(1:7,10,8,9)]		
+    }else{
+    	out.all <- out.all[, c(1:7,9,8)]
+    }
+    
   	##
   	processout <- rbind(processout, c("Group comparison is done. - okay"))
   	write.table(processout, file=finalfile, row.names=FALSE)

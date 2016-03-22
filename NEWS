@@ -1,3 +1,8 @@
+CHANGES IN VERSION 3.3.8
+-------------------------
+- normalization : overall median -> median of medians. For all workflow for MSstats, the result should not be changed. But, log(sum) will have slightly different result.
+
+
 CHANGES IN VERSION 3.3.4
 -------------------------
 - fix the bug for featureSubset=‘highQuality’ with label-based experiment.
