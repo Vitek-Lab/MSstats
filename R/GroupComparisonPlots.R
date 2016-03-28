@@ -394,7 +394,7 @@ groupComparisonPlots <- function(data=data,
       		}
       
       		## x.lim
-      		x.lim <- ceiling(max(abs(sub[!is.na(sub[, 3]), 3]))) ## log2FC or log10FC
+      		x.lim <- ceiling(max(abs(sub[!is.na(sub[, 3]) & abs(sub[, 3]) != Inf , 3]))) ## log2FC or log10FC
       		if (x.lim < 3) {
       			x.lim <- 3
       		}
@@ -413,6 +413,16 @@ groupComparisonPlots <- function(data=data,
       		if (logBase.pvalue == 10) {
         		subtemp$log10adjp <- (-log10(subtemp$adj.pvalue))
         	}
+        	
+        	## for x limit for inf or -inf
+        	subtemp$newlogFC <- subtemp$logFC
+        	subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing" & subtemp$logFC == Inf, "newlogFC"] <- (x.lim - 0.2)
+        	subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing" & subtemp$logFC == (-Inf), "newlogFC"] <- (x.lim - 0.2) *(-1)
+        	
+        	## add (*) in Protein name for Inf or -Inf
+        	subtemp$Protein <- as.character(subtemp$Protein)
+        	subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing", "Protein"] <- paste("*", subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing", "Protein"], sep="")
+
       
       		## Plotting
       		if (logBase.pvalue == 2) {

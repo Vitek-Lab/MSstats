@@ -21,7 +21,8 @@ dataProcessPlots <- function(data=data,
 							height=10, 
 							which.Protein="all", 
 							originalPlot=TRUE, 
-							summaryPlot=TRUE, 
+							summaryPlot=TRUE,
+							save_condition_plot_result=FALSE, 
 							address="") {
 	
 	datafeature <- data$ProcessedData
@@ -129,7 +130,19 @@ dataProcessPlots <- function(data=data,
     	}
         
    		## save the plots as pdf or not
-    	## If there are the file with the same name, add next numbering at the end of file name		
+    	## If there are the file with the same name, add next numbering at the end of file name
+    	
+    	## y-axis labeling
+       	temp <- datafeature[!is.na(datafeature[,"ABUNDANCE"]) & !is.na(datafeature[,"INTENSITY"]), ]
+       	temp <- temp[1, ]
+        temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+        
+        if (temptest) {
+          	yaxis.name <- 'Log2-intensities'
+        } else {
+          	yaxis.name <- 'Log10-intensities'
+        }	
+        					
     	if (originalPlot) {
     		if (address!=FALSE) {
       			allfiles <- list.files()
@@ -187,8 +200,9 @@ dataProcessPlots <- function(data=data,
         					geom_point(size=dot.size.profile)+
         					geom_line(size=0.5)+
         					scale_colour_manual(values=s)+
-        					scale_linetype_manual(values=ss, guide="none")+
+        					scale_linetype_manual(values=ss)+
         					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+        					scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
         					geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash")+
         					labs(title=unique(sub$PROTEIN))+
         					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
@@ -206,17 +220,7 @@ dataProcessPlots <- function(data=data,
           						title=element_text(size=x.axis.size+8, vjust=1.5),
           						legend.position="top",
           						legend.text=element_text(size=legend.size)
-          					)
-        
-        			## y-axis labeling
-        			temp <- sub[!is.na(sub[,"ABUNDANCE"]) & !is.na(sub[,"INTENSITY"]),]
-        			temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
-        
-        			if (temptest) {
-          				ptemp <- ptemp+scale_y_continuous('Log2-intensities', limit=c(y.limdown, y.limup))
-        			} else {
-          				ptemp <- ptemp+scale_y_continuous('Log10-intensities', limit=c(y.limdown, y.limup))
-        			}	
+          					)	
         
         			## draw point here,
         			## if there are imputed data
@@ -227,7 +231,7 @@ dataProcessPlots <- function(data=data,
 										guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3),  shape=guide_legend(title=NULL))
 					} else {
 						ptemp <- ptemp+geom_point(size=1.5)+
-										guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3))
+										guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3), linetype=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3))
 					}
 		
 					print(ptemp)
@@ -245,6 +249,7 @@ dataProcessPlots <- function(data=data,
         					scale_colour_manual(values=unique(s))+
         					scale_linetype_manual(values=ss, guide="none")+
         					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+        					scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
         					geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
         					labs(title=unique(sub$PROTEIN))+
         					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
@@ -263,16 +268,6 @@ dataProcessPlots <- function(data=data,
           						legend.position="top",
           						legend.text=element_text(size=legend.size)
           					)
-        
-        			## y-axis labeling
-        			temp <- sub[!is.na(sub[, "ABUNDANCE"]) & !is.na(sub[, "INTENSITY"]), ]
-        			temptest <- abs(log2(temp[1, "INTENSITY"])-temp[1, "ABUNDANCE"])<abs(log10(temp[1, "INTENSITY"])-temp[1, "ABUNDANCE"])
-        
-        			if (temptest) {
-          				ptemp <- ptemp+scale_y_continuous('Log2-intensities', limit=c(y.limdown, y.limup))	
-        			} else {
-          				ptemp <- ptemp+scale_y_continuous('Log10-intensities', limit=c(y.limdown, y.limup))
-       		 		}
         
         			## draw point here,
         			## if there are imputed data
@@ -300,6 +295,7 @@ dataProcessPlots <- function(data=data,
         					scale_colour_manual(values=unique(s), guide="none")+
         					scale_linetype_manual(values=ss, guide="none")+
         					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+        					scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
         					geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
         					labs(title=unique(sub$PROTEIN))+
         					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
@@ -318,16 +314,6 @@ dataProcessPlots <- function(data=data,
           						legend.position="top",
           						legend.text=element_text(size=legend.size)
           					)
-        
-        			## y-axis labeling
-        			temp <- sub[!is.na(sub[, "ABUNDANCE"]) & !is.na(sub[, "INTENSITY"]), ]
-        			temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
-        
-        			if (temptest) {
-         	 			ptemp <- ptemp+scale_y_continuous('Log2-intensities', limit=c(y.limdown, y.limup))
-        			} else {
-          				ptemp <- ptemp+scale_y_continuous('Log10-intensities', limit=c(y.limdown, y.limup))
-        			}	
         
         			## draw point here,
         			## if there are imputed data
@@ -441,6 +427,7 @@ dataProcessPlots <- function(data=data,
 								scale_size_manual(values=c(1, 2))+
 								scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2), guide="none")+
 								scale_x_continuous('MS runs',breaks=cumGroupAxis)+
+								scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
 								geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
 								labs(title=unique(final$PROTEIN))+
 								geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
@@ -460,8 +447,6 @@ dataProcessPlots <- function(data=data,
 									legend.text=element_text(size=legend.size),
 									legend.title=element_blank()
 								)
-
-					ptempall <- ptempall+scale_y_continuous('Log2-intensities', limit=c(y.limdown, y.limup))
 				
 					## draw point again because some red summary dots could be hiden
 					ptempall <- ptempall+geom_point(data=final, aes(x=RUN, y=ABUNDANCE, shape=analysis, size=analysis, color=analysis))
@@ -484,6 +469,17 @@ dataProcessPlots <- function(data=data,
 	## ---------------------------------
 	if (toupper(type) == "QCPLOT") {
     
+        ## y-axis labeling
+       	temp <- datafeature[!is.na(datafeature[,"ABUNDANCE"]) & !is.na(datafeature[,"INTENSITY"]), ]
+       	temp <- temp[1, ]
+        temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+        
+        if (temptest) {
+          	yaxis.name <- 'Log2-intensities'
+        } else {
+          	yaxis.name <- 'Log10-intensities'
+        }	
+        
 		## save the plots as pdf or not
     	## If there are the file with the same name, add next numbering at the end of file name		
     	if (address!=FALSE) {
@@ -545,6 +541,7 @@ dataProcessPlots <- function(data=data,
     			geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
     			scale_fill_manual(values=label.color, guide="none")+
     			scale_x_discrete('MS runs', breaks=cumGroupAxis)+
+    			scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
     			geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
     			labs(title="All proteins")+
     			geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
@@ -561,16 +558,6 @@ dataProcessPlots <- function(data=data,
       				axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
       				title=element_text(size=x.axis.size+8, vjust=1.5)
       			)
-    
-    	## y-axis labeling
-    	temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]),]
-    	temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
-    
-    	if (temptest) {
-      		ptemp <- ptemp+scale_y_continuous('Log2-intensities', limit=c(y.limdown, y.limup))
-    	} else {
-      		ptemp <- ptemp+scale_y_continuous('Log10-intensities', limit=c(y.limdown, y.limup))
-    	}	
     
     	print(ptemp)
     
@@ -623,6 +610,7 @@ dataProcessPlots <- function(data=data,
       				geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
       				scale_fill_manual(values=label.color, guide="none")+
       				scale_x_discrete('MS runs', breaks=cumGroupAxis)+
+      				scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
       				geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
       				labs(title=unique(sub$PROTEIN))+
       				geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
@@ -640,13 +628,6 @@ dataProcessPlots <- function(data=data,
         				title=element_text(size=x.axis.size+8, vjust=1.5)
         			)
       
-      		## y-axis labeling
-     	 	if (temptest) {
-        		ptemp <- ptemp+scale_y_continuous('Log2-intensities', limit=c(y.limdown, y.limup))
-      		} else {
-        		ptemp <- ptemp+scale_y_continuous('Log10-intensities', limit=c(y.limdown, y.limup))
-      		}	
-      
       		print(ptemp)
       
       		message(paste("Drew the Quality Contol plot(boxplot) for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
@@ -662,7 +643,10 @@ dataProcessPlots <- function(data=data,
   ## Condition plot ##
   ## -----------------
 	if (toupper(type) == "CONDITIONPLOT") {
-    
+    	
+    	colnames(datarun)[colnames(datarun) == "Protein"] <- "PROTEIN"
+    	colnames(datarun)[colnames(datarun) == "LogIntensities"] <- "ABUNDANCE"
+
     	## choose Proteins or not
     	if (which.Protein != "all") {
       		## check which.Protein is name of Protein
@@ -671,7 +655,7 @@ dataProcessPlots <- function(data=data,
         		temp.name <- which.Protein
         
         		## message if name of Protein is wrong.
-        		if (length(setdiff(temp.name, unique(datafeature$PROTEIN))) > 0) {
+        		if (length(setdiff(temp.name, unique(datarun$PROTEIN))) > 0) {
         			stop(paste("Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
         		}
           			
@@ -680,17 +664,17 @@ dataProcessPlots <- function(data=data,
       		## check which.Protein is order number of Protein
       		if (is.numeric(which.Protein)) {
         
-        		temp.name <- levels(datafeature$PROTEIN)[which.Protein]
+        		temp.name <- levels(datarun$PROTEIN)[which.Protein]
         
         		## message if name of Protein is wrong.
-        		if (length(levels(datafeature$PROTEIN))<max(which.Protein)) {
-          			stop(paste("Please check your selection of proteins. There are ", length(levels(datafeature$PROTEIN))," proteins in this dataset.",sep=" "))
+        		if (length(levels(datarun$PROTEIN))<max(which.Protein)) {
+          			stop(paste("Please check your selection of proteins. There are ", length(levels(datarun$PROTEIN))," proteins in this dataset.",sep=" "))
           		}
       		}
       
       		## use only assigned proteins
-      		datafeature <- datafeature[which(datafeature$PROTEIN %in% temp.name), ]
-      		datafeature$PROTEIN <- factor(datafeature$PROTEIN)
+      		datarun <- datarun[which(datarun$PROTEIN %in% temp.name), ]
+      		datarun$PROTEIN <- factor(datarun$PROTEIN)
     	}
     
     	## save the plots as pdf or not
@@ -709,228 +693,172 @@ dataProcessPlots <- function(data=data,
       
       		pdf(finalfile, width=width, height=height)
     	}
+    	
+    	## save all results
+    	resultall <- NULL
+    	
+    	## y-axis labeling, find log 2 or log 10
+        temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]),]
+        temp <- temp[1,]
+        temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+        
+        if (temptest) {
+          	yaxis.name <- 'Log2-intensities'
+        }else{
+          	yaxis.name <- 'Log10-intensities'
+        }
+
     
-    	if (nlevels(datafeature$LABEL) == 1) {
-      		for (i in 1:nlevels(datafeature$PROTEIN)) {	
-        		sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
-        		sub <- na.omit(sub)	
-        		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
-        		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)	
-        		sub$FEATURE <- factor(sub$FEATURE)	
+      	for (i in 1:nlevels(datarun$PROTEIN)) {	
+      		
+      		suball <- NULL
+      		
+        	sub <- datarun[datarun$PROTEIN == levels(datarun$PROTEIN)[i], ]
+        	sub <- na.omit(sub)	
+        	sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+        	sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)	
         
-        		## if all measurements are NA,
-        		if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
-          			message(paste("Can't the Condition plot for ", unique(sub$PROTEIN), "(", i, " of ",length(unique(datafeature$PROTEIN)), ") because all measurements are NAs."))
-          			next()
-        		}
+        	## if all measurements are NA,
+        	if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
+          		message(paste("Can't the Condition plot for ", unique(sub$PROTEIN), "(", i, " of ",length(unique(datarun$PROTEIN)), ") because all measurements are NAs."))
+          		next()
+        	}
         
-        		## statistics
-        		sub.mean <- by(sub$ABUNDANCE, sub$GROUP_ORIGINAL, function(x) mean(x,na.rm=TRUE))
-        		sub.sd <- by(sub$ABUNDANCE, sub$GROUP_ORIGINAL, sd)
-        		sub.len <- by(sub$ABUNDANCE, sub$GROUP_ORIGINAL, length)
+        	## statistics
+        	sub.mean <- aggregate(ABUNDANCE ~ GROUP_ORIGINAL, data=sub, mean, na.rm=TRUE)
+        	sub.sd <- aggregate(ABUNDANCE ~ GROUP_ORIGINAL, data=sub, sd)
+        	sub.len <- aggregate(ABUNDANCE ~ GROUP_ORIGINAL, data=sub, length)
         		
-        		if (interval=="CI") {
-        			ciw <- qt(0.975, sub.len) * sub.sd / sqrt(sub.len)
-        		}
-        		if (interval=="SD") {
-        			ciw <- sub.sd
-        		}
+        	## make the table for result
+        	colnames(sub.mean)[colnames(sub.mean) == "ABUNDANCE"] <- "Mean"
+        	colnames(sub.sd)[colnames(sub.sd) == "ABUNDANCE"] <- "SD"
+        	colnames(sub.len)[colnames(sub.len) == "ABUNDANCE"] <- "numMeasurement"
+
+			suball <- merge(sub.mean, sub.sd, by="GROUP_ORIGINAL")
+			suball <- merge(suball, sub.len, by="GROUP_ORIGINAL")
+
+        	if (interval=="CI") {
+        		suball$ciw <- qt(0.975, suball$numMeasurement) * suball$SD / sqrt(suball$numMeasurement)
+        	}
+        	if (interval=="SD") {
+        		suball$ciw <- suball$SD
+        	}
         
-        		if (sum(is.na(ciw)) >= 1) {
-        			ciw[is.na(ciw)] <- 0
-        		}
+        	if (sum(is.na(suball$ciw)) >= 1) {
+        		suball$ciw[is.na(suball$ciw)] <- 0
+        	}
         
-        		## assign upper or lower limit
-        		y.limup <- ceiling(max(sub.mean+ciw))
-        		if (is.numeric(ylimUp)) {
-        			y.limup <- ylimUp 
-        		}
+        	## assign upper or lower limit
+        	y.limup <- ceiling(max(suball$Mean + suball$ciw))
+        	if (is.numeric(ylimUp)) {
+        		y.limup <- ylimUp 
+        	}
         
-        		y.limdown <- floor(min(sub.mean-ciw))
-        		if (is.numeric(ylimDown)) {
-        			y.limdown <- ylimDown 
-        		}
-        
-        		if (!scale) {  ## scale: false
-          
-          			## reformat as data.frame
-          			tempsummary <- data.frame(Label=unique(sub$GROUP_ORIGINAL), mean=as.vector(sub.mean), ciw=as.vector(ciw))
-          
-          			ptemp <- ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+
-          					geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw), data=tempsummary, width=0.1, colour="red")+
-          					geom_point(size=dot.size.condition, colour="darkred")+
-          					scale_x_discrete('Condition')+
-          					geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
-          					labs(title=unique(sub$PROTEIN))+
-          					theme(
-            					panel.background=element_rect(fill='white', colour="black"),
-            					panel.grid.major.y = element_line(colour="grey95"),
-            					panel.grid.minor.y = element_blank(),
-            					axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
-            					axis.text.y=element_text(size=y.axis.size, colour="black"),
-            					axis.ticks=element_line(colour="black"),
-            					axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-            					axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-            					title=element_text(size=x.axis.size+8, vjust=1.5)
-            				)
-          
-        		} else {
-        			## scale : true
-          			## extract numeric value, don't use levels (because T1,T10,T3,...)
-					## reformat as data.frame
-          			tempsummary <- data.frame(Label=as.numeric(gsub("\\D", "", unique(sub$GROUP_ORIGINAL))), mean=as.vector(sub.mean), ciw=as.vector(ciw))
-          
-          			ptemp <- ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+
-          					geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw), data=tempsummary, width=0.1, colour="red")+
-          					geom_point(size=dot.size.condition, colour="darkred")+
-          					scale_x_continuous('Condition')+
-          					geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
-          					labs(title=unique(sub$PROTEIN))+
-          					theme(
-            					panel.background=element_rect(fill='white', colour="black"),
-            					panel.grid.major.y = element_line(colour="grey95"),
-            					panel.grid.minor.y = element_blank(),
-            					axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
-            					axis.text.y=element_text(size=y.axis.size, colour="black"),
-            					axis.ticks=element_line(colour="black"),
-            					axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-            					axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-            					title=element_text(size=x.axis.size+8, vjust=1.5))
-          
-        		}
-        
-        		## y-axis labeling, find log 2 or log 10
-        		temp <- sub[!is.na(sub[, "ABUNDANCE"]) & !is.na(sub[, "INTENSITY"]),]
-        		temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
-        
-        		if (temptest) {
-          			ptemp <- ptemp+scale_y_continuous("Log2-intensities", limit=c(y.limdown, y.limup))
-        		}else{
-          			ptemp <- ptemp+scale_y_continuous("Log10-intensities", limit=c(y.limdown, y.limup))
-        		}
-        
-        		print(ptemp)
-        
-        		message(paste("Drew the condition plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
-        
-      		} # end-loop
-		} # label-free
-    
-    	if (nlevels(datafeature$LABEL) == 2) {
-      		for (i in 1:nlevels(datafeature$PROTEIN)) {	
-        
-        		sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
-        		sub <- sub[!is.na(sub$ABUNDANCE), ]	
-        		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
-        		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)	
-        		sub$FEATURE <- factor(sub$FEATURE)	
-        
-        		sub.h <- subset(sub, LABEL == "H")
-        		sub.l <- subset(sub, LABEL == "L")
-        
-        		sub.l <- data.frame(sub.l, "HEAVY"=0)
-        
-        		## matching heavy and light
-				for (j in 1:nrow(sub.l)) {
-          			if (length(sub.h[sub.h$FEATURE == sub.l[j, "FEATURE"] & sub.h$GROUP_ORIGINAL==sub.l[j, "GROUP_ORIGINAL"] & sub.h$SUBJECT_ORIGINAL  == sub.l[j, "SUBJECT_ORIGINAL"] & sub.h$RUN == sub.l[j, "RUN"], "ABUNDANCE"]) != 0) {
-          				sub.l[j,"HEAVY"] <- sub.h[sub.h$FEATURE == sub.l[j, "FEATURE"] & sub.h$GROUP_ORIGINAL == sub.l[j, "GROUP_ORIGINAL"] & sub.h$SUBJECT_ORIGINAL == sub.l[j, "SUBJECT_ORIGINAL"] & sub.h$RUN == sub.l[j, "RUN"], "ABUNDANCE"]
-          			}
-        		}
-        
-        		sub.l[sub.l$HEAVY==0,"HEAVY"] <- mean(sub.h[sub.h$GROUP_ORIGINAL==sub.l[i,"GROUP_ORIGINAL"] & sub.h$SUBJECT_ORIGINAL==sub.l[i,"SUBJECT_ORIGINAL"] & sub.h$RUN==sub.l[i,"RUN"],"ABUNDANCE"])
-        
-        		sub.l$ratio <- sub.l$ABUNDANCE - sub.l$HEAVY  ## log(L/H)
-        
-        		sub.mean <- by(sub.l$ratio, sub.l$GROUP_ORIGINAL, function(x) mean(x,na.rm=TRUE))
-        		sub.sd <- by(sub.l$ratio, sub.l$GROUP_ORIGINAL, sd)
-        		sub.len <- by(sub.l$ratio, sub.l$GROUP_ORIGINAL, length)
+        	y.limdown <- floor(min(suball$Mean - suball$ciw))
+        	if (is.numeric(ylimDown)) {
+        		y.limdown <- ylimDown 
+        	}
         	
-        		if (interval=="CI") {
-        			ciw <- qt(0.975, sub.len) * sub.sd / sqrt(sub.len)
-        		}
+        	## re-order (1, 10, 2, 3, -> 1, 2, 3, ... , 10)
+        	suball <- suball[order(suball$GROUP_ORIGINAL), ]
+        	suball <- data.frame(Protein=unique(sub$PROTEIN), suball)
+        	resultall <- rbind(resultall, suball)
         	
-        		if (interval=="SD") {
-        			ciw <- sub.sd
-        		}
-        
-        		if (sum(is.na(ciw))>=1) {
-        			ciw[is.na(ciw)] <- 0
-        		}
-        
-        		## assign upper or lower limit
-        		y.limup <- ceiling(max(sub.mean+ciw))
-        		if (is.numeric(ylimUp)) {
-        			y.limup <- ylimUp 
-        		}
-        
-        		y.limdown <- floor(min(sub.mean-ciw))
-        		if (is.numeric(ylimDown)) {
-        			y.limdown <- ylimDown
-        		} 
-        
-        		if (!scale) {
+        	if (!scale) {  ## scale: false
           
-          			## reformat as data.frame
-          			tempsummary <- data.frame(Label=unique(sub.l$GROUP_ORIGINAL), mean=as.vector(sub.mean), ciw=as.vector(ciw))
+          		## reformat as data.frame
+          		#tempsummary <- data.frame(Label=unique(sub$GROUP_ORIGINAL), mean=as.vector(sub.mean), ciw=as.vector(ciw))
+          		tempsummary <- suball
+          		colnames(tempsummary)[colnames(tempsummary) == "GROUP_ORIGINAL"] <- "Label"
           
-          			ptemp <- ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+
-          					geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw), data=tempsummary, width=0.1, colour="red")+
-          					geom_point(size=dot.size.condition,colour="darkred")+
-          					scale_x_discrete('Condition')+
-          					geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
-          					labs(title=unique(sub$PROTEIN))+
-          					theme(
-           	 					panel.background=element_rect(fill='white', colour="black"),
-            					panel.grid.major.y = element_line(colour="grey95"),
-            					panel.grid.minor.y = element_blank(),
-            					axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
-            					axis.text.y=element_text(size=y.axis.size, colour="black"),
-            					axis.ticks=element_line(colour="black"),
-            					axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-            					axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-            					title=element_text(size=x.axis.size+8, vjust=1.5))
-        		} else {
-        		
-        			## scale : true
-          			## reformat as data.frame
-          			tempsummary <- data.frame(Label=as.numeric(gsub("\\D", "", unique(sub.l$GROUP_ORIGINAL))), mean=as.vector(sub.mean), ciw=as.vector(ciw))
+          		ptemp <- ggplot(aes_string(x='Label', y='Mean'), data=tempsummary)+
+          				geom_errorbar(aes(ymax = Mean + ciw, ymin= Mean - ciw), data=tempsummary, width=0.1, colour="red")+
+          				geom_point(size = dot.size.condition, colour = "darkred")+
+          				scale_x_discrete('Condition')+
+          				scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
+          				geom_hline(yintercept = 0, linetype = "twodash", colour = "darkgrey", size = 0.6)+
+          				labs(title=unique(sub$PROTEIN))+
+          				theme(
+            				panel.background=element_rect(fill='white', colour="black"),
+            				panel.grid.major.y = element_line(colour="grey95"),
+            				panel.grid.minor.y = element_blank(),
+            				axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
+            				axis.text.y=element_text(size=y.axis.size, colour="black"),
+            				axis.ticks=element_line(colour="black"),
+            				axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+            				axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+            				title=element_text(size=x.axis.size+8, vjust=1.5)
+            			)
           
-          			ptemp <- ggplot(aes_string(x='Label', y='mean'), data=tempsummary)+
-          					geom_errorbar(aes(ymax = mean + ciw, ymin=mean - ciw), data=tempsummary, width=0.1, colour="red")+
-          					geom_point(size=dot.size, colour="darkred")+
-          					scale_x_continuous('Condition')+
-          					geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
-          					labs(title=unique(sub$PROTEIN))+
-          					theme(
-            					panel.background=element_rect(fill='white', colour="black"),
-            					panel.grid.major.y = element_line(colour="grey95"),
-            					panel.grid.minor.y = element_blank(),
-            					axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
-            					axis.text.y=element_text(size=y.axis.size, colour="black"),
-            					axis.ticks=element_line(colour="black"),
-            					axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-            					axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-            					title=element_text(size=x.axis.size+8, vjust=1.5))
-        		} 
+        	} else {
+        		## scale : true
+          		## extract numeric value, don't use levels (because T1,T10,T3,...)
+				## reformat as data.frame
+          		
+          		tempsummary <- suball
+          		colnames(tempsummary)[colnames(tempsummary) == "GROUP_ORIGINAL"] <- "Label"
+          		tempsummary$Label <- as.numeric(gsub("\\D", "", unique(tempsummary$Label)))
+          
+          		ptemp <- ggplot(aes_string(x='Label', y='Mean'), data=tempsummary)+
+          				geom_errorbar(aes(ymax = Mean + ciw, ymin = Mean - ciw), data=tempsummary, width=0.1, colour="red")+
+          				geom_point(size=dot.size.condition, colour="darkred")+
+          				scale_x_continuous('Condition', breaks=tempsummary$Label, labels=tempsummary$Label)+
+          				scale_y_continuous(yaxis.name, limit=c(y.limdown, y.limup))+
+          				geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
+          				labs(title=unique(sub$PROTEIN))+
+          				theme(
+            				panel.background=element_rect(fill='white', colour="black"),
+            				panel.grid.major.y = element_line(colour="grey95"),
+            				panel.grid.minor.y = element_blank(),
+            				axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
+            				axis.text.y=element_text(size=y.axis.size, colour="black"),
+            				axis.ticks=element_line(colour="black"),
+            				axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+            				axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+            				title=element_text(size=x.axis.size+8, vjust=1.5)
+            			)
+          
+        	}
         
-        		## y-axis labeling, find log 2 or log 10
-        		temp <- sub[!is.na(sub[, "ABUNDANCE"]) & !is.na(sub[, "INTENSITY"]),]
-        		temptest <- abs(log2(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) < abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"])
+        	print(ptemp)
         
-        		if (temptest) {
-          			ptemp <- ptemp+scale_y_continuous("Log2-Ratio(L/H)", limit=c(y.limdown, y.limup))
-        		} else {
-          			ptemp <- ptemp+scale_y_continuous("Log10-Ratio(L/H)", limit=c(y.limdown, y.limup))
-        		}
+        	message(paste("Drew the condition plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datarun$PROTEIN)), ")"))
         
-        		print(ptemp)
-        		message(paste("Drew the condition plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
-      		} # end-loop
-    	} # label-based
+      	} # end-loop
     
-    	if (address!=FALSE) {
+    	if (address != FALSE) {
     		dev.off()
     	}
+    	
+    	## save the table for condition plot
+    	if(save_condition_plot_result){
+    		colnames(resultall)[colnames(resultall) == "GROUP_ORIGINAL"] <- 'Condition'
+    		
+    		if (interval == "CI") {
+        		colnames(resultall)[colnames(resultall) == "ciw"] <- '95% CI'
+        	}
+        	if (interval == "SD") {
+        		colnames(resultall)[colnames(resultall) == "ciw"] <- 'SD'
+        	}
+        	
+        	if (address!=FALSE) {
+      			allfiles <- list.files()
+      
+      			num <- 0
+      			filenaming <- paste(address, "ConditionPlot_value", sep="")
+      			finalfile <- paste(address, "ConditionPlot_value.csv", sep="")
+      
+      			while(is.element(finalfile, allfiles)) {
+        			num <- num + 1
+        			finalfile <- paste(paste(filenaming, num, sep="-"), ".csv", sep="")
+      			}	
+      
+      			write.csv(resultall, file=finalfile, row.names=FALSE)
+    		}
+
+    	}
+    	
+
   	} # end Condition plot
 }
 

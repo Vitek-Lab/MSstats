@@ -1,3 +1,17 @@
+CHANGES IN VERSION 3.3.9
+-------------------------
+- Condition plot from dataProcessPlots : Now condition plots are drawn with run-level summarized intensities per condition.
+- ComparisonResult from groupComparison
+	- flag about missingness and imputation : Calculation for MissingPercentage and ImputationPercentage columns is changed
+		1) MissingPercentage : number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) in the conditions used for comparison (from ‘Label’ column) by protein. Therefore different comparisons(Label in the output) from the same protein can have the different percentage of missingness.
+		2) ImputationPercentage : number of imputed intensities/total number of intensities in the conditions used for comparison (from ‘Label’ column) by protein. Therefore different comparisons(Label in the output) from the same protein can have the different percentage of imputation.
+	- new column, ‘issue’, shows special cases, such as completely missing in a condition or all conditions for comparisons.
+- VolcanoPlot
+	- flag the proteins which have the condition with completely missing. On the left of protein name, ‘*’ willz be appeared in Volcano plot
+		
+
+
+
 CHANGES IN VERSION 3.3.8
 -------------------------
 - normalization : overall median -> median of medians. For all workflow for MSstats, the result should not be changed. But, log(sum) will have slightly different result.
