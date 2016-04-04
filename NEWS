@@ -1,3 +1,12 @@
+CHANGES IN VERSION 3.3.10
+-------------------------
+- fix the bug for dataProcess
+	-  When the number of proteins for $ProcessedData and $RunlevelData are different,  the bug happened for calculating %missing and imputation.
+- fix the bug for groupComparison
+	- when one of condition is completely missing or other special case, .fit.model.single can handle and output of .fit.model.single is not try-error. Then output for fitted and residual should be updated.
+
+
+
 CHANGES IN VERSION 3.3.9
 -------------------------
 - Condition plot from dataProcessPlots : Now condition plots are drawn with run-level summarized intensities per condition.

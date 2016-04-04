@@ -196,7 +196,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	temptempresult <- tempresult$result
     	    	
     	## need to add information about % missingness and %imputation
-    	subprocess <- processall[processall$PROTEIN == unique(sub$PROTEIN), ]
+    	subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
 
     	temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
 
@@ -212,7 +212,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         		sub$residuals <- NA
         		sub$fitted <- NA
       		}
+    	} else if( is.na(tempresult$result$pvalue) ) { ## even though there is no error for .fit.model function, still output can have empty fitted and residuals.
+        
+    	    sub$residuals <- NA
+    	    sub$fitted <- NA
+          
     	} else {
+      
       		sub$residuals <- temp$valueresid
       		sub$fitted <- temp$valuefitted
     	}
