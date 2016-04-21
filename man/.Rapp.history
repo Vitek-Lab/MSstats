@@ -1,16 +1,2132 @@
-install.packages(pkgs="/Users/Meena/Dropbox/MSstats_GitHub_private/MSstats_3.0.10.tar.gz",repos=NULL,type="source")
-library(MSstats)
-install.packages(pkgs="/Users/Meena/Dropbox/MSstats_GitHub_private/MSstats_3.2.2.tar.gz",repos=NULL,type="source")
-library(MSstats)
-?dataProcess
-load("/Users/Meena/Dropbox/Research/Meena-MSstatsv3-test/spike-data/DDA_latinsquare/20150618/input1_topn/raw.RData")
-raw.all.MSstats.TMP<-dataProcess(raw,normalization=FALSE,summaryMethod="TMP",censoredInt=NULL,MBimpute=FALSE, featureSubset="highQuality_significance")
-dataProcess(raw.all.MSstats.TMP, type="profileplot")
-dataProcess(raw.all.MSstats.TMP, type="ProfilePlot")
-dataProcess(raw.all.MSstats.TMP, type="ProfilePlots")
-dataProcessPlots(raw.all.MSstats.TMP, type="ProfilePlots")
-dataProcessPlots(raw.all.MSstats.TMP, type="ProfilePlot")
-getwd()
-?dataProcess
-raw.all.MSstats.TMP<-dataProcess(raw,normalization=FALSE,summaryMethod="TMP",censoredInt=NULL,MBimpute=FALSE, featureSubset="highQuality")
-dataProcessPlots(raw.all.MSstats.TMP, type="ProfilePlot")
+work <- quant$ProcessedData
+head(work)
+work <- work[work$LABEL=="L", ]
+dim(work)
+median.run.method  <-  aggregate(ABUNDANCE ~ RUN + METHOD, data = work, median, na.rm = TRUE)
+median.run.method
+median.method  <-  tapply(median.run.method$ABUNDANCE, median.run.method$METHOD, median, na.rm = TRUE)
+median.method
+nmethod <- unique(work$METHOD)
+for(j in 1:length(nmethod)) {#
+				namerun <- unique(work[work$METHOD == nmethod[j], "RUN"])#
+				for (i in 1:length(namerun)) {#
+					## ABUNDANCE is normalized#
+					work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]#
+				}#
+			}
+median.run.method  <-  aggregate(ABUNDANCE ~ RUN + METHOD, data = work, median, na.rm = TRUE)
+median.run.method
+load("/Users/Meena/Dropbox/Research/Meena-MSstatsv3-test/spike-data/DDA_MCP/20151221_Skyline/Cox2014_c15/raw.sum.all.RData")
+head(raw.sum.all)
+quant <- dataProcess(raw.sum.all, skylineReport=TRUE)
+data<-quant
+names(data)
+rqall <- data$RunlevelData
+origGroup <- unique(rqall$GROUP_ORIGINAL)
+i=1
+sub <- rqall[rqall$Protein == levels(rqall$Protein)[i], ]
+sub
+colnames(sub)[colnames(sub) == "LogIntensities"] <- "ABUNDANCE"
+colnames(sub)[colnames(sub) == "Protein"] <- "PROTEIN"
+sub <- sub[!is.na(sub$ABUNDANCE),]
+sub
+.countMultiRun <- function(data) {#
+ 	standardFeature <- unique(data[data$RUN == unique(data$RUN[1]), "FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.#
+  	## get overlapped feature ID#
+  	countdiff = tapply (data$FEATURE, data$RUN, function ( x ) length(intersect(unique(x), standardFeature)) ) #
+  	return(countdiff)#
+}#
+#
+##############################################
+# check if measurements are missing for entire group#
+# if yes, length of group and length of contrast won't agree#
+##############################################
+#
+.chechGroupComparisonAgreement <- function(sub1,contrast.matrix) {#
+  	tempSub <- as.numeric(as.character(unique(sub1[, c("GROUP")])))#
+  	positionMiss <- setdiff(seq(1,length(contrast.matrix)), tempSub)#
+  	contrast.matrix.sub1 <- contrast.matrix[tempSub]#
+  	# either one of the groups for the comparison of interest is not present #
+  	return(list(sign=length(setdiff(contrast.matrix[tempSub], 0)) < 2, positionMiss=positionMiss))#
+}#
+##############################################
+# check repeated (case-control? or time-course?)#
+##############################################
+#
+.checkRepeated <- function(data) {#
+   	data.light <- data[data$LABEL=="L", ]	#
+   	subjectByGroup <- table(data.light$SUBJECT_ORIGINAL, data.light$GROUP_ORIGINAL)#
+  	subjectAppearances <- apply(subjectByGroup, 1, function(x) sum(x > 0))#
+  	crossedIndicator <- any(subjectAppearances > 1)#
+  	return(crossedIndicator)#
+}#
+#
+##############################################
+# check single subject for both case-control and time-course?#
+##############################################
+#
+.checkSingleSubject <-  function(data) {#
+  	temp <- unique(data[,c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])#
+  	temp$GROUP_ORIGINAL <- factor(temp$GROUP_ORIGINAL)#
+  	temp1 <- xtabs(~GROUP_ORIGINAL, data=temp)#
+  	singleSubject <- all(temp1 == "1")#
+  	return(singleSubject)	#
+}#
+#
+##############################################
+# check .checkSingleFeature#
+##############################################
+#
+.checkSingleFeature <-  function(data) {#
+  	sigleFeature <- length(unique(data$FEATURE)) < 2#
+  	return(sigleFeature)	#
+}#
+#
+##############################################
+# check .checkTechReplicate#
+##############################################
+#
+.checkTechReplicate <-  function(data) {#
+  	temp <- unique(data[, c("SUBJECT_NESTED", "RUN")])#
+  	temp$SUBJECT_NESTED <- factor(temp$SUBJECT_NESTED)#
+  	temp1 <- xtabs(~SUBJECT_NESTED, data=temp)#
+  	TechReplicate <- all(temp1 != "1")#
+  	return(TechReplicate)	#
+}#
+##############################################
+# check .checkRunByFeature#
+##############################################
+# it might not be right#
+.checkRunbyFeature <- function(data) {#
+  	data.light <- data[data$LABEL=="L", ]	#
+  	RunByFeature <- table(data.light$RUN, data.light$FEATURE)#
+  	emptyRow  <-  apply(RunByFeature, 1, sum)#
+  	noRunFeature  <-  any(emptyRow == 0)#
+  	return(noRunFeature)	#
+}#
+##############################################
+# check .checkMissGroupByFeature#
+##############################################
+.checkMissGroupByFeature <- function(data) {#
+  	temp <- unique(data[, c("GROUP", "FEATURE")])#
+  	temp1 <- xtabs(~GROUP, data=temp)#
+  	return(any(temp1 != temp1[1]))#
+}#
+##############################################
+# check .checkMissRunByFeature#
+##############################################
+#
+.checkMissRunByFeature <- function(data) {#
+  	##temp <- unique(data[,c("RUN","FEATURE")])#
+  	temp <- unique(data[data$LABEL == "L", c("RUN", "FEATURE")])#
+  	temp1 <- xtabs(~RUN, data=temp)#
+  	#return(any(temp1!=temp1[1]))#
+  	return(any(temp1 != length(unique(data$FEATURE))))#
+}#
+##############################################
+# check .checkMissFeature for label-free missingness#
+##############################################
+.checkMissFeature <- function(data) {#
+  	dataByPeptide  <-  tapply(as.numeric(data$ABUNDANCE), list(data$FEATURE, data$GROUP_ORIGINAL), function(x) sum(x > 0, na.rm = TRUE))#
+  	missPeptideInd  <-  apply(dataByPeptide, 1, function(x) any(x == 0 | is.na(x)))#
+  	missingPeptides  <-  names(missPeptideInd)[missPeptideInd == TRUE]#
+  	return(missingPeptides)#
+}#
+##############################################
+# check .checkUnequalSubject#
+##############################################
+#
+.checkUnequalSubject <- function(data) {#
+  	#temp <- unique(data[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])#
+  	temp <- unique(data[data$LABEL == "L",c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])#
+  	temp1 <- xtabs(~GROUP_ORIGINAL, data=temp)#
+  	return(any(temp1 != temp1[1]))#
+}
+sub$GROUP <- factor(sub$GROUP)#
+   	 		sub$SUBJECT <- factor(sub$SUBJECT)#
+    		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	#
+    		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)#
+    		sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)#
+    		# sub$FEATURE <- factor(sub$FEATURE)	#
+    		sub$RUN <- factor(sub$RUN)#
+   	 		# singleFeature <- .checkSingleFeature(sub)#
+    		singleSubject <- .checkSingleSubject(sub)#
+    		TechReplicate <- .checkTechReplicate(sub) ## use for label-free model#
+    		# MissGroupByFeature <- .checkMissGroupByFeature(sub)#
+    		# MissRunByFeature <- .checkMissRunByFeature(sub)#
+    		MissSubjectByGroup <- .checkRunbyFeature(sub)#
+    		UnequalSubject <- .checkUnequalSubject(sub)
+.fit.quantification.run <- function(sub,singleFeature,singleSubject, TechReplicate,labeled,equalFeatureVar) {#
+	if (!labeled) { ### label-free case#
+		## for single Feature, original value is the run quantification#
+		if (singleFeature) {#
+			fit.full <- lm(ABUNDANCE ~ RUN , data = sub)#
+		}else{#
+			fit.full <- lm(ABUNDANCE ~ FEATURE + RUN , data = sub)#
+		}#
+	}else{ ### labeled-based case#
+		### update v3#
+		if (singleFeature) {#
+			fit.full <- lm(ABUNDANCE ~ RUN+ref , data = sub)#
+		}else{ ## several subjects#
+			fit.full <- lm(ABUNDANCE ~ FEATURE+RUN+ref , data = sub)#
+		}#
+	}#
+	## make equal variance for feature : need to be updated#
+    if (!equalFeatureVar) {#
+       fit.full <- .iter.wls.fit.model(data=sub,fit=fit.full,nrepeats=1)#
+    }#
+	return(fit.full)#
+}#
+#########################################################
+.fit.model.single <- function(contrast.matrix,#
+						data,#
+						TechReplicate,#
+						singleSubject,#
+						repeated,#
+						origGroup) {#
+  	## input : output of run quantification#
+	data2 <- data#
+    data2$GROUP <- factor(data2$GROUP)#
+    data2$SUBJECT <- factor(data2$SUBJECT)#
+    ## when subject is fixed, it is ok using lm function.#
+    ## when single feature, consider technical replicates for time-course.#
+    ## case-control#
+    if (!repeated) {#
+    	if (!TechReplicate | singleSubject) {#
+           	fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)#
+         } else {#
+          	fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data = data2)#
+          	df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)$df.residual#
+         }#
+    } else { ## time-course#
+      	if (singleSubject) {#
+          	fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)#
+      	} else { ## no single subject#
+        	if (!TechReplicate) {#
+          		fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data = data2)#
+          		df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)$df.residual#
+        	} else {#
+          		fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = data2) ## SUBJECT==SUBJECT_NESTED here#
+          		df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT , data = data2)$df.residual#
+        	}#
+        }	#
+    } ## time-course#
+	## get parameter from model#
+    if (class(fit.full) == "lm") {#
+		Para <- .getParameterFixed(fit.full)#
+	} else {#
+		Para <- .getParameterRandom(fit.full, df.full)#
+	}#
+    ## each comparison#
+    allout <- NULL#
+    for(k in 1:nrow(contrast.matrix)) {#
+        ## choose each comparison#
+        contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)#
+        row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]#
+        GroupComparisonAgreement <- .chechGroupComparisonAgreement(data2, contrast.matrix.sub)#
+        if (GroupComparisonAgreement$sign) {#
+          	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")#
+          	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA)		#
+        } else {#
+          	contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)#
+          	out <- .estimableFixedRandom(Para, contrast)#
+          	## any error for out, just NA#
+          	if (is.null(out)) {#
+            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)#
+          	} else {#
+            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), out)	#
+          	}#
+        }#
+        allout <- rbind(allout, out)#
+    } ## end loop for comparion#
+  	if (class(fit.full)=="lm") {  ## lm model#
+    	finalresid <- fit.full$residuals#
+    	finalfitted <- fit.full$fitted.values#
+  	} else {   ## lmer model#
+    	finalresid <- resid(fit.full)#
+    	finalfitted <- fitted(fit.full)#
+  	}#
+  	finalout <- list(result=allout, valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	#
+  	return(finalout)#
+} ## .fit.model.single
+sub$GROUP <- factor(sub$GROUP)#
+   	 		sub$SUBJECT <- factor(sub$SUBJECT)#
+    		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	#
+    		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)#
+    		sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)#
+    		# sub$FEATURE <- factor(sub$FEATURE)	#
+    		sub$RUN <- factor(sub$RUN)#
+   	 		# singleFeature <- .checkSingleFeature(sub)#
+    		singleSubject <- .checkSingleSubject(sub)#
+    		TechReplicate <- .checkTechReplicate(sub) ## use for label-free model#
+    		# MissGroupByFeature <- .checkMissGroupByFeature(sub)#
+    		# MissRunByFeature <- .checkMissRunByFeature(sub)#
+    		MissSubjectByGroup <- .checkRunbyFeature(sub)#
+    		UnequalSubject <- .checkUnequalSubject(sub)#
+    		## testing and inference in whole plot#
+    		message(paste("Testing a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)), ")"))
+temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+temp
+library(lme4)
+repeated=FALSE
+temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+temp
+###################################
+########### make contrast #########
+###################################
+#
+##================================#
+## .make.contrast.free: #
+## label-free: equal or unequal subjects per group#
+## fixed or random subject#
+##================================#
+#
+.make.contrast.free <- function(fit, contrast.matrix, sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    ## intercept in label-free#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(0, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+    ## feature in label-free#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    feature_c <- rep(0, length(temp))#
+    names(feature_c) <- temp#
+    if (length(temp) == 0) {#
+        feature_c <- NULL#
+    }#
+    ## subject_nested in label-free#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+    if (length(temp) > 0) {#
+        temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))#
+        temp2 <- as.vector(xtabs(~ temp1[, 1]))	#
+        tempdata <- fit$model#
+        group_levels <- unique(tempdata$GROUP)#
+        sub_contrast <- contrast.matrix[as.numeric(as.character(group_levels))]#
+        ## the base is alway be the first SUBJECT_NESTED#
+        ## (SUBJECT_NESTED1.1)#
+        temp3 <- temp2#
+        if (length(temp2) == length(sub_contrast)) {#
+            ## this statement goes first, otherwise length of temp3 becomes > 1#
+            temp3[1] <- temp2[1] + 1#
+        } else {#
+            temp3 <- c(1, temp3)#
+        }#
+        # subjectNested_c<-rep(contrast.matrix/(temp3),temp2) ## in case of unequal sample per group, wrong#
+        subjectNested_c <- rep(sub_contrast / (temp3), temp3)[-1]#
+        names(subjectNested_c) <- temp#
+    } else {#
+        ## length(temp) == 0#
+        subjectNested_c <- NULL#
+    }#
+    ## subject in label-free: for time-course#
+    # temp<-coef_name[grep("SUBJECT",coef_name)[!grep("SUBJECT",coef_name)%in%c(grep(":",coef_name),grep("NESTED",coef_name))]]#
+    # if(length(temp)>0){#
+    # 	subject_c<-rep(0,length(temp))#
+    # 	names(subject_c)<-temp#
+    # }#
+    # if(length(temp)==0) subject_c<-NULL#
+    temp <- coef_name[setdiff(grep("SUBJECT", coef_name), #
+                              grep(":|NESTED", coef_name))]#
+	if (length(temp) > 0) {#
+	    # subject_c<-rep(0,length(temp))#
+	    # names(subject_c)<-temp#
+	    tempdata <- fit$model#
+	    group_levels <- unique(tempdata$GROUP)#
+	    labels <- paste("GROUP", group_levels, sep="")#
+	    patients <- NULL#
+	    for (i in 1:length(group_levels)) {#
+	        sub <- tempdata[tempdata$GROUP == group_levels[i], ]#
+	        sub_patients <- cbind(#
+	            GROUP=paste("GROUP", group_levels[i], sep=""), #
+	            SUBJECT=paste("SUBJECT", as.character(unique(sub$SUBJECT)), sep=""), #
+	            Value=contrast.matrix[as.numeric(as.character(group_levels[i]))])#
+	        patients <- data.frame(rbind(patients, sub_patients))#
+	    }#
+	    patient_count <- tapply(patients$SUBJECT, patients$GROUP, #
+	                            function(x) length(unique(x)))#
+	    patient_seq <- rep(0, length(temp))#
+	    for (i in 1:length(as.character(patients$SUBJECT))) {#
+	        match <- any(temp == as.character(patients$SUBJECT)[i])#
+	        if (match & as.numeric(as.character(patients$Value[i])) != 0) {#
+	            res <- temp == as.character(patients$SUBJECT)[i]#
+	            index <- which(res == TRUE)#
+	            group <- as.character(patients[i, ]$GROUP)#
+	            count <- as.numeric(patient_count[names(patient_count) == group])#
+	            value <- as.numeric(as.character(patients[i, ]$Value))#
+	            patient_value <- c(rep(0, index - 1), #
+	                               value / count, #
+	                               rep(0, length(temp) - index))#
+	        } else {#
+	            patient_value <- rep(0, length(temp))#
+	        }#
+	        patient_seq <- patient_value + patient_seq#
+	    }#
+	    subject_c <- patient_seq#
+	    names(subject_c) <- temp#
+	} else {#
+	    ## length(temp) == 0#
+	    subject_c <- NULL#
+	}#
+    ## subject by group in label-free: only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model#
+    # temp<-coef_name[intersect(grep("SUBJECT",coef_name),grep("GROUP",coef_name))]#
+    # tempSub<-unique(sub1[,c("GROUP","SUBJECT")])#
+    # tempSub1<-xtabs(~GROUP,data=tempSub)#
+    # tempSub2<-tempSub1[-1]#
+    # if(length(temp)>0){#
+    # 	temp1<-t(matrix(unlist(strsplit(as.character(temp),"\\:")),nrow=2))#
+    # 	temp2<-as.vector(xtabs(~temp1[,2]))	## count per GROUP#
+    # 	#gs_c<-rep(as.vector(contrast.matrix[-1]/(tempSub2)),temp2[1]) ## assume no missing for group and subject#
+    # 	# when Group completely  missing#
+    # 	sub.matrix<-contrast.matrix[unique(tempSub$GROUP)]#
+    # 	gs_c<-rep(as.vector(sub.matrix[-1]/(tempSub2)),each=temp2[1])#
+    # 	names(gs_c)<-temp#
+    # }#
+    # if(length(temp)==0) gs_c<-NULL#
+    temp <- coef_name[intersect(grep("SUBJECT", coef_name), #
+                                grep("GROUP", coef_name))]#
+    if (length(temp) > 0) {#
+        # subject_c<-rep(0,length(temp))#
+        # names(subject_c)<-temp#
+        tempdata <- fit$model#
+        group_levels <- unique(tempdata$GROUP)#
+        labels <- paste("GROUP", group_levels, sep="")#
+        patients <- NULL#
+        for (i in 1:length(group_levels)) {#
+            sub <- tempdata[tempdata$GROUP == group_levels[i], ]#
+            sub_patients <- cbind(#
+                GROUP=paste("GROUP", group_levels[i], sep=""), #
+                SUBJECT=paste("SUBJECT", as.character(unique(sub$SUBJECT)), sep=""), #
+                Value=contrast.matrix[as.numeric(as.character(group_levels[i]))])#
+            patients <- data.frame(rbind(patients, sub_patients))#
+        }#
+        patient_count <- tapply(patients$SUBJECT, patients$GROUP, #
+                                function(x) length(unique(x)))#
+        interaction_seq <- rep(0, length(temp))#
+        interaction_labels <- paste(as.character(patients$GROUP), #
+                                    as.character(patients$SUBJECT), sep=":")#
+        for (i in 1:length(as.character(patients$SUBJECT))) {#
+            match <- any(temp == interaction_labels[i])#
+            if (match & as.numeric(as.character(patients$Value[i])) != 0) {#
+                res <- temp == interaction_labels[i]#
+                index <- which(res == TRUE)#
+                group <- as.character(patients[i, ]$GROUP)#
+                count <- as.numeric(patient_count[names(patient_count) == group])#
+                value <- as.numeric(as.character(patients[i, ]$Value))#
+                interaction_value <- c(rep(0, index - 1), #
+                                       value/count, #
+                                       rep(0, length(temp) - index))#
+            } else {#
+                interaction_value <- rep(0, length(temp))#
+            }#
+            interaction_seq <- interaction_value + interaction_seq#
+        }#
+        gs_c <- interaction_seq#
+        names(gs_c) <- temp#
+    } else {#
+	    ## length(temp)==0#
+        gs_c <- NULL#
+	}#
+    ## group in label-free (different from labeled)#
+    temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+    ## when there are some groups which are all missing#
+    tempSub <- as.numeric(as.character(unique(sub1[, c("GROUP")])))#
+    tempcontrast <- contrast.matrix[tempSub]#
+    group_c <- tempcontrast[-1]  # for label-free, remove the first element#
+    names(group_c) <- temp#
+	if (length(temp) == 0) {#
+	    group_c <- NULL#
+	}#
+	## feature by group in label-free (different from labeled)#
+	temp <- coef_name[intersect(grep("GROUP", coef_name), #
+	                            grep("FEATURE", coef_name))]#
+	tempSub <- unique(sub1[, c("GROUP", "FEATURE")])#
+	tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+	tempSub2 <- tempSub1[-1]#
+	if (length(temp) > 0) {#
+	    temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+	    temp2 <- as.vector(xtabs(~ temp1[, 2]))#
+	    gf_c <- rep(contrast.matrix[-1] / (tempSub2), temp2)#
+	    names(gf_c) <- temp#
+	} else {#
+	    gf_c <- NULL#
+	}#
+	## be careful of the order#
+	contrast <- c(intercept_c, feature_c, subjectNested_c, subject_c, group_c, #
+	              gs_c, gf_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+##================================#
+## .make.contrast.based: #
+## label-based: equal or unequal subjects per group#
+## fixed or random subject#
+##================================#
+#
+.make.contrast.based <- function(fit, contrast.matrix, sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+	} else {#
+	    coef_name <- names(fixef(fit))#
+	}#
+    ## intercept in label-based#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(0, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+	## feature in label-based#
+	temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+	feature_c <- rep(0, length(temp))#
+	names(feature_c) <- temp#
+	if (length(temp) == 0) {#
+	    feature_c <- NULL#
+	}#
+	## subject_nested in label-based#
+	temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+	if (length(temp) > 0) {#
+	    temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))#
+	    temp2 <- as.vector(xtabs(~ temp1[, 1]))	#
+		## the base is alway be the first SUBJECT_NESTED#
+		## (SUBJECT_NESTED0.0)#
+		temp3 <- temp2#
+		## in label-free: temp3 <- temp2; temp3[1] <- temp2[1]+1#
+		subjectNested_c <- rep(contrast.matrix / (temp3), temp2)#
+		names(subjectNested_c) <- temp#
+	} else {#
+	    ## length(temp) == 0#
+	    subjectNested_c <- NULL#
+	}#
+	## subject in label-based#
+	temp <- coef_name[setdiff(grep("SUBJECT", coef_name), #
+	                          grep(":|NESTED", coef_name))]#
+	if (length(temp) > 0) {#
+	    subject_c <- rep(0, length(temp))#
+	    names(subject_c) <- temp#
+	} else {#
+	    subject_c <- NULL#
+	}#
+	## subject by group in label-based#
+	temp <- coef_name[intersect(grep("SUBJECT", coef_name), #
+	                            grep("GROUP", coef_name))]#
+	tempSub <- unique(sub1[ ,c("GROUP", "SUBJECT")])#
+	tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+	tempSub2 <- tempSub1[-1]#
+	if (length(temp) > 0) {#
+	    temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+	    temp2 <- as.vector(xtabs(~ temp1[, 2]))	#
+	    gs_c <- rep(as.numeric(contrast.matrix) / tempSub2, temp2)#
+	    names(gs_c) <- temp#
+	} else {#
+	    gs_c <- NULL#
+	}#
+	## subject_original_nested in label-based#
+	temp <- coef_name[grep("SUBJECT_ORIGINAL_NESTED", coef_name)]#
+	if (length(temp) > 0) {#
+	    temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))#
+	    temp2 <- as.vector(xtabs(~ temp1[, 1]))#
+	    ## the base is alway be the first SUBJECT_ORIGINAL_NESTED#
+		## (SUBJECT_ORIGINAL_NESTED1.1)#
+		temp3 <- temp2#
+		temp3[1] <- temp2[1] + 1#
+		subjectOriginalNested_c <- rep(contrast.matrix / temp3, temp2)#
+		names(subjectOriginalNested_c) <- temp#
+	} else {#
+	    subjectOriginalNested_c <- NULL#
+	}#
+	## group in label-based (different from label-free)#
+	temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+	## when there are some groups which are all missing#
+	tempSub <- as.numeric(as.character(unique(sub1[, "GROUP"])))#
+	group_c <- contrast.matrix[tempSub]#
+	## in label-free: group_c<-contrast.matrix[-1]#
+	names(group_c) <- temp#
+	if (length(temp) == 0) {#
+	    group_c <- NULL#
+	}#
+	## run in label-based#
+	temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+	run_c <- rep(0, length(temp))#
+	names(run_c) <- temp#
+	if (length(temp) == 0) {#
+	    run_c <- NULL#
+	}#
+	## feature by group in label-based (different from label-free)#
+	temp <- coef_name[intersect(grep("GROUP", coef_name), #
+	                            grep("FEATURE", coef_name))]#
+	tempSub <- unique(sub1[, c("GROUP", "FEATURE")])#
+	tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+	tempSub2 <- tempSub1[-1]#
+	if (length(temp) > 0) {#
+	    temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+		temp2 <- as.vector(xtabs(~ temp1[, 2]))#
+		gf_c <- rep(as.numeric(contrast.matrix) / tempSub2, temp2)#
+		# in label-free: gf_c<-rep(contrast.matrix[-1]/(tempSub2),temp2)#
+		names(gf_c) <- temp#
+	} else {#
+	    gf_c <- NULL#
+	}#
+	## run by feature in label-based#
+	temp <- coef_name[intersect(grep("RUN", coef_name), #
+	                            grep("FEATURE", coef_name))]#
+	if (length(temp) > 0) {#
+	    rf_c <- rep(0, length(temp))#
+	    names(rf_c) <- temp#
+	} else {#
+	    rf_c<-NULL#
+	}#
+#
+	contrast <- c(intercept_c, feature_c, subjectNested_c, subject_c, #
+	              subjectOriginalNested_c, group_c, run_c, gs_c, gf_c, rf_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+###########################################################################################
+#
+.make.contrast.run.quantification <- function(fit, contrast.matrix, sub1, #
+                                              labeled) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+	} else {#
+	    coef_name <- names(fixef(fit))#
+	}#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    if (length(temp) > 0) {#
+        intercept_c <- rep(1, length(temp))#
+        names(intercept_c) <- temp#
+    } else {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "RUN")])#
+        tempSub1 <- xtabs(~ RUN + FEATURE, data=tempSub)#
+        tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+        feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+        names(feature_c) <- temp#
+    } else {#
+        feature_c <- NULL#
+    }#
+    ## run: different with other quantification - first try#
+    temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+    if (!labeled) { #
+        ## label-free#
+        if (length(temp) > 0) {#
+            run_c <- contrast.matrix[-1]#
+            names(run_c) <- temp#
+        } else {#
+			run_c <- NULL#
+		}#
+	} else { #
+	    ## label-based#
+	    if (length(temp) > 0) {#
+	        run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+	        names(run_c) <- temp#
+	    } else {#
+	        run_c <- NULL#
+	    }#
+	}#
+    ## ref#
+    temp <- coef_name[grep("ref", coef_name)]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            ref_levels <- levels(sub1$ref)#
+			ref_c <- contrast.matrix[1:(length(ref_levels) - 1)]#
+        }#
+        names(ref_c) <- temp#
+	} else {#
+	    ref_c <- NULL#
+	}#
+    ## run by feature#
+    temp <- coef_name[intersect(grep("RUN", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    tempSub <- dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+    if (length(temp) > 0) {#
+        rf_c <- rep(1 / tempSub, length(temp))#
+        names(rf_c) <- temp#
+    } else {#
+        rf_c <- NULL#
+    }#
+    ## subject_nested#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+	if (length(temp) > 0) {#
+	    if (nlevels(sub1$LABEL) == 2) {#
+	        subjectNested_c <- contrast.matrix#
+	    } else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    subjectNested_c <- contrast.matrix[-1]#
+		}#
+		names(subjectNested_c) <- temp#
+	} else {#
+	    subjectNested_c <- NULL#
+	}#
+#
+	contrast <- c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+###########################################################################################
+.make.contrast.run.quantification.reference <- function(fit, contrast.matrix, #
+                                                        sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(1, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "RUN")])#
+        tempSub1 <- xtabs(~ RUN + FEATURE, data=tempSub)#
+        tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+        feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+        names(feature_c) <- temp#
+    } else {#
+        feature_c <- NULL#
+    }#
+    ## run#
+    temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+        names(run_c) <- temp#
+    } else {#
+        run_c <- NULL#
+    }#
+    ## ref#
+    temp <- coef_name[grep("ref", coef_name)]#
+    if (length(temp) > 0) {#
+        ref_c <- rep(0, length(temp))#
+        names(ref_c) <- temp#
+    } else {#
+        ref_c <- NULL#
+    }#
+#
+	contrast <- c(intercept_c, feature_c, run_c, ref_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+##================================#
+## .make.contrast.group.quantification: #
+## label-based/label-free; single/multiple features#
+## all fixed subject and run#
+##================================#
+#
+.make.contrast.group.quantification <- function(fit, contrast.matrix, sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(1, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    # if(length(temp)>0){#
+    # 	if(class(fit)=="lm"){#
+    # 		feature_c<-rep(1/nlevels(fit$model$FEATURE),length(temp))#
+    # 	}else{#
+    # 		### need to fix fit$omdel#
+    # 		tempfeature<-eval(getCall(fit)$data)#
+    # 		tempfeature$FEATURE<-factor(tempfeature$FEATURE)#
+    # 		feature_c<-rep(1/nlevels(tempfeature$FEATURE),length(temp))#
+    # 	}#
+    # 	names(feature_c)<-temp#
+    # }else{#
+    # 	feature_c<-NULL#
+    # }#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "GROUP")])#
+        tempSub1 <- xtabs(~ GROUP + FEATURE, data=tempSub)#
+        if (nlevels(sub1$LABEL) == 2) {#
+            tempSub1 <- tempSub1[-1, ]#
+            tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+        } else if (nlevels(sub1$LABEL) == 1) {#
+            ## label-free#
+            tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+        }#
+        feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+        names(feature_c) <- temp#
+    } else {#
+        feature_c <- NULL#
+    }#
+    ## subject_nested#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+    if (length(temp) > 0) {#
+        temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))#
+        temp2 <- as.vector(xtabs(~ temp1[, 1]))#
+        ## the base is alway be the first SUBJECT_NESTED#
+        ## (SUBJECT_NESTED0.0)#
+        if (nlevels(sub1$LABEL) == 2) {#
+            temp3 <- temp2#
+            subjectNested_c <- rep(contrast.matrix / temp3, temp2)#
+        } else if (nlevels(sub1$LABEL) == 1) {#
+            ## label-free#
+            temp3 <- temp2#
+            if (length(temp2) == length(contrast.matrix)) {#
+                ## this statement goes first, otherwise length of temp3 >1#
+                temp3[1] <- temp2[1] + 1#
+            } else {#
+                temp3 <- c(1, temp3)#
+            }#
+            subjectNested_c <- rep(contrast.matrix / temp3, temp3)[-1]#
+        }#
+        names(subjectNested_c) <- temp#
+    } else {#
+        subjectNested_c <- NULL#
+    }#
+    ## subject_original#
+    temp <- coef_name[setdiff(grep("SUBJECT_ORIGINAL", coef_name), #
+                              grep(":", coef_name))]#
+	if (length(temp) > 0) {#
+	    # if(class(fit)=="lm"){#
+	    # 	subjectOrig_c<-rep(1/nlevels(fit$model$SUBJECT_ORIGINAL),length(temp))#
+	    # }else{#
+	    # 	### need to fix fit$omdel#
+	    # 	subjectOrig_c<-rep(1/nlevels(eval(getCall(fit)$data)$SUBJECT_ORIGINAL),length(temp))#
+	    # }#
+	    subjectOrig_c <- rep(1 / nlevels(sub1$SUBJECT_ORIGINAL), length(temp))#
+	    names(subjectOrig_c) <- temp#
+	} else {#
+	    subjectOrig_c <- NULL#
+	}#
+    ## subject_original: group#
+    temp <- coef_name[intersect(grep("SUBJECT_ORIGINAL", coef_name), #
+                                grep("GROUP", coef_name))]#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("SUBJECT_ORIGINAL", "GROUP")])#
+        tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+		tempSub2 <- tempSub1[-1]#
+		temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+		temp2 <- as.vector(xtabs(~ temp1[, 2]))	#
+		if (nlevels(sub1$LABEL) == 2) {#
+		    subjectOrigGroup_c <- #
+		        rep(as.numeric(contrast.matrix) / tempSub2, temp2)#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    subjectOrigGroup_c <- rep(contrast.matrix[-1] / tempSub2, temp2)#
+		}#
+		names(subjectOrigGroup_c) <- temp#
+    } else {#
+        subjectOrigGroup_c <- NULL#
+    }#
+    ## group#
+    temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            group_c <- contrast.matrix#
+        } else if (nlevels(sub1$LABEL) == 1) {#
+            ## label-free#
+            group_c <- contrast.matrix[-1]#
+        }#
+        names(group_c) <- temp#
+        ## if some group's coef is NA, need to remove#
+        #tempname<-rownames(summary(fit)$coefficients)#
+        #tempname1<-tempname[grep("GROUP",tempname)[!grep("GROUP",tempname)%in%grep(":",tempname)]]#
+        #group_c<-group_c[names(group_c)==tempname1]#
+    } else {#
+        group_c <- NULL#
+    }#
+    ## run#
+    temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        # if(class(fit)=="lm"){#
+        # 	run_c<-rep(1/nlevels(fit$model$RUN),length(temp))#
+        # }else{#
+        # 	### need to fix fit$omdel#
+        # 	run_c<-rep(1/nlevels(eval(getCall(fit)$data)$RUN),length(temp))#
+        # }#
+        run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+        names(run_c) <- temp#
+    } else {#
+        run_c <- NULL#
+    }#
+    ## feature by group#
+    temp <- coef_name[intersect(grep("GROUP", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    if (length(temp) > 0) {#
+		tempSub <- unique(sub1[, c("GROUP", "FEATURE")])#
+		tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+		tempSub2 <- tempSub1[-1]#
+		temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+		temp2 <- as.vector(xtabs(~ temp1[, 2]))#
+		if (nlevels(sub1$LABEL) == 2) {#
+		    gf_c <- rep(as.numeric(contrast.matrix) / tempSub2, temp2)#
+		} else if (nlevels(sub1$LABEL)==1) {#
+		    ## label-free#
+		    gf_c <- rep(contrast.matrix[-1] / tempSub2, temp2)#
+		}#
+		names(gf_c) <- temp#
+    } else {#
+        gf_c <- NULL#
+    }#
+    ## run by feature#
+    temp <- coef_name[intersect(grep("RUN", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    tempSub <- dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+    if (length(temp) > 0) {#
+        rf_c <- rep(1 / tempSub, length(temp))#
+        names(rf_c) <- temp#
+    } else {#
+        rf_c <- NULL#
+    }#
+    contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c, #
+                  subjectOrigGroup_c, group_c, run_c, gf_c, rf_c)#
+    if (class(fit) == "lm") {#
+        contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+#
+##================================#
+## .make.contrast.group.quantification.reference: #
+## label-based/label-free; single/multiple features#
+## all fixed subject and run#
+##================================#
+#
+.make.contrast.group.quantification.reference <- function(fit, contrast.matrix, #
+                                                          sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(1, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    # if(length(temp)>0){#
+    # 	if(class(fit)=="lm"){#
+    # 		feature_c<-rep(1/nlevels(fit$model$FEATURE),length(temp))#
+    # 	}else{#
+    # 		### need to fix fit$omdel#
+    # 		tempfeature<-eval(getCall(fit)$data)#
+    # 		tempfeature$FEATURE<-factor(tempfeature$FEATURE)#
+    # 		feature_c<-rep(1/nlevels(tempfeature$FEATURE),length(temp))#
+    # 	}#
+    # 	names(feature_c)<-temp#
+    # }else{#
+    # 	feature_c<-NULL#
+    # }#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "GROUP")])#
+        tempSub1 <- xtabs(~ GROUP + FEATURE, data=tempSub)#
+        if (nlevels(sub1$LABEL) == 2) {#
+            tempSub1 <- tempSub1[-1, ]#
+            tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+        } else if (nlevels(sub1$LABEL) == 1) {#
+            ## label-free#
+            tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+        }#
+        feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+        names(feature_c) <- temp#
+    } else {#
+        feature_c <- NULL#
+    }#
+    ## subject_nested#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+    if (length(temp) > 0) {#
+        subjectNested_c <- rep(0, length(temp))#
+        names(subjectNested_c) <- temp#
+    } else {#
+        subjectNested_c <- NULL#
+    }#
+    ## subject_original#
+    temp <- coef_name[grep("SUBJECT_ORIGINAL", coef_name)]#
+    if (length(temp) > 0) {#
+        subjectOrig_c <- rep(0, length(temp))#
+        names(subjectOrig_c) <- temp#
+    } else {#
+        subjectOrig_c <- NULL#
+    }#
+    ## subject_original:group#
+    temp <- coef_name[intersect(grep("SUBJECT_ORIGINAL", coef_name), #
+                                grep("GROUP", coef_name))]#
+    if (length(temp) > 0) {#
+        subjectOrigGroup_c <- rep(0, length(temp))#
+        names(subjectOrigGroup_c) <- temp#
+    } else {#
+        subjectOrigGroup_c <- NULL#
+    }#
+    ## group#
+    temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        group_c <- rep(0, length(temp))#
+        names(group_c) <- temp#
+    } else {#
+        group_c <- NULL#
+    }#
+#
+    ## run#
+    temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        # if(class(fit)=="lm"){#
+        # 	run_c<-rep(1/nlevels(fit$model$RUN),length(temp))#
+        # }else{#
+        # 	### need to fix fit$omdel#
+        # 	temprun<-eval(getCall(fit)$data)#
+        # 	tempfeature$FEATURE<-factor(tempfeature$FEATURE)#
+        # 	feature_c<-rep(1/nlevels(tempfeature$FEATURE),length(temp))#
+        # 	run_c<-rep(1/nlevels(eval(getCall(fit)$d)$RUN),length(temp))#
+        # }#
+        run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+        names(run_c) <- temp#
+    } else {#
+        run_c <- NULL#
+    }#
+    ## feature by group#
+    temp <- coef_name[intersect(grep("GROUP", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    if (length(temp) > 0) {#
+        gf_c <- rep(0, length(temp))#
+        names(gf_c) <- temp#
+    } else {#
+        gf_c <- NULL#
+    }#
+    ## run by feature#
+    temp <- coef_name[intersect(grep("RUN", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    tempSub <- dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+    if (length(temp) > 0) {#
+        rf_c <- rep(1 / tempSub, length(temp))#
+        names(rf_c) <- temp#
+    } else {#
+        rf_c <- NULL#
+    }#
+#
+	contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c, #
+	              subjectOrigGroup_c, group_c, run_c, gf_c, rf_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+#
+	return(contrast1)#
+}#
+##================================#
+## .make.contrast.subject.quantification.single: #
+## label-based/label-free; single features#
+## all fixed subject and run#
+##================================#
+#
+.make.contrast.subject.quantification.single <- function(fit, contrast.matrix, #
+                                                         sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    #contrastList<-unique(sub1[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])#
+    #contrastGroup<-rep(0,nlevels(sub1$GROUP_ORIGINAL))#
+    #contrastGroup[as.numeric(contrastList[contrast.matrix==1,"GROUP_ORIGINAL"])]<-1#
+    ## for label-based	#
+	if (nlevels(sub1$LABEL) == 2) {#
+	    ## remove GROUP==0#
+	    contrastList <- unique(sub1[, c("GROUP", "SUBJECT_ORIGINAL")])[-1, ]#
+	    contrastList$GROUP <- factor(contrastList$GROUP)#
+		contrastGroup <- rep(0, nlevels(sub1$GROUP) - 1)#
+		contrastGroup[as.numeric(contrastList[contrast.matrix == 1, #
+		                                      "GROUP"])] <- 1#
+	} else {#
+	    ## for label-free#
+	    contrastList <- unique(sub1[, c("GROUP", "SUBJECT_ORIGINAL")])#
+	    contrastGroup <- rep(0, nlevels(sub1$GROUP))#
+	    contrastGroup[as.numeric(contrastList[contrast.matrix == 1, #
+	                                          "GROUP"])] <- 1#
+	}#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(1, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    # if(length(temp)>0){#
+    # 	if(class(fit)=="lm"){#
+    # 		feature_c<-rep(1/nlevels(fit$model$FEATURE),length(temp))#
+    # 	}else{#
+    # 		### need to fix fit$omdel#
+    # 		tempfeature<-eval(getCall(fit)$data)#
+    # 		tempfeature$FEATURE<-factor(tempfeature$FEATURE)#
+    # 		feature_c<-rep(1/nlevels(tempfeature$FEATURE),length(temp))#
+    # 	}#
+    # 	names(feature_c)<-temp#
+    # }else{#
+    # 	feature_c<-NULL#
+    # }#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "SUBJECT_NESTED")])#
+        tempSub1 <- xtabs(~ SUBJECT_NESTED + FEATURE, data=tempSub)#
+        if (nlevels(sub1$LABEL) == 2) {#
+            tempSub1 <- tempSub1[-1, ]#
+			tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+			tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		}#
+        feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+		names(feature_c) <- temp#
+	} else {#
+	    feature_c <- NULL#
+	}#
+    ## subject_nested#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            subjectNested_c <- contrast.matrix#
+        } else if (nlevels(sub1$LABEL) == 1) {#
+            ## label-free#
+            subjectNested_c <- contrast.matrix[-1]#
+		}#
+		names(subjectNested_c) <- temp#
+	} else {#
+	    subjectNested_c <- NULL#
+	}#
+    ## group#
+    temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            group_c <- contrastGroup#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    group_c <- contrastGroup[-1]#
+		}#
+        names(group_c) <- temp#
+    } else {#
+        group_c <- NULL#
+    }#
+    ## run#
+    temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        #run_c<-rep(1/nlevels(fit$model$RUN),length(temp))#
+        ## when no technical replicate: subject_nested = run#
+		run_c <- contrast.matrix[-1]#
+		## however, with technical replicate: subject_nested != run, need others#
+		names(run_c) <- temp#
+    } else {#
+        run_c <- NULL#
+    }#
+    ## feature by group#
+    temp <- coef_name[intersect(grep("GROUP", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("GROUP", "FEATURE")])#
+        tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+		tempSub2 <- tempSub1[-1]#
+		temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+		temp2 <- as.vector(xtabs(~ temp1[, 2]))#
+		if (nlevels(sub1$LABEL) == 2) {#
+		    gf_c <- rep(as.numeric(contrastGroup) / tempSub2, temp2)#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    gf_c <- rep(contrastGroup[-1] / tempSub2, temp2)#
+		}#
+		names(gf_c) <- temp#
+    } else {#
+        gf_c <- NULL#
+    }#
+    ## run by feature#
+    temp <- coef_name[intersect(grep("RUN", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    tempSub <- dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+    if (length(temp) > 0) {#
+        rf_c <- rep(1 / tempSub, length(temp))#
+        names(rf_c) <- temp#
+    } else {#
+        rf_c <- NULL#
+    }#
+    contrast <- c(intercept_c, feature_c, subjectNested_c, group_c, run_c, #
+                  gf_c, rf_c)#
+    if (class(fit) == "lm") {#
+        contrast1 <- contrast[!is.na(coef(fit))]#
+    } else {#
+        contrast1 <- contrast[!is.na(fixef(fit))]#
+    }#
+#
+	return(contrast1)#
+}#
+##================================#
+## .make.contrast.subject.quantification: #
+## label-based/label-free; multiple features#
+## all fixed subject and run#
+##================================#
+#
+.make.contrast.subject.quantification <- function(fit, contrast.matrix, sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    ## when there are missing value in endogenous, there are error, because the #
+    ## number of group_original and fitted group are different#
+    #contrastList<-unique(sub1[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])#
+    #contrastGroup<-rep(0,nlevels(sub1$GROUP_ORIGINAL))#
+    #contrastGroup[as.numeric(contrastList[contrast.matrix==1,"GROUP_ORIGINAL"])]<-1#
+    ## for label-based#
+    if (nlevels(sub1$LABEL) == 2) {#
+        contrastList <- unique(sub1[, c("GROUP", "SUBJECT_ORIGINAL", #
+                                        "SUBJECT_NESTED")])#
+        ## remove GROUP==0#
+        contrastList <- contrastList[contrastList$GROUP != "0", ]#
+        ## remove '0' group#
+		contrastList$GROUP <- factor(contrastList$GROUP)#
+		## remove '0' group#
+		contrastList$SUBJECT_ORIGINAL <- factor(contrastList$SUBJECT_ORIGINAL)#
+		contrastGroup <- rep(0, nlevels(sub1$GROUP) - 1)#
+		contrastGroup[as.numeric(contrastList[contrast.matrix == 1, #
+		                                      "GROUP"])] <- 1#
+		contrastSubjectOriginal <- rep(0, nlevels(sub1$SUBJECT_ORIGINAL))#
+		contrastSubjectOriginal[as.numeric(#
+		    contrastList[contrast.matrix == 1, "SUBJECT_ORIGINAL"])] <- 1#
+    } else {#
+        ## for label-free#
+        contrastList <- unique(sub1[, c("GROUP", "SUBJECT_ORIGINAL")])#
+        contrastGroup <- rep(0, nlevels(sub1$GROUP))#
+        contrastGroup[as.numeric(contrastList[contrast.matrix == 1, #
+                                              "GROUP"])] <- 1#
+    }#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    if (length(temp) > 0) {#
+        intercept_c <- rep(1, length(temp))#
+        names(intercept_c) <- temp#
+    } else {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    # if(length(temp)>0){#
+    # 	if(class(fit)=="lm"){#
+    # 		feature_c<-rep(1/nlevels(fit$model$FEATURE),length(temp))#
+    # 	}else{#
+    # 		### need to fix fit$omdel#
+    # 		tempfeature<-eval(getCall(fit)$data)#
+    # 		tempfeature$FEATURE<-factor(tempfeature$FEATURE)#
+    # 		feature_c<-rep(1/nlevels(tempfeature$FEATURE),length(temp))#
+    # 	}#
+    # 	names(feature_c)<-temp#
+    # }else{#
+    # 	feature_c<-NULL#
+    # }#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "SUBJECT_NESTED")])#
+		tempSub1 <- xtabs(~ SUBJECT_NESTED + FEATURE, data=tempSub)#
+		if (nlevels(sub1$LABEL) == 2) {#
+		    tempSub1 <- tempSub1[-1, ]#
+			tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+			tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		}#
+		feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+		names(feature_c) <- temp#
+    } else {#
+        feature_c <- NULL#
+    }#
+    ## subject_nested#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            subjectNested_c <- contrast.matrix#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    subjectNested_c <- contrast.matrix[-1]#
+		}#
+        names(subjectNested_c) <- temp#
+	} else {#
+	    subjectNested_c <- NULL#
+	}#
+    ## subject_original#
+    temp <- coef_name[setdiff(grep("SUBJECT_ORIGINAL", coef_name), #
+                              grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        subjectOrig_c <- contrastSubjectOriginal[-1]#
+        names(subjectOrig_c) <- temp#
+    } else {#
+        subjectOrig_c <- NULL#
+    }#
+    ## group#
+    temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            group_c <- contrastGroup#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    group_c <- contrastGroup[-1]#
+		}#
+        names(group_c) <- temp#
+    } else {#
+        group_c <- NULL#
+    }#
+    ## run#
+    temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        # if(class(fit)=="lm"){#
+        # 	run_c<-rep(1/nlevels(fit$model$RUN),length(temp))#
+        # }else{#
+        # 	### need to fix fit$omdel#
+        # 	run_c<-rep(1/nlevels(eval(getCall(fit)$data)$RUN),length(temp))#
+        # }#
+        run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+        names(run_c) <- temp#
+    } else {#
+        run_c<-NULL#
+    }#
+    ## feature by group#
+    temp <- coef_name[intersect(grep("GROUP", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("GROUP", "FEATURE")])#
+		tempSub1 <- xtabs(~ GROUP, data=tempSub)#
+		tempSub2 <- tempSub1[-1]#
+		temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\:")), nrow=2))#
+		temp2 <- as.vector(xtabs(~ temp1[, 2]))#
+		if (nlevels(sub1$LABEL) == 2) {#
+		    gf_c <- rep(as.numeric(contrastGroup) / tempSub2, temp2)#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    # label-free#
+			gf_c <- rep(contrastGroup[-1] / tempSub2, temp2)#
+		}#
+		names(gf_c) <- temp#
+    } else {#
+        gf_c <- NULL#
+    }#
+    ## run by feature#
+    temp <- coef_name[intersect(grep("RUN", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    tempSub <- dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+    if (length(temp) > 0) {#
+        rf_c <- rep(1 / tempSub, length(temp))#
+        names(rf_c) <- temp#
+    } else {#
+        rf_c <- NULL#
+    }#
+#
+	contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c, #
+	              group_c, run_c, gf_c, rf_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+##================================#
+## .make.contrast.subject.quantification.reference: #
+## label-based/label-free; single/multiple features#
+## all fixed subject and run#
+##================================#
+#
+.make.contrast.subject.quantification.reference <- function(fit, #
+                                                            contrast.matrix, #
+                                                            sub1) {#
+    if (class(fit) == "lm") {#
+        coef_name <- names(coef(fit))#
+    } else {#
+        coef_name <- names(fixef(fit))#
+    }#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(1, length(temp))#
+	names(intercept_c) <- temp#
+	if (length(temp) == 0) {#
+	    intercept_c <- NULL#
+	}#
+	## feature#
+	temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+	# if(length(temp)>0){#
+	# 	if(class(fit)=="lm"){#
+	# 		feature_c<-rep(1/nlevels(fit$model$FEATURE),length(temp))#
+	# 	}else{#
+	# 		### need to fix fit$omdel#
+	# 		tempfeature<-eval(getCall(fit)$data)#
+	# 		tempfeature$FEATURE<-factor(tempfeature$FEATURE)#
+	# 		feature_c<-rep(1/nlevels(tempfeature$FEATURE),length(temp))#
+	# 	}#
+	# 	names(feature_c)<-temp#
+	# }else{#
+	# 	feature_c<-NULL#
+	# }#
+	if (length(temp) > 0) {#
+	    tempSub <- unique(sub1[, c("FEATURE", "SUBJECT_NESTED")])#
+	    tempSub1 <- xtabs(~ SUBJECT_NESTED + FEATURE, data=tempSub)#
+	    if (nlevels(sub1$LABEL) == 2) {#
+	        tempSub1 <- tempSub1[-1, ]#
+			tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		}#
+	    feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+		names(feature_c) <- temp#
+	} else {#
+	    feature_c <- NULL#
+	}#
+	## subject_nested#
+	temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+	if (length(temp) > 0) {#
+	    subjectNested_c <- rep(0, length(temp))#
+	    names(subjectNested_c) <- temp#
+	} else {#
+	    subjectNested_c <- NULL#
+	}#
+	## subject_original#
+	temp <- coef_name[setdiff(grep("SUBJECT_ORIGINAL", coef_name), #
+	                          grep(":", coef_name))]#
+	if (length(temp) > 0) {#
+	    subjectOrig_c <- rep(0, length(temp))#
+	    names(subjectOrig_c) <- temp#
+	} else {#
+	    subjectOrig_c <- NULL#
+	}#
+	## group#
+	temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+	if (length(temp) > 0) {#
+	    group_c <- rep(0, length(temp))#
+	    names(group_c) <- temp#
+	} else {#
+	    group_c <- NULL#
+	}#
+	## run#
+	temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+	if (length(temp) > 0) {#
+	    # if(class(fit)=="lm"){#
+	    # 	run_c<-rep(1/nlevels(fit$model$RUN),length(temp))#
+	    # }else{#
+	    # 	### need to fix fit$omdel#
+	    # 	run_c<-rep(1/nlevels(eval(getCall(fit)$data)$RUN),length(temp))#
+	    # }#
+	    run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+	    names(run_c) <- temp#
+	} else {#
+	    run_c <- NULL#
+	}#
+	## feature by group#
+	temp <- coef_name[intersect(grep("GROUP", coef_name), #
+	                            grep("FEATURE", coef_name))]#
+	if (length(temp) > 0) {#
+	    gf_c <- rep(0, length(temp))	#
+		names(gf_c) <- temp#
+	} else {#
+	    gf_c <- NULL#
+	}#
+	## run by feature#
+	temp <- coef_name[intersect(grep("RUN", coef_name), #
+	                            grep("FEATURE", coef_name))]#
+	tempSub <-dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+	if (length(temp) > 0) {#
+	    rf_c <- rep(1 / tempSub, length(temp))#
+		names(rf_c) <- temp#
+	} else {#
+	    rf_c <- NULL#
+	}#
+	contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c, #
+	              run_c, gf_c, rf_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+#
+##================================#
+## label-free, single#
+##================================#
+.make.contrast.free.single <- function(fit, contrast.matrix, sub1) {#
+    if (class(fit) == "lm") {#
+	    coef_name <- names(coef(fit))#
+	} else {#
+	    coef_name <- names(fixef(fit))#
+	}#
+    ## change contrast.matrix without Group1#
+    # cons=1#
+    # if(contrast.matrix[1]==0) contrast.free<-contrast.matrix[-1]#
+    # if(contrast.matrix[1]<0){ #
+    # 	contrast.free<-contrast.matrix[-1]/abs(contrast.matrix[1])#
+    # 	cons=abs(contrast.matrix[1])#
+    # 	}#
+    # if(contrast.matrix[1]>0){ #
+    # 	contrast.free<-contrast.matrix[-1]*(-1)/contrast.matrix[1]#
+    # 	cons=contrast.matrix[1]*(-1)#
+    # 	}#
+    # if(class(fit)=="lm"){#
+    # 	coef_name<-names(coef(fit))#
+    # }else{#
+    # 	coef_name<-names(fixef(fit))#
+    # }#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    intercept_c <- rep(0, length(temp))#
+    names(intercept_c) <- temp#
+    if (length(temp) == 0) {#
+        intercept_c <- NULL#
+    }#
+    ## subject#
+    temp <- coef_name[setdiff(grep("SUBJECT", coef_name), #
+                              grep(":|NESTED", coef_name))]#
+    if (length(temp) > 0) {#
+        # subject_c<-rep(0,length(temp))#
+        # names(subject_c)<-temp#
+        tempdata <- fit$model#
+        group_levels <- levels(tempdata$GROUP)#
+        labels <- paste("GROUP", group_levels, sep="")#
+        patients <- NULL#
+        for (i in 1:length(group_levels)) {#
+            sub <- tempdata[tempdata$GROUP == group_levels[i], ]#
+            sub_patients <- cbind(#
+                GROUP=paste("GROUP", group_levels[i], sep=""), #
+                SUBJECT=paste("SUBJECT", as.character(group_levels(sub$SUBJECT)), sep=""), #
+                Value=contrast.matrix[as.numeric(as.character(group_levels[i]))])#
+            patients <- data.frame(rbind(patients, sub_patients))#
+        }#
+        patient_count <- tapply(patients$SUBJECT, patients$GROUP, #
+                                function(x) length(unique(x)))#
+        patient_seq <- rep(0, length(temp))#
+        for (i in 1:length(as.character(patients$SUBJECT))) {#
+            match <- any(temp == as.character(patients$SUBJECT)[i])#
+            if (match & as.numeric(as.character(patients$Value[i])) != 0) {#
+                res <- temp == as.character(patients$SUBJECT)[i]#
+                index <- which(res == TRUE)#
+                group <- as.character(patients[i, ]$GROUP)#
+                count <- as.numeric(patient_count[names(patient_count) == group])#
+                value <- as.numeric(as.character(patients[i, ]$Value))#
+                patient_value <- c(rep(0, index-1), #
+                                   value / count, #
+                                   rep(0, length(temp) - index))#
+            } else {#
+                patient_value <- rep(0, length(temp))#
+            }#
+            patient_seq <- patient_value + patient_seq#
+        }#
+        subject_c <- patient_seq#
+        names(subject_c) <- temp#
+    } else if (length(temp) == 0) {#
+        subject_c <- NULL#
+    }#
+    ## group: different from labeled#
+    temp <- coef_name[setdiff(grep("GROUP", coef_name), grep(":", coef_name))]#
+    ## when there are some groups which are all missing#
+	tempSub <- as.numeric(as.character(levels(sub1[, c("GROUP")])))#
+	tempcontrast <- contrast.matrix[tempSub]#
+	## for label-free, need to remove first#
+	group_c <- tempcontrast[-1] #
+	names(group_c) <- temp#
+	if (length(temp) == 0) {#
+	    group_c<-NULL#
+	}#
+	## subject_nested#
+	temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+	if (length(temp) > 0) {#
+	    temp1 <- t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))#
+		temp2 <- as.vector(xtabs(~ temp1[, 1]))#
+		tempdata <- fit$model#
+		group_levels <- levels(tempdata$GROUP)#
+		sub_contrast <- contrast.matrix[as.numeric(as.character(group_levels))]#
+		## the base is alway be the first SUBJECT_NESTED#
+		## (SUBJECT_NESTED1.1)#
+		temp3 <- temp2#
+		if (length(temp2) == length(sub_contrast)) {#
+		    ## this line first, otherwise length of temp3 >1#
+		    temp3[1] <- temp2[1] + 1#
+		} else {#
+		    temp3 <- c(1, temp3)#
+		}#
+		## in case of unequal sample per group, wrong#
+		# subjectNested_c<-rep(contrast.matrix/(temp3),temp2) #
+		subjectNested_c <- rep(sub_contrast / temp3, temp3)[-1]#
+		names(subjectNested_c) <- temp#
+	} else if (length(temp) == 0) {#
+	    subjectNested_c <- NULL#
+	}#
+	## subject by group: only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model#
+	temp <- coef_name[intersect(grep("SUBJECT", coef_name), #
+	                            grep("GROUP", coef_name))]#
+	if (length(temp) > 0) {#
+	    # subject_c<-rep(0,length(temp))#
+	    # names(subject_c)<-temp#
+	    tempdata <- fit$model#
+	    group_levels <- levels(tempdata$GROUP)#
+	    labels <- paste("GROUP", group_levels, sep="")#
+	    patients <- NULL#
+	    for (i in 1:length(group_levels)) {#
+	        sub <- tempdata[tempdata$GROUP == group_levels[i], ]#
+	        sub_patients <- cbind(#
+	            GROUP=paste("GROUP", group_levels[i], sep=""), #
+	            SUBJECT=paste("SUBJECT", as.character(levels(sub$SUBJECT)), sep=""), #
+	            Value=contrast.matrix[as.numeric(as.character(group_levels[i]))])#
+	        patients <- data.frame(rbind(patients, sub_patients))#
+	    }#
+	    patient_count <- tapply(patients$SUBJECT, patients$GROUP, #
+	                            function(x) length(unique(x)))#
+	    interaction_seq <- rep(0, length(temp))#
+	    interaction_labels <- paste(as.character(patients$GROUP), #
+	                                as.character(patients$SUBJECT), sep=":")#
+	    for (i in 1:length(as.character(patients$SUBJECT))) {#
+	        match <- any(temp == interaction_labels[i])#
+	        if (match & as.numeric(as.character(patients$Value[i])) != 0) {#
+	            res <- temp == interaction_labels[i]#
+	            index <- which(res == TRUE)#
+	            group <- as.character(patients[i, ]$GROUP)#
+	            count <- as.numeric(patient_count[names(patient_count) == group])#
+	            value <- as.numeric(as.character(patients[i, ]$Value))#
+	            interaction_value <- c(rep(0, index - 1), #
+	                                   value / count, #
+	                                   rep(0, length(temp) - index))#
+	        } else {#
+	            interaction_value <- rep(0, length(temp))#
+	        }#
+	        interaction_seq <- interaction_value + interaction_seq#
+	    }#
+	    gs_c <- interaction_seq#
+	    names(gs_c) <- temp#
+	} else if (length(temp) == 0) {#
+	    gs_c <- NULL#
+	}#
+	## combine all#
+	contrast <- c(intercept_c, group_c, subjectNested_c, subject_c, gs_c)#
+	if (class(fit) == "lm") {#
+	    contrast1 <- contrast[!is.na(coef(fit))]#
+	} else {#
+	    contrast1 <- contrast[!is.na(fixef(fit))]#
+	}#
+	return(contrast1)#
+}#
+###################################
+###################################
+########### estimate   ############
+###################################
+##################################	#
+.getParameterFixed <- function(obj) {#
+    temp1 <- summary.lm(obj)#
+    cf <- temp1$coefficients#
+    vcv <- temp1$cov.unscaled * temp1$sigma ^ 2#
+    ## TODO (): for unbalanced case, variance is weighted by degree of freedom	#
+	df <- obj$df.residual#
+	parameter <- list(cf=cf, vcv=vcv, df=df)#
+	return(parameter)#
+}#
+#
+.getParameterRandom <- function(obj, df.full) {#
+	cf <- as.matrix(fixef(obj))#
+	vcv <- as.matrix(vcov(obj))#
+	df <- df.full#
+	parameter <- list(cf=cf, vcv=vcv, df=df)#
+	return(parameter)#
+}#
+#
+.estimableFixedRandom <- function(parameter, cm) {#
+	cm <- matrix(cm, nrow=1)#
+	ct <- cm %*% parameter$cf[, 1]#
+	vc <- sqrt(diag(cm %*% parameter$vcv %*% t(cm)))#
+	prob <- 2 * (1 - pt(abs(ct / vc), parameter$df))#
+	result <- cbind(est=ct, stderr=vc, t=ct / vc, df=parameter$df, prob=prob)#
+	colnames(result) <- c("logFC", "SE", "Tvalue", "DF", "pvalue")#
+	return(result)#
+}#
+#
+###########################################################################################
+#
+.estimableFixedQuantification <- function(cf, cm) {#
+    cm <- matrix(cm, nrow=1)#
+    ct <- cm %*% cf[, 1]#
+    result <- cbind(est=ct)#
+    colnames(result) <- c("log-intensities")#
+    return(result)#
+}#
+#
+###########################################################################################
+#
+.estimableRandomQuantification <- function(cf, cm) {#
+    cm <- matrix(cm, nrow=1)#
+    ct <- cm %*% cf#
+    result <- cbind(est=ct)#
+    colnames(result) <- c("log-intensities")#
+    return(result)#
+}#
+#
+###########################################################################################
+#
+.estimableFixedQuantificationSurvival <- function(cf, cm) {#
+    cm <- matrix(cm, nrow=1)#
+    ct <- cm %*% cf#
+    result <- cbind(est=ct)#
+    colnames(result) <- c("log-intensities")#
+    return(result)#
+}#
+###########################################################################################
+#
+.make.contrast.run.quantification.Survival <- function(fit, contrast.matrix, #
+                                                       sub1, labeled) {#
+    coef_name <- names(fit$coefficients)#
+    ## intercept#
+    temp <- coef_name[grep("Intercept", coef_name)]#
+    if (length(temp) > 0) {#
+        intercept_c <- rep(1, length(temp))#
+        names(intercept_c) <- temp#
+    } else {#
+        intercept_c <- NULL#
+    }#
+    ## feature#
+    temp <- coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]#
+    if (length(temp) > 0) {#
+        tempSub <- unique(sub1[, c("FEATURE", "RUN")])#
+		tempSub1 <- xtabs(~ RUN + FEATURE, data=tempSub)#
+		tempSub2 <- tempSub1[contrast.matrix == 1, ]#
+		feature_c <- as.numeric(tempSub2[-1]) / sum(tempSub2)#
+		names(feature_c) <- temp#
+    } else {#
+        feature_c <- NULL#
+    }#
+    ## run: different with other quantification - first try#
+    if (!labeled) {#
+        ## label-free#
+        temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+        if (length(temp) > 0) {#
+            run_c <- contrast.matrix[-1]#
+            names(run_c) <- temp#
+        } else {#
+            run_c <- NULL#
+        }#
+    } else {#
+        ## label-based#
+        temp <- coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]#
+        if (length(temp) > 0) {#
+            run_c <- rep(1 / nlevels(sub1$RUN), length(temp))#
+            names(run_c) <- temp#
+        } else {#
+            run_c <- NULL#
+        }#
+    }#
+    ## ref#
+    temp <- coef_name[grep("ref", coef_name)]#
+    if (length(temp) > 0) {#
+        ref_levels <- levels(sub1$ref)#
+        ref_c <- contrast.matrix[1:(length(ref_levels) - 1)]#
+        names(ref_c) <- temp#
+    } else {#
+        ref_c <- NULL#
+    }#
+    ## run by feature#
+    temp <- coef_name[intersect(grep("RUN", coef_name), #
+                                grep("FEATURE", coef_name))]#
+    tempSub <- dim(unique(sub1[, c("RUN", "FEATURE")]))[1]#
+    if (length(temp) > 0) {#
+        rf_c <- rep(1 / tempSub, length(temp))#
+		names(rf_c) <- temp#
+    } else {#
+        rf_c <- NULL#
+    }#
+    ## subject_nested#
+    temp <- coef_name[grep("SUBJECT_NESTED", coef_name)]#
+    if (length(temp) > 0) {#
+        if (nlevels(sub1$LABEL) == 2) {#
+            subjectNested_c <- contrast.matrix#
+		} else if (nlevels(sub1$LABEL) == 1) {#
+		    ## label-free#
+		    subjectNested_c <- contrast.matrix[-1]#
+		}#
+        names(subjectNested_c) <- temp#
+    } else {#
+        subjectNested_c <- NULL#
+    }#
+    contrast <- c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)#
+    contrast1 <- contrast[!is.na(fit$coefficients)]#
+    return(contrast1)#
+}#
+###########################################################################################
+#
+.iter.wls.fit.model <- function(data, fit, nrepeats) {#
+    for (i in 1:nrepeats) {#
+        if (i == 1) {#
+            ## lm or lmer#
+            if (class(fit) == "lm") {#
+                abs.resids <- data.frame(abs.resids=abs(fit$residuals))#
+                fitted <- data.frame(fitted=fit$fitted.values)#
+			} else {#
+			    abs.resids <- data.frame(abs.resids=abs(resid(fit)))#
+			    fitted <- data.frame(fitted=fitted(fit))#
+			}#
+			data <- data.frame(data, "abs.resids"=abs.resids, "fitted"=fitted)#
+			# data<-merge(data,abs.resids,by="row.names",all=T)#
+			# rownames(data)<-data$Row.names#
+			# data<-merge(data, fitted, by="row.names",all=T)#
+			# rownames(data)<-data$Row.names#
+		}#
+		fit.loess <- loess(abs.resids ~ fitted, data=data)#
+		loess.fitted <- data.frame(loess.fitted=fitted(fit.loess))#
+		data <- data.frame(data, "loess.fitted"=loess.fitted)#
+		# rownames(loess.fitted)<-names(resid(fit.loess))#
+		# data<-merge(data, loess.fitted, by="row.names",all=T)#
+		# rownames(data)<-data$Row.names#
+		## loess fitted valuaes are predicted sd#
+		data$weight <- 1 / (data$loess.fitted ^ 2)#
+		data <- data[, -which(colnames(data) %in% "abs.resids")]#
+		## re-fit using weight#
+		if (class(fit) == "lm") {#
+		    wls.fit <- lm(formula(fit), data=data, weights=weight)#
+		} else {#
+		    wls.fit <- lmer(formula(fit), data=data, weights=weight)#
+		}#
+#
+		## lm or lmer#
+#		if(class(fit)=="lm"){#
+#			residuals<-data.frame(residuals=wls.fit$residuals)#
+#		}else{#
+#			residuals<-data.frame(residuals=resid(wls.fit))#
+#		}#
+#		data<-merge(data,residuals,by="row.names",all=T)#
+#		rownames(data)<-data$Row.names#
+		## lm or lmer#
+		if (class(wls.fit) == "lm") {#
+		    abs.resids <- data.frame(abs.resids=abs(wls.fit$residuals))#
+		} else {#
+		    abs.resids <- data.frame(abs.resids=abs(resid(wls.fit)))#
+		}#
+		data <- data.frame(data, "abs.resids"=abs.resids)#
+#
+#		data<-merge(data,abs.resids,by="row.names",all=T)#
+#		rownames(data)<-data$Row.names#
+		data <- data[, -which(colnames(data) %in% c("loess.fitted", "weight"))]#
+    }#
+    return(wls.fit)#
+}#
+# Multiple plot function#
+##
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)#
+# - cols:   Number of columns in layout#
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.#
+##
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),#
+# then plot 1 will go in the upper left, 2 will go in the upper right, and#
+# 3 will go all the way across the bottom.#
+##
+.multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {#
+    require(grid)#
+    ## Make a list from the ... arguments and plotlist#
+    plots <- c(list(...), plotlist)#
+    numPlots <- length(plots)#
+    ## If layout is NULL, then use 'cols' to determine layout#
+    if (is.null(layout)) {#
+        ## Make the panel#
+        ## ncol: Number of columns of plots#
+        ## nrow: Number of rows needed, calculated from # of cols#
+        layout <- matrix(seq(1, cols * ceiling(numPlots / cols)),#
+                         ncol=cols, nrow=ceiling(numPlots / cols))#
+    }#
+    if (numPlots == 1) {#
+        print(plots[[1]])#
+    } else {#
+        ## Set up the page#
+        grid.newpage()#
+        pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))#
+        ## Make each plot, in the correct location#
+        for (i in 1:numPlots) {#
+            ## Get the i,j matrix positions of the regions that contain this subplot#
+            matchidx <- as.data.frame(which(layout == i, arr.ind=TRUE))#
+            print(plots[[i]], vp=viewport(layout.pos.row=matchidx$row,#
+                                          layout.pos.col=matchidx$col))#
+        }#
+    }#
+}
+temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+temp
+?groupComparison
+comparison<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)#
+row.names(comparison)<-"T7-T1"
+contrast.matrix<-comparison
+contrast.matrix
+temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+comparision<-matrix(c(1,-1), nrow=1)
+row.names(comparison) <- "UPS1-2"
+contrast.matrix<-comparison
+contrast.matrix
+comparison
+comparison<-matrix(c(1,-1), nrow=1)
+comparison
+row.names(comparison) <- "UPS1-2"
+comparison
+temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+contrast.matrix<-comparison
+contrast.matrix
+temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+temp
+tempresult <- temp
+tempresult
+out<-NULL
+out <- rbind(out,tempresult$result)
+out
+processall <- data$ProcessedData
+head(oricessall)
+head(processall)
+head(sub)
+dim(sub)
+subtemp <- processall[processall$PROTEIN == unique(sub$PROTEIN), ]
+subtemp
+length(unique(subtemp$FEATURE))
+length(unique(subtemp$RUN))
+totalncell <- length(unique(subtemp$FEATURE)) * length(unique(subtemp$RUN))
+totalncell
+sum(subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE != 0, "ABUNDANCE"])
+nrow(subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE != 0, ])
+dim(subtemp)
+nrow(subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE 0= 0, ])
+nrow(subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE == 0, ])
+head(rqall)
+head(subtemp)
+data<-subtemp
+data$LABEL <- factor(data$LABEL)
+label <- nlevels(data$LABEL)==2
+label
+sub<-subtemp
+result <- NULL
+message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+sub$FEATURE <- factor(sub$FEATURE)	#
+      		sub$feature.label <- paste(sub$FEATURE, sub$LABEL, sep="_")#
+      		sub$run.label <- paste(sub$RUN, sub$LABEL, sep="_")
+if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {#
+       			message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))#
+        		next()#
+      		}
+dim(sub)
+subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]#
+			countfeature <- xtabs(~FEATURE, subtemp)#
+			namefeature <- names(countfeature)[countfeature==0]
+namefeature
+if (length(namefeature)!=0) {#
+				sub <- sub[-which(sub$FEATURE %in% namefeature), ]#
+				if (nrow(sub) == 0) {#
+					message(paste("Can't summarize for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(data$PROTEIN)), ") because all measurements are NAs."))#
+        			next()#
+				} else {#
+					sub$FEATURE <- factor(sub$FEATURE)#
+				}#
+			}
+dim(sub)
+namefeature1 <- names(countfeature)[countfeature == 1]
+namefeature1
+if (length(namefeature1)!=0) {#
+				sub <- sub[-which(sub$FEATURE %in% namefeature1), ]#
+				if (nrow(sub) == 0) {#
+					message(paste("Can't summarize for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(data$PROTEIN)), ") because features have only one measurement across MS runs."))#
+        			next()#
+				} else {#
+					sub$FEATURE <- factor(sub$FEATURE)#
+				}#
+			}
+subtemp <- sub[sub$LABEL=="L" & !is.na(sub$INTENSITY) & sub$INTENSITY!=0,]#
+			count <- aggregate(ABUNDANCE~RUN,data=subtemp, length)#
+			norun <- setdiff(unique(data$RUN),count$RUN)#
+			if (length(norun)!=0 & length(intersect(norun, as.character(unique(sub$RUN))))) { # removed NA rows already, if there is no overlapped run, error#
+				sub <- sub[-which(sub$RUN %in% norun),]#
+				sub$RUN <- factor(sub$RUN)#
+			}
+norun
+dim(sub)
+sub$cen <- ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY==0,0,1)
+sub
+sum(sub$cen==0)>0
+subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+cut <- aggregate(ABUNDANCE~feature.label,data=subtemptemp, FUN=min)
+cut
+cut$ABUNDANCE <- 0.99*cut$ABUNDANCE
+for(j in 1:length(unique(cut$feature.label))) {#
+								sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0  & sub$feature.label==cut$feature.label[j],"ABUNDANCE"] <- cut$ABUNDANCE[j]#
+							}
+sub
+subtemp <- sub[!is.na(sub$ABUNDANCE),]
+countdf <- nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+countdf
+length(unique(sub$FEATURE))==1
+library(survival)
+if (length(unique(sub$FEATURE))==1) {#
+								fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')#
+							}else{#
+								if (countdf) {#
+									fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')#
+								}else{#
+									fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')#
+								}#
+							}
+sub <- data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+sub[sub$cen==0,"ABUNDANCE"] <- sub[sub$cen==0,"pred"]
+sub
+data_w = dcast(RUN ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+data_w
+rownames(data_w) <- data_w$RUN#
+  					data_w <- data_w[,-1]#
+  					data_w[data_w==1] <- NA
+meddata  <-  medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
+tmpresult <- meddata$overall + meddata$row
+tmpresult
+subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+subtemp
+dim(subtemp)
+tail(subtemp)
+tail(sub)
+numFea <- xtabs(~RUN, subtemp)
+numFea
+numFea <- numFea/length(unique(subtemp$FEATURE))
+numFea
+numFea <- xtabs(~RUN, subtemp)
+numFea <- numFea/length(unique(subtemp$FEATURE))
+numFeaTF <- numFea<=0.5
+numFea
+numFeaTF
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), ProportionMissing= numFea, more50missing=numFeaTF)
+sub.result
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), ProportionMissing=numFea, more50missing=numFeaTF)
+sub.result
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), MissingPercentage=numFea, more50missing=numFeaTF)
+sub.result
+numFea
+numFeaTF
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), MissingPercentage=as.vector(numFea), more50missing=numFeaTF)
+sub.result
+numFea <- xtabs(~RUN, subtemp)
+numFea
+numFeaPercentage <- numFea / length(unique(subtemp$FEATURE))
+numFeaPercentage
+numFeaTF <- numFeaPercentage <= 0.5
+numFeaTF
+numFea
+numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+numFeaPercentage
+numFeaTF <- numFeaPercentage >= 0.5
+numFeaTF
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF)
+sub.result
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), NumFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF)
+sub.result
+subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,]
+subtempimpute
+subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute!=0, ]
+subtempimpute
+subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,]
+subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE!=0, ]
+subtempimpute
+numimpute <- xtabs(~RUN, subtempimpute)
+numimpute
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), NumFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+sub.result
+2/13
+subtemp <- sub[!is.na(sub$ABUNDANCE),]
+subtemp
+subtemp <- subtemp[subtemp$FEATURE=="TVEEAENIAVTSGVVR_3_sum_NA", ]
+subtemp
+subtempcount <- sub[!is.na(sub$INTENSITY),]
+subtempcount
+sub <- subtemp[subtemp$FEATURE=="TVEEAENIAVTSGVVR_3_sum_NA", ]
+sub
+sub <- subtemp[subtemp$FEATURE=="GSHMDVFK_3_sum_NA", ]
+sub
+ls
+ls()
+head(work)
+dim(work)
+head(data)
+dim(data)
+tail(data)
+sub<-data[data$FEATURE=="GSHMDVFK_3_sum_NA", ]
+head(sub)
+subtemp <- sub[!is.na(sub$ABUNDANCE),]
+subtemp
+subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,]
+subtempcount
+subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,]
+subtempimpute
+numFea <- xtabs(~RUN, subtempcount)
+numFea
+length(unique(subtemp$FEATURE))
+numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+numFeaPercentage
+numFeaTF <- numFeaPercentage >= 0.5
+numFeaTF
+sub.result <- data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN, NumFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+sub.result
+numimpute <- xtabs(~RUN, subtempimpute)
+numimpute
+sub.result <- data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN, NumFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+sub.result
+subtempimpute
+subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE!=0, ]
+subtempimpute
+numimpute <- xtabs(~RUN, subtempimpute)
+numimpute
+sub.result <- data.frame(Protein=subtemp$PROTEIN,LogIntensities=subtemp$ABUNDANCE, RUN=subtemp$RUN, NumFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+sub.result
+ls()
+head(work)
+names(quant)
+head(quant$RunlevelData)
+subtemp <- processall[processall$PROTEIN == unique(sub$PROTEIN), ]
+subtemp
+totalncell <- length(unique(subtemp$FEATURE)) * length(unique(subtemp$RUN))
+totalncell
+sub.result
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF)
+sub.result
+sub.result <- data.frame(Protein=unique(sub$PROTEIN),LogIntensities=tmpresult, RUN=names(tmpresult), NumMeasuredFeature = as.vector(numFea), MissingPercentage=as.vector(numFeaPercentage), more50missing=numFeaTF, NumImputedFeature = as.vector(numimpute))
+sub.result
+tempresult$result
+is.element(sub, "NumImputedFeature")
+is.element(sub.result, "NumImputedFeature")
+is.element(colnames(sub.result), "NumImputedFeature")
+any(is.element(colnames(sub), "NumImputedFeature"))
+any(is.element(colnames(sub.result), "NumImputedFeature"))
+sub<-sub.result
+sub
+temptempresult <- tempresult$result
+temptempresult
+ImputationPercentage <- sum(sub$NumImputedFeature) / totalncell
+temptempresult <- data.frame(temptempresult, MissingPercentage=MissingPercentage, ImputationPercentage=ImputationPercentage)
+MissingPercentage <- 1 - sum(sub$NumMeasuredFeature) / totalncell
+temptempresult <- data.frame(temptempresult, MissingPercentage=MissingPercentage, ImputationPercentage=ImputationPercentage)
+temptempresult

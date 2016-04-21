@@ -30,7 +30,7 @@ dataProcessPlots(data=data,
   \item{data}{name of the (output of dataProcess function) data set.}
   \item{type}{choice of visualization. "ProfilePlot" represents profile plot of log intensities across MS runs. "QCPlot" represents quality control plot of log intensities across MS runs. "ConditionPlot" represents mean plot of log ratios (Light/Heavy) across conditions.}
   \item{featureName}{for "ProfilePlot" only, "Transition" (default) means printing feature legend in transition-level; "Peptide" means printing feature legend in peptide-level; "NA" means no feature legend printing.} 
-  \item{ylimUp}{upper limit for y-axis in the log scale. FALSE(Default) for Profile Plot and QC Plot is 30. FALSE(Default) for Condition Plot is maximum of log ratio + SD or CI.}
+  \item{ylimUp}{upper limit for y-axis in the log scale. FALSE(Default) for Profile Plot and QC Plot use the upper limit as rounded off maximum of log2(intensities) after normalization + 3. FALSE(Default) for Condition Plot is maximum of log ratio + SD or CI.}
   \item{ylimDown}{lower limit for y-axis in the log scale. FALSE(Default) for Profile Plot and QC Plot is 0. FALSE(Default) for Condition Plot is minumum of log ratio - SD or CI.}
   \item{scale}{for "ConditionPlot" only, FALSE(default) means each conditional level is not scaled at x-axis according to its actual value (equal space at x-axis). TRUE means each conditional level is scaled at x-axis according to its actual value (unequal space at x-axis).}
   \item{interval}{for "ConditionPlot" only, "CI"(default) uses confidence interval with 0.95 significant level for the width of error bar. "SD" uses standard deviation for the width of error bar.}

@@ -538,7 +538,7 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
       sub$PEPTIDE <- factor(sub$PEPTIDE)
       sub$FEATURE <- factor(sub$FEATURE)
       
-      ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=dot.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limit=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limit=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
+      ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=dot.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limits=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limits=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
       
       if (length(unique(sub$LABEL))==2) {
         ptemp <- ptemp+scale_shape_manual(values=c(2,19),name="",labels=c("Reference","Endogenous"))
@@ -595,21 +595,6 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 #############################################
 ## fit.model
 #############################################
-
-#############################################
-# check whether there are multiple runs for a replicate
-# if yes, normalization should be different way.
-#############################################
-
-.countMultiRun <- function(data) {
-  
- 	standardFeature <- unique(data[data$RUN == unique(data$RUN[1]), "FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.
-  
-  	## get overlapped feature ID
-  	countdiff = tapply (data$FEATURE, data$RUN, function ( x ) length(intersect(unique(x), standardFeature)) ) 
-  
-  	return(countdiff)
-}
 
 #############################################
 # check if measurements are missing for entire group

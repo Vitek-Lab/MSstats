@@ -429,7 +429,7 @@ groupComparisonPlots <- function(data=data,
         		ptemp <- ggplot(aes_string(x='logFC', y='log2adjp', color='colgroup', label='Protein'), data=subtemp)+
         				geom_point(size=dot.size)+
         				scale_colour_manual(values=c("gray65", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
-        				scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+
+        				scale_y_continuous('-Log2 (adjusted p-value)', limits=c(y.limdown, y.limup))+
         				labs(title=unique(sub$Label))
       		}
       
@@ -437,17 +437,17 @@ groupComparisonPlots <- function(data=data,
         		ptemp <- ggplot(aes_string(x='logFC', y='log10adjp', color='colgroup', label='Protein'), data=subtemp)+
         				geom_point(size=dot.size)+
         				scale_colour_manual(values=c("gray65", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
-        				scale_y_continuous('-Log10 (adjusted p-value)', limit=c(y.limdown, y.limup))+
+        				scale_y_continuous('-Log10 (adjusted p-value)', limits=c(y.limdown, y.limup))+
         				labs(title=unique(sub$Label))
         	}
       
       
      		## x-axis labeling
       		if (colnames(sub)[3] == "log2FC") {
-      			ptemp <- ptemp+scale_x_continuous('Log2 fold change', limit=c(-x.lim, x.lim))
+      			ptemp <- ptemp+scale_x_continuous('Log2 fold change', limits=c(-x.lim, x.lim))
       		}
       		if (colnames(sub)[3] == "log10FC") {
-      			ptemp <- ptemp+scale_x_continuous('Log10 fold change', limit=c(-x.lim, x.lim))
+      			ptemp <- ptemp+scale_x_continuous('Log10 fold change', limits=c(-x.lim, x.lim))
       		}
       
      		## add protein name
@@ -646,10 +646,10 @@ groupComparisonPlots <- function(data=data,
         			)
       
       		if (colnames(data)[3] == "log2FC") {
-      			ptemp <- ptemp+scale_y_continuous("Log2-Fold Change", limit=c(y.limdown, y.limup))
+      			ptemp <- ptemp+scale_y_continuous("Log2-Fold Change", limits=c(y.limdown, y.limup))
       		}
      	 	if (colnames(data)[3] == "log10FC") {
-     	 		ptemp <- ptemp+scale_y_continuous("Log10-Fold Change", limit=c(y.limdown, y.limup))
+     	 		ptemp <- ptemp+scale_y_continuous("Log10-Fold Change", limits=c(y.limdown, y.limup))
      	 	}
       
       		print(ptemp)
