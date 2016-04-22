@@ -21,7 +21,7 @@ designSampleSize(data=data,desiredFC=desiredFC,FDR=0.05,numSample=TRUE,power=0.9
 
 \author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
 
-Maintainer: Meena Choi (\email{choi67@purdue.edu})
+Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 
 \references{

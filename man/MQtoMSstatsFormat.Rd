@@ -28,5 +28,5 @@ MaxQtoMSstatsFormat(evidence, annotation,proteinGroups,
 
 \author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
 
-Maintainer: Meena Choi (\email{choi67@purdue.edu})
+Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

@@ -1,8 +1,11 @@
 CHANGES IN VERSION 3.3.11
 -------------------------
+- New functionalities : calculation of the LOD and LOQ, 1) linear_quantlim, 2) nonlinear_quantlim, 3) plot_quantlim, and two example datasets, SpikeInDataLinear, SpikeInDataNonLinear are available.
+- Update for featureSelection =‘highQuality’ in dataProcess
 - allow colon(“:”) in the peptide sequence
 - fix the bug for ‘fill in incomplete rows’ in dataProcess. If there are only one feature has incomplete rows, the issue for getting run and feature ID in dataProcess and not show the list. Now, it works.
 - change the default for blimp in dataProcessPlots for profile plot and QC plot. The upper limit of y-axis with ylimUp=FALSE is calculated by maximum log2(intensity) across all proteins after normalization + 3 and then rounding off to the nearest integer.
+
 
 CHANGES IN VERSION 3.3.10
 -------------------------

@@ -27,7 +27,7 @@ The input of this function is the quantitative data from function (\code{\link{d
 
 \author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
 
-Maintainer: Meena Choi (\email{choi67@purdue.edu})
+Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 \references{
 
