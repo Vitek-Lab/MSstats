@@ -74,7 +74,10 @@ dataProcessPlots <- function(data=data,
 				datarun$PROTEIN <- factor(datarun$Protein)
 		}
     
-    	## assign upper or lower limit
+    ### output from feature selection is different, need to remove some columns
+    datafeature <- datafeature[, -which(colnames(datafeature) %in% c("ABUNDANCE.O", "feature.label", "run.label", "cen", "pred"))]
+  
+    ## assign upper or lower limit
       # MC, 2016/04/21, default upper limit is maximum log2(intensity) after normalization+3, then round-up
     	y.limup <- ceiling ( max ( datafeature$ABUNDANCE, na.rm=TRUE ) + 3 )
     
@@ -391,34 +394,35 @@ dataProcessPlots <- function(data=data,
      			}
      			
      			## for annotation of condition
-      			groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], analysis="Run summary")
+      		groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], analysis="Run summary")
       
-      			if (haverun) {
-        			subrun <- datarun[datarun$Protein == levels(datafeature$PROTEIN)[i], ]
+      		if (haverun) {
+        		subrun <- datarun[datarun$Protein == levels(datafeature$PROTEIN)[i], ]
 			
-					if (nrow(subrun)!=0) {
-						quantrun <- data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary", TRANSITION="Run summary", FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, SUBJECT_ORIGINAL=NA, RUN=subrun$RUN, GROUP=NA, SUBJECT=NA, SUBJECT_NESTED=NA,  INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE, METHOD=1)
-					} else { # if there is only one Run measured across all runs, no Run information for linear with censored
-						quantrun <- data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary", TRANSITION="Run summary", FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, SUBJECT_ORIGINAL=NA, RUN=unique(datafeature$RUN)[1], GROUP=NA, SUBJECT=NA, SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA, METHOD=1)
-					}
+					  if (nrow(subrun)!=0) {
+						  quantrun <- data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary", TRANSITION="Run summary", FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, SUBJECT_ORIGINAL=NA, RUN=subrun$RUN, GROUP=NA, SUBJECT=NA, SUBJECT_NESTED=NA,  INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE, METHOD=1)
+					    
+            } else { # if there is only one Run measured across all runs, no Run information for linear with censored
+						  quantrun <- data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary", TRANSITION="Run summary", FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, SUBJECT_ORIGINAL=NA, RUN=unique(datafeature$RUN)[1], GROUP=NA, SUBJECT=NA, SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA, METHOD=1)
+					  }
 			
-					if (any(is.element(colnames(sub), "imputed"))) {
-						quantrun$imputed <- FALSE
-					}
+					  if (any(is.element(colnames(sub), "imputed"))) {
+						  quantrun$imputed <- FALSE
+					 }
 
-					quantrun$analysis <- "Run summary"
-					sub$analysis <- "Processed feature-level data"
+					  quantrun$analysis <- "Run summary"
+					  sub$analysis <- "Processed feature-level data"
 					
-					## if 'Filter' column after feature selection, remove this column in order to match columns with run quantification
-					filter_column<-is.element(colnames(sub), "Filter")
-					if (any(filter_column)) {
-						sub<-sub[, !filter_column]
-					}
+					  ## if 'Filter' column after feature selection, remove this column in order to match columns with run quantification
+					  filter_column<-is.element(colnames(sub), "Filter")
+					  if (any(filter_column)) {
+						  sub<-sub[, !filter_column]
+					  }
 					
-					final <- rbind(sub, quantrun)
-					final$analysis <- factor(final$analysis)
-					final$FEATURE <- factor(final$FEATURE)
-					final$RUN <- as.numeric(final$RUN)
+					  final <- rbind(sub, quantrun)
+					  final$analysis <- factor(final$analysis)
+					  final$FEATURE <- factor(final$FEATURE)
+					  final$RUN <- as.numeric(final$RUN)
 
 					ptempall <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis', linetype='FEATURE', size='analysis', shape='analysis'), data=final)+
 								facet_grid(~LABEL)+
