@@ -1,3 +1,48 @@
+CHANGES IN VERSION 3.3.11
+-------------------------
+- New functionalities : calculation of the LOD and LOQ, 1) linear_quantlim, 2) nonlinear_quantlim, 3) plot_quantlim, and two example datasets, SpikeInDataLinear, SpikeInDataNonLinear are available.
+- Update for featureSelection =‘highQuality’ in dataProcess
+- allow colon(“:”) in the peptide sequence
+- fix the bug for ‘fill in incomplete rows’ in dataProcess. If there are only one feature has incomplete rows, the issue for getting run and feature ID in dataProcess and not show the list. Now, it works.
+- change the default for blimp in dataProcessPlots for profile plot and QC plot. The upper limit of y-axis with ylimUp=FALSE is calculated by maximum log2(intensity) across all proteins after normalization + 3 and then rounding off to the nearest integer.
+
+
+CHANGES IN VERSION 3.3.10
+-------------------------
+- fix the bug for dataProcess
+	-  When the number of proteins for $ProcessedData and $RunlevelData are different,  the bug happened for calculating %missing and imputation.
+- fix the bug for groupComparison
+	- when one of condition is completely missing or other special case, .fit.model.single can handle and output of .fit.model.single is not try-error. Then output for fitted and residual should be updated.
+
+
+
+CHANGES IN VERSION 3.3.9
+-------------------------
+- Condition plot from dataProcessPlots : Now condition plots are drawn with run-level summarized intensities per condition.
+- ComparisonResult from groupComparison
+	- flag about missingness and imputation : Calculation for MissingPercentage and ImputationPercentage columns is changed
+		1) MissingPercentage : number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) in the conditions used for comparison (from ‘Label’ column) by protein. Therefore different comparisons(Label in the output) from the same protein can have the different percentage of missingness.
+		2) ImputationPercentage : number of imputed intensities/total number of intensities in the conditions used for comparison (from ‘Label’ column) by protein. Therefore different comparisons(Label in the output) from the same protein can have the different percentage of imputation.
+	- new column, ‘issue’, shows special cases, such as completely missing in a condition or all conditions for comparisons.
+- VolcanoPlot
+	- flag the proteins which have the condition with completely missing. On the left of protein name, ‘*’ willz be appeared in Volcano plot
+		
+
+
+
+CHANGES IN VERSION 3.3.8
+-------------------------
+- normalization : overall median -> median of medians. For all workflow for MSstats, the result should not be changed. But, log(sum) will have slightly different result.
+- flag about missingness and imputation
+	- RunlevelData from dataProcess include two or three more columns 		
+		1) NumMeasuredFeature : number of measured features in a run
+		2) Missing percentage : number of measured features/total number of features by run
+		3) NumImputedFeature : number of imputed intensities in a run. This column is shown only if users allow to impute the missing value.
+	- ComparisonResult from groupComparison : one or two columns will be added.
+		1) MissingPercentage : number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) by protein
+		2) ImputationPercentage : number of imputed intensities/total number of intensities by protein
+
+
 CHANGES IN VERSION 3.3.4
 -------------------------
 - fix the bug for featureSubset=‘highQuality’ with label-based experiment.

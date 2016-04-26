@@ -123,7 +123,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
  
   	## need original group information
   	rqall <- data$RunlevelData
-
+	processall <- data$ProcessedData
+	
   	origGroup <- unique(rqall$GROUP_ORIGINAL)
   
   	for (i in 1:nlevels(rqall$Protein)) {
@@ -156,7 +157,6 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
     		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
     		sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
-    		# sub$FEATURE <- factor(sub$FEATURE)	
     		sub$RUN <- factor(sub$RUN)
     
    	 		# singleFeature <- .checkSingleFeature(sub)
@@ -187,16 +187,24 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
       		tempresult <- list(result=NULL, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)
       
       		for(k in 1:nrow(contrast.matrix)) {	
-        		tempresult$result <- rbind(tempresult$result, data.frame(Protein=levels(rqall$Protein)[i], Label=row.names(contrast.matrix)[k], logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA))
+        		tempresult$result <- rbind(tempresult$result, data.frame(Protein=levels(rqall$Protein)[i], Label=row.names(contrast.matrix)[k], logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA))
       		}
     	} else {
       		tempresult <- temp
     	}
-    
+    	
+    	temptempresult <- tempresult$result
+    	    	
+    	## need to add information about % missingness and %imputation
+    	subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
+
+    	temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
+
     	## comparison result table
     	#	out <- rbindlist(list(out,tempresult$result))
-    	out <- rbind(out,tempresult$result)
-    
+    	out <- rbind(out, temptempresult)
+
+
     	## for checking model assumptions
     	## add residual and fitted after fitting the model
     	if (class(temp) == "try-error") {
@@ -204,7 +212,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         		sub$residuals <- NA
         		sub$fitted <- NA
       		}
+    	} else if( is.na(tempresult$result$pvalue) ) { ## even though there is no error for .fit.model function, still output can have empty fitted and residuals.
+        
+    	    sub$residuals <- NA
+    	    sub$fitted <- NA
+          
     	} else {
+      
       		sub$residuals <- temp$valueresid
       		sub$fitted <- temp$valuefitted
     	}
@@ -267,6 +281,16 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	## change the format as data.frame
   	out.all <- data.frame(out.all)
   
+  	## change order of columns, 
+  	if(any(is.element(colnames(out.all), "ImputationPercentage"))){
+    	out.all <- out.all[, c(1:7, 11, 8, 9, 10)]		
+    }else{
+    	out.all <- out.all[, c(1:7, 10, 8, 9)]
+    }
+    
+    ## if just one condition is completely missing, replace adjust pvalue as zero
+    out.all[!is.na(out.all$issue) & out.all$issue=="oneConditionMissing", "adj.pvalue"] <- 0
+    
   	##
   	processout <- rbind(processout, c("Group comparison is done. - okay"))
   	write.table(processout, file=finalfile, row.names=FALSE)
@@ -514,7 +538,7 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
       sub$PEPTIDE <- factor(sub$PEPTIDE)
       sub$FEATURE <- factor(sub$FEATURE)
       
-      ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=dot.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limit=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limit=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
+      ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=dot.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limits=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limits=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
       
       if (length(unique(sub$LABEL))==2) {
         ptemp <- ptemp+scale_shape_manual(values=c(2,19),name="",labels=c("Reference","Endogenous"))
@@ -571,21 +595,6 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 #############################################
 ## fit.model
 #############################################
-
-#############################################
-# check whether there are multiple runs for a replicate
-# if yes, normalization should be different way.
-#############################################
-
-.countMultiRun <- function(data) {
-  
- 	standardFeature <- unique(data[data$RUN == unique(data$RUN[1]), "FEATURE"]) ## if some feature are missing for this spedific run, it could be error. that is why we need balanced design.
-  
-  	## get overlapped feature ID
-  	countdiff = tapply (data$FEATURE, data$RUN, function ( x ) length(intersect(unique(x), standardFeature)) ) 
-  
-  	return(countdiff)
-}
 
 #############################################
 # check if measurements are missing for entire group
@@ -724,3 +733,299 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
   
   	return(any(temp1 != temp1[1]))
 }
+
+
+
+
+########################################################
+.fit.model.single <- function(contrast.matrix,
+						data,
+						TechReplicate,
+						singleSubject,
+						repeated,
+						origGroup) {
+  
+  	## input : output of run quantification
+  	
+	data2 <- data
+    data2$GROUP <- factor(data2$GROUP)
+    data2$SUBJECT <- factor(data2$SUBJECT)
+    
+    ## if there is only one condition between two conditions, make error message and next
+    if(length(unique(data2$GROUP_ORIGINAL)) == 1){
+    	
+    	## each comparison
+    	allout <- NULL
+      
+    	for(k in 1:nrow(contrast.matrix)) {
+        
+        	## choose each comparison
+        	contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
+        	row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
+            
+            if( any(levels(origGroup)[contrast.matrix.sub != 0] == unique(data2$GROUP_ORIGINAL)) ){
+            	
+            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", unique(data2$GROUP_ORIGINAL), ".")
+            	          	
+            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=Inf, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='oneConditionMissing')
+            	
+            } else {
+            	
+            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
+            	          	
+            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='completeMissing')
+            	
+            }
+         	       	        
+        	allout <- rbind(allout, out)
+        	
+        } ## end loop for comparion    
+  		
+    	finalresid <- NULL
+    	finalfitted <- NULL
+  		fit.full <- NULL
+    	
+    } else {
+    	
+    	## when subject is fixed, it is ok using lm function.
+    
+    	## when single feature, consider technical replicates for time-course.
+   
+    	## case-control
+    	if (!repeated) {
+    		if (!TechReplicate | singleSubject) {
+           		fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
+         	} else {
+          		fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data = data2)
+          		df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)$df.residual
+         	}
+        
+    	} else { ## time-course
+      		if (singleSubject) {
+          		fit.full <- lm(ABUNDANCE ~ GROUP , data = data2)
+      		} else { ## no single subject
+        		if (!TechReplicate) {
+          			fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data = data2)
+          			df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data = data2)$df.residual
+        		} else {
+          			fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = data2) ## SUBJECT==SUBJECT_NESTED here
+          			df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT , data = data2)$df.residual
+        		}
+        	}	
+    	} ## time-course
+      
+		## get parameter from model
+    	if (class(fit.full) == "lm") {
+			Para <- .getParameterFixed(fit.full)
+		} else {
+			Para <- .getParameterRandom(fit.full, df.full)
+		}
+      
+      
+    	## each comparison
+    	allout <- NULL
+    	
+    	## get condition IDs which are completely missing.
+        emptycondition <- setdiff(levels(origGroup), unique(data2$GROUP_ORIGINAL))
+      
+    	for(k in 1:nrow(contrast.matrix)) {
+        
+        	## choose each comparison
+        	contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
+        	row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
+        
+          	
+        	if ( length(emptycondition) != 0 ) { # if there are any completely missing in any condition,
+        		
+        		## one by one comparison is simple. However, for linear combination of condition can be complicated
+        		## get + and - condition separately
+        		count.pos <- levels(origGroup)[contrast.matrix.sub != 0 & contrast.matrix.sub > 0]
+        		count.neg <- levels(origGroup)[contrast.matrix.sub != 0 & contrast.matrix.sub < 0]
+        		
+        		## then check whether any + or - part is completely missing
+        		count.diff.pos <- intersect(levels(origGroup)[contrast.matrix.sub != 0 & contrast.matrix.sub > 0], emptycondition)
+        		count.diff.neg <- intersect(levels(origGroup)[contrast.matrix.sub != 0 & contrast.matrix.sub < 0], emptycondition)
+        		
+        		## positive side
+        		if(length(count.diff.pos) != 0){
+        			flag.issue.pos <- TRUE ## TRUE : there are problematic conditions
+        		} else {
+        			flag.issue.pos <- FALSE ## FALSE : no issue about completely missing
+        		}
+        		
+        		## negative side
+        		if(length(count.diff.neg) != 0){
+        			flag.issue.neg <- TRUE ## TRUE : there are problematic conditions
+        		} else {
+        			flag.issue.neg <- FALSE ## FALSE : no issue about completely missing
+        		}
+        		
+        		## message and output  			
+        		if( flag.issue.pos & flag.issue.neg ){ ## both sides are completely missing
+        			
+        			message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
+            	          	
+            		out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='completeMissing')	
+          		
+        		} else if ( flag.issue.pos | flag.issue.neg ) {
+        			
+        			if(flag.issue.pos) {
+        				issue.side <- count.diff.pos
+        				
+        				message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", paste(issue.side, collapse = ", "), ".")
+            	          	
+            			out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=(-Inf), SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='oneConditionMissing')
+        			}
+        			
+        			if(flag.issue.neg) {
+        				issue.side <- count.diff.neg
+        				
+        				message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", paste(issue.side, collapse = ", "), ".")
+            	          	
+            			out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=Inf, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='oneConditionMissing')
+        			}       			
+        			
+        		} else { # then same as regulat calculation
+        			contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
+          			out <- .estimableFixedRandom(Para, contrast)
+          
+          			## any error for out, just NA
+          			if (is.null(out)) {
+            			out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
+          			} else {
+            			out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), out, issue=NA)	
+          			}
+        		}
+         			
+        	} else {
+          		contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
+          		out <- .estimableFixedRandom(Para, contrast)
+          
+          		## any error for out, just NA
+          		if (is.null(out)) {
+            		out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
+          		} else {
+            		out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), out, issue=NA)	
+          		}
+        	}
+        
+        	allout <- rbind(allout, out)
+        } ## end loop for comparion
+      
+  		if (class(fit.full)=="lm") {  ## lm model
+    		finalresid <- fit.full$residuals
+    		finalfitted <- fit.full$fitted.values
+  		} else {   ## lmer model
+    		finalresid <- resid(fit.full)
+    		finalfitted <- fitted(fit.full)
+  		}
+  		
+  	} ## more than 2 conditions in the dataset
+  
+  	finalout <- list(result=allout, valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
+  	return(finalout)
+  
+} ## .fit.model.single
+
+
+
+#############################################
+.ttest.logsum <- function(contrast.matrix,data,origGroup) {
+	
+	#### each comparison
+    allout <- NULL
+      
+    for(k in 1:nrow(contrast.matrix)) {
+        
+    	# choose each comparison
+        contrast.matrix.sub <- matrix(contrast.matrix[k,], nrow=1)
+        row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
+        
+        #GroupComparisonAgreement <- .chechGroupComparisonAgreement(data,contrast.matrix.sub)
+        
+ #       if (GroupComparisonAgreement$sign==TRUE) {
+ #         message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+          
+ #         out <- data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
+ #       }else{
+        	
+        	## get two groups from contrast.matrix
+        	datasub <- data[which(data$GROUP_ORIGINAL %in% origGroup[contrast.matrix.sub!=0]), ]
+          
+          ## t test
+          sumresult <- try(t.test(datasub$ABUNDANCE~datasub$GROUP_ORIGINAL, var.equal=TRUE), silent=TRUE)
+
+			if (class(sumresult)=="try-error") {
+				out <- data.frame(Protein=unique(data$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
+			}else{
+				out <- data.frame(Protein=unique(data$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
+				
+				out <- data.frame(Protein=unique(data$PROTEIN), Label=paste(names(sumresult$estimate)[1], " - ", names(sumresult$estimate)[2], sep=""), logFC=sumresult$estimate[1] - sumresult$estimate[2], SE=(sumresult$estimate[1] - sumresult$estimate[2]) / sumresult$statistic, Tvalue=sumresult$statistic, DF=sumresult$parameter, pvalue=sumresult$p.value, issue=NA)
+				rownames(out) <- NULL
+			}
+
+ #       }
+        
+        allout <- rbind(allout, out)
+        
+      } # end loop for comparion
+      
+      finalout <- list(result=allout, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)	
+  	return(finalout)
+
+}
+
+
+#############################################
+
+.count.missing.percentage <- function(contrast.matrix, temptempresult, sub, subprocess){
+
+	
+    totaln.cell <- aggregate(PROTEIN ~ GROUP_ORIGINAL, data=subprocess[subprocess$LABEL == "L", ], length) ## just for count total measurement, use PROTEIN instead of ABUNDANCE in order to prevent to remove NA in ABUNDANCE
+    colnames(totaln.cell)[colnames(totaln.cell) == "PROTEIN"] <- "totalN"
+    
+    totaln.measured <- aggregate(NumMeasuredFeature ~ GROUP_ORIGINAL, data=sub, sum, na.rm=TRUE)
+    totaln.imputed <- aggregate(NumImputedFeature ~ GROUP_ORIGINAL, data=sub, sum, na.rm=TRUE)
+    
+    totaln <- merge(totaln.cell, totaln.measured, by="GROUP_ORIGINAL", all=TRUE)
+    totaln <- merge(totaln, totaln.imputed, by="GROUP_ORIGINAL", all=TRUE)
+
+    if(any(is.element(colnames(sub), "NumImputedFeature"))){
+    	temptempresult$MissingPercentage <- NA
+    	temptempresult$ImputationPercentage <- NA
+    } else {
+    	temptempresult$MissingPercentage <- NA
+    }
+    
+    for(k in 1:nrow(contrast.matrix)) {
+        
+        ## choose each comparison
+        contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
+        row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
+        
+        condition.needed <- contrast.matrix.sub != 0
+        
+        MissingPercentage.new <- NA
+        ImputationPercentage.new <- NA
+        
+        ## total # missing
+    	MissingPercentage.new <- 1 - sum(totaln[condition.needed, "NumMeasuredFeature"], na.rm=TRUE) / sum(totaln[condition.needed, "totalN"], na.rm=TRUE)
+    	
+    	## # imputed intensity
+    	if(any(is.element(colnames(sub), "NumImputedFeature"))){
+    		ImputationPercentage.new <- sum(totaln[condition.needed, "NumImputedFeature"], na.rm=TRUE) / sum(totaln[condition.needed, "totalN"], na.rm=TRUE)
+    		
+    		temptempresult[temptempresult$Label == row.names(contrast.matrix.sub), "MissingPercentage"] <- MissingPercentage.new
+    		temptempresult[temptempresult$Label == row.names(contrast.matrix.sub), "ImputationPercentage"] <- ImputationPercentage.new
+    		
+    	} else {
+    		
+    		temptempresult[temptempresult$Label == row.names(contrast.matrix.sub), "MissingPercentage"] <- MissingPercentage.new
+
+    	}
+    
+    } # end loop for multiple comparisons
+    return(temptempresult)
+
+}
+	

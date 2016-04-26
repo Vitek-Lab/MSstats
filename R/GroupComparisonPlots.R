@@ -394,7 +394,7 @@ groupComparisonPlots <- function(data=data,
       		}
       
       		## x.lim
-      		x.lim <- ceiling(max(abs(sub[!is.na(sub[, 3]), 3]))) ## log2FC or log10FC
+      		x.lim <- ceiling(max(abs(sub[!is.na(sub[, 3]) & abs(sub[, 3]) != Inf , 3]))) ## log2FC or log10FC
       		if (x.lim < 3) {
       			x.lim <- 3
       		}
@@ -413,13 +413,23 @@ groupComparisonPlots <- function(data=data,
       		if (logBase.pvalue == 10) {
         		subtemp$log10adjp <- (-log10(subtemp$adj.pvalue))
         	}
+        	
+        	## for x limit for inf or -inf
+        	subtemp$newlogFC <- subtemp$logFC
+        	subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing" & subtemp$logFC == Inf, "newlogFC"] <- (x.lim - 0.2)
+        	subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing" & subtemp$logFC == (-Inf), "newlogFC"] <- (x.lim - 0.2) *(-1)
+        	
+        	## add (*) in Protein name for Inf or -Inf
+        	subtemp$Protein <- as.character(subtemp$Protein)
+        	subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing", "Protein"] <- paste("*", subtemp[!is.na(subtemp$issue) & subtemp$issue == "oneConditionMissing", "Protein"], sep="")
+
       
       		## Plotting
       		if (logBase.pvalue == 2) {
         		ptemp <- ggplot(aes_string(x='logFC', y='log2adjp', color='colgroup', label='Protein'), data=subtemp)+
         				geom_point(size=dot.size)+
         				scale_colour_manual(values=c("gray65", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
-        				scale_y_continuous('-Log2 (adjusted p-value)', limit=c(y.limdown, y.limup))+
+        				scale_y_continuous('-Log2 (adjusted p-value)', limits=c(y.limdown, y.limup))+
         				labs(title=unique(sub$Label))
       		}
       
@@ -427,17 +437,17 @@ groupComparisonPlots <- function(data=data,
         		ptemp <- ggplot(aes_string(x='logFC', y='log10adjp', color='colgroup', label='Protein'), data=subtemp)+
         				geom_point(size=dot.size)+
         				scale_colour_manual(values=c("gray65", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
-        				scale_y_continuous('-Log10 (adjusted p-value)', limit=c(y.limdown, y.limup))+
+        				scale_y_continuous('-Log10 (adjusted p-value)', limits=c(y.limdown, y.limup))+
         				labs(title=unique(sub$Label))
         	}
       
       
      		## x-axis labeling
       		if (colnames(sub)[3] == "log2FC") {
-      			ptemp <- ptemp+scale_x_continuous('Log2 fold change', limit=c(-x.lim, x.lim))
+      			ptemp <- ptemp+scale_x_continuous('Log2 fold change', limits=c(-x.lim, x.lim))
       		}
       		if (colnames(sub)[3] == "log10FC") {
-      			ptemp <- ptemp+scale_x_continuous('Log10 fold change', limit=c(-x.lim, x.lim))
+      			ptemp <- ptemp+scale_x_continuous('Log10 fold change', limits=c(-x.lim, x.lim))
       		}
       
      		## add protein name
@@ -636,10 +646,10 @@ groupComparisonPlots <- function(data=data,
         			)
       
       		if (colnames(data)[3] == "log2FC") {
-      			ptemp <- ptemp+scale_y_continuous("Log2-Fold Change", limit=c(y.limdown, y.limup))
+      			ptemp <- ptemp+scale_y_continuous("Log2-Fold Change", limits=c(y.limdown, y.limup))
       		}
      	 	if (colnames(data)[3] == "log10FC") {
-     	 		ptemp <- ptemp+scale_y_continuous("Log10-Fold Change", limit=c(y.limdown, y.limup))
+     	 		ptemp <- ptemp+scale_y_continuous("Log10-Fold Change", limits=c(y.limdown, y.limup))
      	 	}
       
       		print(ptemp)
