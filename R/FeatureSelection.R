@@ -4,347 +4,514 @@
 #This process removes features with interference across the MS runs
 #remove_proteins_with_interference==TRUE allows the algorithm to remove the whole protein if deem interfered
 
-.feature_selection <- function(work, leave_one_out=FALSE, remove_proteins_with_interference){
+.feature_selection <- function(work, 
+                               remove_proteins_with_interference, 
+                               max.iter=10, 
+                               Improve_Margin_DIA=0.15, 
+                               Step2='Subplot'){
 
-	
-	#Label-free experiments (SWATH)
-	if(nlevels(work$LABEL)==1 & length(unique(work$TRANSITION))>1){ #1.2
-    
-		#We can merely work on one peptide at a time
-    N.Prot <- nlevels(work$PROTEIN) 
+
+  #Label-free experiments (SWATH)
+	if(nlevels(work$LABEL) == 1 & length(unique(work$TRANSITION)) > 1){ #1.2
+
+    #Set an arbitrary value to start the while loop
+    Cut <- '60%'
+    Iteration <- 0
+    Cut.History <- vector()
+    work.0 <- work
+
+    while(Cut != '100%' & Iteration < max.iter){ #While.SWATH
+      #We can merely work on one peptide at a time
+      N.Prot <- nlevels(work$PROTEIN) 
+      
+      if(N.Prot > 200) {
+        Max.Iter <- 5
+      }
        
-    #Create a data frame storing the score of interference for each fragment
-    Interference.Score <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector(), Interference=vector())
-    Index.DIA <- 0
+      #Create a data frame storing the score of interference for each fragment
+      Interference.Score <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector(), Interference=vector())
+      Index.DIA <- 0
 
-		#loop over each protein
-		for(i in 1:N.Prot){ #F.2
+      #loop over each protein
+      for(i in 1:N.Prot){ #F.2
 
-			sub1 <- subset(work, PROTEIN==unique(PROTEIN)[i])
-      N.Pep <- length(unique(sub1$PEPTIDE))
+        sub1 <- subset(work, PROTEIN==unique(PROTEIN)[i])
+        N.Pep <- length(unique(sub1$PEPTIDE))
           
-      ## show progress
-			message(paste("Selecting features or peptides for protein ", unique(sub1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+        ## show progress
+        message(paste("Selection features or peptides for protein ", unique(sub1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 
-      #Compute the score of interference at each fragment of each peptide
-      for(j in 1:N.Pep){ #F.3 
+        #Compute the score of interference at each fragment of each peptide
+        for(j in 1:N.Pep){ #F.3 
 
-        sub2 <- subset(sub1, PEPTIDE==unique(PEPTIDE)[j])
-        sub2$FEATURE <- factor(sub2$FEATURE, levels=unique(sub2$FEATURE))
+          sub2 <- subset(sub1, PEPTIDE==unique(PEPTIDE)[j])
+          sub2$FEATURE <- factor(sub2$FEATURE, levels=unique(sub2$FEATURE))
+          NF <- length(unique(sub2$FEATURE))	
 
-        #First, remove the bottom 30% fragments with the lowest average abundance of each peptide
-        M1 <- tapply(sub2$ABUNDANCE, sub2$FEATURE, function(x) mean(x, na.rm=TRUE)) 
-        Top70.Cut <- round(length(M1)*0.7) 
-        Keep.Top70 <- names(M1[rank(-M1)<=Top70.Cut])
+          #First, remove the bottom 30% fragments with the lowest average abundance of each peptide
+          #Do so only when there are at least 8 MS2 features belong this peptide
+          if( NF >= 8 ){
+            M1 <- tapply(sub2$ABUNDANCE, sub2$FEATURE, function(x) mean(x, na.rm=TRUE)) 
+            Top70.Cut <- round(length(M1) * 0.7) 
+            Keep.Top70 <- names(M1[rank(-M1) <= Top70.Cut])
 
-        #Here we only work on the top 70% most abundant fragments in each peptide
-        sub2.2 <- subset(sub2, FEATURE %in% Keep.Top70)
-        sub2.2$FEATURE <- factor(sub2.2$FEATURE, levels=unique(sub2.2$FEATURE))
-        N.Feature <- nlevels(sub2.2$FEATURE) 
-        sub2.2$RUN <- factor(sub2.2$RUN, levels=unique(sub2.2$RUN))
+            #Here we only work on the top 70% most abundant fragments in each peptide
+            sub2.2 <- subset(sub2, FEATURE %in% Keep.Top70)
+          } else {
+            sub2.2 <- sub2
+          }
 
-				#Use TMP to do robust run quantification
-				data_tmp = dcast(RUN ~ FEATURE, data=sub2.2, value.var='ABUNDANCE', keep=TRUE)
-				rownames(data_tmp) <- data_tmp$RUN
-				data_tmp <- data_tmp[,-1]
-				data_tmp[data_tmp==1]<-NA
+          sub2.2$FEATURE <- factor(sub2.2$FEATURE, levels=unique(sub2.2$FEATURE))
+          N.Feature <- nlevels(sub2.2$FEATURE) 
+          sub2.2$RUN <- factor(sub2.2$RUN, levels=unique(sub2.2$RUN))
 
-  		 	TMP <- medpolish(data_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
-	      TMP.Run <- TMP$overall + TMP$row           
+          #Use TMP to do robust run quantification
+          data_tmp = dcast(RUN ~ FEATURE, data=sub2.2, value.var='ABUNDANCE', keep=TRUE)
+          rownames(data_tmp) <- data_tmp$RUN
+          data_tmp <- data_tmp[, -1]
+          data_tmp[data_tmp == 1] <- NA
 
-        #Calculate the score of interference on each fragment
-        #In fact, var(data_tmp[,k]-TMP.Run)=var(TMP$res[,k])
-        for(k in 1:N.Feature){ #F.4
+          TMP <- medpolish(data_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+          TMP.Run <- TMP$overall + TMP$row           
+
+          #Calculate the score of interference on each fragment
+          #In fact, var(data_tmp[,k]-TMP.Run)=var(TMP$res[,k])
+          for(k in 1:N.Feature){ #F.4
              
-					Interference <- var(TMP$res[,k], na.rm=TRUE)
-					Interference.Score[(Index.DIA+1), 'Protein'] <- as.character(unique(sub2.2$PROTEIN)) 
-					Interference.Score[(Index.DIA+1), 'Peptide'] <- as.character(unique(sub2.2$PEPTIDE)) 
-          Interference.Score[(Index.DIA+1), 'Feature'] <- colnames(data_tmp)[k]
-          Interference.Score[(Index.DIA+1), 'Interference'] <- Interference
+            Interference <- var(TMP$res[,k], na.rm=TRUE)
+            Interference.Score[(Index.DIA+1), 'Protein'] <- as.character(unique(sub2.2$PROTEIN)) 
+            Interference.Score[(Index.DIA+1), 'Peptide'] <- as.character(unique(sub2.2$PEPTIDE)) 
+            Interference.Score[(Index.DIA+1), 'Feature'] <- colnames(data_tmp)[k]
+            Interference.Score[(Index.DIA+1), 'Interference'] <- Interference
                   
-          Index.DIA <- Index.DIA+1
-				} #F.4
-        #End of loop for quantifying the amount of interference at each feature at this peptide
+            Index.DIA <- Index.DIA+1
+          } #F.4
+          #End of loop for quantifying the amount of interference at each feature at this peptide
 
-			} #F.3
-      #End of loop for the peptide
+        } #F.3
+        #End of loop for the peptide
 
-		} #F.2
-		#End of loop over each protein
+      } #F.2
+      #End of loop over each protein
 
-		#Overall, the percentage of most interfered features are removed was determined by where the decrease of the interference stabalized
-		Interference.Score$Protein_Feature <- paste(Interference.Score$Protein, Interference.Score$Feature, sep='.')
-		Interference.Score$Rank.Overall <- rank(Interference.Score$Interference) 
-	  QQ <- quantile(Interference.Score$Interference, probs=seq(0,1,0.05))
-		QQ2 <- diff(QQ); QQ3 <- QQ2/QQ[-1]
-	  #Stop at where the improvement is less than 20%. Remove 50% most interfered features if this cutoff cannot be determined by this criteria
-	  suppressWarnings(Pos <- max(which(QQ3 < 0.2)))
-	  Cut <- '60%'; if(Pos != -Inf){Cut <- names(QQ3[Pos])}; if(Pos < 8){Cut <- '40%'}
-	  Cut.Noise <- QQ[Cut]	              
-    Interfere <- Interference.Score[Interference.Score$Interference < Cut.Noise,]
+      #Overall, the percentage of most interfered features are removed was determined by where the decrease of the interference stabalized
+      Interference.Score$Protein_Feature <- paste(Interference.Score$Protein, Interference.Score$Feature, sep='_')
+	    QQ <- quantile(Interference.Score$Interference, probs=seq(0, 1, 0.05))
+      QQ2 <- diff(QQ); QQ3 <- QQ2/QQ[-1]
+      
+	    #Stop at where the improvement is less than the improve margin. Remove 60% features with most interference if this cutoff cannot be determined by this criteria
+	    suppressWarnings(Pos <- max(which(QQ3 < Improve_Margin_DIA)))
+	    Cut <- '60%'; if(Pos != -Inf){Cut <- names(QQ3[Pos])}; if(Pos < 12){Cut <- '60%'}
+	    Cut.Noise <- QQ[Cut]	              
+      Interfere <- Interference.Score[Interference.Score$Interference < Cut.Noise,]
 
-		#Whichever peptides only has one feature left should be removed as it indicates this peptide is likely interfered
-		Interfere$Protein_Peptide <- paste(Interfere$Protein, Interfere$Peptide, sep='.')
-		Table <- table(Interfere$Protein_Peptide)
-		Drop <- names(Table[Table==1])
-		Interfere <- subset(Interfere, !(Protein_Peptide %in% Drop))
+      #Whichever peptides only has one feature left should be removed as it indicates this whole peptide has interference
+      Interfere$Protein_Peptide <- paste(Interfere$Protein, Interfere$Peptide, sep='_')
+      Table <- table(Interfere$Protein_Peptide)
+      Drop <- names(Table[Table == 1])
+      Interfere <- subset(Interfere, !(Protein_Peptide %in% Drop))
 
-		#Now use the remaining features to compute the average amount of interference on each peptide
-		#Remove the most interfered peptide. We prepare the case where not all of the peptides are proteotypic
-		Keep <- unique(Interfere$Protein_Feature)
-		work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='.')
-		work.2 <- subset(work, Protein_Feature %in% Keep)
-		work.2$Protein_Peptide <- paste(work.2$PROTEIN, work.2$PEPTIDE, sep='.')
-          
-		N.Peptide <- length(unique(work.2$Protein_Peptide))
+      #Now use the remaining features to compute the average amount of interference on each peptide
+      #Remove the most interfered peptide. We prepare the case where not all of the peptides are proteotypic
+      Keep <- unique(Interfere$Protein_Feature)
+      work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')
+      work <- subset(work, Protein_Feature %in% Keep)
+      Iteration <- Iteration + 1
+      Cut.History[Iteration] <- Cut
+      if(Iteration == 3){
+        if(sum(Cut.History == rep('60%', 3)) == 3) {
+          break
+        }
+      }
+      
+	    print(paste('Iteration', Iteration, 'kept', Cut, ' of the features', sep=' '))	 
+	    	        
+    } #While.SWATH
 
-		#Create a data frame storing the average amount of interference at each peptide
-		Inter.Pep <- data.frame(Protein_Peptide=vector(), Avg.Inter=vector())
-		Index.Pep <- 0
+    #Summarize the profile for each peptide to avoid more influence of peptides with more MS2 peaks
+    work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep="_")
+    N.Peptide <- length(unique(work$Protein_Peptide))
+	  	
+		Profile.Pep <- data.frame(Protein=vector(), Peptide=vector(), RUN=vector(), Run.Intensity=vector())
+		Info <- unique(work[,c("RUN", "GROUP", "SUBJECT", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "SUBJECT_NESTED")])
+		row.names(Info) <- NULL; Index.Pep <- 0
 
-		#Work on one peptide at a time. 
-		for(h in 1:N.Peptide){  #F.5
-  
-			temp1 <- subset(work.2, Protein_Peptide==unique(Protein_Peptide)[h])
-			N.temp1 <- length(unique(temp1$FEATURE)) 
-		 	temp1$RUN <- factor(temp1$RUN, levels=unique(temp1$RUN)); temp1$FEATURE <- factor(temp1$FEATURE, levels=unique(temp1$FEATURE))          
+		for(k in 1:N.Peptide){#F.9
+      Temp <- subset(work, Protein_Peptide == unique(Protein_Peptide)[k])
 
-			#Use TMP to do robust run quantification
-			data_pep = dcast(RUN ~ FEATURE, data=temp1, value.var='ABUNDANCE', keep=TRUE)
-			rownames(data_pep) <- data_pep$RUN
-			data_pep <- data_pep[,-1]
-			data_pep[data_pep==1]<-NA
+			Temp$RUN <- factor(Temp$RUN)
+      Temp$FEATURE <- factor(Temp$FEATURE)
+      data_TMP = dcast(RUN ~ FEATURE, data=Temp, value.var='ABUNDANCE', keep=TRUE)
+  		rownames(data_TMP) <- data_TMP$RUN
+  	  data_TMP <- data_TMP[,-1]
 
-			TMP2 <- medpolish(data_pep, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)         
-             
-      #Create a vector to save the interference score for each feature
-      Inter <- vector()
+      TMP <- medpolish(data_TMP, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+      TMP.Run <- TMP$overall + TMP$row         
+			N <- length(TMP.Run)
+      Prot <- unique(Temp$PROTEIN)
+      Pep <- unique(Temp$PEPTIDE)
 
-			#Calculate the score of interference on each fragment
-			#In fact, var(data_tmp[,k]-TMP.Run)=var(TMP$res[,k])
- 			for(k in 1:N.temp1){ #F.6
-             
-				Inter[k] <- var(TMP2$res[,k], na.rm=TRUE)
+			Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'Protein'] <- rep(as.character(Prot), N)
+			Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'Peptide'] <- rep(as.character(Pep), N)
+			Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'RUN'] <- as.numeric(names(TMP.Run))
+			Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'Run.Intensity'] <- TMP.Run
 
-			} #F.6
-			#End of loop for quantifying the amount of interference at each feature at this peptide
+			Index.Pep <- Index.Pep + N
  
-			Inter.Pep[(Index.Pep+1), 'Protein_Peptide'] <- as.character(unique(temp1$Protein_Peptide))                 
-			Inter.Pep[(Index.Pep+1), 'Avg.Inter'] <- mean(Inter, na.rm=TRUE)               
+    }#F.9  End of loop for peptides
 
-			Index.Pep <- Index.Pep+1
-		} #F.5
-		#End of loop for computing the average amount of interference at each peptide
+		Profile.Pep <- merge(Profile.Pep, Info, by='RUN')
+		Profile.Pep$Protein_Peptide <- paste(Profile.Pep$Protein, Profile.Pep$Peptide, sep='_')
 
-		#Remove the most interfered peptides
-    MM <- quantile(Inter.Pep$Avg.Inter, na.rm=TRUE, probs=seq(0,1,0.05))
-    MM2 <- diff(MM); MM3 <- MM2/MM[-1]
-	  Pos2 <- max(which(MM3<0.2))	
-	  Cut2 <- '90%'; if(Pos2 != -Inf){Cut2 <- names(MM3)[Pos2]}; if(Pos2 < 10){Cut2 <- '50%'}
-	  Cut.Inter <- MM[Cut2]
-		Keep40 <- Inter.Pep[Inter.Pep$Avg.Inter <= Cut.Inter, 'Protein_Peptide']
-		work.3 <- subset(work.2, Protein_Peptide %in% Keep40)
+		#Remove the peptides which have different profiles than the others
+    if(toupper(Step2) == 'SUBPLOT'){ #F9.2
+      N.Prot <- length(unique(Profile.Pep$Protein))
+      Keep.Pep <- vector()
+      Index <- 0
+      
+      for(i in 1:N.Prot){ #F.10
 
-		##If we do not allow any of the proteins being totally removed, we keep the most abundant peptide if it is totally removed
-		if(!remove_proteins_with_interference){ #F.7
+        Out <- data.frame(Protein=vector(), Peptide=vector(), Error=vector())
+				sub <- subset(Profile.Pep, Protein == unique(Protein)[i])
+				sub$RUN <- factor(sub$RUN); sub$Peptide <- factor(sub$Peptide)
+        sub_tmp = dcast(RUN ~ Peptide, data=sub, value.var='Run.Intensity', keep=TRUE)
+        rownames(sub_tmp) <- sub_tmp$RUN
+        sub_tmp <- sub_tmp[,-1]
+
+        tmp <- medpolish(sub_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+        tmp.run <- tmp$overall + tmp$row   
+				N <- dim(sub_tmp)[2]
+
+				#Record the variance components of each peptide
+				Out[1:N, 'Protein'] <- rep(as.character(unique(sub$Protein)),N)
+				Out[1:N, 'Peptide'] <- as.character(colnames(sub_tmp))
+
+				for(j in 1:N){
+
+					Out[j, 'Error'] <- var(sub_tmp[, j] - tmp.run, na.rm=TRUE) 
+				
+				}
+
+				Out$Protein_Peptide <- paste(Out$Protein, Out$Peptide, sep='_')
+
+				R <- Out$Error[order(Out$Error)]
+				R3 <- diff(R)/R[-length(R)]
+
+				#The cutoff is determined while the increase of error for the next peptide is more than 25%
+				#Only selecting one peptide in SWATH could be dangerous and unreasonable, so at least select 2 peptide.
+				Pos <- suppressWarnings(min(which(R3 > 0.20)))
+				if( Pos == Inf ) {
+          Pos <- 2
+				}
+				if( Pos == 1 ) {
+          Pos <- which(R3 > 0.20)[2]				
+				}
+        
+				Cut.Pep <- R[Pos]	
+				Keep.Pep[(Index+1):(Index+Pos)] <- Out[Out$Error <= Cut.Pep, 'Protein_Peptide'] 
+				Protein <- as.character(unique(sub$Protein))
+				print(paste('There are', Pos, 'peptide(s) being kept in Protein', Protein, '(', i, 'out of', N.Prot, ')', sep=' '))	 
+
+				Index <- Index+Pos
+
+      } #F.10 (End of loop for protein)
+
+    } 
+    
+		if( toupper(Step2) == 'WHOLEPLOT' ){
+
+      N.Prot <- length(unique(Profile.Pep$Protein))
+      repeated <- .checkRepeated(work)
+      Out2 <- data.frame(Protein=vector(), Peptide=vector(), Error.Port=vector(), Error.Pep=vector())				
+      Index.2 <- 0				
+
+      for( k in 1:N.Prot ){ #F.11
+				
+        sub <- subset(Profile.Pep, Protein == unique(Protein)[k])
+    
+				sub$GROUP <- factor(sub$GROUP)
+        sub$SUBJECT <- factor(sub$SUBJECT)
+        sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+        sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
+        sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
+		    sub$RUN <- factor(sub$RUN)
+    
+        singleSubject <- .checkSingleSubject(sub)
+        TechReplicate <- .checkTechReplicate(sub) ## use for label-free model
+    
+				## case-control
+        if (!repeated) {
+          if (!TechReplicate | singleSubject) {
+            fit.full <- lm(Run.Intensity ~ GROUP , data = sub)
+          } else {
+            fit.full <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = sub)
+          }
+        } else { ## time-course
+          if (singleSubject) {
+            fit.full <- lm(Run.Intensity ~ GROUP , data = sub)
+      		} else { ## no single subject
+            if (!TechReplicate) {
+              fit.full <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = sub)
+            } else {
+              fit.full <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = sub) ## SUBJECT==SUBJECT_NESTED here
+            }
+          }	
+        } ## time-course
+
+        N.Pep <- length(unique(sub$Peptide))
+        sub$Res <- summary(fit.full)$res
+        
+        for(j in 1:N.Pep){ #F.12
+
+          Out2[(Index.2+1), 'Protein'] <- as.character(unique(sub$Protein))
+          Out2[(Index.2+1), 'Peptide'] <- as.character(unique(sub$Peptide)[j])
+          Residual <- sub[sub$Peptide == unique(sub$Peptide)[j], 'Res']
+          Out2[(Index.2+1), 'Error.Prot'] <- var(Residual, na.rm=TRUE)
+
+          subsub <- subset(sub, Peptide == unique(Peptide)[j])
+
+          ## case-control
+          if (!repeated) {
+            if (!TechReplicate | singleSubject) {
+              fit.sub <- lm(Run.Intensity ~ GROUP , data = subsub)
+            } else {
+              fit.sub <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = subsub)
+            }
+          } else { ## time-course
+            if (singleSubject) {
+              fit.sub <- lm(Run.Intensity ~ GROUP , data = subsub)
+            } else { ## no single subject
+              if (!TechReplicate) {
+                fit.sub <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = subsub)
+              } else {
+                fit.sub <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = subsub) ## SUBJECT==SUBJECT_NESTED here
+              }
+            }	
+          } ## time-course
+
+          Out2[(Index.2+1), 'Error.Pep'] <- var(summary(fit.sub)$res, na.rm=TRUE)
+          Index.2 <- Index.2+1
+
+        } #F.12 End of loop for peptides
+
+				#Now conduct the selection process for each protein
+
+      }#F.11 End of loop for proteins
+
+
+    } #F9.2
+ 	
+		work.3 <- subset(work, Protein_Peptide %in% Keep.Pep)
+
+    ##If we do not allow any of the proteins being totally removed, we keep the most abundant peptide if it is totally removed
+    if( !remove_proteins_with_interference ){ #F.7
 			
-			Prot2 <- unique(work.3$PROTEIN); Prot1 <- unique(work$PROTEIN); Loss <- setdiff(Prot1, Prot2)
-			work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='.') 
-			Keep.Peptide <- vector(); IK <- 0
-
-			if(length(Loss)>0){
+      Prot2 <- unique(work.3$PROTEIN)
+      Prot1 <- unique(work.0$PROTEIN)
+      Loss <- setdiff(Prot1, Prot2)
+      work.0$Protein_Peptide <- paste(work.0$PROTEIN, work.0$PEPTIDE, sep='.') 
+      Keep.Peptide <- vector()
+      IK <- 0
 				
-				message('** All features in proteins (', paste(Loss,collapse = ", "), ') have interference. We keep the most abundant peptide.')
-								
-				sub.Loss <- subset(work, PROTEIN %in% Loss)
-				N2.Prot <- length(unique(sub.Loss$PROTEIN)) 
-				
-				for(j in 1:N2.Prot){
+      #Recover the proteins which are totally removed
+      if( length(Loss) > 0 ){
+        sub.Loss <- subset(work.0, PROTEIN %in% Loss)
+        N2.Prot <- length(unique(sub.Loss$PROTEIN))
+        
+        for(j in 1:N2.Prot){
 
-					subsub.Loss <- subset(sub.Loss, PROTEIN==unique(sub.Loss$PROTEIN)[j])
+          subsub.Loss <- subset(sub.Loss, PROTEIN == unique(sub.Loss$PROTEIN)[j])
 					N.Pep2 <- length(unique(subsub.Loss$PEPTIDE))
+
 					#Get the most abundant peptide of this protein
 					AVG.Pep <- tapply(subsub.Loss$ABUNDANCE, subsub.Loss$Protein_Peptide, function(x) mean(x, na.rm=TRUE))
-					Top1 <- names(AVG.Pep[rank(-AVG.Pep)==1])
-					Keep.Peptide[IK+1] <- Top1; IK <- IK+1
+					Top1 <- names(AVG.Pep[rank(-AVG.Pep) == 1])
+					Keep.Peptide[IK+1] <- Top1
+          IK <- IK+1
 				}
-				work.keep <- subset(work, Protein_Peptide %in% Keep.Peptide)
-				work.4 <- rbind(work.3, work.keep)
-				work.4$Protein_Feature <- NULL; work.4$Protein_Peptide <- NULL
-				work <- work.4
 
-			} else {
+				work.keep <- subset(work.0, Protein_Peptide %in% Keep.Peptide)
+				work.4 <- rbind(work.3, work.keep)
+				work.4$Protein_Feature <- NULL
+        work.4$Protein_Peptide <- NULL
+				work <- work.4
+      } else {
 				#The case of no proteins was totally removed
-				work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
+				work.3$Protein_Feature <- NULL
+        work.3$Protein_Peptide <- NULL
 				work <- work.3
 			}
 		} else {
 
-			work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
+      work.3$Protein_Feature <- NULL; work.3$Protein_Peptide <- NULL
 
       #data frame 'work.3' contain the selected features and 'work' is the data frame to be returned 
       work <- work.3
-		} #F.7
-	   
+
+    } #F.7   
 	} # 1.2 : End of label-free SWATH experiment
 
-	#Label-free experiments (Shotun; DDA)
-	if(nlevels(work$LABEL)==1 & nlevels(work$TRANSITION)==1){ #1.2.2
 
-		# In DDA (shotgun) experiment, there is no need to filter out bad fragments in each peptide
-		N.Prot <- length(unique(work$PROTEIN))
+	#Label-free experiments (Shotgun; DDA)
+	if(nlevels(work$LABEL) == 1 & nlevels(work$TRANSITION) == 1){ #1.2.2
 
-		# Create the data frame storing the selected features of each Protein
-		FeatureSelection.Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector(), Rank=vector(), Filter=vector())
-		Index.FS <- 0
+    # In DDA (shotgun) experiment, there is no need to filter out bad fragments in each peptide
+    work.2 <- work		
 
-    #Decide whether the experiment is time-course or case control
-		TC <- .checkRepeated(work)
+    #Remove the peptides with large unexplained variation within same protein roughly have same profile
+		#Iteration <- 0; Cut.History <- vector(); Cut <- '60%'
+    #if (ByProtein==TRUE) max.iter <- 1
 
-		#Determine if there is only one subject and if there is any technical replicates
-    Single.Subject <- .checkSingleSubject(work)
-		Technical.Rep <- .checkTechReplicate(work)
+    #while(Cut != '100%' & Iteration < max.iter){ #DDA_While
 
-		##Rank the peptides for each protein
-		for(i in 1:N.Prot){ #DDA_1.3
+    # Create the data frame storing the selected features of each Protein
+    #Out <- data.frame(Protein=vector(), Feature=vector(), Model.Based.Error=vector())
+    #Index.FS <- 0
+    N.Prot <- length(unique(work.2$PROTEIN))	
+    Keep.Feature <- vector()
+    index.KF <- 0
 
-			DDA.1 <- subset(work, PROTEIN == unique(PROTEIN)[i])
-			N.Pep <- length(unique(DDA.1$PEPTIDE))
+    ## Calculate the variance component estimates of each feature (peptide) for each protein
+    for(i in 1:N.Prot){ #DDA_1.3
 
-			## show progress
-			message(paste("Selecting features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+      Out <- data.frame(Protein=vector(), Feature=vector(), Model.Based.Error=vector())
+      Index.FS <- 0
+      DDA.1 <- subset(work.2, PROTEIN == unique(PROTEIN)[i])
+      N.Feature <- length(unique(DDA.1$FEATURE))
+      DDA.1$RUN <- factor(DDA.1$RUN, levels=unique(DDA.1$RUN))
+      DDA.1$FEATURE <- factor(DDA.1$FEATURE, levels=unique(DDA.1$FEATURE))
+
+      ## show progress
+			message(paste("Selection features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 				
-			## Create a data frame storing the assessment of the noise for each peptide
-			Pep.Out <- data.frame(Peptide=rep(NA, N.Pep), Model.Based.Error=rep(NA,N.Pep), Flag=rep(NA,N.Pep))
+			## Assess the noise based on model for each protein, assuming every peptide has same profile within each protein##
+		  ## The peptides with different profiles have large variance component ##
+             
+			#Use TMP to do robust run quantification
+      data_tmp = dcast(RUN ~ FEATURE, data=DDA.1, value.var='ABUNDANCE', keep=TRUE)
+  		rownames(data_tmp) <- data_tmp$RUN
+  	  data_tmp <- data_tmp[,-1]
 
-			## Assess the noise based on model for each peptide##
+  		TMP <- medpolish(data_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+	    TMP.Run <- TMP$overall + TMP$row           
 
-			for(j in 1:N.Pep){ # DDA_1.4
+			Error <- vector()
+			#######Get the per-peptide variance and store it#######
+			if( N.Feature == 1 ){
+        #Keep the protein with only one peptide quantified although thr variance component cannot be assessed
+				Error <- 0
 
-				DDA.Pep <- subset(DDA.1, PEPTIDE==unique(PEPTIDE)[j])
+				Out[(Index.FS+1), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
+				Out[(Index.FS+1), 'Feature'] <- as.character(unique(DDA.1$FEATURE))
+				Out[(Index.FS+1), 'Model.Based.Error'] <- Error
+				#Index.FS <- Index.FS+N.Feature   
+				Out$Protein_Feature <- paste(Out$Protein, Out$Feature, sep='_')
+				Keep.Feature[(index.KF+1)] <- as.character(Out$Protein_Feature)				
+				index.KF <- index.KF + 1
+				Pos <- 1
+      } else {
 
-				if(TC & !Single.Subject){ #DDA_1.4.1
-					#Time-course experiment with more than one bio-replicates
+        for(j in 1:N.Feature){ #DDA_1.3.1
 
-					if(Technical.Rep){ #DDA_1.4.1.1
-						#With technical replicates                              	
-						LM.DDA <- try(lm(ABUNDANCE ~ GROUP * SUBJECT, data=DDA.Pep), silent=TRUE)
+          Error[j] <- var((data_tmp[,j]-TMP.Run), na.rm=TRUE)
 
-					} else {
-						#Without technical replicates
-						LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
+				} #DDA_1.3.1
 
-					} #DDA_1.4.1.1
-				} else {
-					#Case-Control
+				## Pull out the results to the designated data frame
+				Out[(Index.FS+1):(Index.FS+N.Feature), 'Protein'] <- rep(as.character(unique(DDA.1$PROTEIN)), N.Feature)
+				Out[(Index.FS+1):(Index.FS+N.Feature), 'Feature'] <- names(data_tmp)
+				Out[(Index.FS+1):(Index.FS+N.Feature), 'Model.Based.Error'] <- Error
+				Out$Protein_Feature <- paste(Out$Protein, Out$Feature, sep='_')
 
-					if(Technical.Rep & !Single.Subject){ #DDA_1.4.1.2
-						#With technical replicates
-						LM.DDA <- try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=DDA.Pep), silent=TRUE)
-
-					} else {
-						#Without technical replicates or with only one bio-replicates
-   						LM.DDA <- try(lm(ABUNDANCE ~ GROUP, data=DDA.Pep), silent=TRUE)
-
-					} #DDA_1.4.1.2
-				} #DDA_1.4.1
-
-				Pep.Out[j, 'Peptide'] <- as.character(unique(DDA.Pep$PEPTIDE))
+				#Index.FS <- Index.FS+N.Feature   
+				R <- Out$Model.Based.Error[order(Out$Model.Based.Error)]
+				R <- R[!is.na(R)]
+				R2 <- diff(R); R3 <- R2/R[-length(R)]
+				#Hope to keep at least 2 peptides in each protein
+				K <- suppressWarnings(min(which(R3 > 0.2), na.rm=TRUE))
+        Pos <- 2
+				Big <- which(R3 > 0.2)
+				ifelse(K == 1 & N.Feature != 2 & length(Big) > 1, Pos <- Big[2], Pos <- K)
+        
+				if(K == 1 & length(Big) == 1) {
+          Pos <- N.Feature
+				}
+				
+        if(N.Feature == 2 & K == Inf) {
+          Pos <- 2
+        }
 					
-				## If there are missing values such that only one condition is left, the model based error score is not calculable
-				if(class(LM.DDA)=='try-error'){ #DDA_1.5
-					Pep.Out[j, 'Model.Based.Error'] <- NA
-				} else {
-					Pep.Out[j, 'Model.Based.Error'] <- summary(LM.DDA)$sigma
-        } #DDA_1.5
-                	
-			} # DDA_1.4 (End of loop for each peptide)
+        if(K == Inf) {
+          Pos <- 2
+        }
 
-			## We choose the top one-third of the peptides in DDA now. (Again, deciding the optimal number of the peptides we should choose takes too long. We are working on this.)
-			## We automatically excluded the precursors whose model-based error is not able to be quantified. This would be due to too many missing values such that only one condition has the peaks
-			N.Select <- max(round(dim(Pep.Out[!(is.na(Pep.Out$Model.Based.Error)),])[1]/3+0.01), 1)
-			Pep.Out$Rank <- rank(Pep.Out$Model.Based.Error)
-			Pep.Out[Pep.Out$Rank <= N.Select, 'Flag'] <- 'Selected'
-			Pep.Out[!(Pep.Out$Rank <= N.Select), 'Flag'] <- 'Noisy'
-			Pep.Out[is.na(Pep.Out$Model.Based.Error), 'Flag'] <- 'Noisy'
+        Cut <- R[Pos]
+        Keep.Feature[(index.KF+1):(index.KF+Pos)] <-  Out[Out$Model.Based.Error <= Cut, 'Protein_Feature']
+        index.KF <- index.KF + Pos
+			}
 
-
-			## Pull out the results to the designated data frame, and flag the noisy peptide
-			FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
-			FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Peptide'] <- Pep.Out$Peptide
-			FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Model.Based.Error'] <- Pep.Out$Model.Based.Error
-			FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Rank'] <- Pep.Out$Rank
-			FeatureSelection.Out[(Index.FS+1):(Index.FS+N.Pep), 'Filter'] <- Pep.Out$Flag
-			Index.FS <- Index.FS+N.Pep   
-				                                              
+			message(paste(Pos, "peptides were selected in protein", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+	                                              
 		} # DDA_1.3 (End of loop for proteins)
 
-		## If not all of the peptides are proteotypic, some proteins may have the same peptides
-		work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='_')            
-		FeatureSelection.Out$Protein_Peptide <- paste(FeatureSelection.Out$Protein, FeatureSelection.Out$Peptide, sep='_')
-          
-		## Create the label for selected, or removed, peptides
-		work$Filter <- NA; 
-		Selection <- unique(FeatureSelection.Out[FeatureSelection.Out$Filter=='Selected','Protein_Peptide'])
-		work[work$Protein_Peptide %in% Selection, 'Filter'] <- 'Selected'
-		work[!(work$Protein_Peptide %in% Selection), 'Filter'] <- 'Flagged'
-		work$Protein_Peptide <- NULL
-		work <- subset(work, Filter=='Selected')
-		
+		work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')			
+		work <- subset(work, Protein_Feature %in% Keep.Feature)
+		work$Protein_Feature <- NULL
+
 	} #1.2.2  : End of the DDA experiment 
 
 	## Label-based experiments
+  if( nlevels(work$LABEL) == 2 ){ #2.4
 
-  if(nlevels(work$LABEL)==2){ #2.4
+    N.Prot <- length(unique((work$PROTEIN)))
+		work.0 <- work
 
-		N.Prot <- length(unique((work$PROTEIN)))
-
-    	#Create a data frame storing the output
-    	Out <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector(), Label=vector(), Interference.Score=vector())   
-    	Index <- 0
+    #Create a data frame storing the output
+    Out <- data.frame(Protein=vector(), Peptide=vector(), Feature=vector(), Label=vector(), Interference.Score=vector())   
+    Index <- 0
     		
-       	#Loop over proteins: One protein at a time
-       	for(i in 1:N.Prot){ #2.4.1
+    #Loop over proteins: One protein at a time
+    for(i in 1:N.Prot){ #2.4.1
          
-			    Sub <- subset(work, PROTEIN==unique(PROTEIN)[i])
-       		N.Pep <- length(unique(Sub$PEPTIDE))
+      Sub <- subset(work, PROTEIN == unique(PROTEIN)[i])
+      N.Pep <- length(unique(Sub$PEPTIDE))
        			
-       		## show progress
-			    message(paste("Selecting features or peptides for protein ", unique(Sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
+      ## show progress
+			message(paste("Selection features or peptides for protein ", unique(Sub$PROTEIN), "(", i, " of ", N.Prot, ")"))
 				
-           	#Loop for the peptides in this protein
-           	for(j in 1:N.Pep){ #2.4.2
+      #Loop for the peptides in this protein
+      for(j in 1:N.Pep){ #2.4.2
 
-            	Sub2 <- subset(Sub, PEPTIDE==unique(PEPTIDE)[j])    
+        Sub2 <- subset(Sub, PEPTIDE == unique(PEPTIDE)[j])    
         
-            	#Heavy peptide
-            	Sub2.H <- subset(Sub2, LABEL=='H')
+        #Heavy peptide
+        Sub2.H <- subset(Sub2, LABEL=='H')
 
-            	Sub2.H$RUN <- factor(Sub2.H$RUN, levels=unique(Sub2.H$RUN))
-            	Sub2.H$FEATURE <- factor(Sub2.H$FEATURE, levels=unique(Sub2.H$FEATURE))
+        Sub2.H$RUN <- factor(Sub2.H$RUN, levels=unique(Sub2.H$RUN))
+        Sub2.H$FEATURE <- factor(Sub2.H$FEATURE, levels=unique(Sub2.H$FEATURE))
             
-            	#Apply TMP to estimate the run effect
-            	data_w = dcast(RUN ~ FEATURE, data=Sub2.H, value.var='ABUNDANCE', keep=TRUE)
-  				    rownames(data_w) <- data_w$RUN
-  	      		data_w <- data_w[,-1]
-  	      		data_w[data_w<=1] <- NA
+        #Apply TMP to estimate the run effect
+        data_w = dcast(RUN ~ FEATURE, data=Sub2.H, value.var='ABUNDANCE', keep=TRUE)
+        rownames(data_w) <- data_w$RUN
+        data_w <- data_w[,-1]
+        data_w[data_w<=1] <- NA
 
-  				TMP <- medpolish(data_w, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
-	      		TMP.Run <- TMP$overall + TMP$row
+  			TMP <- medpolish(data_w, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+        TMP.Run <- TMP$overall + TMP$row
 
-            	N.Feature <- length(unique(Sub2.H$FEATURE))
+        N.Feature <- length(unique(Sub2.H$FEATURE))
 
-            	#Calculate the variance of the residuals for each feature
-                for(k in 1:N.Feature){ #2.4.3
+        #Calculate the variance of the residuals for each feature
+        for( k in 1:N.Feature ){ #2.4.3
 
-					#If there is only one feature in this peptide, no reproducibility can be assessed
-					if(N.Feature==1){
-						#No need to remove this peptide at this moment
-						Error <- 0
-					}else{    
-						Res <- data_w[,k] - TMP.Run
-						Error <- var(Res, na.rm=TRUE)
-					}
+          #If there is only one feature in this peptide, no reproducibility can be assessed
+					if( N.Feature == 1 ){
+              #No need to remove this peptide at this moment
+							Error <- 0
+          } else {    
+							Res <- data_w[,k] - TMP.Run
+							Error <- var(Res, na.rm=TRUE)
+          }
               
 					Out[(Index+1), 'Protein'] <- as.character(unique(Sub2.H$PROTEIN))
 					Out[(Index+1), 'Peptide'] <- as.character(unique(Sub2.H$PEPTIDE))
@@ -354,7 +521,6 @@
 
 					Index <- Index+1
 				} #2.4.3 : End of loop for calculating the interference score for each feature in this peptide at heavy
-
 
         #Light peptide
         Sub2.L <- subset(Sub2, LABEL=='L')
@@ -377,13 +543,13 @@
 				#Calculate the variance of the residuals for each feature on Light
 				for(k in 1:N.Feature){ #2.4.3.2
 
-					#If there is only one feature in this peptide, no reproducibility can be assess. The removals of this single features will be decided by the consensus later.
-					if(N.Feature==1){
-						Error <- 0
-					}else{    
-						Res <- data_w.L[,k] - TMP.Run.L
-						Error.L <- var(Res, na.rm=TRUE)
-					}
+          #If there is only one feature in this peptide, no reproducibility can be assess. The removals of this single features will be decided by the consensus later.
+					if ( N.Feature == 1 ) {
+					  Error <- 0
+					} else {    
+							Res <- data_w.L[,k] - TMP.Run.L
+							Error.L <- var(Res, na.rm=TRUE)
+          }
                    
 					Out[(Index+1), 'Protein'] <- as.character(unique(Sub2.L$PROTEIN))
 					Out[(Index+1), 'Peptide'] <- as.character(unique(Sub2.L$PEPTIDE))
@@ -392,46 +558,57 @@
 					Out[(Index+1), 'Interference.Score'] <- Error.L
 
 					Index <- Index+1
-				} #2.4.3.2 : End of loop for calculating the interference score for each feature at this peptide on Light     
+        } #2.4.3.2 : End of loop for calculating the interference score for each feature at this peptide on Light     
+      } #2.4.2 : End of loop for the peptides
+    } #2.4.1 :End of loop over proteins
 
-			} #2.4.2 : End of loop for the peptides
-       
-		} #2.4.1 :End of loop over proteins
-
-        	
     #Preparing for the case of shared peptide, we use the column Protein_Feature
     Out$Prot.F <- paste(Out$Protein, Out$Feature, sep='_') 
        
     #The heuristic approach now is to keep searching the cutoff until the improvement is less than 25%
-		Out.L <- subset(Out, Label=='L'); Out.H <- subset(Out, Label=='H')
-		Q <- quantile(Out.L$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
-		Change <- diff(Q)/Q[-1]; Change.half <- Change[-(1:11)]
-		suppressWarnings(P <- max(which(Change<0.25), na.rm=TRUE));
-		Cut <- '60%'; if(P != -Inf){Cut <- names(Change[P])}; if(P < 10){Cut <- '50%'}
-		L.Cut <- Q[Cut]
+    Out.L <- subset(Out, Label=='L'); Out.H <- subset(Out, Label=='H')
+    Q <- quantile(Out.L$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
+    Change <- diff(Q)/Q[-1]
+    suppressWarnings(P <- max(which(Change<0.25), na.rm=TRUE))
+    Cut <- '60%'
+    if(P != -Inf){
+      Cut <- names(Change[P])
+    } 
+    if(P < 10){
+      Cut <- '50%'
+    }
+    L.Cut <- Q[Cut]
 
-		#For the internal standard, remove no more than 20% of the features as they are supposed to be of good quality
-		Q.H <- quantile(Out.H$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
-		Change.H <- diff(Q.H)/Q.H[-1];
-		suppressWarnings(P.H <- max(which(Change.H<0.25), na.rm=TRUE))
-		Cut.H <- '80%'; if(P.H != -Inf){Cut.H <- names(Change.H[P.H])}; if(P.H < 14){Cut.H <- '70%'}
-		H.Cut <- Q.H[Cut.H]
+    #For the internal standard, remove no more than 20% of the features as they are supposed to be of good quality
+    Q.H <- quantile(Out.H$Interference.Score, probs = seq(0, 1, 0.05), na.rm = TRUE)
+    Change.H <- diff(Q.H)/Q.H[-1];
+    suppressWarnings(P.H <- max(which(Change.H<0.25), na.rm=TRUE))
+    Cut.H <- '80%'
+    if( P.H != -Inf ){
+      Cut.H <- names(Change.H[P.H])
+    }
+    if( P.H < 16 ){
+      Cut.H <- '80%'
+    }
+    H.Cut <- Q.H[Cut.H]
             	      
-		##Remove features with interference, which is the first step of the removal.      
-		Out.L$Flag.Repro <- 'OK'; Out.H$Flag.Repro <- 'OK'
-		Out.L[is.na(Out.L$Interference.Score), 'Interference.Score'] <- 10000 
-		Out.H[is.na(Out.H$Interference.Score), 'Interference.Score'] <- 10000 
+    ##Remove features with interference, which is the first step of the removal.      
+    Out.L$Flag.Repro <- 'OK'
+    Out.H$Flag.Repro <- 'OK'
+
+    Out.L[is.na(Out.L$Interference.Score), 'Interference.Score'] <- 10000 
+    Out.H[is.na(Out.H$Interference.Score), 'Interference.Score'] <- 10000 
 
     Out.L[Out.L$Interference.Score >= L.Cut, 'Flag.Repro'] <- 'Noisy' 
     Out.H[Out.H$Interference.Score >= H.Cut, 'Flag.Repro'] <- 'Noisy' 
 
     ##Extract the remaining features before proceeding to the next step
-		Keep.L <- Out.L[Out.L$Interference.Score < L.Cut, 'Prot.F']
-		Keep.H <- Out.H[Out.H$Interference.Score < H.Cut, 'Prot.F']
+    Keep.L <- Out.L[Out.L$Interference.Score < L.Cut, 'Prot.F']
+    Keep.H <- Out.H[Out.H$Interference.Score < H.Cut, 'Prot.F']
        
-		#Only keep the features when both of heavy and light are retained
-		Keep <- intersect(Keep.L, Keep.H)
-		work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')
+    #Only keep the features when both of heavy and light are retained
+    Keep <- intersect(Keep.L, Keep.H)
+    work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')
 
     #Keep a column of record. Perhaps it may be of interest to see what the reason is the features were removed, reproducibility or consistency.
     work$Filter.Repro <- NA
@@ -439,363 +616,292 @@
     work[!(work$Protein_Feature %in% Keep), 'Filter.Repro'] <- 'Flagged'
                    
     #Remove the features due to the reproducibility
-		work.keep <- subset(work, Protein_Feature %in% Keep)
+    work.keep <- subset(work, Protein_Feature %in% Keep)
 
-		#Also remove the peptide where there is only one transition remained
+    #Also remove the peptide where there is only one transition remained
 		#When every transitions but one is interfered, it is more often than not the whole peptide is interfered.
     #Do not assume all the peptides are proteotypic
-		#Only do so when a lot of proteins were quantified
-		Total.Protein <- length(unique(work$PROTEIN))     
-		#if(Total.Feature > 50){             
-		work.keep$Protein.Peptide <- paste(work.keep$PROTEIN, work.keep$PEPTIDE, sep='.')                  
-		Freq <- tapply(work.keep$FEATURE, work.keep$Protein.Peptide, function(x) length(unique(x)))
-		OneFeature <- names(Freq[Freq==1])	
-		work.keep <- subset(work.keep, !(Protein.Peptide %in% OneFeature))
-		#}
-
-		N.Peptide <- length(unique(work.keep$Protein.Peptide))
-
-    #Create a data frame storing the average amount of interference at each peptide
-		Inter.Pep <- data.frame(Protein.Peptide=vector(), Avg.Inter=vector())
-		Index.Pep <- 0
-
-		#Work on one peptide at a time. 
-		for(h in 1:N.Peptide){  #F.5
-  
-      temp1 <- subset(work.keep, Protein.Peptide==unique(Protein.Peptide)[h] & LABEL=='L')
-      N.temp1 <- length(unique(temp1$FEATURE)) 
-		 	temp1$RUN <- factor(temp1$RUN, levels=unique(temp1$RUN)); temp1$FEATURE <- factor(temp1$FEATURE, levels=unique(temp1$FEATURE))    
-
-			#Use TMP to do robust run quantification
-      data_pep2 = dcast(RUN ~ FEATURE, data=temp1, value.var='ABUNDANCE', keep=TRUE)
-  		rownames(data_pep2) <- data_pep2$RUN
-  	  data_pep2 <- data_pep2[,-1]
-  	  data_pep2[data_pep2==1]<-NA
-
- 	 		TMP2 <- medpolish(data_pep2, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)         
-             
-			#Create a vector to save the interference score for each feature
-      Inter <- vector()
-
-			#Calculate the score of interference on each fragment
-			#In fact, var(data_tmp[,k]-TMP.Run)=var(TMP$res[,k])
-      for(k in 1:N.temp1){ #F.6
-             
-  			Inter[k] <- var(TMP2$res[,k], na.rm=TRUE)
-
-			} #F.6
-      #End of loop for quantifying the amount of interference at each feature at this peptide
- 
-			Inter.Pep[(Index.Pep+1), 'Protein.Peptide'] <- as.character(unique(temp1$Protein.Peptide))                 
-			Inter.Pep[(Index.Pep+1), 'Avg.Inter'] <- mean(Inter, na.rm=TRUE)               
-
-  		Index.Pep <- Index.Pep+1
-		} #F.5
-		#End of loop for computing the average amount of interference at each peptide
-
-		#Remove the most interfered peptides
-    MM <- quantile(Inter.Pep$Avg.Inter, na.rm=TRUE, probs=seq(0,1,0.05))
-		MM2 <- diff(MM); MM3 <- MM2/MM[-1]
-		Pos2 <- max(which(MM3<0.2))	
-		Cut2 <- '90%'; if(Pos2 != -Inf){Cut2 <- names(MM3)[Pos2]}; if(Pos2 < 12){Cut2 <- '60%'}
-		Cut.Inter <- MM[Cut2]
-		Keep40 <- Inter.Pep[Inter.Pep$Avg.Inter <= Cut.Inter, 'Protein.Peptide']
-		work.keep2 <- subset(work.keep, Protein.Peptide %in% Keep40)
-
-		##If we do not allow any of the proteins being totally removed, we keep the most abundant peptide if it is totally removed
-		if(!remove_proteins_with_interference){ #S.7
+    #Only do so when a lot of proteins were quantified
 			
-			Prot2 <- unique(work.keep2$PROTEIN); Prot1 <- unique(work$PROTEIN); Loss <- setdiff(Prot1, Prot2)
-			work$Protein.Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='.') 
-			Keep.Peptide <- vector(); IK <- 0
+    Total.Protein <- length(unique(work$PROTEIN))     
+		#if(Total.Feature > 50){             
+    work.keep$Protein.Peptide <- paste(work.keep$PROTEIN, work.keep$PEPTIDE, sep='.')                  
+    Freq <- tapply(work.keep$FEATURE, work.keep$Protein.Peptide, function(x) length(unique(x)))
+    OneFeature <- names(Freq[Freq == 1])	
+    work.keep <- subset(work.keep, !(Protein.Peptide %in% OneFeature))
+    #}
 
-			if(length(Loss)>0){
-				
-				message('** All features in proteins (', paste(Loss,collapse = ", "), ') have interference. We keep the most abundant peptide.')
-				
-				sub.Loss <- subset(work, PROTEIN %in% Loss)
-				N2.Prot <- length(unique(sub.Loss$PROTEIN)) 
-				
-				for(j in 1:N2.Prot){
+    N.Peptide <- length(unique(work.keep$Protein.Peptide))
 
-					subsub.Loss <- subset(sub.Loss, PROTEIN==unique(sub.Loss$PROTEIN)[j])
-					N.Pep2 <- length(unique(subsub.Loss$PEPTIDE))
-					#Get the most abundant peptide of this protein
-					AVG.Pep <- tapply(subsub.Loss$ABUNDANCE, subsub.Loss$Protein.Peptide, function(x) mean(x, na.rm=TRUE))
-					Top1 <- names(AVG.Pep[rank(-AVG.Pep)==1])
-					Keep.Peptide[IK+1] <- Top1; IK <- IK+1
+    #Normalize the endogenous by equalizing the internal standard before assessing the unique profile per protein
+    message(paste("Normalize the endogenous by equalizing the internal standards before assessing the unique profile per protein"))
+
+		for(k in 1:N.Peptide){ #SRM.3
+
+      Peptide.Name <- unique(work.keep$Protein.Peptide)[k]
+      sub <- subset(work.keep, Protein.Peptide == Peptide.Name)
+      Median.H <- median(sub[sub$LABEL == 'H', 'ABUNDANCE'], na.rm=TRUE)
+				
+      N.Run <- length(unique(work.keep$RUN))
+			for(r in 1:N.Run){
+
+			  Diff <- -median(sub[sub$RUN==r & sub$LABEL=='H', "ABUNDANCE"], na.rm=TRUE) + Median.H
+        sub[sub$RUN==r, "ABUNDANCE"] <- sub[sub$RUN==r, "ABUNDANCE"] + Diff
+
+      }
+
+      work.keep[work.keep$Protein.Peptide==Peptide.Name, 'ABUNDANCE'] <- sub$ABUNDANCE
+      message(paste(k, "Out of", N.Peptide, "peptides have been normalized."))
+
+    }#SRM.3
+		work.keep$Protein.Peptide <- NULL
+			
+		#Summarize the profile for each peptide to avoid more influence of peptides with more MS2 peaks
+		#As endogenous has been normalized, looking at endogenous only is sufficient
+		work <- subset(work.keep, LABEL=='L')
+    work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep="_")
+    N.Peptide <- length(unique(work$Protein_Peptide))
+	  	
+    Profile.Pep <- data.frame(Protein=vector(), Peptide=vector(), RUN=vector(), Run.Intensity=vector())
+    Info <- unique(work[,c("RUN", "GROUP", "SUBJECT", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "SUBJECT_NESTED")])
+    row.names(Info) <- NULL
+    Index.Pep <- 0
+
+    for(k in 1:N.Peptide){#F.9
+      Temp <- subset(work, Protein_Peptide == unique(Protein_Peptide)[k])
+
+      Temp$RUN <- factor(Temp$RUN); Temp$FEATURE <- factor(Temp$FEATURE)
+      data_TMP = dcast(RUN ~ FEATURE, data=Temp, value.var='ABUNDANCE', keep=TRUE)
+      rownames(data_TMP) <- data_TMP$RUN
+      data_TMP <- data_TMP[, -1]
+
+      TMP <- medpolish(data_TMP, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+      TMP.Run <- TMP$overall + TMP$row         
+			N <- length(TMP.Run)
+      Prot <- unique(Temp$PROTEIN)
+      Pep <- unique(Temp$PEPTIDE)
+
+      Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'Protein'] <- rep(as.character(Prot), N)
+      Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'Peptide'] <- rep(as.character(Pep), N)
+      Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'RUN'] <- as.numeric(names(TMP.Run))
+      Profile.Pep[(Index.Pep+1):(Index.Pep+N), 'Run.Intensity'] <- TMP.Run
+
+      Index.Pep <- Index.Pep + N
+ 
+		}#F.9  End of loop for peptides
+
+		Profile.Pep <- merge(Profile.Pep, Info, by='RUN')
+		Profile.Pep$Protein_Peptide <- paste(Profile.Pep$Protein, Profile.Pep$Peptide, sep='_')
+
+		#Remove the peptides which have different profiles than the others
+		if(toupper(Step2) == 'SUBPLOT'){ #F9.2
+
+			N.Prot <- length(unique(Profile.Pep$Protein))
+			Keep.Pep <- vector(); Index <- 0
+
+			for(i in 1:N.Prot){ #F.10
+
+				Out <- data.frame(Protein=vector(), Peptide=vector(), Error=vector(), Avg.Int=vector())
+				sub <- subset(Profile.Pep, Protein==unique(Protein)[i])
+				sub$RUN <- factor(sub$RUN); sub$Peptide <- factor(sub$Peptide)
+        sub_tmp = dcast(RUN ~ Peptide, data=sub, value.var='Run.Intensity', keep=TRUE)
+  			rownames(sub_tmp) <- sub_tmp$RUN
+   			N <- dim(sub_tmp)[2] - 1
+        sub_tmp <- sub_tmp[,-1]
+
+        tmp <- medpolish(sub_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
+        tmp.run <- tmp$overall + tmp$row   
+
+				#Record the variance components of each peptide
+				Out[1:N, 'Protein'] <- rep(as.character(unique(sub$Protein)),N)
+				if(N > 1) {
+          Out[1:N, 'Peptide'] <- as.character(colnames(sub_tmp))
 				}
-				 work.keepPep <- subset(work, Protein.Peptide %in% Keep.Peptide)
-				 work.4 <- rbind(work.keep2, work.keepPep)
-				 work.4$Protein_Feature <- NULL; work.4$Protein.Peptide <- NULL
-				 work.keep2 <- work.4
+        
+				if(N == 1) {
+          Out[1:N, 'Peptide'] <- as.character(unique(sub$Peptide))
+				}
 
-			} else {
-				 #The case of no proteins was totally removed
-				 work.keep2$Protein_Feature <- NULL; work.keep2$Protein.Peptide <- NULL
-				 
+				for(j in 1:N){
+					if(N > 1) {
+            Out[j, 'Error'] <- var(sub_tmp[,j]-tmp.run, na.rm=TRUE) 
+					}
+          
+					if(N > 1) {
+            Out[j, 'Avg.Int'] <- mean(sub_tmp[,j], na.rm=TRUE)
+					}
+          
+					if(N == 1) {
+            Out[j, 'Error'] <- 0; Out[j, 'Avg.Int'] <- 10
+					}				
+				}
+
+				Out$Protein_Peptide <- paste(Out$Protein, Out$Peptide, sep='_')
+
+				if (N == 1) {
+        			
+					Keep.Pep[(Index+1)] <- Out$Protein_Peptide
+          Pos <- 1
+					Index <- Index+1 
+
+				} else if( N == 2 ) {
+
+					#If there are only 2 peptides, they will have same variance component so take the high abundence
+					Out <- Out[order(-Out$Avg.Int), ]
+          Pos <- 1
+					Keep.Pep[(Index+1)] <- Out$Protein_Peptide[1]
+					Index <- Index+1 
+
+				} else {
+
+					R <- Out$Error[order(Out$Error)]
+          R <- R[!is.na(R)]
+					R3 <- diff(R)/R[-length(R)]
+
+					#The cutoff is determined while the increase of error for the next peptide is more than 20%
+					Pos <- suppressWarnings(min(which(R3 > 0.20)))
+					if(Pos == Inf) Pos <- N
+
+					Cut.Pep <- R[Pos]	
+					Keep.Pep[(Index+1):(Index+Pos)] <- Out[Out$Error <= Cut.Pep, 'Protein_Peptide'] 
+					Index <- Index+Pos
+				}
+
+				Protein <- as.character(unique(Out$Protein))
+				print(paste('There are', Pos, 'peptide(s) kept in Protein', Protein, '(', i, 'out of', N.Prot, ')', sep=' '))	 
+
+      } #F.10 (End of loop for protein)
+    } 
+    
+    if(toupper(Step2) == 'WHOLEPLOT'){
+
+      N.Prot <- length(unique(Profile.Pep$Protein))
+      repeated <- .checkRepeated(work)
+      Out2 <- data.frame(Protein=vector(), Peptide=vector(), Error.Port=vector(), Error.Pep=vector())				
+      Index.2 <- 0				
+
+      for(k in 1:N.Prot){ #F.11
+				
+				sub <- subset(Profile.Pep, Protein == unique(Protein)[k])
+    
+				sub$GROUP <- factor(sub$GROUP)
+        sub$SUBJECT <- factor(sub$SUBJECT)
+    		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+        sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
+        sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
+        sub$RUN <- factor(sub$RUN)
+    
+        singleSubject <- .checkSingleSubject(sub)
+        TechReplicate <- .checkTechReplicate(sub) ## use for label-free model
+    
+				## case-control
+        if (!repeated) {
+          if (!TechReplicate | singleSubject) {
+            fit.full <- lm(Run.Intensity ~ GROUP , data = sub)
+          } else {
+            fit.full <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = sub)
+          }
+        } else { ## time-course
+          if (singleSubject) {
+            fit.full <- lm(Run.Intensity ~ GROUP , data = sub)
+          } else { ## no single subject
+        	  if (!TechReplicate) {
+              fit.full <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = sub)
+            } else {
+              fit.full <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = sub) ## SUBJECT==SUBJECT_NESTED here
+            }
+          }	
+        } ## time-course
+
+        N.Pep <- length(unique(sub$Peptide))
+				sub$Res <- summary(fit.full)$res
+        
+        for(j in 1:N.Pep){ #F.12
+
+          Out2[(Index.2+1), 'Protein'] <- as.character(unique(sub$Protein))
+          Out2[(Index.2+1), 'Peptide'] <- as.character(unique(sub$Peptide)[j])
+					Residual <- sub[sub$Peptide==unique(sub$Peptide)[j], 'Res']
+					Out2[(Index.2+1), 'Error.Prot'] <- var(Residual, na.rm=TRUE)
+
+          subsub <- subset(sub, Peptide==unique(Peptide)[j])
+
+					## case-control
+          if (!repeated) {
+            if (!TechReplicate | singleSubject) {
+              fit.sub <- lm(Run.Intensity ~ GROUP , data = subsub)
+            } else {
+              fit.sub <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = subsub)
+            }
+          } else { ## time-course
+            if (singleSubject) {
+              fit.sub <- lm(Run.Intensity ~ GROUP , data = subsub)
+            } else { ## no single subject
+              if (!TechReplicate) {
+                fit.sub <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) , data = subsub)
+              } else {
+                fit.sub <- lmer(Run.Intensity ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), data = subsub) ## SUBJECT==SUBJECT_NESTED here
+              }
+            }	
+          } ## time-course
+
+          Out2[(Index.2+1), 'Error.Pep'] <- var(summary(fit.sub)$res, na.rm=TRUE)
+          Index.2 <- Index.2+1
+
+				} #F.12 End of loop for peptides
+
+				#Now conduct the selection process for each protein
+
+			}#F.11 End of loop for proteins
+    } #F9.2
+ 	
+    work.keep$Protein_Peptide <- paste(work.keep$PROTEIN, work.keep$PEPTIDE, sep='_')
+    work.keep2 <- subset(work.keep, Protein_Peptide %in% Keep.Pep)
+    work.keep2$Protein_Feature <- NULL; work.keep2$Filter.Repro <- NULL	
+
+    ##If we do not allow any of the proteins being totally removed, we keep the most abundant peptide if it is totally removed
+		if( !remove_proteins_with_interference ){ #S.7
+			
+      work <- work.0
+      Prot2 <- unique(work.keep2$PROTEIN)
+      Prot1 <- unique(work$PROTEIN)
+      Loss <- setdiff(Prot1, Prot2)
+      work$Protein_Peptide <- paste(work$PROTEIN, work$PEPTIDE, sep='_') 
+      Keep.Peptide <- vector()
+      IK <- 0
+
+      if (length(Loss) > 0) {
+        sub.Loss <- subset(work, PROTEIN %in% Loss)
+        N2.Prot <- length(unique(sub.Loss$PROTEIN)) 
+					
+        for(j in 1:N2.Prot){
+
+          subsub.Loss <- subset(sub.Loss, PROTEIN==unique(sub.Loss$PROTEIN)[j])
+					N.Pep2 <- length(unique(subsub.Loss$PEPTIDE))
+          
+					#Get the most abundant peptide of this protein
+					AVG.Pep <- tapply(subsub.Loss$ABUNDANCE, subsub.Loss$Protein_Peptide, function(x) mean(x, na.rm=TRUE))
+					Top1 <- names(AVG.Pep[rank(-AVG.Pep)==1])
+					Keep.Peptide[IK+1] <- Top1
+          IK <- IK+1
+				}
+        work.keepPep <- subset(work, Protein_Peptide %in% Keep.Peptide)
+        work.4 <- rbind(work.keep2, work.keepPep)
+        work.4$Protein_Feature <- NULL
+        work.keep2 <- work.4
+
+      } else {
+        #The case of no proteins was totally removed
+        work.keep2$Protein_Feature <- NULL
+        work.keep2$Protein.Peptide <- NULL
 			}
 		} else {
 
-	        work.keep2$Protein_Feature <- NULL; work.keep2$Protein.Peptide <- NULL
+      work.keep2$Protein_Feature <- NULL
+      work.keep2$Protein.Peptide <- NULL
 
-		} #S.7	
-
-
-		if(leave_one_out){#LOO		  
-			#First it is safer to factorize each categorical variable, for which we use, since some of the levels are gone.
-			#This step is precautionary for some potential, but rare, errors.
-			work.keep$PROTEIN <- factor(work.keep$PROTEIN); work.keep$FEATURE <- factor(work.keep$FEATURE)
-			work.keep$PEPTIDE <- factor(work.keep$PEPTIDE)
-			work.keep$GROUP_ORIGINAL <- factor(work.keep$GROUP_ORIGINAL)
-			work.keep$SUBJECT_ORIGINAL <- factor(work.keep$SUBJECT_ORIGINAL)
-			work.keep$RUN <- factor(work.keep$RUN); work.keep$GROUP <- factor(work.keep$GROUP)
-
-			N.Protein <- length(unique(work.keep$PROTEIN))
-			#The normalized intensity after correcting the peptide-by-run interaction
-			work.keep$ABUNDANCE.N <- NA
-
-			#Store the results of the leave-one-out, and also store the values of the initial error as E0
-			LOO <- data.frame(Protein=vector(), Feature=vector(), Remove_Order=vector(), Improve=vector(), Error=vector())
-			Index <- 0; E0 <- vector()
-
-			#Analyze one protein at a time
-			for(c in 1:N.Protein){ #2.5.0
-
-				temp <- subset(work.keep, PROTEIN==unique(PROTEIN)[c])
-				N.peptide <- length(unique(temp$PEPTIDE))
-				temp$FEATURE <- factor(temp$FEATURE)
-            	temp$PEPTIDE <- factor(temp$PEPTIDE)
-
-				#Normalize the internal standard for each peptide to adjust the peptide-specific deviation
-            	for(j in 1:N.peptide){ #2.5.1
-
-					Temp2 <- subset(temp, PEPTIDE==unique(PEPTIDE)[j])
-					N.Run <- length(unique(Temp2$RUN))
-
-					#Compute the overall median on internal standard
-					Median <- median(Temp2[Temp2$GROUP==0, 'ABUNDANCE'], na.rm=TRUE)
-
-					#Equalize the median of the internal standard at each run, and apply the same shifts on its counterpart at the endogenous
-					for(k in 1:N.Run){ #2.5.2
-
-						temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='L' & temp$RUN==k, 'ABUNDANCE.N'] <- temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='L' & temp$RUN==k, 'ABUNDANCE']- median(temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'], na.rm=TRUE) + Median
-						temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE.N'] <- temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE']- median(temp[temp$PEPTIDE==unique(temp$PEPTIDE)[j] & temp$LABEL=='H' & temp$RUN==k, 'ABUNDANCE'], na.rm=TRUE) + Median
-
-					} #2.5.2
-
-				} #2.5.1 : Finish the loop over the peptides on the adjustment (normalization)
-
-            	#Start the leave-one-out algorithm
-				list.f <- unique(temp$FEATURE)
-				N.Feature <- length(list.f)
-                  
-				#After the peptides with internal standards are 'normalized', there is only need for modeling the light (without the internal standard)
-				temp.L <- subset(temp, GROUP!=0)
-				temp.L$RUN <- factor(temp.L$RUN); temp.L$FEATURE <- factor(temp.L$FEATURE)
-
-				#Estimate of the random error when every feature presents
-				data.TMP = dcast(RUN ~ FEATURE, data=temp.L, value.var='ABUNDANCE.N', keep=TRUE)
-				data.TMP <- data.TMP[,-1]
-				data.TMP[data.TMP <=1] <- NA
-				Out.TMP <- medpolish(data.TMP, maxiter=100, trace.iter=FALSE, na.rm=TRUE)
-				Error.0 <- sd(Out.TMP$residuals, na.rm=TRUE); E0[c] <- Error.0
-
-				#leave-one-out can only be meaningfully conducted when there are more than 2 features
-           	 	if(N.Feature >2){ #2.5.A
-					W.Pep <- data.frame(Protein=vector(), Feature=vector(), Remove_Order=vector(), Improve=vector(), Error=vector())
-
-					#Record the initial error estimates
-					W.Pep[1, 'Protein'] <- as.character(unique(temp.L$PROTEIN))
-                	W.Pep[1, 'Feature'] <- 'All Features'; W.Pep[1, 'Remove_Order'] <- NA
-			    		W.Pep[1, 'Error'] <- round(Error.0, digits=4); W.Pep[1, 'Improve'] <- NA
-                        
-					#Determine the worst feature one at a time
-					#The number of iterations is at most (N.Feature-2) as the leave-one-out cannot be conducted when 2 features left
-					for(iter in 1:(N.Feature-2)){ #2.5.2
-
-						#The feature contributed the most when it is removed
-						Error.I <- vector()
-						Error.Decline <- vector()
-                    	K <- N.Feature-iter+1
-                              
-						for(I in 1:K){ #2.5.3
-
-							Leave <- list.f[I]
-                        	sub3 <- subset(temp.L, FEATURE!=Leave)
-                        	M_sub3 <- dcast(RUN ~ FEATURE, data=sub3, value.var='ABUNDANCE.N', keep=TRUE)
-                        	M_sub3 <- M_sub3[,-1]; M_sub3[M_sub3 <= 1] <- NA
-                        	Out.sub3 <- medpolish(M_sub3, maxiter=1000, trace.iter=FALSE, na.rm=TRUE)
-                        	Error.I[I] <- sd(Out.sub3$res, na.rm=TRUE)
-							Error.Decline[I] <- (Error.0-Error.I[I])/Error.0
-
-                    	} #2.5.3
-
-                    	#Index of the worst feature
-                    	Location <- which(Error.Decline==max(Error.Decline, na.rm=TRUE))
-                    	Worst.Feature <- list.f[Location]
-						Error.Worst <- Error.I[Location]
-                    	Increment <- Error.Decline[Location]
-
-                    	W.Pep[(iter+1), 'Protein'] <- as.character(unique(temp.L$PROTEIN))
-                    	W.Pep[(iter+1), 'Feature'] <- as.character(Worst.Feature)
-                    	W.Pep[(iter+1), 'Remove_Order'] <- iter
-						W.Pep[(iter+1), 'Error'] <- round(Error.Worst, digits=4)
-                    	W.Pep[(iter+1), 'Improve'] <- round(Increment, digits=3)
-						#At the end of this iteration, the worst feature is removed from the data frame
-                    	Error.0 <- Error.Worst
-                    	temp.L <- subset(temp.L, FEATURE != Worst.Feature)
- 						list.f <- unique(temp.L$FEATURE)                             
- 
-					}#2.5.2 (End of iterations of leave-one-out in this protein)
-                  
- 					n.row <- dim(W.Pep)[1] 
-					LOO[(Index+1):(Index+n.row),] <- W.Pep
-					Index <- Index + n.row                 
- 
-				} else { #The case of two-feature proteins
-					LOO[(Index+1),] <- c(as.character(unique(temp.L$PROTEIN)), 'No more than 2 features', NA, NA, Error.0)
-                	Index <- Index+1
-				} #2.5.A
-
-				message(paste(c, 'out of total', N.Protein, 'proteins (', as.character(unique(W.Pep$Protein)), ') are done for leave-one-out.', sep=' '))
-
-			} #2.5.0
-        	#End of loop for proteins       
-         
-			#Remove the features with obvious interference
-			Error0 <- quantile(E0, probs=seq(0,1,0.05), na.rm=TRUE)
-			Improve <- quantile(as.numeric(LOO$Improve), probs=seq(0,1,0.05), na.rm=TRUE)
-			E40 <- Error0['40%']; E20 <- Error0['20%']; E60 <- Error0['60%']; E30 <- Error0['30%']
-			IM60 <- Improve['60%']; IM80 <- Improve['80%']; IM85 <- Improve['85%']
-			Remove.Protein <- vector(); Remove.Feature <- vector(); Keep.Protein <- vector(); Consistent.Protein <- vector()
-			Index.RP <- 0; Index.RF <- 0; Index.KP <- 0; Index.CP <- 0
-			LOO$P.F <- paste(LOO$Protein, LOO$Feature, sep='.')
-			LOO$Peptide.1 <-  sub("(.*?)_(.*?)_.*", "\\1", LOO$Feature)
-			LOO$Peptide.2 <-  sub("(.*?)_(.*?)_.*", "\\2", LOO$Feature)
-			LOO$Peptide <-  paste(LOO$Peptide.1, LOO$Peptide.2, sep='_')
-
-			for(k in 1:N.Protein){ #2.6
-
-				sub <- subset(LOO, Protein==unique(LOO$Protein)[k])
-            	Name <- as.character(unique(sub$Protein))
-            	DIM <- dim(sub)[1]; N.Pep <- length(unique(sub))
-            	N.Pep <- length(unique(sub$Peptide))-1
- 
-				#Case of 2-feature protein
-				if(DIM == 1){ #2.7
+    } #S.7	
 			
-					if(sub$Error >= E40){ #2.7.1
-						Remove.Protein[Index.RP+1] <- Name
-						Index.RP <- Index.RP+1
-					} #2.7.1
-	        	#Case of 3-feature protein
-				} else if(DIM == 2) { 
-
-					if(sub$Error[2] >=E40){ #2.7.2
-						Remove.Protein[Index.RP+1] <- Name
-      					Index.RP <- Index.RP+1
-
-					} else if(sub$Error[1] < E20){
-						Keep.Protein[Index.KP+1] <- Name
-						Index.KP <- Index.KP+1
-
-					} else if(sub$Error[1] > E40 & sub$Error[2] <= E40){
-						Remove.Feature[Index.RF+1] <- as.character(sub$P.F[2])
-  					} #2.7.2
-
-				#Case of more than 3 features	(more than 1 peptide)
-				} else {
-
-					if(sub$Error[1] <= E30){ #2.7.3
-						Keep.Protein[Index.KP+1] <- Name
-						Index.KP <- Index.KP+1
-					
-					} else if(sub$Error[1] > E30 & sub$Error[1] <= E60){
-
-						#Large improvement at the end of any peptide is an indication of different but consistent profiles from different peptides
-						Pep <- sub[-1,]; Key <- vector(); Index.K <- 0
-						for(p in 1:N.Pep){
-
-							Pep.1 <- subset(Pep, Peptide==unique(Pep$Peptide)[p])
-							if(dim(Pep.1)[1] > 1){
-								Key[Index.K+1] <- Pep.1$Improve[length(Pep.1$Improve)]
-							} else {
-								Key[Index.K+1] <- 0
-							}
-							Index.K <- Index.K+1
-
-						}
-
-						if(max(Key, na.rm=TRUE) >= IM80){
-							Consistent.Protein[Index.CP+1] <- Name
-							Index.CP <- Index.CP+1
-						} else {
-							suppressWarnings(I <- min(which(Pep$Error < E30), na.rm=TRUE))
-
-							if(I==Inf){ #Remove the whole protein if the error never be small
-								Remove.Protein[Index.RP+1] <- Name
-								Index.RP <- Index.RP+1
-							} else {
-                            	Gone <- Pep[1:(I-1), 'P.F']; G <- length(Gone)
-                            	Remove.Feature[(Index.RF+1):(Index.RF+G)] <- as.character(Gone) 
-								Index.RF <- Index.RF + G
-							}
-						}
-							
-					} else if(sub$Error[1] > E60){
-
-						#Large improvement at the end of any peptide is an indication of different but consistent profiles from different peptides
-						Pep <- sub[-1,]; Key <- vector(); Index.K <- 0
-						for(p in 1:N.Pep){
-
-							Pep.1 <- subset(Pep, Peptide==unique(Pep$Peptide)[p])
-							if(dim(Pep.1)[1] > 1){
-								Key[Index.K+1] <- Pep.1$Improve[length(Pep.1$Improve)]
-							} else {
-								Key[Index.K+1] <- 0
-							}
-							Index.K <- Index.K+1
-
-						}
-
-						if(max(Key, na.rm=TRUE) >= IM85){
-							Consistent.Protein[Index.CP+1] <- Name
-							Index.CP <- Index.CP+1 
-
-						} else {
-
-							suppressWarnings(I40 <- min(which(Pep$Error <= E40), na.rm=TRUE))
-							if(I40==Inf){
-								Remove.Protein[Index.RP+1] <- Name
-								Index.RP <- Index.RP+1
-							} else{
-                            	Gone2 <- Pep[1:(I-1), 'P.F']; G2 <- length(Gone2)
-                           	 	Remove.Feature[(Index.RF+1):(Index.RF+G2)] <- as.character(Gone2) 
-								Index.RF <- Index.RF + G2
-							}
-						}
-
-					} #2.7.3
-
-
-				} #2.7
-                      
-			} #2.6 End of loop of the proteins
-
-			Remove.P <- setdiff(setdiff(Remove.Protein, Keep.Protein), Consistent.Protein)
-		            		
-       		work.keep.LOO <- subset(work.keep, !(PROTEIN %in% Remove.P))
-			work.keep.LOO$Protein.Feature <- paste(work.keep.LOO$PROTEIN, work.keep.LOO$FEATURE, sep='.')
-			work.keep.LOO2 <- subset(work.keep.LOO, !(Protein.Feature %in% Remove.Feature))
-			work.keep.LOO2$Protein_Feature <- NULL; work.keep.LOO2$ABUNDANCE.N <- NULL; work.keep.LOO2$Protein.Feature <- NULL
-       		work <- work.keep.LOO2
-		} else { 
-
-			work <- work.keep2
-
-		}#LOO
-
+		work <- work.keep2
 			
 	} #2.4 : End of case for label-based experiment (Remove interference)
 
@@ -806,3 +912,4 @@
 	return(work)
 
 } #End of function '.feature_selection'
+

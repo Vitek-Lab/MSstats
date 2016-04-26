@@ -18,7 +18,7 @@ Variable Intensity is required to be original signal without any log transformat
 
 \author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
 
-Maintainer: Meena Choi (\email{choi67@purdue.edu})
+Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 \references{
 Ching-Yun Chang, Paola Picotti, Ruth Huttenhain, Viola Heinzelmann-Schwarz, Marko Jovanovic, Ruedi Aebersold, Olga Vitek. Protein significance analysis in selected reaction monitoring (SRM) measurements.  \emph{Molecular & Cellular Proteomics}, 11:M111.014662, 2012.}

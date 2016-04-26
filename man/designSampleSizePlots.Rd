@@ -17,7 +17,7 @@ designSampleSizePlots(data=data)
 
 \author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
 
-Maintainer: Meena Choi (\email{choi67@purdue.edu})
+Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 \references{
 Meena Choi, Ching-Yun Chang, Timothy Clough, Daniel Broudy, Trevor Killeen, Brendan MacLean and Olga Vitek. "MSstats: an R package for statistical analysis of quantitative mass spectrometry-based proteomic experiments" \emph{Bioinformatics}, 30(17):2524-2526, 2014.
