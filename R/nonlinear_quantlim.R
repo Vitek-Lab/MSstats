@@ -497,8 +497,11 @@ nonlinear_quantlim <- function(datain){
     #if(is.null(x_new)) break
     
     
-    return(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOD= rep(LOD_pred, length(upper_Q_pred)),  LOQ = rep(LOQ_pred, length(upper_Q_pred)),
+    return(
+      data.frame(as.data.frame(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOD= rep(LOD_pred, length(upper_Q_pred)),  LOQ = rep(LOQ_pred, length(upper_Q_pred)),
                 NAME = rep(datain$NAME[1], length(upper_Q_pred)),
                 METHOD = rep("NONLINEAR", length(upper_Q_pred))
-                ))
+                )
+      ))
+           )
 }

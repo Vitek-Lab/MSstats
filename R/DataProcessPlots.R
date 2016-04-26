@@ -74,21 +74,18 @@ dataProcessPlots <- function(data=data,
 				datarun$PROTEIN <- factor(datarun$Protein)
 		}
     
-    ### output from feature selection is different, need to remove some columns
-    datafeature <- datafeature[, -which(colnames(datafeature) %in% c("ABUNDANCE.O", "feature.label", "run.label", "cen", "pred"))]
-  
     ## assign upper or lower limit
-      # MC, 2016/04/21, default upper limit is maximum log2(intensity) after normalization+3, then round-up
-    	y.limup <- ceiling ( max ( datafeature$ABUNDANCE, na.rm=TRUE ) + 3 )
+    # MC, 2016/04/21, default upper limit is maximum log2(intensity) after normalization+3, then round-up
+    y.limup <- ceiling ( max ( datafeature$ABUNDANCE, na.rm=TRUE ) + 3 )
     
-    	if (is.numeric(ylimUp)) {
-    		y.limup <- ylimUp 
-    	}
+    if (is.numeric(ylimUp)) {
+    	y.limup <- ylimUp 
+    }
     
-    	y.limdown=-1
-    	if (is.numeric(ylimDown)) {
-    		y.limdown <- ylimDown 
-    	}
+    y.limdown=-1
+    if (is.numeric(ylimDown)) {
+    	y.limdown <- ylimDown 
+    }
     
 		datafeature <- datafeature[with(datafeature, order(GROUP_ORIGINAL, SUBJECT_ORIGINAL, LABEL)), ]
 		datafeature$RUN <- factor(datafeature$RUN, levels=unique(datafeature$RUN), labels=seq(1, length(unique(datafeature$RUN))))

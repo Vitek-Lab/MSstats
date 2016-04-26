@@ -223,8 +223,8 @@ linear_quantlim <- function(datain){
     
 
   
-  return(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOD= rep(LOD_pred, length(upper_Q_pred)),  LOQ = rep(LOQ_pred, length(upper_Q_pred)),
+  return( as.data.frame(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOD= rep(LOD_pred, length(upper_Q_pred)),  LOQ = rep(LOQ_pred, length(upper_Q_pred)),
               NAME = rep(datain$NAME[1], length(upper_Q_pred)),
               METHOD = rep("LINEAR", length(upper_Q_pred))
-              ))
+              )))
 }

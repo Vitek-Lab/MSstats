@@ -14,7 +14,7 @@ plot_quantlim(spikeindata, quantlim_out, dir_output, xlim_plot)
   \item{spikeindata}{Data frame that contains the experimental spiked in data. This data frame should be identical to that used as input by function functions nonlinear_quantlim() or linear_quantlim().  The data frame has to contain the following columns : CONCENTRATION, INTENSITY (both of which are measurements from the spiked in experiment) and NAME which designates the name of the assay (e.g. the name of the peptide or protein)}
   
   \item{quantlim_out}{Data frame that was output by functions nonlinear_quantlim() or linear_quantlim(). It contains the following columns: i) CONCENTRATION: Concentration values at which the value of the fit is calculated ii) MEAN: The value of the curve fit iii) LOW: The value of the lower bound of the 95\% prediction interval iv) UP: The value of the upper bound of the 95\% prediction interval v) LOD: The value of the LOD (one column with identical values) vi) LOQ: The value of the LOQ (one column with identical values) vii) NAME: The name of the assay (identical to that provided in the input) viii) METHOD which is LINEAR or NONLINEAR}
-\item{dir_output}{String containg the path of the directly where the pdf files of the plots should be output}
+\item{dir_output}{String containg the path of the directly where the pdf files of the plots should be output.}
 \item{xlim_plot}{Optional argument containing the maximum xaxis value of the zoom plot. When no value is specified, a suitable value close to LOQ is automatically chosen.}
 }
 
