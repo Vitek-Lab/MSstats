@@ -126,7 +126,7 @@ linear_quantlim <- function(datain){
           ll = ll + 1
           slope = median(tmpB$I)/median(tmpB$C)*runif(1)
           intercept = noise*runif(1)
-          sink("/dev/null");
+          sink(tempfile());
           tryCatch(lin.blank_B <-  {nlsLM( I ~ .linear(C , intercept, slope),data=tmpB, trace = TRUE,start=c(intercept=intercept, slope=slope), weights = weights,
                                            control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL})
           

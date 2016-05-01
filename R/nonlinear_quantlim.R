@@ -129,7 +129,7 @@ nonlinear_quantlim <- function(datain){
           change = median(tmpB$C)*runif(1)*0.25
           slope=median(tmpB$I)/median(tmpB$C)*runif(1)
           
-          sink("/dev/null");
+          sink(tempfile());
           #Set intercept at noise and solve for the slope and change
           fit.blank_B <- NULL
           fit.blank_B <- tryCatch({nlsLM( I ~ .bilinear_LOD(C , noise_B, slope, change),data=tmpB, trace = TRUE,start=c(slope=slope, change=change), weights = weights,
@@ -174,7 +174,7 @@ nonlinear_quantlim <- function(datain){
                 #Pick with replacement blank samples:
                 noise_BB = noise
                 
-                sink("/dev/null");
+                sink(tempfile());
                 
                 
                 fit.blank_BB <- NULL
@@ -228,7 +228,7 @@ nonlinear_quantlim <- function(datain){
             ll = ll + 1
             slope = median(tmpB$I)/median(tmpB$C)*runif(1)
             intercept = noise*runif(1)
-            sink("/dev/null");
+            sink(tempfile());
             lin.blank_B <-  tryCatch({nlsLM( I ~ .linear(C , intercept, slope),data=tmpB, trace = TRUE,start=c(intercept=intercept, slope=slope), weights = weights,
                                              control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL}
             )
