@@ -109,13 +109,14 @@ MaxQtoMSstatsFormat <- function(evidence, annotation,proteinGroups, proteinID="P
 	
 	################################################
 	### 1.2 remove the peptides including M sequence
-	remove_m_sequence <- unique(infile[grep("M", infile$Modified.sequence), "Modified.sequence"])
+	if (removeMpeptides) {
+		remove_m_sequence <- unique(infile[grep("M", infile$Modified.sequence), "Modified.sequence"])
  
- 	if(length(remove_m_sequence) > 0){
- 		infile <- infile[-which(infile$Modified.sequence %in% remove_m_sequence), ]
+ 		if(length(remove_m_sequence) > 0){
+ 			infile <- infile[-which(infile$Modified.sequence %in% remove_m_sequence), ]
+		}
 	}
 
-	
 	################################################
 	## 2. remove peptides which are used in more than one protein
 	## we assume to use unique peptide

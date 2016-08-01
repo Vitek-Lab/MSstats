@@ -2,22 +2,54 @@
 #The goal of this function is to calculate the LoD/LoQ of the data provided in the data frame.
 #The function returns a new data frame containing the value of the LoD/LoQ
 
-nonlinear_quantlim <- function(datain){
+nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500){
+  
+  
+  switch(Sys.info()[['sysname']],
+         Windows = {null_output <- "NUL"},
+         Linux  = {null_outpur <- "/dev/null"},
+         Darwin = {null_output <- "/dev/null"})
   
   
   #Need to rename variables as needed:
-  
   names(datain)[names(datain) == 'CONCENTRATION'] <- 'C'
   names(datain)[names(datain) == 'INTENSITY'] <- 'I' 
+
+  #percentile of the prediction interval considered
+  if(missing(alpha)){
+    alpha = 5/100;
+  }
+  
+    
+  if( alpha >= 1 | alpha  <= 0){
+    print("incorrect specified value for alpha,  0 < alpha < 1")
+    return(NULL)
+  }
+  
+  #Number of boostrap samples
+  if(missing(Nbootstrap)){
+    B <- 500
+  } else B <= Nbootstrap
   
   
-  ##Coarse:
-  B <- 500
+  #Number of points for the discretization interval
+  if(missing(Npoints)){
+    Npoints = 100
+  }
+
+  #Number of bootstrap samples for the prediction inteval for the changepoint
+    #Large values can make calculations very expensive
+  B1 <- 30
+  
+  #Number of prediction samples to generate
   BB <- 200
+  
+  #Number of trials for convergence of every curvefit algorithm
   NMAX = 30
-  Npoints <- 30
-  Maxit = 3
- 
+  
+
+  
+  
   datain <- datain[!is.na(datain$I) & !is.na(datain$C),]  
   datain <- datain[!is.infinite(datain$I) & !is.infinite(datain$C),]  
   
@@ -36,33 +68,28 @@ nonlinear_quantlim <- function(datain){
   pb <- txtProgressBar(min = 0, max = 1, initial = 0, char = "%",
                        width = 40, title, label, style = 1, file = "")
   
-  #Need to change this to account for limited number of samples (4):
-  #The confidence interval for future observations of normal observations with unknown mean and variance:
-  #t(alpha/2,dof = n-1)*s*sqrt(1+1/n)
   
   n_blank = length(unique(tmp_blank$I))
 
-  fac_low = qt(1-0.25/2,n_blank - 1)*sqrt(1+1/n_blank)  
-  fac = qt(1-0.05/2,n_blank - 1)*sqrt(1+1/n_blank)
-  fac_high = qt(1-0.01/2,n_blank - 1)*sqrt(1+1/n_blank)
-    
-  #2.575
+  if(nrow(tmp_blank) <= 1 || var_noise  <= 0){
+    print("Not enough blank samples!!!")
+    return(NULL)
+  }
   
-  low_noise = noise  - fac* sqrt(var_noise)
-  
-  up_noise_low = noise + fac_low * sqrt(var_noise)
+  fac = qt(1-alpha,n_blank - 1)*sqrt(1+1/n_blank)
+
+  #upper bound of noise prediction interval
   up_noise = noise   +  fac* sqrt(var_noise)
-  up_noise_high = noise + fac_high*sqrt(var_noise)
   
   unique_c = sort(unique(tmp_all$C));   var_v <- rep(0.0, length(unique_c))
   weights  <- rep(0.0, length(tmp_all$C));
   weights_nob  <- rep(0.0, length(tmp_nob$C));
   
-  #Calculate variance for all concentrations:
+  #Calculate variance for all concentrations keeping NA values:
   ii = 1
   for (j in unique_c){
     data_f <- subset(tmp_all, C == j)
-    var_v[ii] <- var(data_f$I)#/mean(data_f$log2Int)**2
+    var_v[ii] <- var(data_f$I)
     ii = ii +1
   }
   
@@ -71,31 +98,22 @@ nonlinear_quantlim <- function(datain){
   xaxis_orig_2 <- exp(c( seq( from = log(10+0), to = log(1+max(unique_c)), by = log(1+max(unique_c))/Npoints ))) -10 #0.250 to go fast here
   xaxis_orig_2 <- unique(sort(c(xaxis_orig_2,unique_c))) 
   
-   
-  ###Loop here to make sure that the discretization is fine enough##
-  
-  x_new <- NULL
-  for(it in 1:Maxit){
-    
 
-  
-    if(!is.null(x_new)) xaxis_orig_2 <- c(xaxis_orig_2,x_new)
+
+
     
-    y.loessm04 <- loess(y ~ x, span=0.6, data.frame(x=log(1+unique_c), y=log(1+var_v))) 
-    y.predic_log <- predict(y.loessm04, data.frame(x=log(1+xaxis_orig_2)))
-    y.predic_log_unique <- predict(y.loessm04, data.frame(x=log(1+unique_c)))
-    
-    #var_v_s_log <- exp(y.predic_log) -1
-    #Can use this instead of the origianl variance for everything
-    var_v_s_log <- pmax(exp(y.predic_log) -1, rep(1.0,length(y.predic_log)))
-    var_v_s_log_unique <- pmax(exp(y.predic_log_unique) -1, rep(1.0,length(y.predic_log_unique)))  
+    #Instead simply create a  piecewise linear approximation:
+    var_v_lin = approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = xaxis_orig_2)$y
+    var_v_lin_unique = approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = unique_c)$y
     
     
     ##
     #In the following, consider that the smoothed variance is that from the log:
     
-    var_v_s <- var_v_s_log
-    var_v_s_unique <- var_v_s_log_unique
+    var_v_s <- var_v_lin
+    var_v_s_unique <- var_v_lin_unique
+    var_v_s_log <- var_v_s
+    var_v_s_log_unique <- var_v_s_unique
     ##
     
     
@@ -105,12 +123,12 @@ nonlinear_quantlim <- function(datain){
       outBB_pred <- matrix(NA_real_, nrow=B*BB, ncol=length(xaxis_orig_2))
       
       change_B <- rep(NA, B)
+      set.seed(123) 
       for (j in 1:B){ #Number of first boostrap samples j
         
         
         setTxtProgressBar(pb, j/B, title = NULL, label = NULL)
         
-        #if(j %% 10 == 0) print(paste("Boot=",j))
         lin.blank_B <- NULL
         tmpB <- tmp_all[sample(1:nrow(tmp_all), replace=TRUE),] #Pick **  observations with replacement among all that are available.
         #Blank samples are included
@@ -129,7 +147,7 @@ nonlinear_quantlim <- function(datain){
           change = median(tmpB$C)*runif(1)*0.25
           slope=median(tmpB$I)/median(tmpB$C)*runif(1)
           
-          sink(tempfile());
+          sink(null_output);
           #Set intercept at noise and solve for the slope and change
           fit.blank_B <- NULL
           fit.blank_B <- tryCatch({nlsLM( I ~ .bilinear_LOD(C , noise_B, slope, change),data=tmpB, trace = TRUE,start=c(slope=slope, change=change), weights = weights,
@@ -151,10 +169,9 @@ nonlinear_quantlim <- function(datain){
           
           if(!is.null(fit.blank_B) && out_loop == 0){ #Boostrap again to see whether bilinear fit is real:
             
-            change_BB <- rep(NA,NMAX)
-            #print(paste('Change=',summary(fit.blank_B)$coefficient[2]))
+            change_BB <- rep(NA,B1)
             bb = 0;
-            while(bb < NMAX){#Number of second boostrap samples bb < NMAX
+            while(bb < B1){#Number of second boostrap samples bb < NMAX
               bb = bb + 1
               
               iii = 0
@@ -174,7 +191,7 @@ nonlinear_quantlim <- function(datain){
                 #Pick with replacement blank samples:
                 noise_BB = noise
                 
-                sink(tempfile());
+                sink(null_output);
                 
                 
                 fit.blank_BB <- NULL
@@ -190,18 +207,37 @@ nonlinear_quantlim <- function(datain){
                   change_BB[bb] = NA 
                 }
                 
-                
-                
                 if(!is.null(fit.blank_BB)) break
                 
               } #Number of iii trials for convergence of bilinear
               
-              #if(is.null(fit.blank_BB)) print(paste('No convergence for coefficient ',j,bb))
+              #if(sum(is.na(change_BB))>10  && mean(change_BB, na.rm = TRUE) < 0){ out_loop = 1; break; }
+
               
-            }#Number of second boostrap samples bb < NMAX
+            }#Number of second boostrap samples bb < B1
             
-            CI_change <- quantile(change_BB,probs=c(0.05,0.95),na.rm= TRUE) #95% Confidence interval for the value of change
-            #Ensure that the 95% confidence interval is included inside the concentration range:
+            
+            
+            # #print(change_BB[order(change_BB)])
+            # CI_change <- quantile(change_BB,probs=c(0.1),na.rm= TRUE)
+            # 
+            # #Ensure that the 95% confidence interval is included inside the concentration range:
+            # if(is.na(CI_change[1]  && out_loop == 0) ){
+            #   fit.blank_B  <- NULL
+            #   out_loop =1
+            # }
+            # 
+            # 
+            # if(!is.na(CI_change[1])  && out_loop == 0) if(CI_change[1] < min(tmp_all$C)){
+            #   fit.blank_B  <- NULL
+            #   out_loop =1
+            # }else{
+            #   #fit.blank_B  <- NULL#print('Acceptable fit')
+            # }
+            # 
+            
+            CI_change <- quantile(change_BB,probs=c(0.05,1-0.05),na.rm= TRUE) #90% Confidence interval for the value of change
+            #Ensure that the 90% confidence interval is included inside the concentration range:
             if(is.na(CI_change[1]) || is.na(CI_change[2])){
               fit.blank_B  <- NULL
               out_loop =1
@@ -214,6 +250,7 @@ nonlinear_quantlim <- function(datain){
             }else{
               #fit.blank_B  <- NULL#print('Acceptable fit')
             }
+            
             
           } #Boostrap again to see whether bilinear fit is real
           
@@ -228,7 +265,7 @@ nonlinear_quantlim <- function(datain){
             ll = ll + 1
             slope = median(tmpB$I)/median(tmpB$C)*runif(1)
             intercept = noise*runif(1)
-            sink(tempfile());
+            sink(null_output);
             lin.blank_B <-  tryCatch({nlsLM( I ~ .linear(C , intercept, slope),data=tmpB, trace = TRUE,start=c(intercept=intercept, slope=slope), weights = weights,
                                              control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL}
             )
@@ -268,20 +305,12 @@ nonlinear_quantlim <- function(datain){
       var_bilinear <- apply(outB, 2, var,na.rm = TRUE)
       mean_bilinear <- apply(outB, 2, mean,na.rm = TRUE)
       
-      #Calculate confidence interval based on quantiles:
-      # Do not use: based on normal distribution
-      ##lower_CI = mean_bilinear  - 1.96* sqrt(var_bilinear)
-      ##upper_CI = mean_bilinear  + 1.96* sqrt(var_bilinear)
-      
       
       mean_pred <- apply(outBB_pred, 2, mean,na.rm = TRUE) 
       var_pred <- apply(outBB_pred, 2, var,na.rm = TRUE) 
       
-      lower_Q = apply(outB, 2, quantile, probs=c(0.05) ,na.rm = TRUE)
-      upper_Q = apply(outB, 2, quantile, probs=c(0.95) ,na.rm = TRUE)
-      
-      lower_Q_pred = apply(outBB_pred, 2, quantile, probs=c(0.05) ,na.rm = TRUE)
-      upper_Q_pred = apply(outBB_pred, 2, quantile, probs=c(0.95) ,na.rm = TRUE)    
+      lower_Q_pred = apply(outBB_pred, 2, quantile, probs=c(alpha) ,na.rm = TRUE)
+      upper_Q_pred = apply(outBB_pred, 2, quantile, probs=c(1 - alpha) ,na.rm = TRUE)   
       
       
       
@@ -304,15 +333,15 @@ nonlinear_quantlim <- function(datain){
     } else{ 
       LOD_pred = 0
       y_LOD_pred = up_noise
-    }
+          }
     
     #Calculate the LOD with the upper-upper and upper-lower limits of the noise (Calculated to make sure that we have a large enough resolution)
     
-    i_before = which(diff(sign( up_noise_low - mean_bilinear  ))!=0) #before sign change
+    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_low - mean_bilinear)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_low - mean_bilinear)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
       
       #Linear interpollation to find where the function changes sign:
       LOD_pred_mean_low =  x1  - f1*(x2-x1)/(f2-f1)
@@ -323,11 +352,11 @@ nonlinear_quantlim <- function(datain){
       y_LOD_pred_low = up_noise
     }  
     
-    i_before = which(diff(sign( up_noise_high - mean_bilinear  ))!=0) #before sign change
+    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_high - mean_bilinear)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_high - mean_bilinear)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
       
       #Linear interpollation to find where the function changes sign:
       LOD_pred_mean_high =  x1  - f1*(x2-x1)/(f2-f1)
@@ -337,11 +366,11 @@ nonlinear_quantlim <- function(datain){
     }      
     
     
-    i_before = which(diff(sign( up_noise_low - mean_bilinear  ))!=0) #before sign change
+    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_low - mean_bilinear)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_low - mean_bilinear)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
       
       #Linear interpollation to find where the function changes sign:
       LOD_pred_mean_low =  x1  - f1*(x2-x1)/(f2-f1)
@@ -352,11 +381,11 @@ nonlinear_quantlim <- function(datain){
       y_LOD_pred_low = up_noise
     }  
     
-    i_before = which(diff(sign( up_noise_high - mean_bilinear  ))!=0) #before sign change
+    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_high - mean_bilinear)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_high - mean_bilinear)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
       
       #Linear interpollation to find where the function changes sign:
       LOD_pred_mean_high =  x1  - f1*(x2-x1)/(f2-f1)
@@ -387,15 +416,15 @@ nonlinear_quantlim <- function(datain){
       y_LOQ_pred = up_noise
       
     }
-    if(length(LOD_pred) > 1) print('multiple intersection between fit and upper bound of noise, picking first')
-    LOQ_pred=LOQ_pred[1]
+    if(length(LOD_pred) > 1){ print('multiple intersection between fit and upper bound of noise, picking first')
+    LOQ_pred=LOQ_pred[1]}
     
     
-    i_before = which(diff(sign( up_noise_low - mean_bilinear  ))!=0) #before sign change
+    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_low - mean_bilinear)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_low - mean_bilinear)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
       
       #Linear interpollation to find where the function changes sign:
       LOD_pred_mean_low =  x1  - f1*(x2-x1)/(f2-f1)
@@ -406,11 +435,11 @@ nonlinear_quantlim <- function(datain){
       y_LOD_pred_low = up_noise
     }  
     
-    i_before = which(diff(sign( up_noise_high - mean_bilinear  ))!=0) #before sign change
+    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_high - mean_bilinear)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_high - mean_bilinear)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
       
       #Linear interpollation to find where the function changes sign:
       LOD_pred_mean_high =  x1  - f1*(x2-x1)/(f2-f1)
@@ -424,8 +453,8 @@ nonlinear_quantlim <- function(datain){
     i_before = which(diff(sign(up_noise - lower_Q_pred))!=0)
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_low - lower_Q_pred)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_low - lower_Q_pred)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - lower_Q_pred)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - lower_Q_pred)[i_after]
       x_inter =  x1  - f1*(x2-x1)/(f2-f1)
       LOQ_pred_low = x_inter
     } else{
@@ -435,71 +464,61 @@ nonlinear_quantlim <- function(datain){
     i_before = which(diff(sign(up_noise - lower_Q_pred))!=0)
     if(length(i_before)>0){
       i_after = i_before+1
-      x1 = xaxis_orig_2[i_before]; f1 = (up_noise_high - lower_Q_pred)[i_before]
-      x2 = xaxis_orig_2[i_after];  f2 = (up_noise_high - lower_Q_pred)[i_after]
+      x1 = xaxis_orig_2[i_before]; f1 = (up_noise - lower_Q_pred)[i_before]
+      x2 = xaxis_orig_2[i_after];  f2 = (up_noise - lower_Q_pred)[i_after]
       x_inter =  x1  - f1*(x2-x1)/(f2-f1)
       LOQ_pred_high = x_inter
     } else{
       LOQ_pred_high = 0
     }    
     
+    #Calculate slope and intercept above the LOD/LOQ:
     
-    #Want to require at least one point between the various LOD's
+    slope_lin <- NA
+    intercept_lin <- NA
+
     
-    found_low_LOD = 0; found_high_LOD = 0; x_low = -7; x_high = -7
-    found_low_LOQ = 1; found_high_LOQ = 1;
-    for( x in xaxis_orig_2 ){
-      
-      if( x < LOD_pred_mean_high &&  x > LOD_pred){
-        found_high_LOD =1 ;x_high = x;
+    data_linear <- datain[datain$C > LOQ_pred,]
+    
+    ii = 0
+    while(ii < NMAX){#Number of ii trials for bilinear fit < NMAX
+      ii = ii + 1
+      {
+        intercept = data_linear$I[1]*runif(1)
+        slope=median(data_linear$I)/median(data_linear$C)*runif(1)
+        
+        weights = rep(0,length(data_linear$C) )
+        for (kk in 1:length(data_linear$C)){
+          weights[kk] = 1/var_v_s[which( unique_c == data_linear$C[kk])]
+        } 
+        
+        sink(null_output);
+        
+        fit.blank_lin <- NULL
+        fit.blank_lin <- tryCatch({nlsLM( I ~ .linear(C , intercept, slope),data=data_linear, trace = TRUE,start=c(slope=slope, intercept = intercept), weights = weights,
+                                          control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL}
+        )
+        
+        sink();
       }
       
-      if( x > LOD_pred_mean_low &&  x < LOD_pred){
-        found_low_LOD =1 ; x_low = x;
-      }
       
-      
-      if( x < LOQ_pred_high &&  x > LOQ_pred){
-        found_high_LOQ =1 ;x_high = x;
-      }
-      
-      if( x > LOQ_pred_low &&  x < LOQ_pred){
-        found_low_LOQ =1 ; x_low = x;
-      }
+      if(!is.null(fit.blank_lin)) break
+    }#ii < NMAX
     
-      }
-    
-    
-    
-    x_new <- NULL
-    
-    if(found_low_LOD == 0){
-      x_new =  c(x_new, 0.5*(LOD_pred_low + LOD_pred))
+    if(!is.null(fit.blank_lin)){
+      slope_lin <- summary(fit.blank_lin)$coefficients[[1]]
+      intercept_lin <- summary(fit.blank_lin)$coefficients[[2]]
     }
-    if(found_high_LOD == 0){
-      x_new = c(x_new, 0.5*(LOD_pred_high + LOD_pred))
-    }
-    if(found_low_LOQ== 0){
-      x_new =  c(x_new, 0.5*(LOQ_pred_low + LOQ_pred))
-    }
-    if(found_high_LOQ == 0){
-      x_new = c(x_new, 0.5*(LOQ_pred_high + LOQ_pred))
-    }   
+    
+    if(is.null(fit.blank_lin)) print("Linear assay characterization above LOD did not converge")    
     
     
-    
-    if(is.null(x_new)) break;
-    
-  }
-    
-    
-    
-    #if(is.null(x_new)) break
     
     
     return(
-      data.frame(as.data.frame(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOD= rep(LOD_pred, length(upper_Q_pred)),  LOQ = rep(LOQ_pred, length(upper_Q_pred)),
-                NAME = rep(datain$NAME[1], length(upper_Q_pred)),
+      data.frame(as.data.frame(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOB= rep(LOD_pred, length(upper_Q_pred)),  LOD = rep(LOQ_pred, length(upper_Q_pred)),
+                                    SLOPE =slope_lin , INTERCEPT =intercept_lin, NAME = rep(datain$NAME[1], length(upper_Q_pred)),
                 METHOD = rep("NONLINEAR", length(upper_Q_pred))
                 )
       ))

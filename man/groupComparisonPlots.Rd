@@ -90,29 +90,31 @@ testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=Quan
 testResultMultiComparisons$ComparisonResult
 
 # Volcano plot with FDR cutoff = 0.05 and no FC cutoff
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",logBase.pvalue=2,address="Ex1_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot",
+logBase.pvalue=2, address="Ex1_")
 
-# Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, and no protein name displayed
+# Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, 
+# and no protein name displayed
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,address="Ex2_")
-
-# show only 'T3-T1' comparisons
-# Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, and no protein name displayed
-# FCcutoff=70 is for demonstration purpose
-# groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="VolcanoPlot",FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,which.Comparison="T3-T1",address="Ex3_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot",
+FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,address="Ex2_")
 
 # Heatmap with FDR cutoff = 0.05
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap", logBase.pvalue=2, address="Ex1_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap", 
+logBase.pvalue=2, address="Ex1_")
 
 # Heatmap with FDR cutoff = 0.05 and FC cutoff = 70
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="Heatmap",FCcutoff=70, logBase.pvalue=2, address="Ex2_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap",
+FCcutoff=70, logBase.pvalue=2, address="Ex2_")
 
 # Comparison Plot
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="ComparisonPlot",address="Ex1_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot",
+address="Ex1_")
 
 # Comparison Plot
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult,type="ComparisonPlot",ylimUp=8,ylimDown=-1,address="Ex2_")
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot",
+ylimUp=8, ylimDown=-1, address="Ex2_")
 
 
 }

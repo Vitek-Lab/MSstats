@@ -1,3 +1,22 @@
+CHANGES IN VERSION 3.5.3 [2016-08-01]
+-------------------------
+   BUG FIXES
+	- dataProcess with fractionation sample when filling incomplete rows. Especially, not balanced fractionation for heavy and light, (heavy in one fractionation, no heavy in other fractionation)
+	- groupComparison function : fix the issue with different columns from different summary Methods.
+	- MaxQtoMSstats function : option removeMpeptides=FALSE are now available. (Thanks, Danielle)
+
+   NEW FEATURES
+	- Add ‘originalRUN’ column in xx$ProcessedData after dataProcess function.
+
+   SIGNIFICANT CHANGES FOR METHOD
+	- Method for calculation of the LOB/LOD is changed. LOQ is not calculated anymore. Please check help files for details.
+
+
+CHANGES IN VERSION 3.5.1
+-------------------------
+- Fix bug : summaryMethod=‘logOfSum’, redesign for result table.
+
+
 CHANGES IN VERSION 3.3.11
 -------------------------
 - New functionalities : calculation of the LOD and LOQ, 1) linear_quantlim, 2) nonlinear_quantlim, 3) plot_quantlim, and two example datasets, SpikeInDataLinear, SpikeInDataNonLinear are available.

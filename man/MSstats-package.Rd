@@ -2,13 +2,13 @@
 \alias{MSstats-package}
 \alias{MSstats}
 \docType{package}
-\title{Tools for protein significance analysis in DDA,SRM and DIA proteomic experiments for label-free workflows or workflows with stable isotope labeled reference }
+\title{Tools for protein significance analysis in DDA,SRM and DIA proteomic experiments for label-free workflows or workflows with stable isotope labeled reference}
 \description{A set of tools for protein significance analysis in SRM, DDA and DIA experiments.}
 \details{
 \tabular{ll}{
 Package: \tab MSstats\cr
-Version: \tab 3.3.12\cr
-Date: \tab 2016-05-01\cr
+Version: \tab 3.5.3\cr
+Date: \tab 2016-08-01\cr
 License: \tab Artistic-2.0 \cr
 LazyLoad: \tab yes\cr
 }
@@ -17,10 +17,11 @@ The package includes four main sections: I. explanatory data analysis (data pre-
 Examples of data in MSstats are (1) example of required input data format from label-based SRM experiment \code{\link{SRMRawData}}; (2) example of required input data format from DDA experiment \code{\link{DDARawData}}; (3) example of required input data format from label-free SWATH experiment \code{\link{DIARawData}}.
 }
 
-\author{Meena Choi, Tsung-Heng Tsai, Lin-Yang Cheng, Ching-Yun Chang,  Olga Vitek. 
+\author{Meena Choi, Cyril Galitzine, Tsung-Heng Tsai, Ching-Yun Chang,  Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
+
 \references{
 Meena Choi, Ching-Yun Chang, Timothy Clough, Daniel Broudy, Trevor Killeen, Brendan MacLean and Olga Vitek. "MSstats: an R package for statistical analysis of quantitative mass spectrometry-based proteomic experiments" \emph{Bioinformatics}, 30(17):2524-2526, 2014.
 

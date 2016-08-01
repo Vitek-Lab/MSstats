@@ -56,13 +56,13 @@ testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=Quan
 
 #(1) Minimal number of biological replicates per condition
 
-designSampleSize(data=testResultMultiComparisons$fittedmodel,numSample=TRUE,
-desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
 
 
 #(2) Power calculation
 
-designSampleSize(data=testResultMultiComparisons$fittedmodel,numSample=2,
-desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
+designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
 }
 

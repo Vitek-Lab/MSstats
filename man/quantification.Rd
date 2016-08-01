@@ -41,9 +41,12 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 }
 
 \examples{
-#Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, three biological replicates, and no technical replicates which is a time-course experiment. 
-#Sample quantification shows model-based estimation of protein abundance in each biological replicate within each time point.
-#Group quantification shows model-based estimation of protein abundance in each time point.
+# Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of 
+# interests, three biological replicates, and no technical replicates which is 
+# a time-course experiment. 
+# Sample quantification shows model-based estimation of protein abundance in each biological 
+# replicate within each time point.
+# Group quantification shows model-based estimation of protein abundance in each time point.
 
 QuantData<-dataProcess(SRMRawData)
 head(QuantData$ProcessedData)

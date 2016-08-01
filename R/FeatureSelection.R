@@ -5,13 +5,17 @@
 #remove_proteins_with_interference==TRUE allows the algorithm to remove the whole protein if deem interfered
 
 .feature_selection <- function(work, 
+                               cutoffCensored, 
+                               censoredInt,
                                remove_proteins_with_interference, 
                                max.iter=10, 
                                Improve_Margin_DIA=0.15, 
                                Step2='Subplot'){
 
 
-  #Label-free experiments (SWATH)
+  # Label-free experiments (SWATH)
+  # MC : not correct, DDA can have the same issue
+  # MC : Skyline, DDA will have 3 isotope in TRANSITION
 	if(nlevels(work$LABEL) == 1 & length(unique(work$TRANSITION)) > 1){ #1.2
 
     #Set an arbitrary value to start the while loop
@@ -352,111 +356,229 @@
 	} # 1.2 : End of label-free SWATH experiment
 
 
-	#Label-free experiments (Shotgun; DDA)
+	# Label-free experiments (Shotgun; DDA)
+  ## MS1 level
+  ## MC : need to make the same subfunction for second round for DIA and SRM
 	if(nlevels(work$LABEL) == 1 & nlevels(work$TRANSITION) == 1){ #1.2.2
+	  
+	  ## goal : need to get Peptide list which should be removed
 
     # In DDA (shotgun) experiment, there is no need to filter out bad fragments in each peptide
     work.2 <- work		
 
-    #Remove the peptides with large unexplained variation within same protein roughly have same profile
-		#Iteration <- 0; Cut.History <- vector(); Cut <- '60%'
-    #if (ByProtein==TRUE) max.iter <- 1
+    # Remove the peptides with large unexplained variation within same protein roughly have same profile
+		# Iteration <- 0; Cut.History <- vector(); Cut <- '60%'
+    # if (ByProtein==TRUE) max.iter <- 1
 
-    #while(Cut != '100%' & Iteration < max.iter){ #DDA_While
+    # while(Cut != '100%' & Iteration < max.iter){ #DDA_While
 
     # Create the data frame storing the selected features of each Protein
-    #Out <- data.frame(Protein=vector(), Feature=vector(), Model.Based.Error=vector())
-    #Index.FS <- 0
+    Out <- data.frame(Protein=vector(), Peptide=vector(), Model.Based.Error=vector())
+    Index.FS <- 0
+    
     N.Prot <- length(unique(work.2$PROTEIN))	
-    Keep.Feature <- vector()
-    index.KF <- 0
-
+    Keep.Peptide <- vector()
+    index.KF <- 0 ## MC : ??
+    
+    Run.template <- data.frame(Run=unique(work.2$RUN))
+    peptide.list.remove.perProteinCutoff <- vector()
+    peptide.list.remove.withAllProteinCutoff <- vector()
+    removeissuefeature <- vector()
+    
+    getproteinfeature <- unique(work.2[, c("PROTEIN", "FEATURE")])
+    countfeature.perpro <- xtabs( ~ PROTEIN, getproteinfeature)
+    ## feature ID, which comes from the proteins which have only one feature
+    getsinglefeature <- as.character(getproteinfeature[which(getproteinfeature$PROTEIN %in% names(countfeature.perpro[countfeature.perpro == 1])), "FEATURE"])
+    
+  
     ## Calculate the variance component estimates of each feature (peptide) for each protein
     for(i in 1:N.Prot){ #DDA_1.3
-
-      Out <- data.frame(Protein=vector(), Feature=vector(), Model.Based.Error=vector())
-      Index.FS <- 0
+      
       DDA.1 <- subset(work.2, PROTEIN == unique(PROTEIN)[i])
-      N.Feature <- length(unique(DDA.1$FEATURE))
       DDA.1$RUN <- factor(DDA.1$RUN, levels=unique(DDA.1$RUN))
-      DDA.1$FEATURE <- factor(DDA.1$FEATURE, levels=unique(DDA.1$FEATURE))
-
+      DDA.1$PEPTIDE <- factor(DDA.1$PEPTIDE, levels=unique(DDA.1$PEPTIDE))
+      
+      ## feature list, which has issue
+      ## feature with completely missing in certain condition, 
+      sub <- DDA.1[!is.na(DDA.1$ABUNDANCE), ] ## if all features are completely missing in certain condition, those conditions will be removed at this step.
+      ## if skyline output, zero value shoule be considered as problematic measurment
+      
+      removeissuefeature.sub <- .getfeatureID(sub, censoredInt)
+      
+      removeissuefeature <- c(removeissuefeature, removeissuefeature.sub)
+      
+      if (length(removeissuefeature.sub) != 0) {
+        DDA.1 <- DDA.1[-which(DDA.1$FEATURE %in% removeissuefeature.sub), ]
+        DDA.1$FEATURE <- factor(DDA.1$FEATURE)
+        DDA.1$PEPTIDE<- factor(DDA.1$PEPTIDE)
+      }
+      
+      N.Peptide <- length(unique(DDA.1$PEPTIDE)) ## MC ??: how about change to PEPTIDE? and checking whether there are more transitions / peptide?
+      
       ## show progress
-			message(paste("Selection features or peptides for protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+			message(paste("Calculating variance for peptides from protein ", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 				
 			## Assess the noise based on model for each protein, assuming every peptide has same profile within each protein##
 		  ## The peptides with different profiles have large variance component ##
-             
-			#Use TMP to do robust run quantification
-      data_tmp = dcast(RUN ~ FEATURE, data=DDA.1, value.var='ABUNDANCE', keep=TRUE)
+			
+			## filtering ??
+			## 1. remove feature which has only one or two measurement
+			## 2. remove feature with completely missing in certain condition
+      
+			## peptides without any imputation
+      data_tmp <- dcast(RUN ~ PEPTIDE, data=DDA.1, value.var='ABUNDANCE', keep=TRUE)
   		rownames(data_tmp) <- data_tmp$RUN
   	  data_tmp <- data_tmp[,-1]
-
-  		TMP <- medpolish(data_tmp, na.rm=TRUE, eps = 0.01, maxiter = 1000, trace.iter = FALSE)
-	    TMP.Run <- TMP$overall + TMP$row           
-
-			Error <- vector()
-			#######Get the per-peptide variance and store it#######
-			if( N.Feature == 1 ){
-        #Keep the protein with only one peptide quantified although thr variance component cannot be assessed
+  	  
+  	  ## If censoredInt='0', replace zero to NA to calculate variance, because it is also censored missing values
+  	  ## !! check with skyline output
+  	  if( !is.null(censoredInt) & censoredInt == '0' ) {
+  	     data_tmp[!is.na(data_tmp) & data_tmp == 0] <- NA
+  	  }
+  	  
+			## get standard summarization for protein-level with imputation and TMP
+		  rqresult <- try(.runQuantification(DDA.1, 
+			                                   summaryMethod="TMP",
+			                                   cutoffCensored, censoredInt,
+			                                   equalFeatureVar=FALSE, 
+			                                   filterLogOfSum=FALSE, 
+			                                   remove50missing=FALSE, MBimpute=TRUE, 
+			                                   original_scale=FALSE, logsum=FALSE, 
+			                                   featureSubset='all',
+			                                   message=FALSE), silent=TRUE)
+			
+			if (class(rqresult) == "try-error") {
+			   ## need to know when and how to handle
+			  
+			} else {
+			   TMP.Run <- rqresult$rqdata[, which(colnames(rqresult$rqdata) %in% c("RUN", "LogIntensities"))]
+			   colnames(TMP.Run) <- c('summarize', 'Run')
+			   TMP.Run <- merge(TMP.Run, Run.template, by='Run', all = TRUE) ## need to keep NA, if there is no summary in some runs
+			   TMP.Run$Run <- as.numeric(as.character(TMP.Run$Run))
+			   TMP.Run <- TMP.Run[with(TMP.Run, order(Run)), ]
+			}
+			
+			# vector for variance component
+		  Error <- vector()
+			
+			## Get the per-peptide variance and store it#######
+			if( N.Peptide == 1 ){
+			  
+        # Keep the protein with only one peptide quantified although thr variance component cannot be assessed
 				Error <- 0
 
-				Out[(Index.FS+1), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
-				Out[(Index.FS+1), 'Feature'] <- as.character(unique(DDA.1$FEATURE))
-				Out[(Index.FS+1), 'Model.Based.Error'] <- Error
-				#Index.FS <- Index.FS+N.Feature   
-				Out$Protein_Feature <- paste(Out$Protein, Out$Feature, sep='_')
-				Keep.Feature[(index.KF+1)] <- as.character(Out$Protein_Feature)				
-				index.KF <- index.KF + 1
+				Out[(index.KF+1), 'Protein'] <- as.character(unique(DDA.1$PROTEIN))
+				Out[(index.KF+1), 'Peptide'] <- as.character(unique(DDA.1$PEPTIDE))
+				Out[(index.KF+1), 'Model.Based.Error'] <- Error
+				# Index.FS <- Index.FS+N.Feature   
+				# Out$Protein_Peptide <- paste(Out$Protein, Out$Peptide, sep='_')
+				# Keep.Peptide[(index.KF+1)] <- as.character(Out$Protein_Peptide)				
 				Pos <- 1
+				index.KF <- index.KF + Pos # to increase the row number, next row for one peptides per protein
+				
       } else {
 
-        for(j in 1:N.Feature){ #DDA_1.3.1
+        for( j in 1:N.Peptide ){ #DDA_1.3.1
 
-          Error[j] <- var((data_tmp[,j]-TMP.Run), na.rm=TRUE)
-
+          Error[j] <- var((data_tmp[, j] - TMP.Run$summarize), na.rm=TRUE)
+          ## if there is no missing value, it is the same as variance of residuals from TMP
 				} #DDA_1.3.1
 
 				## Pull out the results to the designated data frame
-				Out[(Index.FS+1):(Index.FS+N.Feature), 'Protein'] <- rep(as.character(unique(DDA.1$PROTEIN)), N.Feature)
-				Out[(Index.FS+1):(Index.FS+N.Feature), 'Feature'] <- names(data_tmp)
-				Out[(Index.FS+1):(Index.FS+N.Feature), 'Model.Based.Error'] <- Error
-				Out$Protein_Feature <- paste(Out$Protein, Out$Feature, sep='_')
+				Out[(index.KF+1):(index.KF+N.Peptide), 'Protein'] <- rep(as.character(unique(DDA.1$PROTEIN)), N.Peptide)
+				Out[(index.KF+1):(index.KF+N.Peptide), 'Peptide'] <- names(data_tmp)
+				Out[(index.KF+1):(index.KF+N.Peptide), 'Model.Based.Error'] <- Error
 
-				#Index.FS <- Index.FS+N.Feature   
-				R <- Out$Model.Based.Error[order(Out$Model.Based.Error)]
-				R <- R[!is.na(R)]
-				R2 <- diff(R); R3 <- R2/R[-length(R)]
-				#Hope to keep at least 2 peptides in each protein
-				K <- suppressWarnings(min(which(R3 > 0.2), na.rm=TRUE))
-        Pos <- 2
-				Big <- which(R3 > 0.2)
-				ifelse(K == 1 & N.Feature != 2 & length(Big) > 1, Pos <- Big[2], Pos <- K)
-        
-				if(K == 1 & length(Big) == 1) {
-          Pos <- N.Feature
+				## if decide cutoff per protein,
+				## 1. need at least 3 peptides / protein
+				## 1.1 if there are 3 peptides / protein, always peptide with the largest variance will be removed.
+				if ( N.Peptide > 2 ) {
+				  
+				  error.perPro <- data.frame(Peptide = colnames(data_tmp), Variance = Error)
+				  error.perPro <- error.perPro[with(error.perPro, order(Variance, decreasing=T)), ]
+				
+				  xmin <- 1
+			  	xmax <- N.Peptide # number of peptide
+				
+			  	ymax <- error.perPro[1, 'Variance']
+			  	ymin <- error.perPro[nrow(error.perPro), 'Variance']
+				
+          ## slope for line between the largest and the smallest variance
+				  slope <- (ymax - ymin) / (xmin - xmax)
+				  intercept <- ymax - slope * xmin
+				
+				  dist.perPep <- .distancePointLine(x = c(2:(N.Peptide-1)), y=error.perPro[2:(nrow(error.perPro)-1), 'Variance'], slope=slope, intercept=intercept)
+				  #length(dist.perPep)
+				
+				  error.perPro$distance <- NA
+				  error.perPro[2:(nrow(error.perPro)-1), 'distance'] <- dist.perPep
+				
+				  ## elbow point is the point which has maximum distance
+				  elbow <- which.max(error.perPro$distance)
+				
+				  ## list of removed peptide
+				  peptide.list.remove.perProteinCutoff <- c(peptide.list.remove.perProteinCutoff, 
+				                                            as.character(error.perPro[1:(elbow-1), 'Peptide']))
+				
 				}
 				
-        if(N.Feature == 2 & K == Inf) {
-          Pos <- 2
-        }
-					
-        if(K == Inf) {
-          Pos <- 2
-        }
-
-        Cut <- R[Pos]
-        Keep.Feature[(index.KF+1):(index.KF+Pos)] <-  Out[Out$Model.Based.Error <= Cut, 'Protein_Feature']
+				Pos <- N.Peptide
         index.KF <- index.KF + Pos
-			}
+      }
 
-			message(paste(Pos, "peptides were selected in protein", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
+			#  message(paste(Pos, "peptides were selected in protein", unique(DDA.1$PROTEIN), "(", i, " of ", N.Prot, ")"))
 	                                              
 		} # DDA_1.3 (End of loop for proteins)
+    
+    error.allPro <- Out[Out$Model.Based.Error > 0, ]
+    error.allPro <- error.allPro[with(error.allPro, order(Model.Based.Error, decreasing=T)), ]
+    head(error.allPro)
+    
+    #hist(Out$Model.Based.Error)
+    #plot(Out$Model.Based.Error)
+    
+    ## if decide cutoff among all proteins
+    xmin <- 1
+    xmax <- nrow(error.allPro) # number of peptide
+    
+    ymax <- error.allPro[1, 'Model.Based.Error']
+    ymin <- error.allPro[nrow(error.allPro), 'Model.Based.Error']
+    
+    ## slope for line between the largest and the smallest variance
+    slope <- (ymax - ymin) / (xmin - xmax)
+    intercept <- ymax - slope * xmin
+    
+    dist.perPep <- .distancePointLine(x = c(2:(nrow(error.allPro)-1)), 
+                                      y=error.allPro[2:(nrow(error.allPro)-1), 'Model.Based.Error'], 
+                                      slope=slope, intercept=intercept)
+    length(dist.perPep)
+    
+    error.allPro$distance <- NA
+    error.allPro[2:(nrow(error.allPro)-1), 'distance'] <- dist.perPep
+    
+    ## elbow point is the point which has maximum distance
+    elbow <- which.max(error.allPro$distance)
+    
+    ## list of removed peptide
+    peptide.list.remove.withAllProteinCutoff <- as.character(error.allPro[1:(elbow-1), 'Peptide'])
+    
+    ##########
+    ## add the mean abuncance per peptide
+    Out$Protein_Peptide <- paste(Out$Protein, Out$Peptide, sep='_')
+    
+    work.2 <- work.2[, c("PROTEIN", 'PEPTIDE', 'ABUNDANCE')]
+    work.2$Protein_Peptide <- paste(work.2$PROTEIN, work.2$PEPTIDE, sep='_')
+    meanPerPep <- dcast( Protein_Peptide ~ . , data=work.2, value.var='ABUNDANCE', fun=function(x) mean(x, na.rm=T))
+    colnames(meanPerPep)[ colnames(meanPerPep) == "." ] <- 'meanAbundance'
+    Out <- merge(Out, meanPerPep, by='Protein_Peptide')
+    
+    ## !!Criteria about decision
+    
+    # Keep.Peptide[(index.KF+1)] <- as.character(Out$Protein_Peptide)	
 
-		work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')			
-		work <- subset(work, Protein_Feature %in% Keep.Feature)
-		work$Protein_Feature <- NULL
+		# work$Protein_Feature <- paste(work$PROTEIN, work$FEATURE, sep='_')			
+		# work <- subset(work, Protein_Feature %in% Keep.Feature)
+		# work$Protein_Feature <- NULL
 
 	} #1.2.2  : End of the DDA experiment 
 
@@ -906,10 +1028,97 @@
 	} #2.4 : End of case for label-based experiment (Remove interference)
 
 	#Factorize some important variables because some of the levels have been removed
-	work$PROTEIN <- factor(work$PROTEIN, levels=unique(work$PROTEIN))
-	work$PEPTIDE <- factor(work$PEPTIDE, levels=unique(work$PEPTIDE))
-	work$FEATURE <- factor(work$FEATURE, levels=unique(work$FEATURE))
-	return(work)
+	# work$PROTEIN <- factor(work$PROTEIN, levels=unique(work$PROTEIN))
+	# work$PEPTIDE <- factor(work$PEPTIDE, levels=unique(work$PEPTIDE))
+	# work$FEATURE <- factor(work$FEATURE, levels=unique(work$FEATURE))
+	# return(work)
+  
+  afterSelection <- list(PeptideList.remove.perProteinCutoff = peptide.list.remove.perProteinCutoff, 
+                         PeptideList.remove.allProteinCutoff = peptide.list.remove.withAllProteinCutoff, 
+                         PeptideList.issue = removeissuefeature,
+                         Model.Based.Error = Out)
+  
+  return(afterSelection)
 
 } #End of function '.feature_selection'
+
+
+############################################################
+### calculate distance
+
+.distancePointLine <- function(x, y, slope, intercept) {
+  ## x, y is the point to test.
+  ## slope, intercept is the line to check distance.
+  ##
+  ## Returns distance from the line.
+  ##
+  ## Returns 9999 on 0 denominator conditions.
+  x1 <- x-10
+  x2 <- x+10
+  y1 <- x1*slope+intercept
+  y2 <- x2*slope+intercept
+  .distancePointSegment(x,y, x1,y1, x2,y2)
+}
+
+
+.distancePointSegment <- function(px, py, x1, y1, x2, y2) {
+  ## px,py is the point to test.
+  ## x1,y1,x2,y2 is the line to check distance.
+  ##
+  ## Returns distance from the line, or if the intersecting point on the line nearest
+  ## the point tested is outside the endpoints of the line, the distance to the
+  ## nearest endpoint.
+  ##
+  ## Returns 9999 on 0 denominator conditions.
+  .lineMagnitude <- function(x1, y1, x2, y2) {
+    sqrt((x2-x1)^2+(y2-y1)^2)
+  }
+  
+  ans <- NULL
+  ix <- iy <- 0   # intersecting point
+  lineMag <- .lineMagnitude(x1, y1, x2, y2)
+  ## MC : remove 
+  #if( lineMag < 0.00000001) {
+  #  warning("short segment")
+  #  return(9999)
+  #}
+  u <- (((px - x1) * (x2 - x1)) + ((py - y1) * (y2 - y1)))
+  u <- u / (lineMag * lineMag)
+  if((u < 0.00001) || (u > 1)) {
+    ## closest point does not fall within the line segment, take the shorter distance
+    ## to an endpoint
+    ix <- .lineMagnitude(px, py, x1, y1)
+    iy <- .lineMagnitude(px, py, x2, y2)
+    if(ix > iy)  ans <- iy
+    else ans <- ix
+  } else {
+    ## Intersecting point is on the line, use the formula
+    ix <- x1 + u * (x2 - x1)
+    iy <- y1 + u * (y2 - y1)
+    ans <- .lineMagnitude(px, py, ix, iy)
+  }
+  ans
+}
+
+.distancePointLineTest <- function() {
+  if(abs(distancePointSegment(  5,   5,  10, 10, 20, 20) - 7.07106781186548)>.0001)
+    stop("error 1")
+  if(abs(distancePointSegment( 15,  15,  10, 10, 20, 20) - 0)>.0001)
+    stop("error 2")
+  if(abs(distancePointSegment( 15,  15,  20, 10, 20, 20) - 5)>.0001)
+    stop("error 3")
+  if(abs(distancePointSegment(  0,  15,  20, 10, 20, 20) - 20)>.0001)
+    stop("error 4")
+  if(abs(distancePointSegment(  0,  25,  20, 10, 20, 20) - 20.6155281280883)>.0001)
+    stop("error 5")
+  if(abs(distancePointSegment(-13, -25, -50, 10, 20, 20) - 39.8808224589213)>.0001)
+    stop("error 6")
+  if(abs(distancePointSegment(  0,   3,   0, -4,  5,  0) - 5.466082)>.0001)
+    stop("error 7")
+  if(abs(distancePointSegment(  0,   9,   0, -4,  0, 15) - 0)>.0001)
+    stop("error 8")
+  if(abs(distancePointSegment(  0,   0,   0, -2,  2,  0)^2 - 2)>.0001)
+    stop("error 9")
+  return(TRUE)
+}
 

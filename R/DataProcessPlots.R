@@ -45,7 +45,7 @@ dataProcessPlots <- function(data=data,
 	if (toupper(type) == "PROFILEPLOT") {
     
 		## choose Proteins or not
-    	if (which.Protein != "all") {
+    if (which.Protein != "all") {
 			## check which.Protein is name of Protein
 			if (is.character(which.Protein)) {
         		temp.name <- which.Protein
@@ -397,10 +397,18 @@ dataProcessPlots <- function(data=data,
         		subrun <- datarun[datarun$Protein == levels(datafeature$PROTEIN)[i], ]
 			
 					  if (nrow(subrun)!=0) {
-						  quantrun <- data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary", TRANSITION="Run summary", FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, SUBJECT_ORIGINAL=NA, RUN=subrun$RUN, GROUP=NA, SUBJECT=NA, SUBJECT_NESTED=NA,  INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE, METHOD=1)
+						  quantrun <- data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary", TRANSITION="Run summary", 
+						                         FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, 
+						                         SUBJECT_ORIGINAL=NA, RUN=subrun$RUN, GROUP=NA, SUBJECT=NA, 
+						                         SUBJECT_NESTED=NA,  INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE, 
+						                         METHOD=1, originalRUN=NA)
 					    
             } else { # if there is only one Run measured across all runs, no Run information for linear with censored
-						  quantrun <- data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary", TRANSITION="Run summary", FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, SUBJECT_ORIGINAL=NA, RUN=unique(datafeature$RUN)[1], GROUP=NA, SUBJECT=NA, SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA, METHOD=1)
+						  quantrun <- data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary", TRANSITION="Run summary", 
+						                         FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, 
+						                         SUBJECT_ORIGINAL=NA, RUN=unique(datafeature$RUN)[1], GROUP=NA, SUBJECT=NA, 
+						                         SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA, 
+						                         METHOD=1, originalRUN=NA)
 					  }
 			
 					  if (any(is.element(colnames(sub), "imputed"))) {
