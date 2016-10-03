@@ -28,7 +28,9 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 }
 
 \examples{
-# Based on the results of sample size calculation from function designSampleSize, we generate a series of sample size plots for number of biological replicates, or peptides, or transitions or power plot.
+# Based on the results of sample size calculation from function designSampleSize,
+# we generate a series of sample size plots for number of biological replicates, or peptides, 
+# or transitions or power plot.
 
 QuantData<-dataProcess(SRMRawData)
 head(QuantData$ProcessedData)
@@ -43,16 +45,18 @@ row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
 testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
 
 
-## plot the calculated sample sizes for future experiments:
+# plot the calculated sample sizes for future experiments:
 
-#(1) Minimal number of biological replicates per condition
+# (1) Minimal number of biological replicates per condition
 
-result.sample<-designSampleSize(data=testResultMultiComparisons$fittedmodel,numSample=TRUE,desiredFC=c(1.25,1.75),FDR=0.05,power=0.8)
+result.sample<-designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
 designSampleSizePlots(data=result.sample)
 
-#(2) Power
+# (2) Power
 
-result.power<-designSampleSize(data=testResultMultiComparisons$fittedmodel,numSample=2,desiredFC=c(1.25,1.75),FDR=0.05,power=TRUE)
+result.power<-designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
 designSampleSizePlots(data=result.power)
 
 

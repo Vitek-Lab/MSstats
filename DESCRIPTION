@@ -1,16 +1,23 @@
 Package: MSstats
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
-Version: 3.5.0
-Date: 2016-05-01
+Version: 3.5.5
+Date: 2016-10-03
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
-Author: Meena Choi <mnchoi67@gmail.com>, Lin-Yang Cheng <cheng68@purdue.edu>, Tsung-Heng Tsai <tsai.tsungheng@gmail.com>, Ching-Yun Chang <chang54@purdue.edu>, Olga Vitek <o.vitek@neu.edu>
+Authors@R: c(
+  person("Meena","Choi", , "mnchoi67@gmail.com", c("aut", "cre")),
+  person("Cyril","Galitzine", , "cyrildgg@gmail.com", role="aut"), 
+  person("Tsung-Heng","Tsai", , "tsai.tsungheng@gmail.com", role="aut"), 
+  person("Olga","Vitek", , "o.vitek@northeastern.edu", role="aut")) 
 Maintainer: Meena Choi <mnchoi67@gmail.com>
 License: Artistic-2.0
-Depends: R (>= 3.2), ggplot2 (>= 2.0.0), Rcpp, grid, reshape2
-Imports: lme4, marray, limma, gplots, ggrepel, preprocessCore, data.table, MSnbase, reshape, survival, minpack.lm
+Depends: R (>= 3.2)
+Imports: Rcpp, lme4, marray, limma, gplots, ggplot2, methods, grid, ggrepel, preprocessCore, 
+  data.table, MSnbase, reshape, reshape2, survival, minpack.lm, utils
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
 bioViews: Bioinformatics, MassSpectrometry, Proteomics, Software
-LazyData: yes
+LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-Packaged: 2014-01-23 06:32:25 UTC; Meena
+RoxygenNote: 5.0.1

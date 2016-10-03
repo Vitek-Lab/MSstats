@@ -1,0 +1,515 @@
+---
+title: "MSstats"
+author: 
+  - "Meena Choi <mnchoi67@gmail.com>" 
+  - "Tsung-Heng Tsai <tsai.tsungheng@gmail.com>" 
+  - "Cyril Galitzine <cyrildgg@gmail.com>"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+# Protein/Peptide significance analysis
+
+This vignette summarizes the introduction and various options of all functionalities in MSstats. More details are available in `User Manual`.
+
+- 	The types of experiment that MSstats can analyze are LC-MS, SRM, DIA(SWATH) with label-free or labeled synthetic peptides. MSstats does not support for metabolic labeling or iTRAQ experiments.
+
+## SkylinetoMSstatsFormat
+
+Preprocess MSstats input report from Skyline and convert into the required input format for MSstats.
+
+### Arguments
+
+* `input` : name of MSstats input report from Skyline, which includes feature-level data.
+* `annotation` : name of 'annotation.txt' data which includes `Condition`, `BioReplicate`, `Run`. If annotation is already complete in Skyline, use `annotation=NULL` (default). It will use the annotation information from input.
+* `removeiRT` : `removeiRT=TRUE`(default) will remove the proteins or peptides which are labeld 'iRT' in 'StandardType' column. `removeiRT=FALSE` will keep them.
+* `removeProtein_with1Peptide` : `removeProtein_with1Peptide=TRUE` will remove the proteins which have only 1 peptide and charge. `removeProtein_with1Peptide=FALSE` is default.
+* `filter_with_Qvalue` : `removeProtein_with1Peptide=TRUE`(default) will filter out the intensities that have greater than `qvalue_cutoff` in `DetectionQValue` column. Those intensities will be replaced with zero and will be considered as censored missing values for imputation purpose.
+* `qvalue_cutoff` : Cutoff for `DetectionQValue`. default is 0.01.
+
+### Example
+```{r, eval=FALSE}
+# 'MSstatsInput.csv' is the MSstats report from Skyline.
+input <- read.csv(file="MSstatsInput.csv")
+
+raw <- SkylinetoMSstatsFormat(input)
+```
+
+## MaxQtoMSstatsFormat
+
+Convert MaxQuant output into the required input format for MSstats.
+
+### Arguments
+
+* `evidence` : name of `'evidence.txt'` data, which includes feature-level data.
+* `annotation` : name of `'annotation.txt'` data which includes `Raw.file`, `Condition`, `BioReplicate`, `Run`, `IsotopeLabelType` information.
+* `proteinGroups` : name of `'proteinGroups.txt'` data. It needs to matching protein group ID. If `proteinGroups=NULL`, use `'Proteins'` column in `'evidence.txt'`.
+* `proteinID` : `'Proteins'`(default) or `'proteinGroups'` in `'proteinGroup.txt'` for Protein ID.
+* `useUniquePeptide` : `useUniquePeptide=TRUE`(default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
+* `summaryforMultipleRows` : `summaryforMultipleRows=max`(default) or sum, when there are multiple measurements for certain feature and certain run, use highest or sum of all.
+* `fewMeasurements` : `fewMeasurements='remove'`(default) will remove the features that have 1 or 2 measurements across runs.
+* `removeMpeptides` : `removeMpeptides=TRUE`(default) will remove the peptides including 'M' sequence.
+* `removeProtein_with1Peptide` : `removeProtein_with1Peptide=TRUE` will remove the proteins which have only 1 peptide and charge. `FALSE` is default.
+
+### Example
+```{r, eval=FALSE}
+# Read in MaxQuant files
+proteinGroups <- read.table("proteinGroups.txt", sep="\t", header=TRUE)
+
+infile <- read.table("evidence.txt", sep="\t", header=TRUE)
+
+# Read in annotation including condition and biological replicates per run.
+# Users should make this annotation file. It is not the output from MaxQuant.
+annot <- read.csv("annotation.csv", header=TRUE)
+
+raw <- MaxQtoMSstatsFormat(evidence=infile, 
+                           annotation=annot, 
+                           proteinGroups=proteinGroups)
+```
+
+## ProgenesistoMSstatsFormat
+
+Convert Progenesis output into the required input format for MSstats.
+
+### Arguments
+
+* `input` : name of Progenesis output, which is wide-format. `Accession`, `Sequence`, `Modification`, `Charge` and one column for each run are required.
+* `annotation` : name of `'annotation.txt'` or `'annotation.csv'` data which includes `Condition`, `BioReplicate`, `Run` information. It will be matched with the column name of input for MS runs.
+* `useUniquePeptide` : `useUniquePeptide=TRUE`(default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
+* `summaryforMultipleRows` : `summaryforMultipleRows=max`(default) or `sum`, when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.
+* `fewMeasurements` : `fewMeasurements='remove'`(default) will remove the features that have 1 or 2 measurements across runs.
+* `removeProtein_with1Peptide` : `removeProtein_with1Peptide=TRUE` will remove the proteins which have only 1 peptide and charge. `FALSE` is default.
+
+### Example
+```{r, eval=FALSE}
+input <- read.csv("output_progenesis.csv", stringsAsFactors=F) 
+
+# Read in annotation including condition and biological replicates per run.
+# Users should make this annotation file. It is not the output from Progenesis.
+annot <- read.csv('annotation.csv')
+
+raw <- ProgenesistoMSstatsFormat(input, annotation=annot)
+```
+
+## SpectronauttoMSstatsFormat
+
+Convert Spectronaut output into the required input format for MSstats.
+
+### Arguments
+
+* `input`: name of Spectronaut output, which is long-format. `ProteinName`, `PeptideSequence`, `PrecursorCharge`, `FragmentIon`, `ProductCharge`, `IsotopeLabelType`, `Condition`, `BioReplicate`, `Run`, `Intensity`, `F.ExcludedFromQuantification` are required. Rows with `F.ExcludedFromQuantification=True` will be removed.
+* `summaryforMultipleRows` : `summaryforMultipleRows=max`(default) or `sum`, when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.
+
+### Example
+```{r, eval=FALSE}
+input <- read.csv("output_spectronaut.csv", stringsAsFactors=F) 
+
+quant <- SpectronauttoMSstatsFormat(input)
+```
+
+
+## dataProcess
+
+Data pre-processing and quality control of MS runs of the original raw data into quantitative data for model fitting and group comparison. Log transformation is automatically applied and additional variables are created in columns for model fitting and group comparison process. Three options of data pre-processing and quality control of MS runs in dataProcess are 
+
+- Transformation: logarithm transformation of intensity with base 2 or 10. 
+- Normalization: to remove systematic bias between MS runs.
+- 
+
+### Arguments
+
+* `raw` : name of the raw (input) data set.
+* `logTrans` : logarithm transformation with base 2(default) or 10. If `logTrans=2`, the measurement of Variable `ABUNDANCE` is log-transformed with base 2. Same apply to `logTrans=10`.
+* `normalization` : normalization to remove systematic bias between MS runs. There are three different normalizations supported. `'equalizeMedians'` (default) represents constant normalization (equalizing the medians) based on reference signals is performed. `'quantile'` represents quantile normalization based on reference signals is performed. `'globalStandards'` represents normalization with global standards proteins. `FALSE` represents no normalization is performed. 
+* `betweenRunInterferenceScore` : interference is detected by a between-run-interference score. `TRUE` means the scores are generated automatically and stored in a .csv file. `FALSE` (default) means no scores are generated.
+* `fillIncompleteRows` : If the input dataset has incomplete rows, `TRUE` (default) adds the rows with intensity value=NA for missing peaks. `FALSE` reports error message with list of features which have incomplete rows. 
+* `featureSubset` : `"all"` (default) uses all features that the data set has. `"top3"` uses top 3 features which have highest average of log2(intensity) across runs. `"topN"` uses top N features which has highest average of log2(intensity) across runs. It needs the input for `n_top_feature` option. `"highQuality"` selects the most informative features which agree the pattern of the average features across the runs.
+* `remove_proteins_with_interference` : `TRUE` allows the algorithm to remove the proteins if deem interfered. `FALSE` (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide
+* `n_top_feature` : The number of top features for `featureSubset='topN'`. Default is `n_top_feature=3`, which means to use top 3 features.}
+* `summaryMethod` : `"TMP"` (default) means Tukey's median polish, which is robust estimation method. `"linear"` uses linear mixed model.
+* `equalFeatureVar` : only for `summaryMethod="linear"`. Default is `TRUE`. Logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. `FALSE` means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.
+* `censoredInt` : Missing values are censored or at random. `'NA'` (default) assumes that all 'NA's in 'Intensity' column are censored. `'0'` uses zero intensities as censored intensity. In this case, NA intensities are missing at random. The output from Skyline and Progenesis should use '0'. Null assumes that all NA intensites are randomly missing.
+* `cutoffCensored` : Cutoff value for censoring. Only with `censoredInt='NA'` or `'0'`. Default is `'minFeature'`, which uses minimum value for each feature. `'minFeatureNRun'` uses the smallest between minimum value of corresponding feature and minimum value of corresponding run. `'minRun'` uses minumum value for each run. 
+* `MBimpute` : only for `summaryMethod="TMP"` and `censoredInt='NA'` or `'0'`. `TRUE` (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. `FALSE` uses the values assigned by cutoffCensored.
+* `remove50missing` : only for `summaryMethod="TMP"`. `TRUE` removes the runs which have more than 50\% missing values. `FALSE` is default.
+* `address` : the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.
+* `maxQuantileforCensored` : Maximum quantile for deciding censored missing values. Default is 0.999.
+
+### Example 
+```{r, eval=FALSE}
+QuantData <- dataProcess(SRMRawData)
+```
+
+
+## dataProcessPlots
+
+Visualization for explanatory data analysis. To illustrate the quantitative data after data-preprocessing and quality control of MS runs, `dataProcessPlots` takes the quantitative data from function `dataProcess` as input and automatically generate three types of figures in pdf files as output : 
+
+  - Profile plot : to identify the potential sources of variation for each protein. One of output from `dataProcess`, `xxx$ProcessedData`, is used for profile plots. Another output from `dataProcess`, `xxx$RunlevelData`, is used for profile plots with summarization. X-axis represents MS runs. Y-axis is for log-intensities of transitions. Reference/endogenous signals are in the left/right panel. Line colors indicate peptides and line types indicate transitions. Type of dots(filled vs empty dot) indicates censored missing values or not. In summarization plots, gray dots and lines are the same as original profile plots with `xxx$ProcessedData`. Dark dots and lines are for summarized intensities from `xxx$RunlevelData`.
+  
+  - Quality control plot : to illustrate the systematic bias between MS runs and to check normalization. After normalization, the reference signals for all proteins should be stable across MS runs. `xxx$ProcessedData` is used for plots. X-axis is for MS runs. Y-axis is for log-intensities of transition (`xxx$ProcessedData$ABUNDANCE`). Reference/endogenous signals are in the left/right panel. The pdf file contains (1) QC plot for all proteins and (2) QC plots for each protein separately.
+  
+  - Mean plot for conditions : to illustrate mean and variability of each condition per protein. Summarized intensnties from `xxx$RunlevelData` are used for plots. X-axis is for condition. Y-axis is for summarized log transformed intensities. If `scale=TRUE`, the levels of conditions is scaled according to its actual values at x-axis. Red points indicate the mean for each condition. If `interval="CI"`, error bars indicate the confidence interval with 0.95 significant level for each condition. If `interval="SD"`, error bars indicate the standard deviation for each condition. **The interval is not related with model-based analysis in `groupCompaison`**.
+
+### Arguments
+
+* `data` : name of the (output of `dataProcess` function) data set.
+* `type` : choice of visualization. `"ProfilePlot"` represents profile plot of log intensities across MS runs. `"QCPlot"` represents quality control plot of log intensities across MS runs. `"ConditionPlot"` represents mean plot of log ratios (Light/Heavy) across conditions.
+* `featureName` : for `"ProfilePlot"` only, `"Transition"` (default) means printing feature legend in transition-level. `"Peptide"` means printing feature legend in peptide-level. `"NA"` means no feature legend printing.
+* `ylimUp` : upper limit for y-axis in the log scale. `FALSE` (Default) for Profile Plot and QC Plot use the upper limit as rounded off maximum of log2(intensities) after normalization + 3. `FALSE` (Default) for Condition Plot is maximum of log ratio + SD or CI.
+* `ylimDown` : lower limit for y-axis in the log scale. `FALSE` (Default) for Profile Plot and QC Plot is 0. `FALSE`` (Default) for Condition Plot is minumum of log ratio - SD or CI.
+* `scale` : for `"ConditionPlot"` only, `FALSE` (default) means each conditional level is not scaled at x-axis according to its actual value (equal space at x-axis). `TRUE` means each conditional level is scaled at x-axis according to its actual value (unequal space at x-axis).
+* `interval` : for `"ConditionPlot"` only, `"CI"` (default) uses confidence interval with 0.95 significant level for the width of error bar. `"SD"` uses standard deviation for the width of error bar.
+* `x.axis.size` : size of x-axis labeling for "MS Runs" in Profile Plot and QC Plot, and "Condition" in Condition Plot. Default is `10`.
+* `y.axis.size` : size of y-axis labels. Default is `10`.
+* `text.size` : size of labels represented each condition at the top of graph in Profile Plot and QC plot. Default is `4`
+* `text.angle` : angle of labels represented each condition at the top of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. Default is `0`.
+* `legend.size` : size of feature legend (transition-level or peptide-level) above graph in Profile Plot. Default is `7`.
+* `dot.size.profile` : size of dots in profile plot. Default is `2`.
+* `dot.size.condition` : size of dots in condition plot. Default is `3`.
+* `width` : width of the saved file. Default is 10.
+* `height` : height of the saved file. Default is 10.
+* `which.Protein` : Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from `levels(xxx$ProcessedData$PROTEIN)`. Default is `"all"`, which generates all plots for each protein.
+* `originalPlot` : `TRUE` (default) draws original profile plots.
+* `summaryPlot` : `TRUE` (default) draws profile plots with summarization for run levels.
+* `save_condition_plot_result` : `TRUE` saves the table with values using condition plots. Default is FALSE.
+* `address` : the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of `"ProfilePlot.pdf"` or `"QCplot.pdf"` or `"ConditionPlot.pdf"` or `"ConditionPlot_value.csv"`. The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If `address=FALSE`, plot will be not saved as pdf file but showed in window.
+  
+  
+### Example
+```{r, eval=FALSE}
+QuantData <- dataProcess(SRMRawData)
+
+# Profile plot
+dataProcessPlots(data=QuantData, type="ProfilePlot")
+
+# Quality control plot 
+dataProcessPlots(data=QuantData, type="QCPlot")	
+
+# Quantification plot for conditions
+dataProcessPlots(data=QuantData, type="ConditionPlot")
+```
+
+
+## groupComparison
+Tests for significant changes in protein abundance across conditions based on a family of linear mixed-effects models in targeted Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS)
+ experiment. It is applicable to multiple types of sample preparation, including label-free workflows, workflows that use stable isotope labeled reference proteins and peptides, and workflows that use fractionation. Experimental design of case-control study (patients are not repeatedly measured) or time course study (patients are repeatedly measured) is automatically determined based on proper statistical model.
+ 
+### Arguments
+
+* `contrast.matrix` : comparison between conditions of interests. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command `levels(xxx$ProcessedData$GROUP_ORIGINAL)` after using `dataProcess` function can illustrate the actual order of the levels of conditions.
+* `data` : name of the (output of dataProcess function) data set.
+
+
+### Example
+```{r, eval=FALSE}
+QuantData <- dataProcess(SRMRawData)
+
+levels(QuantData$ProcessedData$GROUP_ORIGINAL)
+comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0), nrow=1)
+row.names(comparison) <- "T7-T1"
+
+# Tests for differentially abundant proteins with models:
+testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
+```
+
+## groupComparisonPlots
+
+Visualization for model-based analysis and summarizing differentially abundant proteins. To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, `groupComparisonPlots` takes testing results from function `groupComparison` as input and automatically generate three types of figures in pdf files as output :
+
+- Volcano plot : For each comparison separately. It illustrates actual log-fold changes and adjusted p-values for each comparison separately with all proteins. The x-axis is the log fold change. The base of logarithm transformation is the same as specified in "logTrans" from `dataProcess`. The y-axis is the negative log2 or log10 adjusted p-values. The horizontal dashed line represents the FDR cutoff. The points below the FDR cutoff line are non-significantly abundant proteins (colored in black). The points above the FDR cutoff line are significantly abundant proteins (colored in red/blue for up-/down-regulated). If fold change cutoff is specified (`FCcutoff = specific value`), the points above the FDR cutoff line but within the FC cutoff line are non-significantly abundant proteins (colored in black).
+
+- Heatmap : For multiple comparisons. It illustratea up-/down-regulated proteins for multiple comparisons with all proteins. Each column represents each comparison of interest. Each row represents each protein. Color red/blue represents proteins in that specific comparison are significantly up-regulated/down-regulated proteins with FDR cutoff and/or FC cutoff. The color scheme shows the evidences of significance. The darker color it is, the stronger evidence of significance it has. Color gold represents proteins are not significantly different in abundance.
+
+- Comparison plot : For multiple comparisons per protein. It illustrates log-fold change and its variation of multiple comparisons for single protein. X-axis is comparison of interest. Y-axis is the log fold change. The red points are the estimated log fold change from the model. The error bars are the confidence interval with 0.95 significant level for log fold change. This interval is only based on the standard error, which is estimated from the model.
+
+### Arguments
+
+* `data` : `xxx$ComparisonResult` in testing output from function `groupComparison`.
+* `type` : choice of visualization. `"VolcanoPlot"` represents volcano plot of log fold changes and adjusted p-values for each comparison separately. `"Heatmap"` represents heatmap of adjusted p-values for multiple comparisons. `"ComparisonPlot"` represents comparison plot of log fold changes for multiple comparisons per protein.
+* `sig` : FDR cutoff for the adjusted p-values in heatmap and volcano plot. $100(1-sig)$\% confidence interval will be drawn. `sig=0.05` is default.
+* `FCcutoff` : for volcano plot or heatmap, whether involve fold change cutoff or not. `FALSE` (default) means no fold change cutoff is applied for significance analysis. `FCcutoff = specific value` means specific fold change cutoff is applied.
+* `logBase.pvalue` : for volcano plot or heatmap, (-) logarithm transformation of adjusted p-value with base 2 or 10(default).
+* `ylimUp` : for all three plots, upper limit for y-axis. `FALSE` (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). `FALSE` (default) for comparison plot uses maximum of log-fold change + CI.
+* `ylimDown` : for all three plots, lower limit for y-axis. `FALSE` (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). `FALSE` (default) for comparison plot uses minimum of log-fold change - CI.
+* `xlimUp` : for Volcano plot, the limit for x-axis. `FALSE` (default) uses the maximum for absolute value of log-fold change or 3 as default if maximum for absolute value of log-fold change is less than 3.
+* `x.axis.size` : size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is `10`.
+* `y.axis.size` : size of axes labels, e.g. name of targeted proteins in heatmap. Default is `10`.
+* `dot.size` : size of dots in volcano plot and comparison plot. Default is `3`.
+* `text.size` : size of `ProteinName` label in the graph for Volcano Plot. Default is `4`.
+* `legend.size` : size of legend for color at the bottom of volcano plot.  Default is `7`.
+* `ProteinName` : for volcano plot only, whether display protein names next to dots or not. `TRUE` (default) means protein names, which are significant, are displayed next to the points. `FALSE` means no protein names are displayed.
+* `numProtein` : The number of proteins which will be presented in each heatmap. Default is `100`. Maximum possible number of protein for one heatmap is 180. 
+* `clustering` : Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. `'protein'` (default) means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). `'comparison'` means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). `'both'` means to reorder both protein and comparison. 
+* `width` : width of the saved file. Default is `10`.
+* `height` : height of the saved file. Default is `10`.
+* `which.Comparison` : list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from `levels(xxx$Label)`, such as `levels(xxx$ComparisonResult$Label)`. Default is `"all"`, which generates all plots for each protein.
+* `address` : the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of `"VolcanoPlot.pdf"` or `"Heatmap.pdf"` or `"ComparisonPlot.pdf"`. The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If `address=FALSE`, plot will be not saved as pdf file but showed in window.
+
+### Example
+```{r, eval=FALSE}
+QuantData <- dataProcess(SRMRawData)
+
+# based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
+comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
+comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
+comparison<-rbind(comparison1,comparison2, comparison3)
+row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
+
+testResultMultiComparisons <- groupComparison(contrast.matrix=comparison, data=QuantData)
+
+# Volcano plot 
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot")
+
+# Heatmap 
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap")
+
+# Comparison Plot
+groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot")
+```
+
+
+## modelBasedQCPlots
+
+Results based on statistical models for whole plot level inference are accurate as long as the assumptions of the model are met. The model assumes that the measurement errors are normally distributed with mean 0 and constant variance. The assumption of a constant variance can be checked by examining the residuals from the model.
+
+To check the assumption of linear model for whole plot inference, `modelBasedQCPlots` takes the results after fitting models from function `groupComparison` as input and automatically generate two types of figures in pdf files as output. 
+
+- Normal quantile-quantile plot : For checking normally distributed errors. A normal quantile-quantile plot for each protein is generated in order to check whether the errors are well approximated by a normal distribution. If points fall approximately along a straight line, then the assumption is appropriate for that protein. Only large deviations from the line are problematic.
+
+- Residual plot : The plots of residuals against predicted (fitted) values. If it shows a random scatter, then the assumption is appropriate.
+
+### Arguments
+
+* `data` : output from function `groupComparison`.
+* `type` : choice of visualization. `"QQPlots"` represents normal quantile-quantile plot for each protein after fitting models. `"ResidualPlots"` represents a plot of residuals versus fitted values for each protein in the dataset.
+* `axis.size` : size of axes labels. Default is `10`.
+* `dot.size` : size of points in the graph for residual plots and QQ plots. Default is `3`.
+* `text.size` : size of labeling for feature names only in normal quantile-quantile plots separately for each feature. Default is `7`.
+* `legend.size` : size of legend for feature names only in residual plots. Default is `7`.
+* `width` : width of the saved file. Default is `10`.
+* `height` : height of the saved file. Default is `10`.
+* `address` : the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. If `type="residualPlots"` or `"QQPlots"`, `"ResidualPlots.pdf"` or `"QQPlots.plf"` will be generated. The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If `address=FALSE`, plot will be not saved as pdf file but showed in window.
+  
+### Example
+```{r, eval=FALSE}
+testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
+
+# normal quantile-quantile plots
+modelBasedQCPlots(data=testResultOneComparison, type="QQPlots")
+
+# residual plots
+modelBasedQCPlots(data=testResultOneComparison, type="ResidualPlots")
+```
+
+
+## designSampleSize
+
+Calculate sample size for future experiments of a Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment based on intensity-based linear model. The function fits the model and uses variance components to calculate sample size. The underlying model fitting with intensity-based linear model with technical MS run replication. Estimated sample size is rounded to 0 decimal. Two options of the calculation:
+
+- number of biological replicates per condition
+- power
+
+
+### Arguments
+
+* `data` : `'fittedmodel'` in testing output from function `groupComparison`.
+* `desiredFC` : the range of a desired fold change which includes the lower and upper values of the desired fold change.
+* `FDR` : a pre-specified false discovery ratio (FDR) to control the overall false positive. Default is `0.05`.
+* `numSample` : minimal number of biological replicates per condition. `TRUE` represents you require to calculate the sample size for this category, else you should input the exact number of biological replicates.
+* `power` : a pre-specified statistical power which defined as the probability of detecting a true fold change. `TRUE` represent you require to calculate the power for this category, else you should input the average of power you expect. Default is `0.9`.
+
+
+### Example
+```{r, eval=FALSE}
+QuantData <- dataProcess(SRMRawData)
+head(QuantData$ProcessedData)
+
+## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
+comparison1 <- matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
+comparison2 <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+comparison3 <- matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
+comparison <- rbind(comparison1,comparison2, comparison3)
+row.names(comparison) <- c("T3-T1","T7-T1","T9-T1")
+
+testResultMultiComparisons <- groupComparison(contrast.matrix=comparison,data=QuantData)
+
+#(1) Minimal number of biological replicates per condition
+designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+  desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
+
+#(2) Power calculation
+designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+  desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
+```
+
+## designSampleSizePlots
+
+To illustrate the relationship of desired fold change and the calculated minimal number sample size which are 
+
+- Number of biological replicates per condition 
+- power. 
+
+The input is the result from function `designSampleSize`.
+
+### Arguments
+* `data` : output from function `designSampleSize`. 
+  
+### Example
+
+```{r, eval=FALSE}
+# (1) Minimal number of biological replicates per condition
+result.sample <- designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+                                desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
+designSampleSizePlots(data=result.sample)
+
+# (2) Power
+result.power <- designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+                               desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
+designSampleSizePlots(data=result.power)
+```
+
+## quantification
+
+Model-based quantification for each condition or for each biological samples per protein in a targeted Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment. Quantification takes the processed data set by `dataProcess` as input and automatically generate the quantification results (data.frame) with long or matrix format. The quantification for endogenous samples is based on run summarization from subplot model, with TMP robust estimation.
+
+- Sample quantification : individual biological sample quantification for each protein. The label of each biological sample is a combination of the corresponding group and the sample ID. If there are no technical replicates or experimental replicates per sample, sample quantification is the same as run summarization from dataProcess (`xxx$RunlevelData` from `dataProcess`). If there are technical replicates or experimental replicates, sample quantification is median among run quantification corresponding MS runs.
+
+- Group quantification : quantification for individual group or individual condition per protein. It is median among sample quantification.
+
+
+### Arguments
+* `data` : name of the (processed) data set from `dataPRocess`.
+* `type` : choice of quantification. `"Sample"` or `"Group"` for protein sample quantification or group quantification.
+* `format` : choice of returned format. `"long"` for long format which has the columns named `Protein`, `Condition`, `LogIntensities` (and `BioReplicate` if it is subject quantification), `NumFeature` for number of transitions for a protein, and `NumPeaks` for number of observed peak intensities for a protein. `"matrix"` for data matrix format which has the rows for Protein and the columns, which are `Groups`(or `Conditions`) for group quantification or the combinations of `BioReplicate` and `Condition` (labeled by `"BioReplicate"_"Condition"`) for sample quantification. Default is `"matrix"`, whether `format="long"` or `"matrix"`, both files, `"Group or SampleQuantification_longformat.csv"` and `"Group or SampleQuantification_dataMatrix.csv"` will be stored in the assigned folder.
+  
+### Example
+```{r, eval=FALSE}
+QuantData <- dataProcess(SRMRawData)
+
+# Sample quantification
+sampleQuant <- quantification(QuantData)
+
+# Group quantification
+groupQuant <- quantification(QuantData, type="Group")
+```
+
+***
+
+# Assay characterization
+
+## nonlinear_quantlim
+
+This function calculates the value of the LOB (limit of blank) and LOD (limit of detection) from the (`Concentration`, `Intensity`) spiked in data. This function should be used instead of the linear function whenever a significant threshold is present at low concentrations. Such threshold is characterized by a signal that is dominated by noise where the mean intensity is constant and independent of concentration.
+The function also returns the values of the nonlinear curve fit that allows it to be plotted. At least 2 blank samples (characterized by `Intensity = 0`) are required by this function which are used to calculate the background noise. The LOB is defined as the concentration at which the value of the nonlinear fit is equal to the 95\% upper bound of the noise. The LOD is the concentration at which the latter is equal to the 90\% lower bound  (5\% quantile)  of the prediction interval of the nonlinear fit. 
+A weighted nonlinear fit is used with weights for every unique concentration proportional to the inverse of variance between replicates. The details behind the calculation of the nonlinear fit can be found in the Reference.
+
+The output is a data frame that contains the following columns: 
+
+* `CONCENTRATION` : Concentration values at which the value of the fit is calculated.
+* `MEAN` : The value of the curve fit.
+* `LOW` : the lower bound of the 95\% prediction interval. 
+* `UP` : the upper bound of the 95\% prediction interval. 
+* `LOB` : LOB (one column with identical values) 
+* `LOD` : LOD (one column with identical values) 
+* `SLOPE` : the slope of the linear curve fit where only the spikes above LOD are considered.
+* `INTERCEPT` : the intercept of the linear curve fit where only the spikes above LOD are considered .
+* `NAME` : The name of the assay (identical to that provided in the input).
+* `METHOD` : which is always set to `NONLINEAR` when this function is used. Each line of the data frame corresponds to a unique concentration value at which the value of the fit and prediction interval are evaluated. More unique concentrations values than in the input data frame are used to increase the accuracy of the LOB/D calculations.
+
+The LOB and LOD can only be calculated when more than 2 blank samples are included.
+The data should ideally be plotted using the companion function `plot_quantlim` to ensure that the fit is suited to the data.	
+
+### Arguments
+* `datain` : Data frame that contains the input data. The input data frame has to contain the following columns : `CONCENTRATION`, `INTENSITY` (both of which are measurements from the spiked in experiment) and `NAME` which designates the name of the assay (e.g. the name of the peptide or protein), Each line of the data frame contains one measurement from the spiked-in experiment. Multiple different `INTENSITY` values for the same `CONCENTRATION` are assumed to correspond to different replicates. Blank Samples are characterized by `CONCENTRATION = 0`.
+* `alpha` : Probability level to estimate the LOB/LOD.
+* `Npoints` : Number of points to use to discretize the concentration line between 0 and the maximum spiked concentration.
+* `Nbootstrap` : Number of bootstrap samples to use to calculate the prediction interval of the fit. This number has to be increased for very low alpha values or whenever very accurate assay characterization is required.
+
+### Example
+```{r, eval=FALSE}
+# Consider data from a spiked-in contained in an example dataset
+head(SpikeInDataNonLinear)
+
+nonlinear_quantlim_out <- nonlinear_quantlim(SpikeInDataNonLinear)
+
+# Get values of LOB/LOD
+nonlinear_quantlim_out$LOB[1]
+nonlinear_quantlim_out$LOD[1]
+```
+
+
+### linear_quantlim
+
+This function calculates the value of the LOB (limit of blank) and LOD (limit of detection) from the (`Concentration`, `Intensity`) spiked in data. The function also returns the values of the linear curve fit that allows it to be plotted. At least 2 blank samples (characterized by `Intensity = 0`) are required by this function which are used to calculate the background noise. The LOB is defined as the concentration at which the value of the linear fit is equal to the 95\% upper bound of the noise. The LOD is the concentration at which the latter is equal to the 90\% lower bound of the prediction interval (5\% quantile) of the linear fit. A weighted linear fit is used with weights for every unique concentration proportional to the inverse of variance between replicates.
+
+The output is a data frame that contains the following columns: 
+
+* `CONCENTRATION` : Concentration values at which the value of the fit is calculated .
+* `MEAN` : The value of the curve fit. 
+* `LOW` : the lower bound of the 95\% prediction interval. 
+* `UP` : the upper bound of the 95\% prediction interval. 
+* `LOB`: LOB (one column with identical values) 
+* `LOD` : LOD (one column with identical values) 
+* `SLOPE` : the slope of the linear curve fit where only the spikes above LOD are considered. 
+* `INTERCEPT` : the intercept of the linear curve fit where only the spikes above LOD are considered. 
+* `NAME` : The name of the assay (identical to that provided in the input). 
+* `METHOD` : which is always set to `LINEAR` when this function is used. Each line of the data frame corresponds to a unique concentration value at which the value of the fit and prediction interval are evaluated. More unique concentrations values than in the input data frame are used to increase the accuracy of the LOB/D calculations.
+
+The LOB and LOD can only be calculated when more than 2 blank samples are included.
+The data should ideally be plotted using the companion function `plot_quantlim` to ensure that a linear fit is suited to the data.
+
+### Arguments
+* `datain` : Data frame that contains the input data. The input data frame has to contain the following columns : `CONCENTRATION`, `INTENSITY` (both of which are measurements from the spiked in experiment) and `NAME` which designates the name of the assay (e.g. the name of the peptide or protein) Each line of the data frame contains one measurement from the spiked-in experiment. Multiple different `INTENSITY` values for the same `CONCENTRATION` are assumed to correspond to different replicates. Blank Samples are characterized by `CONCENTRATION = 0`.
+* `alpha` : Probability level to estimate the LOB/LOD.
+* `Npoints` : Number of points to use to discretize the concentration line between 0 and the maximum spiked concentration.
+* `{Nbootstrap` : Number of bootstrap samples to use to calculate the prediction interval of the fit. This number has to be increased for very low alpha values or whenever very accurate assay characterization is required.
+  
+### Example
+```{r, eval=FALSE}
+# Consider data from a spiked-in contained in an example dataset
+head(SpikeInDataLinear)
+
+linear_quantlim_out <- linear_quantlim(SpikeInDataLinear)
+
+# Get values of LOB/LOD
+linear_quantlim_out$LOB[1]
+linear_quantlim_out$LOD[1]
+```
+
+
+### plot_quantlim
+
+This function allows to plot the curve fit that is used to calculate the LOB and LOD with functions `nonlinear_quantlim` and `linear_quantlim`. The function outputs for each calibration curve, two pdf files each containg one plot. On the first, designated by `*_overall.pdf`, the entire concentration range is plotted. On the second plot, designated by `*_zoom.pdf`, the concentration range between 0 and `xlim_plot` (if specified in the argument of the function) is plotted. When no `xlim_plot` value is specified, the region close to LOB and LOD is automatically plotted.
+
+This plotting function should ideally be used every time `nonlinear_quantlim` or `linear_quantlim` are called to visually ensure that the fits and data are accurate.
+
+### Arguments
+* `spikeindata` : Data frame that contains the experimental spiked in data. This data frame should be identical to that used as input by function functions `nonlinear_quantlim` or `linear_quantlim`.  The data frame has to contain the following columns : `CONCENTRATION`, `INTENSITY` (both of which are measurements from the spiked in experiment) and NAME which designates the name of the assay (e.g. the name of the peptide or protein).
+* `quantlim_out` : Data frame that was output by functions `nonlinear_quantlim` or `linear_quantlim`. 
+* `alpha` : Probability level to estimate the LOB/LOD.
+* `dir_output` : String containg the path of the directly where the pdf files of the plots should be output.
+* `xlim_plot` : Optional argument containing the maximum xaxis value of the zoom plot. When no value is specified, a suitable value close to LOD is automatically chosen.
+
+### Example
+```{r, eval=FALSE}
+# Consider data from a spiked-in contained in an example dataset
+head(SpikeInDataNonLinear)
+
+nonlinear_quantlim_out <- nonlinear_quantlim(SpikeInDataNonLinear, alpha = 0.05)
+
+#Get values of LOB/LOD
+nonlinear_quantlim_out$LOB[1]
+nonlinear_quantlim_out$LOD[1]
+
+plot_quantlim(spikeindata = SpikeInDataLinear, quantlim_out  = nonlinear_quantlim_out,
+dir_output =  getwd(), alpha = 0.05)
+```
+
+

@@ -46,7 +46,7 @@ dataProcessPlots(data=data,
   \item{which.Protein}{Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from levels(data$ProcessedData$PROTEIN). Default is "all", which generates all plots for each protein.}
   \item{originalPlot}{TRUE(default) draws original profile plots.}
   \item{summaryPlot}{TRUE(default) draws profile plots with summarization for run levels.}
-  \item{save_condition_plot_result}{TRUE draws profile plots with summarization for run levels. Default is FALSE.}
+  \item{save_condition_plot_result}{TRUE saves the table with values using condition plots. Default is FALSE.}
   \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 
@@ -74,23 +74,23 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 }
 
 \examples{
-#Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, three biological replicates, and no technical replicates which is a time-course experiment. 
-#The goal is to provide pre-analysis visualization by automatically generate two types of figures in two separate pdf files. 
-#Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, whereas, Protein PMG2 (gene name GPM2) is not.
+# Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, 
+# three biological replicates, and no technical replicates which is a time-course experiment. 
+# The goal is to provide pre-analysis visualization by automatically generate two types of figures 
+# in two separate pdf files. 
+# Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, 
+# whereas, Protein PMG2 (gene name GPM2) is not.
 
 QuantData<-dataProcess(SRMRawData)
 head(QuantData$ProcessedData)
 
 # Profile plot
-
 dataProcessPlots(data=QuantData,type="ProfilePlot")
 
 # Quality control plot 
-
 dataProcessPlots(data=QuantData,type="QCPlot")	
 
 # Quantification plot for conditions
-
 dataProcessPlots(data=QuantData,type="ConditionPlot")
 
 }

@@ -4,8 +4,8 @@
 \description{Convert MSnSet class into the required input format for MSstats}
 
 \usage{
-transformMSnSetToMSstats(ProteinName,PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge,
-	IsotopeLabelType, Bioreplicate,Run, Condition, data)	
+transformMSnSetToMSstats(ProteinName,PeptideSequence, PrecursorCharge, FragmentIon, 
+  ProductCharge,IsotopeLabelType, Bioreplicate,Run, Condition, data)	
 }
 
 \arguments{
