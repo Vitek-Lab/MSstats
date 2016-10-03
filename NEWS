@@ -1,15 +1,20 @@
-CHANGES IN VERSION 3.5.3 [2016-08-01]
+CHANGES IN VERSION 3.5.5 [2016-09-30]
 -------------------------
    BUG FIXES
 	- dataProcess with fractionation sample when filling incomplete rows. Especially, not balanced fractionation for heavy and light, (heavy in one fractionation, no heavy in other fractionation)
 	- groupComparison function : fix the issue with different columns from different summary Methods.
 	- MaxQtoMSstats function : option removeMpeptides=FALSE are now available. (Thanks, Danielle)
+	- In case of multiple injections per sample (from fractionation or multiple injections with different range of m/x), normalization is performed separately and multiple injections are merged in each sample.
 
    NEW FEATURES
 	- Add ‘originalRUN’ column in xx$ProcessedData after dataProcess function.
+	- Profile plot from dataProcessPlot distinguish censored missing data or not with different symbol.
 
    SIGNIFICANT CHANGES FOR METHOD
+	- applied the algorithm for deciding the threshold of censoring.
 	- Method for calculation of the LOB/LOD is changed. LOQ is not calculated anymore. Please check help files for details.
+	- summaryMethod='logOfSum' option in dataProcess is retired.
+	- modelBasedQCPlots work with output from groupComparison in order to check the normality assumption of linear mixed effect model for whole plot level inference.
 
 
 CHANGES IN VERSION 3.5.1

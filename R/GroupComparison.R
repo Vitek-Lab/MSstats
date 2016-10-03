@@ -3,6 +3,9 @@
 # Whole plot testing
 #############################################
 
+#' @export
+#' @import lme4 
+
 groupComparison <- function(contrast.matrix=contrast.matrix,
 							data=data) {
   

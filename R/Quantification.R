@@ -3,7 +3,7 @@
 ##  quantification
 #############################################
 
-
+#' @export
 quantification <- function(data,
 							type="Sample",
 							format="matrix") {

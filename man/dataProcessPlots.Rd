@@ -46,7 +46,7 @@ dataProcessPlots(data=data,
   \item{which.Protein}{Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from levels(data$ProcessedData$PROTEIN). Default is "all", which generates all plots for each protein.}
   \item{originalPlot}{TRUE(default) draws original profile plots.}
   \item{summaryPlot}{TRUE(default) draws profile plots with summarization for run levels.}
-  \item{save_condition_plot_result}{TRUE draws profile plots with summarization for run levels. Default is FALSE.}
+  \item{save_condition_plot_result}{TRUE saves the table with values using condition plots. Default is FALSE.}
   \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 
@@ -85,15 +85,12 @@ QuantData<-dataProcess(SRMRawData)
 head(QuantData$ProcessedData)
 
 # Profile plot
-
 dataProcessPlots(data=QuantData,type="ProfilePlot")
 
 # Quality control plot 
-
 dataProcessPlots(data=QuantData,type="QCPlot")	
 
 # Quantification plot for conditions
-
 dataProcessPlots(data=QuantData,type="ConditionPlot")
 
 }

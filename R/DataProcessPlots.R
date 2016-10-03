@@ -2,6 +2,10 @@
 #############################################
 ## dataProcessPlots
 #############################################
+#' @export
+#' @import ggplot2 
+#' @importFrom graphics axis image legend mtext par plot.new title
+#' @importFrom grDevices dev.off hcl pdf
 
 dataProcessPlots <- function(data=data,
 							type=type,
@@ -135,15 +139,15 @@ dataProcessPlots <- function(data=data,
     	## If there are the file with the same name, add next numbering at the end of file name
     	
     	## y-axis labeling
-       	temp <- datafeature[!is.na(datafeature[,"ABUNDANCE"]) & !is.na(datafeature[,"INTENSITY"]), ]
-       	temp <- temp[1, ]
-        temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+      temp <- datafeature[!is.na(datafeature[,"ABUNDANCE"]) & !is.na(datafeature[,"INTENSITY"]), ]
+      temp <- temp[1, ]
+      temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
         
-        if (temptest) {
-          	yaxis.name <- 'Log2-intensities'
-        } else {
-          	yaxis.name <- 'Log10-intensities'
-        }	
+      if (temptest) {
+          yaxis.name <- 'Log2-intensities'
+      } else {
+          yaxis.name <- 'Log10-intensities'
+      }	
         					
     	if (originalPlot) {
     		if (address!=FALSE) {
@@ -162,175 +166,274 @@ dataProcessPlots <- function(data=data,
     		}
     
     		for (i in 1:nlevels(datafeature$PROTEIN)) {	
-    			
-      			sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
-      			sub$FEATURE <- factor(as.character(sub$FEATURE))	
-      			sub$SUBJECT <- factor(sub$SUBJECT)	
-      			sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
-      			sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
-      			sub$PEPTIDE <- factor(as.character(sub$PEPTIDE))
+    		  
+    		  sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
+      		sub$FEATURE <- factor(as.character(sub$FEATURE))	
+      		sub$SUBJECT <- factor(sub$SUBJECT)	
+      		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+      		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
+      		sub$PEPTIDE <- factor(as.character(sub$PEPTIDE))
       
-				## if all measurements are NA,
-				if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
+				  ## if all measurements are NA,
+				  if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
         			message(paste("Can't the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ") because all measurements are NAs."))
         			next()
      	 		}
       
-      			## seq for peptide and transition
-      			b <- unique(sub[, c("PEPTIDE", "FEATURE")])
-      			b <- b[with(b, order(PEPTIDE, FEATURE)), ] ## add because if there are missing value, orders are different.
+      		## seq for peptide and transition
+      		b <- unique(sub[, c("PEPTIDE", "FEATURE")])
+      		b <- b[with(b, order(PEPTIDE, FEATURE)), ] ## add because if there are missing value, orders are different.
       
-      			temp1 <- xtabs(~b[, 1])
-      			ss <- NULL
-      			s <- NULL
+      		temp1 <- xtabs(~b[, 1])
+      		ss <- NULL
+      		s <- NULL
       
-      			for (j in 1:length(temp1)) {
-        			temp3 <- rep(j, temp1[j])
-        			s <- c(s, temp3)
-        			temp2 <- seq(1, temp1[j])
-        			ss <- c(ss, temp2)	
-      			}
+      		for (j in 1:length(temp1)) {
+        		temp3 <- rep(j, temp1[j])
+        		s <- c(s, temp3)
+        		temp2 <- seq(1, temp1[j])
+        		ss <- c(ss, temp2)	
+      		}
       			
-				## for annotation of condition
-      			groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], PEPTIDE=unique(sub$PEPTIDE)[1])
+				  ## for annotation of condition
+      		groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], PEPTIDE=unique(sub$PEPTIDE)[1])
 
-				if (toupper(featureName) == "TRANSITION") {
-        
+				  if (toupper(featureName) == "TRANSITION") {
+				    
+				    if ( any(is.element(colnames(sub), "censored")) ) {
+              
+				      sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
+				      
        	 			## 1st plot for original plot
-        			ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'), data=sub)+
-        					facet_grid(~LABEL)+
-        					geom_point(size=dot.size.profile)+
-        					geom_line(size=0.5)+
-        					scale_colour_manual(values=s)+
-        					scale_linetype_manual(values=ss)+
-        					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
-        					scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
-        					geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash")+
-        					labs(title=unique(sub$PROTEIN))+
-        					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
-        					theme(
-								panel.background=element_rect(fill='white', colour="black"),
-          						legend.key=element_rect(fill='white', colour='white'),
-          						panel.grid.minor = element_blank(),
-          						strip.background=element_rect(fill='gray95'),
-          						strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-          						axis.text.x=element_text(size=x.axis.size, colour="black"),
-          						axis.text.y=element_text(size=y.axis.size, colour="black"),
-          						axis.ticks=element_line(colour="black"),
-          						axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-          						axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-          						title=element_text(size=x.axis.size+8, vjust=1.5),
-          						legend.position="top",
-          						legend.text=element_text(size=legend.size)
-          					)	
+        			ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE', linetype='FEATURE'), data=sub)+
+        			  facet_grid(~LABEL)+
+        			  geom_line(size=0.5)+
+        			  geom_point(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE', linetype='FEATURE', shape='censored'), data=sub, 
+        			             size=dot.size.profile)+
+        			  scale_colour_manual(values=s)+
+        			  scale_linetype_manual(values=ss)+
+        			  scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data"))+
+        			  scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+        			  scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+        			  geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash")+
+        			  labs(title=unique(sub$PROTEIN))+
+        			  geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+        			  theme(
+        			    panel.background=element_rect(fill='white', colour="black"),
+        			    legend.key=element_rect(fill='white', colour='white'),
+        			    panel.grid.minor = element_blank(),
+        			    strip.background=element_rect(fill='gray95'),
+        			    strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+        			    axis.text.x=element_text(size=x.axis.size, colour="black"),
+        			    axis.text.y=element_text(size=y.axis.size, colour="black"),
+        			    axis.ticks=element_line(colour="black"),
+        			    axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+        			    axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+        			    title=element_text(size=x.axis.size+8, vjust=1.5),
+        			    legend.position="top",
+        			    legend.text=element_text(size=legend.size)
+        			    )+
+        			  guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), 
+        			                            title.theme = element_text(size=13, angle=0),
+        			                            ncol=3),
+        			         linetype=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), 
+        			                               title.theme = element_text(size=13, angle=0),
+        			                               ncol=3),
+        			         shape=guide_legend(title=NULL,
+        			                            label.theme = element_text(size=11, angle=0)))
+        			  
+				    } else {
+				      ## 1st plot for original plot
+				      ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'), data=sub)+
+				        facet_grid(~LABEL)+
+				        geom_point(size=dot.size.profile)+
+				        geom_line(size=0.5)+
+				        scale_colour_manual(values=s)+
+				        scale_linetype_manual(values=ss)+
+				        scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+				        scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+				        geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash")+
+				        labs(title=unique(sub$PROTEIN))+
+				        geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+				        theme(
+				          panel.background=element_rect(fill='white', colour="black"),
+				          legend.key=element_rect(fill='white', colour='white'),
+				          panel.grid.minor = element_blank(),
+				          strip.background=element_rect(fill='gray95'),
+				          strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+				          axis.text.x=element_text(size=x.axis.size, colour="black"),
+				          axis.text.y=element_text(size=y.axis.size, colour="black"),
+				          axis.ticks=element_line(colour="black"),
+				          axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+				          axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+				          title=element_text(size=x.axis.size+8, vjust=1.5),
+				          legend.position="top",
+				          legend.text=element_text(size=legend.size)
+				        )+
+				        guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), 
+				                                  title.theme = element_text(size=13, angle=0),
+				                                  ncol=3), 
+				               linetype=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), 
+				                                     title.theme = element_text(size=13, angle=0),
+				                                     ncol=3))
+				    }
         
-        			## draw point here,
-        			## if there are imputed data
-        			if (any(is.element(colnames(sub), "imputed"))) {
-						ptemp <- ptemp+geom_point(data=sub, aes(x=RUN, y=ABUNDANCE, shape=imputed, size=imputed))+
-										scale_shape_manual(values=c(20, 4), labels=c("Detected data", "Imputed data"))+
-										scale_size_manual(values=c(1.5,2), guide="none")+
-										guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3),  shape=guide_legend(title=NULL))
-					} else {
-						ptemp <- ptemp+geom_point(size=1.5)+
-										guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3), linetype=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3))
-					}
-		
-					print(ptemp)
-       
-        			message(paste("Drew the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
-        
-      			}
+					  print(ptemp)
+					
+					  message(paste("Drew the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
+				  }
       
-      			if (toupper(featureName) == "PEPTIDE") {
+      		if (toupper(featureName) == "PEPTIDE") {
+      		  
+      		  if ( any(is.element(colnames(sub), "censored")) ) {
+      		    
+      		    sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
+      		    
+      		    ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'), data=sub)+
+      		      facet_grid(~LABEL)+
+      		      geom_line(size=0.5)+
+      		      geom_point(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE', shape='censored'), data=sub, 
+      		                 size=dot.size.profile)+
+      		      scale_colour_manual(values=unique(s))+ ## unique(s) ??
+      		      scale_linetype_manual(values=ss, guide="none")+
+      		      scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data"))+
+      		      scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+      		      scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+      		      geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+      		      labs(title=unique(sub$PROTEIN))+
+      		      geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+      		      theme(
+      		        panel.background=element_rect(fill='white', colour="black"),
+      		        legend.key=element_rect(fill='white', colour='white'),
+      		        panel.grid.minor = element_blank(),
+      		        strip.background=element_rect(fill='gray95'),	
+      		        strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+      		        axis.text.x=element_text(size=x.axis.size, colour="black"),
+      		        axis.text.y=element_text(size=y.axis.size, colour="black"),
+      		        axis.ticks=element_line(colour="black"),
+      		        axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+      		        axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+      		        title=element_text(size=x.axis.size+8, vjust=1.5),
+      		        legend.position="top",
+      		        legend.text=element_text(size=legend.size)
+      		      )+
+      		      guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), 
+      		                                title.theme = element_text(size=13, angle=0),
+      		                                ncol=3), 
+      		             shape=guide_legend(title=NULL,
+      		                                label.theme = element_text(size=11, angle=0)))
+      		    
+      		  } else {
+      		    
+      		    ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'), data=sub)+
+      		      facet_grid(~LABEL)+
+      		      geom_point(size=dot.size.profile)+
+      		      geom_line(size=0.5)+
+      		      scale_colour_manual(values=unique(s))+
+      		      scale_linetype_manual(values=ss, guide="none")+
+      		      scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+      		      scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+      		      geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+      		      labs(title=unique(sub$PROTEIN))+
+      		      geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+      		      theme(
+      		        panel.background=element_rect(fill='white', colour="black"),
+      		        legend.key=element_rect(fill='white', colour='white'),
+      		        panel.grid.minor = element_blank(),
+      		        strip.background=element_rect(fill='gray95'),	
+      		        strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+      		        axis.text.x=element_text(size=x.axis.size, colour="black"),
+      		        axis.text.y=element_text(size=y.axis.size, colour="black"),
+      		        axis.ticks=element_line(colour="black"),
+      		        axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+      		        axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+      		        title=element_text(size=x.axis.size+8, vjust=1.5),
+      		        legend.position="top",
+      		        legend.text=element_text(size=legend.size)
+      		      )+
+      		      guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), 
+      		                                title.theme = element_text(size=13, angle=0),
+      		                                ncol=3))
+      		    
+      		  }
         
-        			ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'), data=sub)+
-        					facet_grid(~LABEL)+
-        					geom_point(size=dot.size.profile)+
-        					geom_line(size=0.5)+
-        					scale_colour_manual(values=unique(s))+
-        					scale_linetype_manual(values=ss, guide="none")+
-        					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
-        					scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
-        					geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
-        					labs(title=unique(sub$PROTEIN))+
-        					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
-        					theme(
-          						panel.background=element_rect(fill='white', colour="black"),
-          						legend.key=element_rect(fill='white', colour='white'),
-          						panel.grid.minor = element_blank(),
-          						strip.background=element_rect(fill='gray95'),	
-          						strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-          						axis.text.x=element_text(size=x.axis.size, colour="black"),
-          						axis.text.y=element_text(size=y.axis.size, colour="black"),
-          						axis.ticks=element_line(colour="black"),
-          						axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-          						axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-          						title=element_text(size=x.axis.size+8, vjust=1.5),
-          						legend.position="top",
-          						legend.text=element_text(size=legend.size)
-          					)
-        
-        			## draw point here,
-        			## if there are imputed data
-        			if (any(is.element(colnames(sub),"imputed"))) {
-						ptemp <- ptemp+geom_point(data=sub,aes(x=RUN, y=ABUNDANCE, shape=imputed, size=imputed))+
-								scale_shape_manual(values=c(20,4), labels=c("Detected data", "Imputed data"))+
-								scale_size_manual(values=c(1.5,2), guide="none")+
-								guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3), shape=guide_legend(title=NULL))
-					} else {
-						ptemp <- ptemp+guides(color=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)), ncol=3))
-					}
-        
-					print(ptemp)
+					  print(ptemp)
 
-        			message(paste("Drew the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
+        		message(paste("Drew the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
         
-      			}
+      		}
       
-      			if (toupper(featureName) == "NA") {
+      		if (toupper(featureName) == "NA") {
+      		  
+      		  if ( any(is.element(colnames(sub), "censored")) ) {
+      		    
+      		    sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
+      		    
+      		    ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'), data=sub)+
+      		      facet_grid(~LABEL)+
+      		      geom_line(size=0.5)+
+      		      geom_point(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE', shape='censored'), data=sub, 
+      		                 size=dot.size.profile)+
+      		      scale_colour_manual(values=unique(s), guide="none")+ 
+      		      scale_linetype_manual(values=ss, guide="none")+
+      		      scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data"))+
+      		      scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+      		      scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+      		      geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+      		      labs(title=unique(sub$PROTEIN))+
+      		      geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+      		      theme(
+      		        panel.background=element_rect(fill='white', colour="black"),
+      		        legend.key=element_rect(fill='white', colour='white'),
+      		        panel.grid.minor = element_blank(),
+      		        strip.background=element_rect(fill='gray95'),	
+      		        strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+      		        axis.text.x=element_text(size=x.axis.size, colour="black"),
+      		        axis.text.y=element_text(size=y.axis.size, colour="black"),
+      		        axis.ticks=element_line(colour="black"),
+      		        axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+      		        axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+      		        title=element_text(size=x.axis.size+8, vjust=1.5),
+      		        legend.position="top",
+      		        legend.text=element_text(size=legend.size)
+      		      )+
+      		      guides(shape=guide_legend(title=NULL,
+      		                                label.theme = element_text(size=11, angle=0)))
+      		    
+      		  } else {
+      		    
+      		    ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'), data=sub)+
+      		      facet_grid(~LABEL)+
+      		      geom_point(size=dot.size.profile)+
+      		      geom_line(size=0.5)+
+      		      scale_colour_manual(values=unique(s), guide="none")+
+      		      scale_linetype_manual(values=ss, guide="none")+
+      		      scale_x_continuous('MS runs', breaks=cumGroupAxis)+
+      		      scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+      		      geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+      		      labs(title=unique(sub$PROTEIN))+
+      		      geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+      		      theme(
+      		        panel.background=element_rect(fill='white', colour="black"),
+      		        legend.key=element_rect(fill='white', colour='white'),
+      		        panel.grid.minor = element_blank(),
+      		        strip.background=element_rect(fill='gray95'),	
+      		        strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+      		        axis.text.x=element_text(size=x.axis.size, colour="black"),
+      		        axis.text.y=element_text(size=y.axis.size, colour="black"),
+      		        axis.ticks=element_line(colour="black"),
+      		        axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+      		        axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+      		        title=element_text(size=x.axis.size+8, vjust=1.5),
+      		        legend.position="top",
+      		        legend.text=element_text(size=legend.size)
+      		      )
+      		    
+      		  }
         
-        			ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE',linetype='FEATURE'), data=sub)+
-        					facet_grid(~LABEL)+
-        					geom_point(size=dot.size.profile)+
-        					geom_line(size=0.5)+
-        					scale_colour_manual(values=unique(s), guide="none")+
-        					scale_linetype_manual(values=ss, guide="none")+
-        					scale_x_continuous('MS runs', breaks=cumGroupAxis)+
-        					scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
-        					geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
-        					labs(title=unique(sub$PROTEIN))+
-        					geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
-        					theme(
-          						panel.background=element_rect(fill='white', colour="black"),
-          						legend.key=element_rect(fill='white', colour='white'),
-          						panel.grid.minor = element_blank(),
-          						strip.background=element_rect(fill='gray95'),	
-          						strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-          						axis.text.x=element_text(size=x.axis.size, colour="black"),
-          						axis.text.y=element_text(size=y.axis.size, colour="black"),
-          						axis.ticks=element_line(colour="black"),
-          						axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-          						axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-          						title=element_text(size=x.axis.size+8, vjust=1.5),
-          						legend.position="top",
-          						legend.text=element_text(size=legend.size)
-          					)
-        
-        			## draw point here,
-        			## if there are imputed data
-        			if (any(is.element(colnames(sub),"imputed"))) {
-						ptemp <- ptemp+geom_point(data=sub,aes(x=RUN, y=ABUNDANCE, shape=imputed, size=imputed))+
-								scale_shape_manual(values=c(20, 4), labels=c("Detected data", "Imputed data"))+
-								scale_size_manual(values=c(1.5, 2), guide="none")+
-								guides(shape=guide_legend(title=NULL))
-					} else {
-						ptemp <- ptemp
-					}
-        
-       				print(ptemp)
+       			print(ptemp)
         	
-        			message(paste("Drew the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
+        		message(paste("Drew the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
         
      		 	}
     		} # end-loop for each protein
@@ -341,11 +444,11 @@ dataProcessPlots <- function(data=data,
    	 		
     	} # end original plot
     
-		## 2st plot for original plot : summary ##
+		  ## 2st plot for original plot : summary ##
     	## ---------------------------------------
     	
     	if (summaryPlot) {
-			if (address!=FALSE) {
+			  if (address!=FALSE) {
      	 		allfiles <- list.files()
       
      	 		num <- 0
@@ -363,31 +466,31 @@ dataProcessPlots <- function(data=data,
     		for (i in 1:nlevels(datafeature$PROTEIN)) {	
     			
      			sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
-      			sub$FEATURE <- factor(as.character(sub$FEATURE))	
-      			sub$SUBJECT <- factor(sub$SUBJECT)	
-      			sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
-      			sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
-      			sub$PEPTIDE <- factor(as.character(sub$PEPTIDE))
+      		sub$FEATURE <- factor(as.character(sub$FEATURE))	
+      		sub$SUBJECT <- factor(sub$SUBJECT)	
+      		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+      		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
+      		sub$PEPTIDE <- factor(as.character(sub$PEPTIDE))
       
-      			## if all measurements are NA,
+      		## if all measurements are NA,
      		 	if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
        			 	message(paste("Can't the Profile plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ") because all measurements are NAs."))
         			next()
      		 	}
       
-      			## seq for peptide and transition
+      		## seq for peptide and transition
      		 	b <- unique(sub[, c("PEPTIDE", "FEATURE")])
      		 	b <- b[with(b, order(PEPTIDE, FEATURE)), ] ## add because if there are missing value, orders are different.
       
      		 	temp1 <- xtabs(~b[, 1])
-      			ss <- NULL
-      			s <- NULL
+      		ss <- NULL
+      		s <- NULL
       
-      			for(j in 1:length(temp1)) {
-        			temp3 <- rep(j, temp1[j])
-       				s <- c(s, temp3)
-       				temp2 <- seq(1, temp1[j])
-        			ss <- c(ss, temp2)	
+      		for( j in 1:length(temp1) ) {
+        		temp3 <- rep(j, temp1[j])
+       			s <- c(s, temp3)
+       			temp2 <- seq(1, temp1[j])
+        		ss <- c(ss, temp2)	
      			}
      			
      			## for annotation of condition
@@ -396,30 +499,46 @@ dataProcessPlots <- function(data=data,
       		if (haverun) {
         		subrun <- datarun[datarun$Protein == levels(datafeature$PROTEIN)[i], ]
 			
-					  if (nrow(subrun)!=0) {
-						  quantrun <- data.frame(PROTEIN=subrun$Protein, PEPTIDE="Run summary", TRANSITION="Run summary", 
-						                         FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, 
-						                         SUBJECT_ORIGINAL=NA, RUN=subrun$RUN, GROUP=NA, SUBJECT=NA, 
-						                         SUBJECT_NESTED=NA,  INTENSITY=NA, ABUNDANCE=subrun$ABUNDANCE, 
-						                         METHOD=1, originalRUN=NA)
+					  if ( nrow(subrun) != 0 ) {
+
+						  quantrun <- sub[1,]
+						  quantrun[, 2:ncol(quantrun)] <- NA
+						  quantrun <- quantrun[rep(seq_len(nrow(subrun))), ]
+						  
+						  quantrun$PROTEIN <- subrun$Protein 
+						  quantrun$PEPTIDE <- "Run summary"
+						  quantrun$TRANSITION <- "Run summary" 
+						  quantrun$FEATURE <- "Run summary" 
+						  quantrun$LABEL <- "Endogenous"
+						  quantrun$RUN <- subrun$RUN
+						  quantrun$ABUNDANCE <- subrun$ABUNDANCE
+						  quantrun$METHOD <- 1
 					    
             } else { # if there is only one Run measured across all runs, no Run information for linear with censored
-						  quantrun <- data.frame(PROTEIN=levels(datafeature$PROTEIN)[i], PEPTIDE="Run summary", TRANSITION="Run summary", 
-						                         FEATURE="Run summary", LABEL="Endogenous", GROUP_ORIGINAL=NA, 
-						                         SUBJECT_ORIGINAL=NA, RUN=unique(datafeature$RUN)[1], GROUP=NA, SUBJECT=NA, 
-						                         SUBJECT_NESTED=NA, INTENSITY=NA, ABUNDANCE=NA, 
-						                         METHOD=1, originalRUN=NA)
+
+						  quantrun <- datafeature[1,]
+						  quantrun[, 2:ncol(quantrun)] <- NA
+
+						  quantrun$PROTEIN <- levels(datafeature$PROTEIN)[i]
+						  quantrun$PEPTIDE <- "Run summary"
+						  quantrun$TRANSITION <- "Run summary" 
+						  quantrun$FEATURE <- "Run summary" 
+						  quantrun$LABEL <- "Endogenous"
+						  quantrun$RUN <- unique(datafeature$RUN)[1]
+						  quantrun$ABUNDANCE <- NA
+						  quantrun$METHOD <- 1
+						  
 					  }
 			
-					  if (any(is.element(colnames(sub), "imputed"))) {
-						  quantrun$imputed <- FALSE
-					 }
+					  if (any(is.element(colnames(sub), "censored"))) {
+						  quantrun$censored <- FALSE
+					  }
 
 					  quantrun$analysis <- "Run summary"
 					  sub$analysis <- "Processed feature-level data"
 					
 					  ## if 'Filter' column after feature selection, remove this column in order to match columns with run quantification
-					  filter_column<-is.element(colnames(sub), "Filter")
+					  filter_column <- is.element(colnames(sub), "Filter")
 					  if (any(filter_column)) {
 						  sub<-sub[, !filter_column]
 					  }
@@ -428,40 +547,80 @@ dataProcessPlots <- function(data=data,
 					  final$analysis <- factor(final$analysis)
 					  final$FEATURE <- factor(final$FEATURE)
 					  final$RUN <- as.numeric(final$RUN)
-
-					ptempall <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis', linetype='FEATURE', size='analysis', shape='analysis'), data=final)+
-								facet_grid(~LABEL)+
-								geom_point(size=dot.size.profile)+
-								geom_line(size=0.5)+
-								scale_colour_manual(values=c("lightgray", "darkred"))+
-								scale_shape_manual(values=c(20, 20))+
-								scale_size_manual(values=c(1, 2))+
-								scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2), guide="none")+
-								scale_x_continuous('MS runs',breaks=cumGroupAxis)+
-								scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
-								geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
-								labs(title=unique(final$PROTEIN))+
-								geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
-								theme(
-									panel.background=element_rect(fill='white', colour="black"),
-									legend.key=element_rect(fill='white', colour='white'),
-									panel.grid.minor = element_blank(),
-									strip.background=element_rect(fill='gray95'),
-									strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-									axis.text.x=element_text(size=x.axis.size, colour="black"),
-									axis.text.y=element_text(size=y.axis.size, colour="black"),
-									axis.ticks=element_line(colour="black"),
-									axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-									axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-									title=element_text(size=x.axis.size+8, vjust=1.5),
-									legend.position="top",
-									legend.text=element_text(size=legend.size),
-									legend.title=element_blank()
-								)
+					  
+					  if (any(is.element(colnames(sub), "censored"))) {
+					    
+					    final$censored <- factor(final$censored, levels=c('FALSE', 'TRUE'))
+					    
+					    ptempall <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis', linetype='FEATURE', size='analysis'), data=final)+
+					      facet_grid(~LABEL)+
+					      geom_line(size=0.5)+
+					      geom_point(aes_string(x='RUN', y='ABUNDANCE', color='analysis', linetype='FEATURE', size='analysis', shape='censored'), data=final)+
+					      scale_colour_manual(values=c("lightgray", "darkred"))+
+					      scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data"))+
+					      scale_size_manual(values=c(1.7, 2), guide="none")+
+					      scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2), guide="none")+
+					      scale_x_continuous('MS runs',breaks=cumGroupAxis)+
+					      scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+					      geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+					      labs(title=unique(final$PROTEIN))+
+					      geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+					      theme(
+					        panel.background=element_rect(fill='white', colour="black"),
+					        legend.key=element_rect(fill='white', colour='white'),
+					        panel.grid.minor = element_blank(),
+					        strip.background=element_rect(fill='gray95'),
+					        strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+					        axis.text.x=element_text(size=x.axis.size, colour="black"),
+					        axis.text.y=element_text(size=y.axis.size, colour="black"),
+					        axis.ticks=element_line(colour="black"),
+					        axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+					        axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+					        title=element_text(size=x.axis.size+8, vjust=1.5),
+					        legend.position="top",
+					        legend.text=element_text(size=legend.size),
+					        legend.title=element_blank()
+					      )+
+					      guides(color=guide_legend(order=1, title=NULL, label.theme = element_text(size=10, angle=0)),
+					             shape=guide_legend(order=2, title=NULL, label.theme = element_text(size=10, angle=0)))
+					    
+					  } else {
+					    
+					    ptempall <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis', linetype='FEATURE', size='analysis'), data=final)+
+					      facet_grid(~LABEL)+
+					      geom_point(size=dot.size.profile)+
+					      geom_line(size=0.5)+
+					      scale_colour_manual(values=c("lightgray", "darkred"))+
+					      scale_size_manual(values=c(1.7, 2), guide="none")+
+					      scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2), guide="none")+
+					      scale_x_continuous('MS runs',breaks=cumGroupAxis)+
+					      scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+					      geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+					      labs(title=unique(final$PROTEIN))+
+					      geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+					      theme(
+					        panel.background=element_rect(fill='white', colour="black"),
+					        legend.key=element_rect(fill='white', colour='white'),
+					        panel.grid.minor = element_blank(),
+					        strip.background=element_rect(fill='gray95'),
+					        strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+					        axis.text.x=element_text(size=x.axis.size, colour="black"),
+					        axis.text.y=element_text(size=y.axis.size, colour="black"),
+					        axis.ticks=element_line(colour="black"),
+					        axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+					        axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+					        title=element_text(size=x.axis.size+8, vjust=1.5),
+					        legend.position="top",
+					        legend.text=element_text(size=legend.size),
+					        legend.title=element_blank()
+					      )+
+					      guides(color=guide_legend(order=1, title=NULL, label.theme = element_text(size=10, angle=0)))
+					    
+					   ## draw point again because some red summary dots could be hiden
+					   ptempall <- ptempall+geom_point(data=final, aes(x=RUN, y=ABUNDANCE, size=analysis, color=analysis))
+					    
+					 }
 				
-					## draw point again because some red summary dots could be hiden
-					ptempall <- ptempall+geom_point(data=final, aes(x=RUN, y=ABUNDANCE, shape=analysis, size=analysis, color=analysis))
-			
 					print(ptempall)
 			
 					message(paste("Drew the Profile plot with summarization for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
@@ -711,31 +870,30 @@ dataProcessPlots <- function(data=data,
     	resultall <- NULL
     	
     	## y-axis labeling, find log 2 or log 10
-        temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]),]
-        temp <- temp[1,]
-        temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+      temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]),]
+      temp <- temp[1,]
+      temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"]) < abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
         
-        if (temptest) {
-          	yaxis.name <- 'Log2-intensities'
-        }else{
-          	yaxis.name <- 'Log10-intensities'
-        }
-
+      if (temptest) {
+        yaxis.name <- 'Log2-intensities'
+      } else {
+        yaxis.name <- 'Log10-intensities'
+      }
     
-      	for (i in 1:nlevels(datarun$PROTEIN)) {	
+      for (i in 1:nlevels(datarun$PROTEIN)) {	
       		
-      		suball <- NULL
+      	suball <- NULL
       		
-        	sub <- datarun[datarun$PROTEIN == levels(datarun$PROTEIN)[i], ]
-        	sub <- na.omit(sub)	
-        	sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
-        	sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)	
+        sub <- datarun[datarun$PROTEIN == levels(datarun$PROTEIN)[i], ]
+        sub <- na.omit(sub)	
+      	sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+        sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)	
         
-        	## if all measurements are NA,
-        	if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
-          		message(paste("Can't the Condition plot for ", unique(sub$PROTEIN), "(", i, " of ",length(unique(datarun$PROTEIN)), ") because all measurements are NAs."))
-          		next()
-        	}
+        ## if all measurements are NA,
+        if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
+          	message(paste("Can't the Condition plot for ", unique(sub$PROTEIN), "(", i, " of ",length(unique(datarun$PROTEIN)), ") because all measurements are NAs."))
+          	next()
+        }
         
         	## statistics
         	sub.mean <- aggregate(ABUNDANCE ~ GROUP_ORIGINAL, data=sub, mean, na.rm=TRUE)

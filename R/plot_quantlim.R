@@ -2,6 +2,7 @@
 #The goal of this function is to calculate the LOB/LOD of the data provided in the data frame.
 #The function returns a new data frame containing the value of the LOB/LOD
 
+#' @export
 plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plot){
   
   
@@ -65,8 +66,8 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
   
   xaxis_orig_2 = datain$C
   tmp_all = datain
-  LOQ_pred = datain$LOB[1]
-  LOD_pred = datain$LOD[1]
+  LOQ_pred = datain$LOD[1]
+  LOD_pred = datain$LOB[1]
   
   lower_Q_pred = datain$low
   upper_Q_pred = datain$up
@@ -190,9 +191,5 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
   print(p1);
   dev.off()
   
-  
-  
-  
-  
-    
+
 }

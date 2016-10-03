@@ -2,7 +2,7 @@
 #The goal of this function is to calculate the LoD/LoQ of the data provided in the data frame.
 #The function returns a new data frame containing the value of the LoD/LoQ
 
-
+#' @export
 linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500){
   
   switch(Sys.info()[['sysname']],
