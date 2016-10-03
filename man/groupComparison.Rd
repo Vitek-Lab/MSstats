@@ -42,9 +42,12 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 }
 
 \examples{
-#Consider quantitative data (i.e. QuantData) from yeast study with ten time points of interests, three biological replicates, and no technical replicates. 
-#It is a time-course experiment and we attempt to compare differential abundance between time 1 and 7 in a set of targeted proteins. 
-#In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of Biological replication.  
+# Consider quantitative data (i.e. QuantData) from yeast study with ten time points of interests, 
+# three biological replicates, and no technical replicates. 
+# It is a time-course experiment and we attempt to compare differential abundance
+# between time 1 and 7 in a set of targeted proteins. 
+# In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of 
+# Biological replication.  
 
 QuantData<-dataProcess(SRMRawData)
 head(QuantData$ProcessedData)

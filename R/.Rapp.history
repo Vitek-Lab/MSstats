@@ -1,13 +1,3 @@
-if(length(count.diff.pos) != 0){#
-        			flag.issue.pos <- TRUE ## TRUE : there are problematic conditions#
-        		} else {#
-        			flag.issue.pos <- FALSE ## FALSE : no issue about completely missing#
-        		}#
-        		if(length(count.diff.neg) != 0){#
-        			flag.issue.neg <- TRUE ## TRUE : there are problematic conditions#
-        		} else {#
-        			flag.issue.neg <- FALSE ## FALSE : no issue about completely missing#
-        		}
 flag.issue.neg
 flag.issue.pos
 flag.issue.pos & flag.issue.neg
@@ -1177,3 +1167,5 @@ out
 temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
 temptempresult
 ?groupComparison
+colnames(raw) <- toupper(colnames(raw))
+raw.temp <- raw[,c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE", "RUN", "INTENSITY")]

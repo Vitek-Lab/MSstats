@@ -3,6 +3,7 @@
 ## MSnSet -> input for MSstats
 #######################################
 
+#' @export
 transformMSnSetToMSstats  <-  function(ProteinName,
 										PeptideSequence, 
 										PrecursorCharge, 
@@ -121,6 +122,7 @@ transformMSnSetToMSstats  <-  function(ProteinName,
 #### MSnSet -> input for MSstats
 #######################################
 
+#' @export
 transformMSstatsToMSnSet <- function(data) {
   	
   	data <- droplevels(data)

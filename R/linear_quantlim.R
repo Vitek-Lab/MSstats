@@ -2,22 +2,51 @@
 #The goal of this function is to calculate the LoD/LoQ of the data provided in the data frame.
 #The function returns a new data frame containing the value of the LoD/LoQ
 
-
-linear_quantlim <- function(datain){
+#' @export
+linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500){
   
+  switch(Sys.info()[['sysname']],
+         Windows = {null_output <- "NUL"},
+         Linux  = {null_outpur <- "/dev/null"},
+         Darwin = {null_output <- "/dev/null"})
   
 
   #Need to rename variables as needed:
-  
   names(datain)[names(datain) == 'CONCENTRATION'] <- 'C'
   names(datain)[names(datain) == 'INTENSITY'] <- 'I' 
+
   
+  #percentile of the prediction interval considered
+  if(missing(alpha)){
+    alpha = 5/100;
+  }
+   
+  if( alpha >= 1 | alpha  <= 0){
+    print("incorrect specified value for alpha,  0 < alpha < 1")
+    return(NULL)
+  }
+
+  #Number of boostrap samples
+  if(missing(Nbootstrap)){
+    B <- 500
+  } else B <= Nbootstrap
   
-  ##Coarse:
-  B <- 500
+     
+  #Number of points for the discretization interval
+  if(missing(Npoints)){
+    Npoints = 100
+  }
+
+  #Number of bootstrap samples for the prediction inteval for the changepoint
+  #Large values can make calculations very expensive
+  B1 <- 30
+  
+  #Number of prediction samples to generate
   BB <- 200
+  
+  #Number of trials for convergence of every curvefit algorithm
   NMAX = 30
-  Npoints <- 20
+  
   
   #Remove any NA values for concentration and intensity:
   datain <- datain[!is.na(datain$I) & !is.na(datain$C),]  
@@ -32,9 +61,6 @@ linear_quantlim <- function(datain){
   
   #Calculate the value of the noise:
   #Use the zero concentration to calculate the LOD:
-  
-
-  
   pb <- txtProgressBar(min = 0, max = 1, initial = 0, char = "%",
                        width = 40, title, label, style = 1, file = "")
   
@@ -45,17 +71,16 @@ linear_quantlim <- function(datain){
   n_blank = length(unique(tmp_blank$I))
   noise = mean(tmp_blank$I)
   var_noise = var(tmp_blank$I)
-  fac_low = qt(1-0.25/2,n_blank - 1)*sqrt(1+1/n_blank)  
-  fac = qt(1-0.05/2,n_blank - 1)*sqrt(1+1/n_blank)
-  fac_high = qt(1-0.01/2,n_blank - 1)*sqrt(1+1/n_blank)
   
-  #2.575
+  if(nrow(tmp_blank) <= 1 || var_noise  <= 0){
+    print("Not enough blank samples!!!")
+    return(NULL)
+  }
   
-  low_noise = noise  - fac* sqrt(var_noise)
+  fac = qt(1-alpha,n_blank - 1)*sqrt(1+1/n_blank)
   
-  up_noise_low = noise + fac_low * sqrt(var_noise)
+  #upper bound of noise prediction interval
   up_noise = noise   +  fac* sqrt(var_noise)
-  up_noise_high = noise + fac_high*sqrt(var_noise)
   
   unique_c = sort(unique(tmp_all$C));   var_v <- rep(0.0, length(unique_c))
   weights  <- rep(0.0, length(tmp_all$C));
@@ -79,25 +104,18 @@ linear_quantlim <- function(datain){
   
 
     
-    
-    
-    
-    y.loessm04 <- loess(y ~ x, span=0.6, data.frame(x=log(1+unique_c), y=log(1+var_v))) 
-    y.predic_log <- predict(y.loessm04, data.frame(x=log(1+xaxis_orig_2)))
-    y.predic_log_unique <- predict(y.loessm04, data.frame(x=log(1+unique_c)))
-    
-    #var_v_s_log <- exp(y.predic_log) -1
-    #Can use this instead of the origianl variance for everything
-    var_v_s_log <- pmax(exp(y.predic_log) -1, rep(1.0,length(y.predic_log)))
-    var_v_s_log_unique <- pmax(exp(y.predic_log_unique) -1, rep(1.0,length(y.predic_log_unique)))  
-    
-    
-    ##
-    #In the following, consider that the smoothed variance is that from the log:
-    
-    var_v_s <- var_v_s_log
-    var_v_s_unique <- var_v_s_log_unique
-    ##
+  #Instead simply create a  piecewise linear approximation:
+  var_v_lin = approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = xaxis_orig_2)$y
+  var_v_lin_unique = approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = unique_c)$y
+  
+  
+  ##
+  #In the following, consider that the smoothed variance is that from the log:
+  
+  var_v_s <- var_v_lin
+  var_v_s_unique <- var_v_lin_unique
+  var_v_s_log <- var_v_s
+  var_v_s_log_unique <- var_v_s_unique
     
     
     if(1){# Full bootstrap
@@ -126,7 +144,7 @@ linear_quantlim <- function(datain){
           ll = ll + 1
           slope = median(tmpB$I)/median(tmpB$C)*runif(1)
           intercept = noise*runif(1)
-          sink(tempfile());
+          sink(null_output);
           tryCatch(lin.blank_B <-  {nlsLM( I ~ .linear(C , intercept, slope),data=tmpB, trace = TRUE,start=c(intercept=intercept, slope=slope), weights = weights,
                                            control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL})
           
@@ -173,11 +191,8 @@ linear_quantlim <- function(datain){
       mean_pred <- apply(outBB_pred, 2, mean,na.rm = TRUE) 
       var_pred <- apply(outBB_pred, 2, var,na.rm = TRUE) 
       
-      lower_Q = apply(outB, 2, quantile, probs=c(0.05) ,na.rm = TRUE)
-      upper_Q = apply(outB, 2, quantile, probs=c(0.95) ,na.rm = TRUE)
-      
-      lower_Q_pred = apply(outBB_pred, 2, quantile, probs=c(0.05) ,na.rm = TRUE)
-      upper_Q_pred = apply(outBB_pred, 2, quantile, probs=c(0.95) ,na.rm = TRUE)    
+      lower_Q_pred = apply(outBB_pred, 2, quantile, probs=c(alpha) ,na.rm = TRUE)
+      upper_Q_pred = apply(outBB_pred, 2, quantile, probs=c(1 - alpha) ,na.rm = TRUE)      
       
       
       
@@ -221,10 +236,50 @@ linear_quantlim <- function(datain){
     }
 
     
+    #Calculate slope and intercept above the LOD/LOQ:
+    
+    slope_lin <- NA
+    intercept_lin <- NA
+    
+    data_linear <- datain[datain$C > LOQ_pred,]
+    
+    ii = 0
+    while(ii < NMAX){#Number of ii trials for bilinear fit < NMAX
+      ii = ii + 1
+      {
+        intercept = noise*runif(1)
+        slope=median(data_linear$I)/median(data_linear$C)*runif(1)
+        
+        weights = rep(0,length(data_linear$C) )
+        for (kk in 1:length(data_linear$C)){
+          weights[kk] = 1/var_v_s[which( unique_c == data_linear$C[kk])]
+        } 
+        
+        sink(null_output);
+        
+        fit.blank_lin <- NULL
+        fit.blank_lin <- tryCatch({nlsLM( I ~ .linear(C , intercept, slope),data=data_linear, trace = TRUE,start=c(slope=slope, intercept = intercept), weights = weights,
+                                          control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL}
+        )
+        
+        
+        sink();
+      }
+      
+      
+      if(!is.null(fit.blank_lin)) break
+    }#ii < NMAX
+    
+    if(!is.null(fit.blank_lin)){
+      slope_lin <- summary(fit.blank_lin)$coefficients[[1]]
+      intercept_lin <- summary(fit.blank_lin)$coefficients[[2]]
+    }
+    
+    if(is.null(fit.blank_lin)) print("Linear assay characterization above LOD did not converge")    
 
   
-  return( as.data.frame(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOD= rep(LOD_pred, length(upper_Q_pred)),  LOQ = rep(LOQ_pred, length(upper_Q_pred)),
-              NAME = rep(datain$NAME[1], length(upper_Q_pred)),
+  return( as.data.frame(list(CONCENTRATION = xaxis_orig_2, MEAN=mean_bilinear,LOW= lower_Q_pred, UP = upper_Q_pred, LOB= rep(LOD_pred, length(upper_Q_pred)),  LOD = rep(LOQ_pred, length(upper_Q_pred)),
+              SLOPE =slope_lin , INTERCEPT =intercept_lin, NAME = rep(datain$NAME[1], length(upper_Q_pred)),
               METHOD = rep("LINEAR", length(upper_Q_pred))
               )))
 }

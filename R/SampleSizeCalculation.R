@@ -3,7 +3,7 @@
 ## designSampleSize
 #############################################
 
-
+#' @export
 designSampleSize <- function(data=data,
 						desiredFC=desiredFC,
 						FDR=0.05,
@@ -166,7 +166,7 @@ designSampleSize <- function(data=data,
 #############################################
 ## designSampleSizePlots
 #############################################
-
+#' @export
 designSampleSizePlots <- function(data=data) {
   
   	if (length(unique(data$numSample)) > 1) index <- "numSample"

@@ -3,6 +3,12 @@
 ## groupComparisonPlots
 #############################################
 
+#' @export
+#' @importFrom gplots heatmap.2
+#' @importFrom stats hclust
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom marray maPalette
+
 groupComparisonPlots <- function(data=data,
 				type=type,
 				sig=0.05,

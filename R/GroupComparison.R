@@ -3,6 +3,9 @@
 # Whole plot testing
 #############################################
 
+#' @export
+#' @import lme4 
+
 groupComparison <- function(contrast.matrix=contrast.matrix,
 							data=data) {
   
@@ -134,7 +137,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	colnames(sub)[colnames(sub) == "Protein"] <- "PROTEIN"
 
    	 	# it is important to remove NA first, before we have the correct structure for each factor
-    	sub <- sub[!is.na(sub$ABUNDANCE),]
+    	sub <- sub[!is.na(sub$ABUNDANCE), ]
     
     	## 1. for logsum, t-test
     	if (data$SummaryMethod=="logOfSum") {
@@ -196,28 +199,32 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	temptempresult <- tempresult$result
     	    	
     	## need to add information about % missingness and %imputation
-    	subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
+    	if ( is.element("NumImputedFeature", colnames(data$RunlevelData)) ) {
+      	subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
 
-    	temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
-
+    	  temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
+    	}
     	## comparison result table
     	#	out <- rbindlist(list(out,tempresult$result))
+    	temptempresult$Label <- as.character(temptempresult$Label)
+    	
     	out <- rbind(out, temptempresult)
 
 
     	## for checking model assumptions
     	## add residual and fitted after fitting the model
-    	if (class(temp) == "try-error") {
+    	if (data$SummaryMethod != "logOfSum" & class(temp) == "try-error") {
       		if (nrow(sub) != 0) {
         		sub$residuals <- NA
         		sub$fitted <- NA
       		}
-    	} else if( is.na(tempresult$result$pvalue) ) { ## even though there is no error for .fit.model function, still output can have empty fitted and residuals.
+    	} else if ( data$SummaryMethod != "logOfSum" & any(is.na(tempresult$result$pvalue)) ) { 
+    	  ## even though there is no error for .fit.model function, still output can have empty fitted and residuals.
         
     	    sub$residuals <- NA
     	    sub$fitted <- NA
           
-    	} else {
+    	} else if (data$SummaryMethod != "logOfSum"){
       
       		sub$residuals <- temp$valueresid
       		sub$fitted <- temp$valuefitted
@@ -282,15 +289,20 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	out.all <- data.frame(out.all)
   
   	## change order of columns, 
-  	if(any(is.element(colnames(out.all), "ImputationPercentage"))){
+  	if (any(is.element(colnames(out.all), "ImputationPercentage"))) {
     	out.all <- out.all[, c(1:7, 11, 8, 9, 10)]		
-    }else{
+    } else if (any(is.element(colnames(out.all), "MissingPercentage"))) {
     	out.all <- out.all[, c(1:7, 10, 8, 9)]
+    } else {
+      ## logOfSum output
+      out.all <- out.all[, c(1:7, 9)]
     }
     
     ## if just one condition is completely missing, replace adjust pvalue as zero
-    out.all[!is.na(out.all$issue) & out.all$issue=="oneConditionMissing", "adj.pvalue"] <- 0
-    
+  	if (any(is.element(colnames(out.all), "issue"))){
+      out.all[!is.na(out.all$issue) & out.all$issue == "oneConditionMissing", "adj.pvalue"] <- 0
+  	}
+  	
   	##
   	processout <- rbind(processout, c("Group comparison is done. - okay"))
   	write.table(processout, file=finalfile, row.names=FALSE)
@@ -930,7 +942,7 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 
 
 #############################################
-.ttest.logsum <- function(contrast.matrix,data,origGroup) {
+.ttest.logsum <- function(contrast.matrix, data, origGroup) {
 	
 	#### each comparison
     allout <- NULL
@@ -958,8 +970,6 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
 			if (class(sumresult)=="try-error") {
 				out <- data.frame(Protein=unique(data$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
 			}else{
-				out <- data.frame(Protein=unique(data$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
-				
 				out <- data.frame(Protein=unique(data$PROTEIN), Label=paste(names(sumresult$estimate)[1], " - ", names(sumresult$estimate)[2], sep=""), logFC=sumresult$estimate[1] - sumresult$estimate[2], SE=(sumresult$estimate[1] - sumresult$estimate[2]) / sumresult$statistic, Tvalue=sumresult$statistic, DF=sumresult$parameter, pvalue=sumresult$p.value, issue=NA)
 				rownames(out) <- NULL
 			}
