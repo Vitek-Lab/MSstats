@@ -316,8 +316,8 @@ dataProcess  <-  function(raw,
 	multirun <- .countMultiRun(work)
 	
 	## Decide multiple run per sample or not
-	# checkMultirun <- any(multirun==0) # MC 2016. 09.21, changed : overlapped sample can be happen, then not zero, but different number
-	checkMultirun <- length(unique(multirun)) > 1
+	checkMultirun <- any(multirun==0) # MC 2016. 09.21, changed : overlapped sample can be happen, then not zero, but different number
+	#checkMultirun <- length(unique(multirun)) > 1
   
 
 	## if multirun, make new column 'method'
