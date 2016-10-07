@@ -8,7 +8,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
   
   switch(Sys.info()[['sysname']],
          Windows = {null_output <- "NUL"},
-         Linux  = {null_outpur <- "/dev/null"},
+         Linux  = {null_output <- "/dev/null"},
          Darwin = {null_output <- "/dev/null"})
   
   
