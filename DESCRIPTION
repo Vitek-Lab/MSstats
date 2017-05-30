@@ -16,7 +16,7 @@ Imports: Rcpp, lme4, marray, limma, gplots, ggplot2, methods, grid, ggrepel, pre
   data.table, MSnbase, reshape, reshape2, survival, minpack.lm, utils
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
-bioViews: Bioinformatics, MassSpectrometry, Proteomics, Software
+biocViews: Bioinformatics, MassSpectrometry, Proteomics, Software
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
