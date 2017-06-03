@@ -7,8 +7,8 @@
 \details{
 \tabular{ll}{
 Package: \tab MSstats\cr
-Version: \tab 3.5.6\cr
-Date: \tab 2016-10-04\cr
+Version: \tab 3.8.2\cr
+Date: \tab 2017-06-01\cr
 License: \tab Artistic-2.0 \cr
 LazyLoad: \tab yes\cr
 }
@@ -16,7 +16,7 @@ The package includes four main sections: I. explanatory data analysis (data pre-
 
 Examples of data in MSstats are (1) example of required input data format from label-based SRM experiment \code{\link{SRMRawData}}; (2) example of required input data format from DDA experiment \code{\link{DDARawData}}; (3) example of required input data format from label-free SWATH experiment \code{\link{DIARawData}}.
 
-The functions for converting the output from spectral processing tools, (1) Skyline, \code{\link{SkylinetoMSstatsFormat}}, (2) MaxQuant, \code{\link{MaxQtoMSstatsFormat}}, (3) Progenesis, \code{\link{ProgenesistoMSstatsFormat}}, and (4) Spectronaut, \code{\link{SpectronauttoMSstatsFormat}} are available.
+The functions for converting the output from spectral processing tools, (1) Skyline, \code{\link{SkylinetoMSstatsFormat}}, (2) MaxQuant, \code{\link{MaxQtoMSstatsFormat}}, (3) Progenesis, \code{\link{ProgenesistoMSstatsFormat}}, (4) Spectronaut, \code{\link{SpectronauttoMSstatsFormat}}, and (5) Proteome discovere, \code{\link{PDtoMSstatsFormat}} are available.
 }
 
 \author{Meena Choi, Cyril Galitzine, Tsung-Heng Tsai, Olga Vitek. 

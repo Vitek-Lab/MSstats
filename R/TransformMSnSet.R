@@ -4,6 +4,9 @@
 #######################################
 
 #' @export
+#' @import Rcpp
+#' @import MSnbase 
+
 transformMSnSetToMSstats  <-  function(ProteinName,
 										PeptideSequence, 
 										PrecursorCharge, 
@@ -109,9 +112,12 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   	}
   
   	## combine into a data frame
-  	final.data.2  <-  final.data[, c(ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, "group.column", Bioreplicate, Run, "ABUNDANCE")]
+  	final.data.2  <-  final.data[, c(ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, 
+  	                                 "group.column", Bioreplicate, Run, "ABUNDANCE")]
   
-  	colnames(final.data.2) <- c("ProteinName", "PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge", "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
+  	colnames(final.data.2) <- c("ProteinName", "PeptideSequence", "PrecursorCharge", "FragmentIon", 
+  	                            "ProductCharge", "IsotopeLabelType", "Condition", "BioReplicate",
+  	                            "Run", "Intensity")
   	rownames(final.data.2) <- NULL
   
   	return(final.data.2)
@@ -134,10 +140,12 @@ transformMSstatsToMSnSet <- function(data) {
   	xx <- do.call(cbind, xx)
   
   	## sample annotation
-  	pd <- data[!duplicated(data[, c("ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE", "RUN")]), c("ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE", "RUN")]
+  	pd <- data[!duplicated(data[, c("ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE", "RUN")]), 
+  	           c("ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE", "RUN")]
   
   	## feature annotation
-  	fd <- data[!duplicated(data[, c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE")]), c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE")]
+  	fd <- data[!duplicated(data[, c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE")]), 
+  	           c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE")]
   
   	## need to make as MSnSet class
   	e  <-  MSnSet(xx, fd, pd)

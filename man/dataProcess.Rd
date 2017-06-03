@@ -20,7 +20,6 @@ dataProcess(raw,
             cutoffCensored="minFeature",
             MBimpute=TRUE,
             remove50missing=FALSE,
-            skylineReport=FALSE,
             maxQuantileforCensored=0.999)
 }
 
@@ -40,7 +39,6 @@ dataProcess(raw,
 \item{cutoffCensored}{Cutoff value for censoring. only with censoredInt='NA' or '0'. Default is 'minFeature', which uses minimum value for each feature.'minFeatureNRun' uses the smallest between minimum value of corresponding feature and minimum value of corresponding run. 'minRun' uses minumum value for each run. }
 \item{MBimpute}{only for summaryMethod="TMP" and censoredInt='NA' or '0'. TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
 \item{remove50missing}{only for summaryMethod="TMP". TRUE removes the runs which have more than 50\% missing values. FALSE is default.}
-\item{skylineReport}{default is FALSE. 'TRUE' means raw (input) data set from Skyline MSstats input format, which includes 'Truncated' column and can distinguish zero value and NA (missing values). Zero values in 'Intensity' column will be kept for 'skyline' summary method. Otherwise, they will be replaced with one in order to log transform.}
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
 \item{maxQuantileforCensored}{Maximum quantile for deciding censored missing values. default is 0.999}
 

@@ -43,15 +43,13 @@ C. Galitzine et al.  TBD  2016
 }
 
 \examples{
+
 # Consider data from a spiked-in contained in an example dataset
 head(SpikeInDataLinear)
 
+\dontrun{
 # Call function
 linear_quantlim_out <- linear_quantlim(SpikeInDataLinear)
-
-# Get values of LOB/LOD
-linear_quantlim_out$LOB[1]
-linear_quantlim_out$LOD[1]
-
+}
 
 }

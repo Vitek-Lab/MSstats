@@ -11,7 +11,8 @@ MaxQtoMSstatsFormat(evidence,
       useUniquePeptide=TRUE, 
       summaryforMultipleRows=max, 
       fewMeasurements="remove", 
-      removeMpeptides=TRUE,
+      removeMpeptides=FALSE,
+      removeOxidationMpeptides=FALSE,
       removeProtein_with1Peptide=FALSE)	
 }
 
@@ -24,7 +25,8 @@ MaxQtoMSstatsFormat(evidence,
   \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of all.
 }
   \item{fewMeasurements}{'remove'(default) will remove the features that have 1 or 2 measurements across runs.}
-  \item{removeMpeptides}{TRUE(default) will remove the peptides including 'M' sequence.}
+  \item{removeMpeptides}{TRUE will remove the peptides including 'M' sequence. FALSE is default.}
+  \item{removeOxidationMpeptides}{TRUE will remove the peptides including 'oxidation (M)' in modification. FALSE is default.}
   \item{removeProtein_with1Peptide}{TRUE will remove the proteins which have only 1 peptide and charge. FALSE is default.}
 
 }
@@ -37,3 +39,11 @@ MaxQtoMSstatsFormat(evidence,
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
+
+\examples{
+# Please check section 4.3. Suggested workflow with MaxQuant output for DDA in MSstats user manual.
+# Output of MaxQtoMSstatsFormat function should have the same 10 columns as an example dataset.
+
+head(DDARawData)
+}
+

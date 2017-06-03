@@ -41,18 +41,15 @@ C. Galitzine et al.  TBD  2016
 }
 
 \examples{
+
 # Consider data from a spiked-in contained in an example dataset. This dataset contains 
 # a significant threshold at low concentrations that is not well captured by a linear fit
 
 head(SpikeInDataNonLinear)
 
+\dontrun{
 # Call function
 nonlinear_quantlim_out <- nonlinear_quantlim(SpikeInDataNonLinear)
-
-#Get values of LOB/LOD
-nonlinear_quantlim_out$LOB[1]
-nonlinear_quantlim_out$LOD[1]
-
-
+}
 
 }

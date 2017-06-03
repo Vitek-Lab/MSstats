@@ -29,7 +29,7 @@ quantification <- function(data,
     	}
     
     	finalfile <- lastfilename
-    	processout <- as.matrix(read.table(finalfile, header=T,sep="\t"))
+    	processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
   	}
   
   	processout <- rbind(processout, as.matrix(c(" ", " ", "MSstats - quantification function", " "), ncol=1))
@@ -110,12 +110,18 @@ quantification <- function(data,
     	
    		datarun <- datarun[!is.na(datarun$LogIntensities), ]
        
-   	 	datam <- dcast(Protein + GROUP_ORIGINAL ~ SUBJECT_ORIGINAL, data=datarun, value.var='LogIntensities', fun.aggregate=median)
+   	 	datam <- dcast(Protein + GROUP_ORIGINAL ~ SUBJECT_ORIGINAL, 
+   	 	               data=datarun, 
+   	 	               value.var='LogIntensities', 
+   	 	               fun.aggregate=median)
 
 		datam2  <- melt(datam, id.vars=c('Protein', "GROUP_ORIGINAL"))
 		colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c('Subject', 'LogIntensity')
 
-		datam3 <- dcast(Protein ~ GROUP_ORIGINAL , data=datam2, value.var='LogIntensity', fun.aggregate=median)
+		datam3 <- dcast(Protein ~ GROUP_ORIGINAL , 
+		                data=datam2, 
+		                value.var='LogIntensity', 
+		                fun.aggregate=function(x) median(x, na.rm=T))
 		
 		rm(datam)
 		rm(datam2)

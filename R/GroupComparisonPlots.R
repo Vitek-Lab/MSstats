@@ -51,7 +51,7 @@ groupComparisonPlots <- function(data=data,
     	}
     
     	finalfile <- lastfilename
-    	processout <- as.matrix(read.table(finalfile, header=T, sep="\t"))
+    	processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
   	}	
   
   	processout <- rbind(processout, as.matrix(c(" ", " ", "MSstats - groupComparisonPlots function", " "), ncol=1))
@@ -434,16 +434,24 @@ groupComparisonPlots <- function(data=data,
       		if (logBase.pvalue == 2) {
         		ptemp <- ggplot(aes_string(x='logFC', y='log2adjp', color='colgroup', label='Protein'), data=subtemp)+
         				geom_point(size=dot.size)+
-        				scale_colour_manual(values=c("gray65", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
-        				scale_y_continuous('-Log2 (adjusted p-value)', limits=c(y.limdown, y.limup))+
+        				scale_colour_manual(values=c("gray65", "blue", "red"), 
+        				                    limits=c("black", "blue", "red"), 
+        				                    breaks=c("black", "blue", "red"), 
+        				                    labels=c("No regulation", "Down-regulated", "Up-regulated"))+
+        				scale_y_continuous('-Log2 (adjusted p-value)', 
+        				                   limits=c(y.limdown, y.limup))+
         				labs(title=unique(sub$Label))
       		}
       
       		if (logBase.pvalue == 10) {
         		ptemp <- ggplot(aes_string(x='logFC', y='log10adjp', color='colgroup', label='Protein'), data=subtemp)+
         				geom_point(size=dot.size)+
-        				scale_colour_manual(values=c("gray65", "blue", "red"), limits=c("black", "blue", "red"), breaks=c("black", "blue", "red"), labels=c("No regulation", "Down-regulated", "Up-regulated"))+
-        				scale_y_continuous('-Log10 (adjusted p-value)', limits=c(y.limdown, y.limup))+
+        				scale_colour_manual(values=c("gray65", "blue", "red"), 
+        				                    limits=c("black", "blue", "red"), 
+        				                    breaks=c("black", "blue", "red"), 
+        				                    labels=c("No regulation", "Down-regulated", "Up-regulated"))+
+        				scale_y_continuous('-Log10 (adjusted p-value)', 
+        				                   limits=c(y.limdown, y.limup))+
         				labs(title=unique(sub$Label))
         	}
       
@@ -476,8 +484,12 @@ groupComparisonPlots <- function(data=data,
         		if (logBase.pvalue == 2) {
           			sigcut <- data.frame(Protein='sigline', logFC=seq(-x.lim, x.lim, length.out=20), log2adjp=(-log2(sig)), line='twodash')
           
-          			pfinal <- ptemp + geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            			    scale_linetype_manual(values=c('twodash'=6), labels=c(paste("Adj p-value cutoff (", sig, ")", sep="")))+
+          			pfinal <- ptemp + geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+          			                            colour="darkgrey", 
+          			                            size=0.6, 
+          			                            show.legend=TRUE)+
+            			    scale_linetype_manual(values=c('twodash'=6), 
+            			                          labels=c(paste("Adj p-value cutoff (", sig, ")", sep="")))+
             			    guides(colour=guide_legend(override.aes=list(linetype=0)),
             			    		linetype=guide_legend())
             			    		
@@ -486,8 +498,12 @@ groupComparisonPlots <- function(data=data,
         		if (logBase.pvalue == 10) {
           			sigcut <- data.frame(Protein='sigline', logFC=seq(-x.lim, x.lim, length.out=20), log10adjp=(-log10(sig)), line='twodash')
           
-         	 		pfinal <- ptemp + geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            			    scale_linetype_manual(values=c('twodash'=6), labels=c(paste("Adj p-value cutoff (", sig, ")", sep="")))+
+         	 		pfinal <- ptemp + geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+         	 		                            colour="darkgrey", 
+         	 		                            size=0.6, 
+         	 		                            show.legend=TRUE)+
+            			    scale_linetype_manual(values=c('twodash'=6), 
+            			                          labels=c(paste("Adj p-value cutoff (", sig, ")", sep="")))+
             			    guides(colour=guide_legend(override.aes=list(linetype=0)),
             			    		linetype=guide_legend())
 				}				
@@ -499,15 +515,32 @@ groupComparisonPlots <- function(data=data,
           			if (logBase.pvalue == 2) {
             
            				## three different lines
-            			sigcut <- data.frame(Protein='sigline', logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)), line='twodash')
-            			FCcutpos <- data.frame(Protein='sigline', logFC=log2(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
-            			FCcutneg <- data.frame(Protein='sigline', logFC=(-log2(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
+            			sigcut <- data.frame(Protein='sigline', 
+            			                     logFC=seq(-x.lim, x.lim, length.out=10), 
+            			                     log2adjp=(-log2(sig)), 
+            			                     line='twodash')
+            			FCcutpos <- data.frame(Protein='sigline', 
+            			                       logFC=log2(FCcutoff), 
+            			                       log2adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
+            			FCcutneg <- data.frame(Protein='sigline', 
+            			                       logFC=(-log2(FCcutoff)), 
+            			                       log2adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
             
             			## three lines, with order color first and then assign linetype manual
-            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6)+
-            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+            			                          colour="darkgrey", 
+            			                          size=0.6, 
+            			                          show.legend=TRUE)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6, show.legend=TRUE)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6)+
+            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), 
+            			                          labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
             			    guides(colour=guide_legend(override.aes=list(linetype=0)),
             			    		linetype=guide_legend())
           			}
@@ -515,15 +548,32 @@ groupComparisonPlots <- function(data=data,
           			if (logBase.pvalue == 10) {
             
             			## three different lines
-            			sigcut <- data.frame(Protein='sigline', logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)), line='twodash')
-            			FCcutpos <- data.frame(Protein='sigline', logFC=log2(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
-            			FCcutneg <- data.frame(Protein='sigline', logFC=(-log2(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
+            			sigcut <- data.frame(Protein='sigline', 
+            			                     logFC=seq(-x.lim, x.lim, length.out=10), 
+            			                     log10adjp=(-log10(sig)), line='twodash')
+            			FCcutpos <- data.frame(Protein='sigline', 
+            			                       logFC=log2(FCcutoff), 
+            			                       log10adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
+            			FCcutneg <- data.frame(Protein='sigline', 
+            			                       logFC=(-log2(FCcutoff)), 
+            			                       log10adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
             
             			## three lines, with order color first and then assign linetype manual
-            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6)+
-            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+            			                          colour="darkgrey", 
+            			                          size=0.6, 
+            			                          show.legend=TRUE)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6, 
+            				          show.legend=TRUE)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6)+
+            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), 
+            			                          labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
             			    guides(colour=guide_legend(override.aes=list(linetype=0)),
             			    		linetype=guide_legend())
           			}        
@@ -533,15 +583,33 @@ groupComparisonPlots <- function(data=data,
           			if (logBase.pvalue == 2) {
             
             			## three different lines
-            			sigcut <- data.frame(Protein='sigline', logFC=seq(-x.lim, x.lim, length.out=10), log2adjp=(-log2(sig)), line='twodash')
-            			FCcutpos <- data.frame(Protein='sigline', logFC=log10(FCcutoff), log2adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
-            			FCcutneg <- data.frame(Protein='sigline', logFC=(-log10(FCcutoff)), log2adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
+            			sigcut <- data.frame(Protein='sigline', 
+            			                     logFC=seq(-x.lim, x.lim, length.out=10), 
+            			                     log2adjp=(-log2(sig)), 
+            			                     line='twodash')
+            			FCcutpos <- data.frame(Protein='sigline', 
+            			                       logFC=log10(FCcutoff), 
+            			                       log2adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
+            			FCcutneg <- data.frame(Protein='sigline', 
+            			                       logFC=(-log10(FCcutoff)), 
+            			                       log2adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
             
             			## three lines, with order color first and then assign linetype manual
-            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log2adjp', linetype='line'), colour="darkgrey", size=0.6)+
-            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+            			                          colour="darkgrey", 
+            			                          size=0.6, 
+            			                          show.legend=TRUE)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6, 
+            				          show.legend=TRUE)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log2adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6)+
+            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), 
+            			                          labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
             			    guides(colour=guide_legend(override.aes=list(linetype=0)),
             			    		linetype=guide_legend())
           			}
@@ -549,15 +617,33 @@ groupComparisonPlots <- function(data=data,
           			if (logBase.pvalue == 10) {
             
             			## three different lines
-            			sigcut <- data.frame(Protein='sigline', logFC=seq(-x.lim, x.lim, length.out=10), log10adjp=(-log10(sig)), line='twodash')
-            			FCcutpos <- data.frame(Protein='sigline', logFC=log10(FCcutoff), log10adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
-            			FCcutneg <- data.frame(Protein='sigline', logFC=(-log10(FCcutoff)), log10adjp=seq(y.limdown, y.limup, length.out=10), line='dotted')
+            			sigcut <- data.frame(Protein='sigline', 
+            			                     logFC=seq(-x.lim, x.lim, length.out=10), 
+            			                     log10adjp=(-log10(sig)), 
+            			                     line='twodash')
+            			FCcutpos <- data.frame(Protein='sigline', 
+            			                       logFC=log10(FCcutoff), 
+            			                       log10adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
+            			FCcutneg <- data.frame(Protein='sigline', 
+            			                       logFC=(-log10(FCcutoff)), 
+            			                       log10adjp=seq(y.limdown, y.limup, length.out=10), 
+            			                       line='dotted')
             
             			## three lines, with order color first and then assign linetype manual
-            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6, show.legend=T)+
-            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log10adjp', linetype='line'), colour="darkgrey", size=0.6)+
-            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
+            			pfinal <- ptemp+geom_line(data=sigcut, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+            			                          colour="darkgrey", 
+            			                          size=0.6, 
+            			                          show.legend=TRUE)+
+            				geom_line(data=FCcutpos, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6, 
+            				          show.legend=TRUE)+
+            				geom_line(data=FCcutneg, aes_string(x='logFC', y='log10adjp', linetype='line'), 
+            				          colour="darkgrey", 
+            				          size=0.6)+
+            			    scale_linetype_manual(values=c('dotted'=3, 'twodash'=6), 
+            			                          labels=c(paste("Fold change cutoff (", FCcutoff, ")", sep=""), paste("Adj p-value cutoff (", sig, ")", sep="")))+
             			    guides(colour=guide_legend(override.aes=list(linetype=0)),
             			    		linetype=guide_legend())
           			}    
@@ -634,7 +720,9 @@ groupComparisonPlots <- function(data=data,
       		}
       
       		ptemp <- ggplot(aes_string(x='Label', y='logFC'), data=sub)+
-      			geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw), data=sub, width=0.1, colour="red")+
+      			geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw), data=sub, 
+      			              width=0.1, 
+      			              colour="red")+
       			geom_point(size=dot.size, colour="darkred")+
       			scale_x_discrete('Comparison')+
       			geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
@@ -659,6 +747,9 @@ groupComparisonPlots <- function(data=data,
      	 	}
       
       		print(ptemp)
+      		
+      		message(paste("Drew compasison plot for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datatemp$Protein)), ")"))
+      		
 		
 		} ## end-loop
     
