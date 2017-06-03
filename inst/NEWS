@@ -1,3 +1,34 @@
+CHANGES IN VERSION 3.8.2 [2017-04-21]
+-------------------------
+   NEW FEATURES
+	- required ‘Fraction’ information in annotation for pre-processing
+	- dataProcess function is updated for merge fractions
+
+   BUG FIXES
+	- warning message during dataProcessPlots for profile plot is not shown anymore.
+
+CHANGES IN VERSION 3.7.4 [2017-04-21]
+-------------------------
+   BUG FIXES
+	- quantile normalization in dataProcess
+	- Show the progress for comparison plots in groupComparisonPlots.
+        - Input check : whether any annotation information is missing or not.
+        - SpectronauttoMSstatsFormat function
+
+
+CHANGES IN VERSION 3.7.3 [2017-01-16]
+-------------------------
+   BUG FIXES
+	- groupComparisionPlots function : when assigning FCcutoff, there is error sometimes. (It was due to 'logFC' vs 'log2FC' vs 'log10FC' in output of groupComparison. groupComparison function is updated.)
+	- dataProcess function : error with normalization='quantile' is fixed. (It was due to absense of 'Import(preprocessCore)' in the namespace and assigning 'originalRun' column.)
+	- 
+
+   NEW FEATURES
+	- ProgenesistoMSstatsFormat function : required input for this function is changed.
+	- SpectronauttoMSstatsFormat : required input for this function is changed.
+	- PDtoMSstatsFormat : new function for converting Proteome Discoverer output to MSstats required format.
+
+
 CHANGES IN VERSION 3.5.5 [2016-09-30]
 -------------------------
    BUG FIXES

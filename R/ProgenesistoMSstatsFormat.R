@@ -10,113 +10,177 @@ ProgenesistoMSstatsFormat <- function(input,
                                       useUniquePeptide=TRUE,
                                       summaryforMultipleRows=max,
                                       fewMeasurements="remove",
+                                      removeOxidationMpeptides=FALSE,
                                       removeProtein_with1Peptide=FALSE){
-  
-  ##############################
-  ### 1. use only 'use in quantitation = true'
-  ##############################
-  
-  input <- input[input$Use.in.quantitation == TRUE,]
 
+    ##############################
+    ### 1. use only 'use in quantitation = true'
+    ##############################
+    #position.Normedpeak <- which(colnames(input) == 'Normalized.abundance')
+    #position.Rawpeak <- which(colnames(input) == 'Raw.abundance')
+    #position.Spectra <- which(colnames(input) == 'Spectral.counts')
   
-  ##############################
-  ### 2. modify column names and remove some columnts
-  ##############################
+    input <- input[,
+                   c(1:(which(colnames(input) == 'Normalized.abundance')-1),
+                     which(colnames(input) == 'Raw.abundance') : (which(colnames(input) == 'Spectral.counts')-1))]
+    input <- input[-1,]
+    colnames(input) <- input[1, ]
+    input <- input[-1,]
+  
+    ##############################
+    ### 2. use only 'use in quantitation = true'
+    ##############################
+    ## there are space in column name
+    colnames(input)[grep('quantitation', colnames(input))] <- 'Use.in.quantitation'
+  
+    ## value for use in quantitation is True vs False
+    if( length( grep('True', unique(input$Use.in.quantitation)) ) > 0 ){ 
+        input <- input[input$Use.in.quantitation == 'True', ]
+    } else if( length( grep('TRUE', unique(input$Use.in.quantitation)) ) > 0){
+        input <- input[input$Use.in.quantitation == TRUE, ]
+    }
 
-  input$Sequence <- paste(input$Sequence, input$Modifications, sep="")
-  colnames(input)[colnames(input) == 'Accession'] <- 'Protein'
+    ##############################
+    ### 2. modify column names and remove some columnts
+    ##############################
   
-  input <- input[, which(colnames(input) %in% c('Protein', 'Sequence', 'Charge', as.character(annotation$Run)))]
+    ## get modified sequence
+    input$ModifiedSequence <- paste(input$Sequence, input$Modifications, sep="")
   
-  ################################################
-  ## 3. remove peptides which are used in more than one protein
-  ## we assume to use unique peptide
-  ################################################
-  if(useUniquePeptide){
+    ## use 'Accession' for Protein ID
+    colnames(input)[colnames(input) == 'Accession'] <- 'Protein'
+  
+    ## get subset of datasets
+    input <- input[, which(colnames(input) %in% c('Protein', 'Sequence', 'Charge', 'ModifiedSequence',
+                                                as.character(annotation$Run)))]
+    ## remove completely duplicated rows
+    input <- input[!duplicated(input), ]
+  
+    ################################################
+    ### 3. remove the peptides including oxidation (M) sequence
+    if (removeOxidationMpeptides) {
+        remove_m_sequence <- unique(input[grep("Oxidation", input$ModifiedSequence), "ModifiedSequence"])
     
-    pepcount <- unique(input[, c("Protein","Sequence")]) 
-    pepcount$Sequence <- factor(pepcount$Sequence)
+        if(length(remove_m_sequence) > 0){
+            input <- input[-which(input$ModifiedSequence %in% remove_m_sequence), ]
+        }
     
-    ## count how many proteins are assigned for each peptide
-    structure <- aggregate(Protein ~., data=pepcount, length)
-    remove_peptide <- structure[structure$Proteins!=1, ]
+        message('Peptides including oxidation(M) in the sequence are removed.')
     
-    ## remove the peptides which are used in more than one protein
-    if(length(remove_peptide$Proteins != 1) != 0){
-      input <- input[-which(input$Sequence %in% remove_peptide$Sequence), ]
+    }
+ 
+    ################################################
+    ## 4. remove peptides which are used in more than one protein
+    ## we assume to use unique peptide
+    ################################################
+    if(useUniquePeptide){
+    
+        pepcount <- unique(input[, c("Protein","Sequence")]) 
+        pepcount$Sequence <- factor(pepcount$Sequence)
+    
+        ## count how many proteins are assigned for each peptide
+        structure <- aggregate(Protein ~., data=pepcount, length)
+        remove_peptide <- structure[structure$Proteins!=1, ]
+    
+        ## remove the peptides which are used in more than one protein
+        if(length(remove_peptide$Proteins != 1) != 0){
+            input <- input[-which(input$Sequence %in% remove_peptide$Sequence), ]
+        }
+    
+        message('** Peptides, that are used in more than one proteins, are removed.')
+    
+    }
+  
+    ##############################
+    ### 4. remove multiple measurements per feature and run
+    ##############################
+    input <- input[, -which(colnames(input) %in% 'Sequence')]
+    input_remove <- melt(input, id=c('Protein', 'ModifiedSequence', 'Charge'))
+
+    colnames(input_remove) <- c("ProteinName","PeptideModifiedSequence","PrecursorCharge","Run","Intensity")
+    input_remove$Intensity <- as.double(input_remove$Intensity)
+  
+    ## maximum or sum up abundances among intensities for identical features within one run
+    input <- dcast( ProteinName + PeptideModifiedSequence + PrecursorCharge ~ Run, data=input_remove, 
+                   value.var='Intensity', 
+                   fun.aggregate=summaryforMultipleRows, 
+                   fill=NA_real_) 
+  
+    ## reformat for long format
+    input <- melt(input, id=c('ProteinName', 'PeptideModifiedSequence', 'PrecursorCharge'))
+    colnames(input)[which(colnames(input) %in% c('variable','value'))] <- c("Run","Intensity")
+  
+    message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
+  
+  
+    ##############################
+    ### 5. add annotation
+    ##############################
+    input <- merge(input, annotation, by="Run", all=TRUE)
+  
+    ## add other required information
+    input$FragmentIon <- NA
+    input$ProductCharge <- NA
+    input$IsotopeLabelType <- "L"
+    
+    input.final <- data.frame(ProteinName = input$ProteinName,
+                              PeptideModifiedSequence = input$PeptideModifiedSequence,
+                              PrecursorCharge = input$PrecursorCharge,
+                              FragmentIon = input$FragmentIon,
+                              ProductCharge = input$ProductCharge,
+                              IsotopeLabelType = input$IsotopeLabelType,
+                              Condition = input$Condition,
+                              BioReplicate = input$BioReplicate,
+                              Run = input$Run,
+                              Intensity = input$Intensity)
+    
+    if( any(is.element(colnames(input), 'Fraction')) ) {
+        input.final <- data.frame(input.final,
+                                  Fraction = input$Fraction)
     }
     
-    message('** Peptides, that are used in more than one proteins, are removed.')
+    input <- input.final
+    rm(input.final)
+  
+    ##############################
+    ###  6. remove features which has 1 or 2 measurements across runs
+    ##############################
+    if(fewMeasurements=="remove"){
     
-  }
-  
-  
-  ##############################
-  ### 4. remove multiple measurements per feature and run
-  ##############################
-  input_remove <- melt(input, id=c('Protein', 'Sequence', 'Charge'))
-
-  colnames(input_remove) <- c("ProteinName","PeptideSequence","PrecursorCharge","Run","Intensity")
-
-  ## maximum or sum up abundances among intensities for identical features within one run
-  input <- dcast( ProteinName + PeptideSequence + PrecursorCharge ~ Run, data=input_remove, 
-                   value.var='Intensity', 
-                   fun.aggregate=summaryforMultipleRows, fill=NA_real_) 
-  
-  ## reformat for long format
-  input <- melt(input, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge'))
-  colnames(input)[which(colnames(input) %in% c('variable','value'))] <- c("Run","Intensity")
-  
-  ##############################
-  ### 5. add annotation
-  ##############################
-  input <- merge(input, annotation, by="Run")
-  
-  ## add other required information
-  input$FragmentIon <- NA
-  input$ProductCharge <- NA
-  input$IsotopeLabelType <- "L"
-  
-  input <- input[, c(2,3,4,8,9,10,6,7,1,5)]
-  
-  message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
-  
-  
-  ##############################
-  ###  6. remove features which has 1 or 2 measurements across runs
-  ##############################
-  if(fewMeasurements=="remove"){
-    
-    ## it is the same across experiments. # measurement per feature. 
-    input <- .remove_feature_with_few_progenesis(input)
-  }
+        ## it is the same across experiments. # measurement per feature. 
+        input <- .remove_feature_with_few_progenesis(input)
+    }
   
 
-  ##############################
-  ###  7. remove proteins with only one peptide and charge per protein
-  ##############################
+    ##############################
+    ###  7. remove proteins with only one peptide and charge per protein
+    ##############################
 	
 	if(removeProtein_with1Peptide){
-	  ######## remove protein which has only one peptide
-	  input$feature <- paste(input$PeptideSequence, input$PrecursorCharge, input$FragmentIon, input$ProductCharge, sep="_")
+	    ######## remove protein which has only one peptide
+	    input$feature <- paste(input$PeptideModifiedSequence,
+	                           input$PrecursorCharge,
+	                           input$FragmentIon,
+	                           input$ProductCharge,
+	                           sep="_")
 	  
-	  tmp <- unique(input[, c("ProteinName", 'feature')])
-	  tmp$ProteinName <- factor(tmp$ProteinName)
-	  count <- xtabs( ~ ProteinName, data=tmp)
-    lengthtotalprotein <- length(count)
+	    tmp <- unique(input[, c("ProteinName", 'feature')])
+	    tmp$ProteinName <- factor(tmp$ProteinName)
+	    count <- xtabs( ~ ProteinName, data=tmp)
+        lengthtotalprotein <- length(count)
     
-	  removepro <- names(count[count <= 1])
+	    removepro <- names(count[count <= 1])
 	  
-	  if (length(removepro) > 0) {
+	    if (length(removepro) > 0) {
 	    
-	    input <- input[-which(input$ProteinName %in% removepro), ]
-	    message(paste("** ", length(removepro), ' proteins, which have only one feature in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
-	  }
+	        input <- input[-which(input$ProteinName %in% removepro), ]
+	        message(paste("** ", length(removepro), ' proteins, which have only one feature in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
+	    }
 	  
-	  input <- input[, -which(colnames(input) %in% c('feature'))]
+	    input <- input[, -which(colnames(input) %in% c('feature'))]
 	}
   
-  input$ProteinName <- input$ProteinName
+    input$ProteinName <- input$ProteinName
   
 	return(input)
 }
@@ -124,21 +188,21 @@ ProgenesistoMSstatsFormat <- function(input,
 
 .remove_feature_with_few_progenesis <- function(x){
   
-  xtmp <- x[!is.na(x$Intensity) & x$Intensity > 0, ]
-  xtmp$feature <- paste(xtmp$PeptideSequence, xtmp$PrecursorCharge, sep="_")
-  count_measure <- xtabs( ~feature, xtmp)
+    xtmp <- x[!is.na(x$Intensity) & x$Intensity > 0, ]
+    xtmp$feature <- paste(xtmp$PeptideModifiedSequence, xtmp$PrecursorCharge, sep="_")
+    count_measure <- xtabs( ~feature, xtmp)
   
-  remove_feature_name <- count_measure[count_measure < 3]
+    remove_feature_name <- count_measure[count_measure < 3]
   
-  x$feature <- paste(x$PeptideSequence, x$PrecursorCharge, sep="_")
+    x$feature <- paste(x$PeptideModifiedSequence, x$PrecursorCharge, sep="_")
   
-  if( length(x) > 0 ){
-    x <- x[-which(x$feature %in% names(remove_feature_name)), ]
-  }
+    if( length(remove_feature_name) > 0 ){
+        x <- x[-which(x$feature %in% names(remove_feature_name)), ]
+    }
 
-  x <- x[, -which(colnames(x) %in% c('feature'))]
+    x <- x[, -which(colnames(x) %in% c('feature'))]
   
-  return(x)
+    return(x)
 }
 
 

@@ -18,7 +18,8 @@ MaxQtoMSstatsFormat <- function(evidence,
                                 useUniquePeptide=TRUE, 
                                 summaryforMultipleRows=max, 
                                 fewMeasurements="remove", 
-                                removeMpeptides=TRUE,
+                                removeMpeptides=FALSE,
+                                removeOxidationMpeptides=FALSE,
                                 removeProtein_with1Peptide=FALSE){
 	
 	experiment <- "DDA"
@@ -36,6 +37,10 @@ MaxQtoMSstatsFormat <- function(evidence,
 		infile <- infile[-which(infile$Contaminant %in% "+"), ]
 	}
 	
+	if(is.element("Potential.contaminant", colnames(infile)) & is.element("+", unique(infile$Potential.contaminant))){
+	    infile <- infile[-which(infile$Potential.contaminant %in% "+"), ]
+	}
+	
 	if(is.element("Reverse", colnames(infile)) & is.element("+", unique(infile$Reverse))){
 		infile <- infile[-which(infile$Reverse %in% "+"),]
 	}
@@ -45,7 +50,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 		infile <- infile[-which(infile$Only.identified.by.site %in% "+"), ]
 	}
 	
-	message('+ Contaminant, + Reverse, + Only.identified.by.site, proteins are removed.')
+	message('** + Contaminant, + Reverse, + Only.identified.by.site, proteins are removed.')
 	
 	
 	################################################
@@ -110,7 +115,9 @@ MaxQtoMSstatsFormat <- function(evidence,
 		
 	}else{
 		
-		infile  <-  infile[c("uniqueProteins", "Protein.group.IDs", "Sequence", "Modified.sequence", "Charge", "Raw.file", "Intensity", "Retention.time", "id")]
+		infile  <-  infile[c("uniqueProteins", "Protein.group.IDs", 
+                         "Sequence", "Modified.sequence", "Modifications", "Charge", 
+                         "Raw.file", "Intensity", "Retention.time", "id")]
 		
 	}
 	
@@ -128,11 +135,22 @@ MaxQtoMSstatsFormat <- function(evidence,
  			infile <- infile[-which(infile$Modified.sequence %in% remove_m_sequence), ]
  		}
 		
-		message('Peptides including M in the sequence are removed.')
+		message('** Peptides including M in the sequence are removed.')
 		
 	}
 
-	################################################
+    if (removeOxidationMpeptides) {
+        remove_oxim_sequence <- unique(infile[grep("Oxidation", infile$Modifications), "Modifications"])
+    
+        if(length(remove_oxim_sequence) > 0){
+            infile <- infile[-which(infile$Modifications %in% remove_oxim_sequence), ]
+        }
+    
+        message('** Peptides including oxidation (M) in the sequence are removed.')
+    
+    }
+
+    ################################################
 	## 2. remove peptides which are used in more than one protein
 	## we assume to use unique peptide
 	################################################
@@ -148,9 +166,9 @@ MaxQtoMSstatsFormat <- function(evidence,
 		## remove the peptides which are used in more than one protein
 		if(length(remove_peptide$Proteins != 1) != 0){
 			infile <- infile[-which(infile$Modified.sequence %in% remove_peptide$Modified.sequence), ]
+			message('** Peptides, that are used in more than one proteins, are removed.')
+			
 		}
-		
-		message('Peptides, that are used in more than one proteins, are removed.')
 		
 	}
 	
@@ -184,7 +202,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 		if(fewMeasurements == "remove"){
 			infile_w <- .remove_feature_with_few(infile_w)
 			
-			message('Peptide and charge, that have 1 or 2 measurements across runs, are removed.')
+			message('** Peptide and charge, that have 1 or 2 measurements across runs, are removed.')
 			
 		}
 	
@@ -233,19 +251,19 @@ MaxQtoMSstatsFormat <- function(evidence,
 	################################################
 	
 	if(removeProtein_with1Peptide){
-	  ######## remove protein which has only one peptide
-	  infile_l$feature <- paste(infile_l$Modified.sequence, infile_l$Charge, sep="_")
+	    ######## remove protein which has only one peptide
+	    infile_l$feature <- paste(infile_l$Modified.sequence, infile_l$Charge, sep="_")
 	  
-	  tmp <- unique(infile_l[, c("Proteins", 'feature')])
-	  tmp$Proteins <- factor(tmp$Proteins)
-	  count <- xtabs( ~ Proteins, data=tmp)
-    lengthtotalprotein <- length(count)
+	    tmp <- unique(infile_l[, c("Proteins", 'feature')])
+	    tmp$Proteins <- factor(tmp$Proteins)
+	    count <- xtabs( ~ Proteins, data=tmp)
+        lengthtotalprotein <- length(count)
     
-	  removepro <- names(count[count <= 1])
+	    removepro <- names(count[count <= 1])
 	  
-	  infile_l <- infile_l[-which(infile_l$Proteins %in% removepro), ]
+	    infile_l <- infile_l[-which(infile_l$Proteins %in% removepro), ]
 	  
-	  message(paste("*** ", length(removepro), ' proteins, which have only peptide and charge in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
+	    message(paste("** ", length(removepro), ' proteins, which have only peptide and charge in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
 	  
 	}
 	
@@ -264,9 +282,25 @@ MaxQtoMSstatsFormat <- function(evidence,
 	## Create Condition & Bioreplicate columns; TODO: fill in with correct values
 	infile_l <- merge(infile_l, annot, by=c("Raw.file", "IsotopeLabelType"))
 
-	infile_l <- infile_l[, c(c("ProteinName", "PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge", "IsotopeLabelType", "Condition", "BioReplicate", "Raw.file", "Intensity"))]
-	colnames(infile_l)[9] <- "Run"
+	infile_l.final <- infile_l[, c(c("ProteinName", "PeptideSequence", "PrecursorCharge", 
+                             "FragmentIon", "ProductCharge", "IsotopeLabelType", 
+                             "Condition", "BioReplicate", "Raw.file", "Intensity"))]
+	colnames(infile_l.final)[9] <- "Run"
 
+	if( any(is.element(colnames(infile_l), 'Fraction')) ) {
+	    infile_l.final <- data.frame(infile_l.final,
+	                                 Fraction = infile_l$Fraction)
+	}
+	
+	
+	if( any(is.element(colnames(infile_l), 'TechReplicate')) ) {
+	    infile_l.final <- data.frame(infile_l.final,
+	                                 TechReplicate = infile_l$TechReplicate)
+	}
+	
+	infile_l <- infile_l.final
+	rm(infile_l.final)
+	
 	infile_l$PeptideSequence <- factor(infile_l$PeptideSequence)
 	infile_l$ProteinName <- factor(infile_l$ProteinName)
 
@@ -274,8 +308,12 @@ MaxQtoMSstatsFormat <- function(evidence,
 }
 
 
+
 .cast_maxquant_to_wide_glf <- function(d_long, aggregateFun=aggregateFun){
-	data_w <- dcast( Proteins + Modified.sequence + Charge ~ Raw.file, data=d_long, value.var='Intensity', fun.aggregate=aggregateFun, keep=TRUE) 
+	data_w <- dcast( Proteins + Modified.sequence + Charge ~ Raw.file, data=d_long, 
+                   value.var='Intensity', 
+                   fun.aggregate=aggregateFun, 
+                   keep=TRUE) 
 	## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
 	## when there is completely missing in certain feature and certain run, '1' will be filled. Therefore put NA instead of 1.
 	data_w[data_w == 1] <- NA
@@ -293,7 +331,10 @@ MaxQtoMSstatsFormat <- function(evidence,
 	##data_w[16300,]
 	##d_long[d_long$Modified.sequence=="HIILVLSGK" & d_long$Charge=="2" & d_long$IsotopeLabelType=="L",]
 	
-	data_w <- dcast( Proteins + Modified.sequence + Charge + IsotopeLabelType ~ Raw.file, data=d_long, value.var='Intensity', fun.aggregate=aggregateFun, keep=TRUE) 
+	data_w <- dcast( Proteins + Modified.sequence + Charge + IsotopeLabelType ~ Raw.file, data=d_long, 
+	                 value.var='Intensity', 
+	                 fun.aggregate=aggregateFun, 
+	                 keep=TRUE) 
 	## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
   
 	## when there is completely missing in certain feature and certain run, '1' will be filled. Therefore put NA instead of 1.
@@ -315,7 +356,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 }
 
 
-.remove_feature_with_few=function(x){
+.remove_feature_with_few <- function(x){
 	count_measure <- apply (x[, !(colnames(x) %in% c("Proteins", "Modified.sequence", "Charge"))], 1, function ( x ) length ( x[!is.na(x)] ) ) 
 	remove_feature_name <- x[count_measure < 3, c("Proteins", "Modified.sequence", "Charge")]
 

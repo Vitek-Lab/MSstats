@@ -5,39 +5,39 @@
 
 #' @export
 #' @import lme4 
+#' @import limma
 
 groupComparison <- function(contrast.matrix=contrast.matrix,
 							data=data) {
   
-  	scopeOfBioReplication <- "expanded"
+    scopeOfBioReplication <- "expanded"
  	scopeOfTechReplication <- "restricted"
   
-  	## save process output in each step
+    ## save process output in each step
  	allfiles <- list.files()
-  	filenaming <- "msstats"
+    filenaming <- "msstats"
   
+    if (length(grep(filenaming, allfiles)) == 0) {
+    
+        finalfile <- "msstats.log"
+        processout <- NULL
+    
+    } else {
+    
+        num <- 0
+        finalfile <- "msstats.log"
+    
+        while(is.element(finalfile, allfiles)) {
+      	    num <- num + 1
+      	    lastfilename <- finalfile ## in order to rea
+      	    finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
+        }
+    
+        finalfile <- lastfilename
+        processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
+    }
   
-  	if (length(grep(filenaming, allfiles)) == 0) {
-    
-    	finalfile <- "msstats.log"
-    	processout <- NULL
-    
-  	} else {
-    
-    	num <- 0
-    	finalfile <- "msstats.log"
-    
-    	while(is.element(finalfile, allfiles)) {
-      		num <- num + 1
-      		lastfilename <- finalfile ## in order to rea
-      		finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
-    	}
-    
-    	finalfile <- lastfilename
-    	processout <- as.matrix(read.table(finalfile, header=T, sep="\t"))
-  	}
-  
-  	processout <- rbind(processout,as.matrix(c(" ", " ", "MSstats - groupComparison function"," "), ncol=1))
+    processout <- rbind(processout,as.matrix(c(" ", " ", "MSstats - groupComparison function"," "), ncol=1))
   
   
   	## check input is correct
@@ -46,7 +46,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   
   	if (length(setdiff(toupper(rawinput),toupper(colnames(data$ProcessedData))))==0) {
     	processout <- rbind(processout,c(paste("The required input - data : did not process from dataProcess function. - stop")))
-    write.table(processout, file=finalfile, row.names=FALSE)
+        write.table(processout, file=finalfile, row.names=FALSE)
     	
     	stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
   	}
@@ -104,7 +104,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	outsummary <- NULL
   	outfitted <- NULL
   	dataafterfit <- NULL
-  
+  	
   	## check input for labeled
   
   	## start to analyze by protein ID
@@ -129,7 +129,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
 	processall <- data$ProcessedData
 	
   	origGroup <- unique(rqall$GROUP_ORIGINAL)
-  
+  	groupinfo <- levels(data$ProcessedData$GROUP_ORIGINAL)
+  	
   	for (i in 1:nlevels(rqall$Protein)) {
     
     	sub <- rqall[rqall$Protein == levels(rqall$Protein)[i], ]
@@ -157,7 +158,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
      	
     		sub$GROUP <- factor(sub$GROUP)
    	 		sub$SUBJECT <- factor(sub$SUBJECT)
-    		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)	
+    		sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL, levels = groupinfo)	
     		sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
     		sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
     		sub$RUN <- factor(sub$RUN)
@@ -190,7 +191,15 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
       		tempresult <- list(result=NULL, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)
       
       		for(k in 1:nrow(contrast.matrix)) {	
-        		tempresult$result <- rbind(tempresult$result, data.frame(Protein=levels(rqall$Protein)[i], Label=row.names(contrast.matrix)[k], logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA))
+        		tempresult$result <- rbind(tempresult$result, 
+        		                           data.frame(Protein=levels(rqall$Protein)[i], 
+        		                                      Label=row.names(contrast.matrix)[k], 
+        		                                      logFC=NA, 
+        		                                      SE=NA, 
+        		                                      Tvalue=NA, 
+        		                                      DF=NA, 
+        		                                      pvalue=NA, 
+        		                                      issue=NA))
       		}
     	} else {
       		tempresult <- temp
@@ -200,9 +209,9 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	    	
     	## need to add information about % missingness and %imputation
     	if ( is.element("NumImputedFeature", colnames(data$RunlevelData)) ) {
-      	subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
+      	    subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
 
-    	  temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
+    	    temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
     	}
     	## comparison result table
     	#	out <- rbindlist(list(out,tempresult$result))
@@ -274,9 +283,10 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	write.table(processout, file=finalfile, row.names=FALSE)
    
   	temp <- data$ProcessedData[!is.na(data$ProcessedData[,"ABUNDANCE"]) & !is.na(data$ProcessedData[,"INTENSITY"]),]
-  
-  	if (abs(log2(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) < 
-       	abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"])) {
+    temp <- temp[temp$ABUNDANCE > 2, ]
+  	
+    if ( abs(log2(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) < 
+       	abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) ) {
     	colnames(out.all)[3] <- "log2FC"
   	}
   
@@ -294,13 +304,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     } else if (any(is.element(colnames(out.all), "MissingPercentage"))) {
     	out.all <- out.all[, c(1:7, 10, 8, 9)]
     } else {
-      ## logOfSum output
-      out.all <- out.all[, c(1:7, 9)]
+        ## logOfSum output
+        out.all <- out.all[, c(1:7, 9)]
     }
     
     ## if just one condition is completely missing, replace adjust pvalue as zero
   	if (any(is.element(colnames(out.all), "issue"))){
-      out.all[!is.na(out.all$issue) & out.all$issue == "oneConditionMissing", "adj.pvalue"] <- 0
+        out.all[!is.na(out.all$issue) & out.all$issue == "oneConditionMissing", "adj.pvalue"] <- 0
   	}
   	
   	##
@@ -319,287 +329,322 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
 #############################################
 
 
-modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,legend.size=7,width=10, height=10,featureName=TRUE,feature.QQPlot="all",which.Protein="all",address="") {
+modelBasedQCPlots <- function(data,type,
+                              axis.size=10,
+                              dot.size=3,
+                              text.size=7,
+                              legend.size=7,
+                              width=10, 
+                              height=10,
+                              featureName=TRUE,
+                              feature.QQPlot="all",
+                              which.Protein="all",
+                              address="") {
   
-  if (length(setdiff(toupper(type),c("QQPLOTS","RESIDUALPLOTS")))!=0) {
-    stop(paste("Input for type=",type,". However,'type' should be one of \"QQPlots\", \"ResidualPlots\" .",sep=""))
-  }
-  
-  data <- data[!is.na(data$fitted),]
-  data <- data[!is.na(data$residuals),]
-  
-  data$PROTEIN <- factor(data$PROTEIN)	
-  
-  #### choose Proteins or not
-  if (which.Protein!="all") {
-    ## check which.Protein is name of Protein
-    if (is.character(which.Protein)) {
-      
-      temp.name <- which.Protein
-      
-      ## message if name of Protein is wrong.
-      if (length(setdiff(temp.name,unique(data$PROTEIN)))>0)
-        stop(paste("Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
+    if (length(setdiff(toupper(type),c("QQPLOTS","RESIDUALPLOTS")))!=0) {
+        stop(paste("Input for type=",type,". However,'type' should be one of \"QQPlots\", \"ResidualPlots\" .",sep=""))
     }
-    
-    ## check which.Protein is order number of Protein		
-    if (is.numeric(which.Protein)) {
-      
-      temp.name <- levels(data$PROTEIN)[which.Protein]
-      
-      ## message if name of Protein is wrong.
-      if (length(levels(data$PROTEIN))<max(which.Protein))
-        stop(paste("Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
-    }
-    
-    ## use only assigned proteins
-    data <- data[which(data$PROTEIN %in% temp.name),]
-    data$PROTEIN <- factor(data$PROTEIN)
-  }
   
-  #############################################
-  ### normality, QQ plot
-  #############################################
-  if (toupper(type)=="QQPLOTS") {
-    
-    ### test feature.QQPlot is something wrong.
-    
-    
-    #### one QQplot per protein, all features together
-    if (toupper(feature.QQPlot)=="ALL") {
+    data <- data[!is.na(data$fitted),]
+    data <- data[!is.na(data$residuals),]
+  
+    data$PROTEIN <- factor(data$PROTEIN)	
+  
+    #### choose Proteins or not
+    if (which.Protein!="all") {
+        ## check which.Protein is name of Protein
+        if (is.character(which.Protein)) {
       
-      #### save the plots as pdf or not
-      # If there are the file with the same name, add next numbering at the end of file name	
-      if (address!=FALSE) {
-        allfiles <- list.files()
-        
-        num <- 0
-        filenaming <- paste(address,"QQPlot_allFeatures",sep="")
-        finalfile <- paste(address,"QQPlot_allFeatures.pdf",sep="")
-        
-        while(is.element(finalfile,allfiles)) {
-          num <- num+1
-          finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-        }	
-        
-        pdf(finalfile, width=width, height=height)
-      }
+        temp.name <- which.Protein
       
-      for (i in 1:nlevels(data$PROTEIN)) {	
-        
-        sub <- data[data$PROTEIN==levels(data$PROTEIN)[i],]
-        
-        ## get slope and intercept for qline
-        y <- quantile(sub$residuals[!is.na(sub$residuals)], c(0.25, 0.75))
-        x <- qnorm(c(0.25, 0.75))
-        slope <- diff(y)/diff(x)
-        int <- y[1L]-slope*x[1L]
-        
-        ptemp <- ggplot(sub, aes_string(sample='residuals'))+geom_point(stat="qq",alpha=0.8,shape=1,size=dot.size)+scale_shape(solid=FALSE)+ geom_abline(slope = slope, intercept = int,colour="red")+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+theme(
-          panel.background=element_rect(fill='white', colour="black"),
-          panel.grid.major = element_line(colour="grey95"),
-          panel.grid.minor =element_blank(),
-          axis.text.x=element_text(size=axis.size,colour="black"),
-          axis.text.y=element_text(size=axis.size,colour="black"),
-          axis.ticks=element_line(colour="black"),
-          axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-          axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-          title=element_text(size=axis.size+8,vjust=1.5),
-          legend.position="none")
-        
-        print(ptemp)
-        
-        message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
-        
-      } ## end loop
-      
-      if (address!=FALSE) dev.off()
-    } ## end QQplot by all feature
-    
-    
-    #### panel for each feature,
-    if (toupper(feature.QQPlot)=="BYFEATURE") {
-      
-      #### save the plots as pdf or not
-      # If there are the file with the same name, add next numbering at the end of file name	
-      if (address!=FALSE) {
-        allfiles <- list.files()
-        
-        num <- 0
-        filenaming <- paste(address,"QQPlot_byFeatures",sep="")
-        finalfile <- paste(address,"QQPlot_byFeatures.pdf",sep="")
-        
-        while(is.element(finalfile,allfiles)) {
-          num <- num+1
-          finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-        }	
-        
-        pdf(finalfile, width=width, height=height)
-      }
-      
-      for (i in 1:nlevels(data$PROTEIN)) {	
-        
-        sub <- data[data$PROTEIN==levels(data$PROTEIN)[i],]
-        
-        
-        ## label-free
-        if (length(unique(sub$LABEL))==1) {
-          
-          ## need to update for qline per feature
-          ptemp <- ggplot(sub, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8,size=dot.size)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+theme(
-            panel.background=element_rect(fill='white', colour="black"),
-            panel.grid.major = element_line(colour="grey95"),
-            panel.grid.minor =element_blank(),
-            axis.text.x=element_text(size=axis.size,colour="black"),
-            axis.text.y=element_text(size=axis.size,colour="black"),
-            axis.ticks=element_line(colour="black"),
-            axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-            axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-            title=element_text(size=axis.size+8,vjust=1.5),
-            strip.text.x=element_text(size=text.size),
-            legend.position="none")
-          
-          print(ptemp)
-          
-          message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
-          
+        ## message if name of Protein is wrong.
+        if (length(setdiff(temp.name,unique(data$PROTEIN)))>0)
+            stop(paste("Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
         }
-        
-        ## label-based : seperate endogenous and reference
-        if (length(unique(sub$LABEL))==2) {
-          ## need to update for qline per feature
-          
-          ### endogenous intensities
-          sub.l <- sub[sub$LABEL=="L",]
-          ptemp <- ggplot(sub.l, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8,size=dot.size)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Endogenous Intensities"))+theme(
-            panel.background=element_rect(fill='white', colour="black"),
-            panel.grid.major = element_line(colour="grey95"),
-            panel.grid.minor =element_blank(),
-            axis.text.x=element_text(size=axis.size,colour="black"),
-            axis.text.y=element_text(size=axis.size,colour="black"),
-            axis.ticks=element_line(colour="black"),
-            axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-            axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-            title=element_text(size=axis.size+8,vjust=1.5),
-            strip.text.x=element_text(size=text.size),
-            legend.position="none")
-          
-          print(ptemp)
-          
-          ### reference intensities
-          sub.h <- sub[sub$LABEL=="H",]
-          ptemp <- ggplot(sub.h, aes_string(sample='residuals',color='FEATURE'))+geom_point(stat="qq",alpha=0.8,size=dot.size)+facet_wrap(~FEATURE)+scale_y_continuous('Sample Quantiles')+scale_x_continuous('Theoretical Quantiles')+labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Reference Intensities"))+theme(
-            panel.background=element_rect(fill='white', colour="black"),
-            panel.grid.major = element_line(colour="grey95"),
-            panel.grid.minor =element_blank(),
-            axis.text.x=element_text(size=axis.size,colour="black"),
-            axis.text.y=element_text(size=axis.size,colour="black"),
-            axis.ticks=element_line(colour="black"),
-            axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-            axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-            title=element_text(size=axis.size+8,vjust=1.5),
-            strip.text.x=element_text(size=text.size),
-            legend.position="none")
-          
-          print(ptemp)	
-          
-          message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
-          
+    
+        ## check which.Protein is order number of Protein		
+        if (is.numeric(which.Protein)) {
+      
+            temp.name <- levels(data$PROTEIN)[which.Protein]
+      
+            ## message if name of Protein is wrong.
+            if (length(levels(data$PROTEIN))<max(which.Protein))
+                stop(paste("Please check your selection of proteins. There are ", length(levels(data$PROTEIN))," proteins in this dataset.",sep=" "))
         }
+    
+        ## use only assigned proteins
+        data <- data[which(data$PROTEIN %in% temp.name),]
+        data$PROTEIN <- factor(data$PROTEIN)
+    }
+  
+    #############################################
+    ### normality, QQ plot
+    #############################################
+    if (toupper(type)=="QQPLOTS") {
+    
+        ### test feature.QQPlot is something wrong.
+        ### one QQplot per protein, all features together
+        if (toupper(feature.QQPlot)=="ALL") {
+      
+            #### save the plots as pdf or not
+            # If there are the file with the same name, add next numbering at the end of file name	
+            if (address!=FALSE) {
+                allfiles <- list.files()
         
-      } ## end loop
+                num <- 0
+                filenaming <- paste(address,"QQPlot_allFeatures",sep="")
+                finalfile <- paste(address,"QQPlot_allFeatures.pdf",sep="")
+        
+                while(is.element(finalfile,allfiles)) {
+                    num <- num+1
+                    finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+                }	
+        
+                pdf(finalfile, width=width, height=height)
+            }
       
-      if (address!=FALSE) dev.off()	
-    } ### end for QQ by FEATURE
+            for (i in 1:nlevels(data$PROTEIN)) {	
+        
+                sub <- data[data$PROTEIN==levels(data$PROTEIN)[i],]
+        
+                ## get slope and intercept for qline
+                y <- quantile(sub$residuals[!is.na(sub$residuals)], c(0.25, 0.75))
+                x <- qnorm(c(0.25, 0.75))
+                slope <- diff(y)/diff(x)
+                int <- y[1L]-slope*x[1L]
+        
+                ptemp <- ggplot(sub, aes_string(sample='residuals'))+
+                    geom_point(stat="qq", alpha=0.8, shape=1, size=dot.size)+
+                    scale_shape(solid=FALSE)+ 
+                    geom_abline(slope = slope, intercept = int, colour="red")+
+                    scale_y_continuous('Sample Quantiles')+
+                    scale_x_continuous('Theoretical Quantiles')+
+                    labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+
+                    theme(
+                        panel.background=element_rect(fill='white', colour="black"),
+                        panel.grid.major = element_line(colour="grey95"),
+                        panel.grid.minor =element_blank(),
+                        axis.text.x=element_text(size=axis.size,colour="black"),
+                        axis.text.y=element_text(size=axis.size,colour="black"),
+                        axis.ticks=element_line(colour="black"),
+                        axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+                        axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+                        title=element_text(size=axis.size+8,vjust=1.5),
+                        legend.position="none")
+        
+                print(ptemp)
+        
+                message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+        
+            } ## end loop
+      
+            if (address!=FALSE) dev.off()
+        } ## end QQplot by all feature
     
-  } ### end QQplots
+    
+        #### panel for each feature,
+        if (toupper(feature.QQPlot)=="BYFEATURE") {
+      
+            #### save the plots as pdf or not
+            # If there are the file with the same name, add next numbering at the end of file name	
+            if (address!=FALSE) {
+                allfiles <- list.files()
+        
+                num <- 0
+                filenaming <- paste(address,"QQPlot_byFeatures",sep="")
+                finalfile <- paste(address,"QQPlot_byFeatures.pdf",sep="")
+        
+                while(is.element(finalfile,allfiles)) {
+                    num <- num+1
+                    finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+                }	
+        
+                pdf(finalfile, width=width, height=height)
+            }
+      
+            for (i in 1:nlevels(data$PROTEIN)) {	
+        
+                sub <- data[data$PROTEIN==levels(data$PROTEIN)[i], ]
+        
+                ## label-free
+                if (length(unique(sub$LABEL))==1) {
+          
+                    ## need to update for qline per feature
+                    ptemp <- ggplot(sub, aes_string(sample='residuals', color='FEATURE'))+
+                        geom_point(stat="qq", alpha=0.8, size=dot.size)+
+                        facet_wrap(~FEATURE)+
+                        scale_y_continuous('Sample Quantiles')+
+                        scale_x_continuous('Theoretical Quantiles')+
+                        labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")"))+
+                        theme(
+                            panel.background=element_rect(fill='white', colour="black"),
+                            panel.grid.major = element_line(colour="grey95"),
+                            panel.grid.minor =element_blank(),
+                            axis.text.x=element_text(size=axis.size,colour="black"),
+                            axis.text.y=element_text(size=axis.size,colour="black"),
+                            axis.ticks=element_line(colour="black"),
+                            axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+                            axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+                            title=element_text(size=axis.size+8,vjust=1.5),
+                            strip.text.x=element_text(size=text.size),
+                            legend.position="none")
+          
+                    print(ptemp)
+          
+                    message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+          
+                }
+        
+                ## label-based : seperate endogenous and reference
+                if (length(unique(sub$LABEL))==2) {
+                    ## need to update for qline per feature
+          
+                    ### endogenous intensities
+                    sub.l <- sub[sub$LABEL=="L",]
+                    ptemp <- ggplot(sub.l, aes_string(sample='residuals', color='FEATURE'))+
+                        geom_point(stat="qq", alpha=0.8, size=dot.size)+
+                        facet_wrap(~FEATURE)+
+                        scale_y_continuous('Sample Quantiles')+
+                        scale_x_continuous('Theoretical Quantiles')+
+                        labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Endogenous Intensities"))+
+                        theme(
+                            panel.background=element_rect(fill='white', colour="black"),
+                            panel.grid.major = element_line(colour="grey95"),
+                            panel.grid.minor =element_blank(),
+                            axis.text.x=element_text(size=axis.size,colour="black"),
+                            axis.text.y=element_text(size=axis.size,colour="black"),
+                            axis.ticks=element_line(colour="black"),
+                            axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+                            axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+                            title=element_text(size=axis.size+8,vjust=1.5),
+                            strip.text.x=element_text(size=text.size),
+                            legend.position="none")
+          
+                    print(ptemp)
+          
+                    ### reference intensities
+                    sub.h <- sub[sub$LABEL=="H",]
+                    ptemp <- ggplot(sub.h, aes_string(sample='residuals', color='FEATURE'))+
+                        geom_point(stat="qq", alpha=0.8, size=dot.size)+
+                        facet_wrap(~FEATURE)+
+                        scale_y_continuous('Sample Quantiles')+
+                        scale_x_continuous('Theoretical Quantiles')+
+                        labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Reference Intensities"))+
+                        theme(
+                            panel.background=element_rect(fill='white', colour="black"),
+                            panel.grid.major = element_line(colour="grey95"),
+                            panel.grid.minor =element_blank(),
+                            axis.text.x=element_text(size=axis.size,colour="black"),
+                            axis.text.y=element_text(size=axis.size,colour="black"),
+                            axis.ticks=element_line(colour="black"),
+                            axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+                            axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+                            title=element_text(size=axis.size+8,vjust=1.5),
+                            strip.text.x=element_text(size=text.size),
+                            legend.position="none")
+          
+                    print(ptemp)	
+          
+                    message(paste("Drew the QQ plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+          
+                }
+        
+            } ## end loop
+      
+            if (address!=FALSE) dev.off()	
+        } ### end for QQ by FEATURE
+    
+    } ### end QQplots
   
   
-  #############################################
-  #### Residual plot
-  #############################################
-  if (toupper(type)=="RESIDUALPLOTS") {
+    #############################################
+    #### Residual plot
+    #############################################
+    if (toupper(type)=="RESIDUALPLOTS") {
     
-    y.limdown <- min(data$residuals,na.rm=TRUE)
-    y.limup <- max(data$residuals,na.rm=TRUE)
+        y.limdown <- min(data$residuals,na.rm=TRUE)
+        y.limup <- max(data$residuals,na.rm=TRUE)
     
-    x.limdown <- min(data$fitted,na.rm=TRUE)
-    x.limup <- max(data$fitted,na.rm=TRUE)
+        x.limdown <- min(data$fitted,na.rm=TRUE)
+        x.limup <- max(data$fitted,na.rm=TRUE)
     
     
-    #### save the plots as pdf or not
-    # If there are the file with the same name, add next numbering at the end of file name	
-    if (address!=FALSE) {
-      allfiles <- list.files()
+        #### save the plots as pdf or not
+        # If there are the file with the same name, add next numbering at the end of file name	
+        if (address!=FALSE) {
+            allfiles <- list.files()
       
-      num <- 0
-      filenaming <- paste(address,"ResidualPlot",sep="")
-      finalfile <- paste(address,"ResidualPlot.pdf",sep="")
+            num <- 0
+            filenaming <- paste(address,"ResidualPlot",sep="")
+            finalfile <- paste(address,"ResidualPlot.pdf",sep="")
       
-      while(is.element(finalfile,allfiles)) {
-        num <- num+1
-        finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
-      }	
+            while(is.element(finalfile,allfiles)) {
+                num <- num+1
+                finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+            }	
       
-      pdf(finalfile, width=width, height=height)
-    }
+            pdf(finalfile, width=width, height=height)
+        }
     
-    for (i in 1:nlevels(data$PROTEIN)) {	
+        for (i in 1:nlevels(data$PROTEIN)) {	
       
-      sub <- data[data$PROTEIN==levels(data$PROTEIN)[i],]
-      sub$PEPTIDE <- factor(sub$PEPTIDE)
-      sub$FEATURE <- factor(sub$FEATURE)
+            sub <- data[data$PROTEIN==levels(data$PROTEIN)[i],]
+            sub$PEPTIDE <- factor(sub$PEPTIDE)
+            sub$FEATURE <- factor(sub$FEATURE)
       
-      ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+geom_point(size=dot.size,alpha=0.5)+geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+scale_y_continuous('Residuals',limits=c(y.limdown,y.limup))+scale_x_continuous('Predicted Abundance',limits=c(x.limdown,x.limup))+labs(title=levels(data$PROTEIN)[i])
+            ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'), data=sub)+
+                geom_point(size=dot.size, alpha=0.5)+
+                geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6)+
+                scale_y_continuous('Residuals',limits=c(y.limdown, y.limup))+
+                scale_x_continuous('Predicted Abundance', limits=c(x.limdown, x.limup))+
+                labs(title=levels(data$PROTEIN)[i])
       
-      if (length(unique(sub$LABEL))==2) {
-        ptemp <- ptemp+scale_shape_manual(values=c(2,19),name="",labels=c("Reference","Endogenous"))
-      }else{
-        ptemp <- ptemp+scale_shape_manual(values=c(19),name="",labels=c("Endogenous"))
-      }
+            if (length(unique(sub$LABEL))==2) {
+                ptemp <- ptemp+scale_shape_manual(values=c(2,19),name="",labels=c("Reference","Endogenous"))
+            }else{
+                ptemp <- ptemp+scale_shape_manual(values=c(19),name="",labels=c("Endogenous"))
+            }
       
       
-      if (featureName) {
-        ptemp <- ptemp+theme(
-          panel.background=element_rect(fill='white', colour="black"),
-          legend.key=element_rect(fill='white',colour='white'),
-          legend.text=element_text(size=legend.size),
-          panel.grid.major = element_line(colour="grey95"),
-          panel.grid.minor = element_blank(),
-          axis.text.x=element_text(size=axis.size,colour="black"),
-          axis.text.y=element_text(size=axis.size,colour="black"),
-          axis.ticks=element_line(colour="black"),
-          axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-          axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-          title=element_text(size=axis.size+8,vjust=1.5),
-          legend.position=c("top"))+guides(color=guide_legend(ncol=2))
-      }else{
-        ptemp <- ptemp+theme(
-          panel.background=element_rect(fill='white', colour="black"),
-          panel.grid.major = element_line(colour="grey95"),
-          panel.grid.minor = element_blank(),
-          axis.text.x=element_text(size=axis.size,colour="black"),
-          axis.text.y=element_text(size=axis.size,colour="black"),
-          axis.ticks=element_line(colour="black"),
-          axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-          axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-          title=element_text(size=axis.size+8,vjust=1.5),
-          legend.position="none")
-      }
+            if (featureName) {
+                ptemp <- ptemp+theme(
+                    panel.background=element_rect(fill='white', colour="black"),
+                    legend.key=element_rect(fill='white',colour='white'),
+                    legend.text=element_text(size=legend.size),
+                    panel.grid.major = element_line(colour="grey95"),
+                    panel.grid.minor = element_blank(),
+                    axis.text.x=element_text(size=axis.size,colour="black"),
+                    axis.text.y=element_text(size=axis.size,colour="black"),
+                    axis.ticks=element_line(colour="black"),
+                    axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+                    axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+                    title=element_text(size=axis.size+8,vjust=1.5),
+                    legend.position=c("top"))+
+                    guides(color=guide_legend(ncol=2))
+            }else{
+                ptemp <- ptemp+theme(
+                    panel.background=element_rect(fill='white', colour="black"),
+                    panel.grid.major = element_line(colour="grey95"),
+                    panel.grid.minor = element_blank(),
+                    axis.text.x=element_text(size=axis.size, colour="black"),
+                    axis.text.y=element_text(size=axis.size, colour="black"),
+                    axis.ticks=element_line(colour="black"),
+                    axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
+                    axis.title.y=element_text(size=axis.size+5,vjust=0.3),
+                    title=element_text(size=axis.size+8,vjust=1.5),
+                    legend.position="none")
+            }
       
-      print(ptemp)
+            print(ptemp)
       
-      message(paste("Drew the residual plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+            message(paste("Drew the residual plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
       
-    }
+        }
     
-    if (address!=FALSE) dev.off()	
-  } ## end residualplots
+        if (address!=FALSE) dev.off()	
+    } ## end residualplots
   
 }
-
-
-
 
 
 
@@ -777,15 +822,48 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
             
             if( any(levels(origGroup)[contrast.matrix.sub != 0] == unique(data2$GROUP_ORIGINAL)) ){
             	
-            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", unique(data2$GROUP_ORIGINAL), ".")
-            	          	
-            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=Inf, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='oneConditionMissing')
+            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", 
+            	        row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", 
+            	        unique(data2$GROUP_ORIGINAL), ".")
+              
+              
+            	## need to check Inf vs -Inf
+                #if( contrast.matrix.sub[levels(origGroup)[contrast.matrix.sub != 0] == unique(data2$GROUP_ORIGINAL)] > 0 ){
+                if( contrast.matrix.sub[contrast.matrix.sub != 0 & (levels(origGroup) == unique(data2$GROUP_ORIGINAL)) ] > 0 ){
+                  
+                    out <- data.frame(Protein=unique(data2$PROTEIN), 
+                                      Label=row.names(contrast.matrix.sub),
+                                      logFC=Inf, 
+                                      SE=NA, 
+                                      Tvalue=NA, 
+                                      DF=NA, 
+                                      pvalue=NA, 
+                                      issue='oneConditionMissing')
+                
+                } else {
+                    out <- data.frame(Protein=unique(data2$PROTEIN), 
+                                      Label=row.names(contrast.matrix.sub),
+                                      logFC=(-Inf), 
+                                      SE=NA, 
+                                      Tvalue=NA, 
+                                      DF=NA, 
+                                      pvalue=NA, 
+                                      issue='oneConditionMissing')
+                }         	
             	
             } else {
             	
-            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
+            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", 
+            	        row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
             	          	
-            	out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='completeMissing')
+            	out <- data.frame(Protein=unique(data2$PROTEIN), 
+            	                  Label=row.names(contrast.matrix.sub), 
+            	                  logFC=NA, 
+            	                  SE=NA, 
+            	                  Tvalue=NA, 
+            	                  DF=NA, 
+            	                  pvalue=NA, 
+            	                  issue='completeMissing')
             	
             }
          	       	        
@@ -961,16 +1039,24 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
  #         out <- data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)		
  #       }else{
         	
-        	## get two groups from contrast.matrix
-        	datasub <- data[which(data$GROUP_ORIGINAL %in% origGroup[contrast.matrix.sub!=0]), ]
+        ## get two groups from contrast.matrix
+        datasub <- data[which(data$GROUP_ORIGINAL %in% origGroup[contrast.matrix.sub!=0]), ]
           
-          ## t test
-          sumresult <- try(t.test(datasub$ABUNDANCE~datasub$GROUP_ORIGINAL, var.equal=TRUE), silent=TRUE)
+         ## t test
+         sumresult <- try(t.test(datasub$ABUNDANCE~datasub$GROUP_ORIGINAL, var.equal=TRUE), silent=TRUE)
 
 			if (class(sumresult)=="try-error") {
-				out <- data.frame(Protein=unique(data$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
+				out <- data.frame(Protein=unique(data$PROTEIN), 
+				                  Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue=NA)
 			}else{
-				out <- data.frame(Protein=unique(data$PROTEIN), Label=paste(names(sumresult$estimate)[1], " - ", names(sumresult$estimate)[2], sep=""), logFC=sumresult$estimate[1] - sumresult$estimate[2], SE=(sumresult$estimate[1] - sumresult$estimate[2]) / sumresult$statistic, Tvalue=sumresult$statistic, DF=sumresult$parameter, pvalue=sumresult$p.value, issue=NA)
+				out <- data.frame(Protein=unique(data$PROTEIN), 
+				                  Label=paste(names(sumresult$estimate)[1], " - ", names(sumresult$estimate)[2], sep=""), 
+				                  logFC=sumresult$estimate[1] - sumresult$estimate[2], 
+				                  SE=(sumresult$estimate[1] - sumresult$estimate[2]) / sumresult$statistic, 
+				                  Tvalue=sumresult$statistic, 
+				                  DF=sumresult$parameter, 
+				                  pvalue=sumresult$p.value, 
+				                  issue=NA)
 				rownames(out) <- NULL
 			}
 
@@ -978,9 +1064,9 @@ modelBasedQCPlots <- function(data,type,axis.size=10,dot.size=3,text.size=7,lege
         
         allout <- rbind(allout, out)
         
-      } # end loop for comparion
+    } # end loop for comparion
       
-      finalout <- list(result=allout, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)	
+    finalout <- list(result=allout, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)	
   	return(finalout)
 
 }
