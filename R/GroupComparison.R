@@ -3,12 +3,15 @@
 # Whole plot testing
 #############################################
 
-#' @export
+#' @export groupComparison
 #' @import lme4 
 #' @import limma
+#' @importFrom doSNOW registerDoSNOW
+#' @importFrom snow makeCluster
+#' @import foreach
 
 groupComparison <- function(contrast.matrix=contrast.matrix,
-							data=data) {
+							data=data, clusters=1) {
   
     scopeOfBioReplication <- "expanded"
  	scopeOfTechReplication <- "restricted"
@@ -131,7 +134,16 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	origGroup <- unique(rqall$GROUP_ORIGINAL)
   	groupinfo <- levels(data$ProcessedData$GROUP_ORIGINAL)
   	
-  	for (i in 1:nlevels(rqall$Protein)) {
+  	### create cluster for paralleled workflow
+  	cat("Cluster Size: ", clusters,"\n")
+  	doSNOW::registerDoSNOW(snow::makeCluster(clusters, type = "SOCK"))
+  	
+  	# for (i in 1: nlevels(data$PROTEIN)) {
+  	pb <- txtProgressBar(max =  nlevels(rqall$Protein), style = 3)
+  	progress <- function(n) setTxtProgressBar(pb, n)
+  	opts <- list(progress = progress)
+  	processout_MC = c()
+  	GC_results <- foreach(i=1: nlevels(rqall$Protein), .export =c(".checkSingleSubject", '.checkTechReplicate','.checkRunbyFeature','.checkUnequalSubject','.count.missing.percentage','.getParameterFixed','.fit.model.single'), .packages = c("MSstats"), .combine='resultsAsLists', .options.snow = opts, .multicombine=TRUE, .init=list(list(), list(), list(), list())) %dopar% {
     
     	sub <- rqall[rqall$Protein == levels(rqall$Protein)[i], ]
     	colnames(sub)[colnames(sub) == "LogIntensities"] <- "ABUNDANCE"
@@ -185,8 +197,9 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	if (class(temp) == "try-error") {
       		message("*** error : can't analyze ", levels(rqall$Protein)[i], " for comparison.")
       
-      		processout <- rbind(processout,c(paste("error : can't analyze ", levels(rqall$Protein)[i], " for comparison.", sep = "")))
-      		write.table(processout, file=finalfile, row.names=FALSE)
+      		# processout <- rbind(processout,c(paste("error : can't analyze ", levels(rqall$Protein)[i], " for comparison.", sep = "")))
+    	    processout_MC <- c(paste("error : can't analyze ", levels(rqall$Protein)[i], " for comparison.", sep = ""))  # adjusted for Multicore
+    	    write.table(processout_MC, file=finalfile, row.names=FALSE)
       
       		tempresult <- list(result=NULL, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)
       
@@ -217,8 +230,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	#	out <- rbindlist(list(out,tempresult$result))
     	temptempresult$Label <- as.character(temptempresult$Label)
     	
-    	out <- rbind(out, temptempresult)
-
+    	# out <- rbind(out, temptempresult)
+    	out <- temptempresult
 
     	## for checking model assumptions
     	## add residual and fitted after fitting the model
@@ -249,21 +262,46 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     #	rownames(sub) <- data$Row.names
     
     #	dataafterfit <- rbindlist(list(dataafterfit,sub))
-    	dataafterfit <- rbind(dataafterfit, sub)
+    	# dataafterfit <- rbind(dataafterfit, sub)
+    	dataafterfit <- sub
     
     	## save fitted model
-    	outfitted <- c(outfitted, list(tempresult$fittedmodel))
+    	# outfitted <- c(outfitted, list(tempresult$fittedmodel))
+    	outfitted <- list(tempresult$fittedmodel)
     
     	##
-    	processout <- rbind(processout, c(paste("Finished a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)),")")))
+    	if(length(processout_MC)>0){
+    	  processout_MC <- rbind(processout_MC, c(paste("Finished a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)),")")))
+    	}else{
+    	  processout_MC <- c(paste("Finished a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)),")"))
+    	}
     	write.table(processout, file=finalfile, row.names=FALSE)
-    
+    	
+    	return( list(out, dataafterfit, outfitted, processout_MC) )
   	} ### end protein loop
-  
-  	##
-  	processout <- rbind(processout,c("Comparisons for all proteins are done.- okay"))
+  	close(pb)
+  	# stopCluster(cl)
+  	
+  	## Clean up the parallelized results
+  	out.list <- dataafterfit.list <- outfitted.list <- processout_MC.list <- list()
+  	for(j in 1:length(GC_results[[1]])){
+  	  # deal with the "results" first
+  	  out.list[[j]] <- GC_results[[1]][[j]]
+  	  dataafterfit.list[[j]] <- GC_results[[2]][[j]]
+  	  outfitted.list[[j]] <- GC_results[[3]][[j]]
+  	  processout_MC.list[[j]] <- GC_results[[4]][[j]]
+  	}
+  	# combine the listed results into the desired formats
+  	out <- do.call(rbind, out.list)
+  	dataafterfit <- do.call(rbind, dataafterfit.list)
+  	outfitted <- do.call(c, outfitted.list)
+  	processout_MC <- do.call(rbind, processout_MC.list)
+  	
+  	
+  	## Combine the processout_MC with prior processout
+  	processout <- rbind(processout, processout_MC, c("Comparisons for all proteins are done.- okay"))
   	write.table(processout, file=finalfile, row.names=FALSE)
-  
+  	
   	## finalize result
   	## need to FDR per comparison
   	out.all <- NULL
