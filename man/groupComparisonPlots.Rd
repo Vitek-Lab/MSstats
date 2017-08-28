@@ -18,11 +18,13 @@ groupComparisonPlots(data=data,
 		text.size=4,
 		legend.size=13,
 		ProteinName=TRUE,
+		colorkey=TRUE,
 		numProtein=100, 
 		clustering="both", 
 		width=10, 
 		height=10, 
 		which.Comparison="all", 
+		which.Protein="all",
 		address="")
 }
 %- maybe also 'usage' for other objects documented here.
@@ -41,11 +43,13 @@ groupComparisonPlots(data=data,
  \item{text.size}{size of ProteinName label in the graph for Volcano Plot. Default is 4.}
   \item{legend.size}{size of legend for color at the bottom of volcano plot.  Default is 7.}
   \item{ProteinName}{for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.}
+  \item{colorkey}{TRUE(default) shows colorkey.}
    \item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180. }
    \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
   \item{width}{width of the saved file. Default is 10.}
   \item{height}{height of the saved file. Default is 10.}
-   \item{which.Comparison}{list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.}
+  \item{which.Comparison}{list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.}
+  \item{which.Protein}{Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.}
   \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 

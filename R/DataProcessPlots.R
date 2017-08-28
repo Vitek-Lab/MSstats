@@ -43,6 +43,14 @@ dataProcessPlots <- function(data=data,
 		stop(paste("Input for type=", type, ". However,'type' should be one of \"ProfilePlot\", \"QCPlot\",\"ConditionPlot\".", sep=""))
 	}
   
+	if ( address == FALSE ){ ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+	    if( which.Protein == 'all' ){
+	        stop( '** Cannnot generate all plots in a screen. Please set one protein at a time.' )
+	    } else if ( length(which.Protein) > 1 ) {
+	        stop( '** Cannnot generate multiple plots in a screen. Please set one protein at a time.' )
+	        
+	    }
+	}
 
 	## Profile plot ##
 	## --------------- 
@@ -770,106 +778,112 @@ dataProcessPlots <- function(data=data,
     	groupName <- data.frame(RUN=c(0, lineNameAxis)+groupAxis / 2 + 0.5, ABUNDANCE=rep(y.limup-1, length(groupAxis)), Name=levels(datafeature$GROUP_ORIGINAL))
     
     	## all protein
-    	ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=datafeature)+
-    	    facet_grid(~LABEL)+
-    		geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
-    		scale_fill_manual(values=label.color, guide="none")+
-    		scale_x_discrete('MS runs', breaks=cumGroupAxis)+
-    		scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
-    		geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
-    		labs(title="All proteins")+
-    		geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), 
+    	if( which.Protein == 'all' | which.Protein == 'allonly' ){
+    	    ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=datafeature)+
+    	        facet_grid(~LABEL)+
+    		    geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
+    		    scale_fill_manual(values=label.color, guide="none")+
+    		    scale_x_discrete('MS runs', breaks=cumGroupAxis)+
+    		    scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+    	    	geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+    		    labs(title="All proteins")+
+    		    geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), 
     		          size=text.size, 
     		          angle=text.angle, 
     		          color="black")+
-    		theme(
-    		    panel.background=element_rect(fill='white', colour="black"),
-      			legend.key=element_rect(fill='white', colour='white'),
-      			panel.grid.minor = element_blank(),
-      			strip.background=element_rect(fill='gray95'),	
-      			strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-      			axis.text.x=element_text(size=x.axis.size,colour="black"),
-      			axis.text.y=element_text(size=y.axis.size,colour="black"),
-      			axis.ticks=element_line(colour="black"),
-      			axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-      			axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-      			title=element_text(size=x.axis.size+8, vjust=1.5)
+    		    theme(
+    		        panel.background=element_rect(fill='white', colour="black"),
+      			    legend.key=element_rect(fill='white', colour='white'),
+      		    	panel.grid.minor = element_blank(),
+      		    	strip.background=element_rect(fill='gray95'),	
+      		    	strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+      		    	axis.text.x=element_text(size=x.axis.size,colour="black"),
+      		    	axis.text.y=element_text(size=y.axis.size,colour="black"),
+      		    	axis.ticks=element_line(colour="black"),
+      		    	axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+      		    	axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+      		    	title=element_text(size=x.axis.size+8, vjust=1.5)
     		)
     
-    	print(ptemp)
+        	print(ptemp)
     
-    	message("Drew the Quality Contol plot(boxplot) for all proteins.")
+        	message("Drew the Quality Contol plot(boxplot) for all proteins.")
+    	}
     
     	## each protein
 		## choose Proteins or not
-    	if (which.Protein != "all") {
-      		## check which.Protein is name of Protein
-      		if (is.character(which.Protein)) {
-        
-        		temp.name <- which.Protein
-        
-        		## message if name of Protein is wrong.
-        		if (length(setdiff(temp.name, unique(datafeature$PROTEIN))) > 0) {
-          			dev.off()
-          			stop(paste("Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "), sep=" "))
-        		}
-      		}
-      
-      		## check which.Protein is order number of Protein
-      		if (is.numeric(which.Protein)) {
-       			temp.name <- levels(datafeature$PROTEIN)[which.Protein]
-        
-        		## message if name of Protein is wrong.
-        		if (length(levels(datafeature$PROTEIN))<max(which.Protein)) {
-          			dev.off()
-          			stop(paste("Please check your selection of proteins. There are ", length(levels(datafeature$PROTEIN))," proteins in this dataset.",sep=" "))
-        		}
-      		}
-      
-      		## use only assigned proteins
-      		datafeature <- datafeature[which(datafeature$PROTEIN %in% temp.name), ]
-      		datafeature$PROTEIN <- factor(datafeature$PROTEIN)
-    	}
-    
-    	for (i in 1:nlevels(datafeature$PROTEIN)) {	
-      		sub <- datafeature[datafeature$PROTEIN==levels(datafeature$PROTEIN)[i], ]
-      		subTemp <- sub[!is.na(sub$ABUNDANCE),]
-      		sub <- sub[with(sub, order(LABEL,RUN)),]
-      
-     		## if all measurements are NA,
-      		if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
-        		message(paste("Can't the Quality Control plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))
-        		next()
-      		}
-      
-      		ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=sub)+
-      		    facet_grid(~LABEL)+
-      		    geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
-      		    scale_fill_manual(values=label.color, guide="none")+
-      		    scale_x_discrete('MS runs', breaks=cumGroupAxis)+
-      		    scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
-      		    geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
-      		    labs(title=unique(sub$PROTEIN))+
-      		    geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
-      		    theme(
-      		        panel.background=element_rect(fill='white', colour="black"),
-        			legend.key=element_rect(fill='white', colour='white'),
-        			panel.grid.minor = element_blank(),
-        			strip.background=element_rect(fill='gray95'),	
-        			strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-        			axis.text.x=element_text(size=x.axis.size, colour="black"),
-        			axis.text.y=element_text(size=y.axis.size, colour="black"),
-        			axis.ticks=element_line(colour="black"),
-        			axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
-        			axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
-        			title=element_text(size=x.axis.size+8, vjust=1.5)
-        		)
-      
-      		print(ptemp)
-      
-      		message(paste("Drew the Quality Contol plot(boxplot) for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
-      
-    	} # end-loop
+    	if( which.Protein != 'allonly' ){
+    	    if (which.Protein != "all") {
+    	        ## check which.Protein is name of Protein
+    	        if (is.character(which.Protein)) {
+    	            
+    	            temp.name <- which.Protein
+    	            
+    	            ## message if name of Protein is wrong.
+    	            if (length(setdiff(temp.name, unique(datafeature$PROTEIN))) > 0) {
+    	                dev.off()
+    	                stop(paste("Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "), sep=" "))
+    	            }
+    	        }
+    	        
+    	        ## check which.Protein is order number of Protein
+    	        if (is.numeric(which.Protein)) {
+    	            temp.name <- levels(datafeature$PROTEIN)[which.Protein]
+    	            
+    	            ## message if name of Protein is wrong.
+    	            if (length(levels(datafeature$PROTEIN))<max(which.Protein)) {
+    	                dev.off()
+    	                stop(paste("Please check your selection of proteins. There are ", length(levels(datafeature$PROTEIN))," proteins in this dataset.",sep=" "))
+    	            }
+    	        }
+    	        
+    	        ## use only assigned proteins
+    	        datafeature <- datafeature[which(datafeature$PROTEIN %in% temp.name), ]
+    	        datafeature$PROTEIN <- factor(datafeature$PROTEIN)
+    	    }
+    	    
+    	    for (i in 1:nlevels(datafeature$PROTEIN)) {	
+    	        sub <- datafeature[datafeature$PROTEIN==levels(datafeature$PROTEIN)[i], ]
+    	        subTemp <- sub[!is.na(sub$ABUNDANCE),]
+    	        sub <- sub[with(sub, order(LABEL,RUN)),]
+    	        
+    	        ## if all measurements are NA,
+    	        if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
+    	            message(paste("Can't the Quality Control plot for ",unique(sub$PROTEIN), "(",i," of ",length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))
+    	            next()
+    	        }
+    	        
+    	        ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=sub)+
+    	            facet_grid(~LABEL)+
+    	            geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5)+
+    	            scale_fill_manual(values=label.color, guide="none")+
+    	            scale_x_discrete('MS runs', breaks=cumGroupAxis)+
+    	            scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup))+
+    	            geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
+    	            labs(title=unique(sub$PROTEIN))+
+    	            geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black")+
+    	            theme(
+    	                panel.background=element_rect(fill='white', colour="black"),
+    	                legend.key=element_rect(fill='white', colour='white'),
+    	                panel.grid.minor = element_blank(),
+    	                strip.background=element_rect(fill='gray95'),	
+    	                strip.text.x=element_text(colour=c("#00B0F6"), size=14),
+    	                axis.text.x=element_text(size=x.axis.size, colour="black"),
+    	                axis.text.y=element_text(size=y.axis.size, colour="black"),
+    	                axis.ticks=element_line(colour="black"),
+    	                axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
+    	                axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
+    	                title=element_text(size=x.axis.size+8, vjust=1.5)
+    	            )
+    	        
+    	        print(ptemp)
+    	        
+    	        message(paste("Drew the Quality Contol plot(boxplot) for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
+    	        
+    	    } # end-loop
+    	    
+    	} 
+          
     	if (address!=FALSE) {
     		dev.off()
     	}

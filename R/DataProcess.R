@@ -2056,15 +2056,38 @@ dataProcess  <-  function(raw,
 	    
 	            work[!is.na(work$INTENSITY) & 
 	                     work$ABUNDANCE < cutoff.lower, 'censored'] <- TRUE
-	    
+	            
+	            message(paste('** Log2 intensities under cutoff =', format(cutoff.lower, digits=5), ' were considered as censored missing values.'))
+	            
+	            processout <- rbind(processout, 
+	                                c(paste('** Log2 intensities under cutoff =', format(cutoff.lower, digits=5), ' were considered as censored missing values.')))
+	            write.table(processout, file=finalfile, row.names=FALSE)
+	            
+	            ## if censoredInt == '0, and cutoff is negative, still zero should becensored
+	            if ( cutoff.lower <= 0 & !is.null(censoredInt) & censoredInt == "0" ) {
+	                
+	                work[!is.na(work$INTENSITY) & work$INTENSITY == 1, 'censored'] <- TRUE
+	                work[!is.na(work$ABUNDANCE) & work$ABUNDANCE <= 0, 'censored'] <- TRUE
+	                
+	                message(paste('** Log2 intensities = 0 were considered as censored missing values.'))
+	                
+	                processout <- rbind(processout, c(paste('** Log2 intensities = 0 were considered as censored missing values.')))
+	                write.table(processout, file=finalfile, row.names=FALSE)
+	                
+	            }
+	            
 	            ## if censoredInt == NA, original NA also shoule be 'censored'
 	            if (!is.null(censoredInt) & censoredInt == "NA") {
 	      
-	                work[is.na(work$ABUNDANCE), 'censored'] <- TRUE
+	                work[is.na(work$INTENSITY), 'censored'] <- TRUE
+	                
+	                message(paste('** Log2 intensities = NA were considered as censored missing values.'))
+	                
+	                processout <- rbind(processout, c('** Log2 intensities = NA were considered as censored missing values.'))
+	                write.table(processout, file=finalfile, row.names=FALSE)
 	      
 	            }
 	    
-	            message(paste('Log2 intensities under cutoff =', format(cutoff.lower, digits=5), ' were considered as censored missing values.'))
 	        }
 	  
 	        ### labeled : only consider light. Assume that missing in heavy is random.
@@ -2085,23 +2108,54 @@ dataProcess  <-  function(raw,
 	            cutoff.lower <- (log2int.prime.quant[2] - multiplier * iqr) 
 	    
 	            work$censored <- FALSE
-	            work[work$LABEL == 'L' & !is.na(work$INTENSITY) & work$ABUNDANCE < cutoff.lower, 'censored'] <- TRUE
+	            work[work$LABEL == 'L' & 
+	                     !is.na(work$INTENSITY) & 
+	                     work$ABUNDANCE < cutoff.lower, 'censored'] <- TRUE
 	    
+	            message(paste('** Log2 endogenous intensities under cutoff =', format(cutoff.lower, digits=5), ' were considered as censored missing values.'))
+	            
+	            processout <- rbind(processout, 
+	                                c(paste('** Log2 endogenous intensities under cutoff =', format(cutoff.lower, digits=5), ' were considered as censored missing values.')))
+	            write.table(processout, file=finalfile, row.names=FALSE)
+	            
+	            
+	            ## if censoredInt == '0, and cutoff is negative, still zero should becensored
+	            if ( cutoff.lower <= 0 & !is.null(censoredInt) & censoredInt == "0" ) {
+	                
+	                work[work$LABEL == 'L' &
+	                         !is.na(work$INTENSITY) & work$INTENSITY == 1, 'censored'] <- TRUE
+	                work[work$LABEL == 'L' &
+	                         !is.na(work$ABUNDANCE) & work$ABUNDANCE <= 0, 'censored'] <- TRUE
+	                
+	                message(paste('** Log2 endogenous intensities = 0 were considered as censored missing values.'))
+	                
+	                processout <- rbind(processout, 
+	                                    c(paste('** Log2 endogenous intensities = 0 were considered as censored missing values.')))
+	                write.table(processout, file=finalfile, row.names=FALSE)
+	                
+	            }
+	            
 	            ## if censoredInt == NA, original NA also shoule be 'censored'
 	            if (!is.null(censoredInt) & censoredInt == "NA") {
-	      
-	                work[is.na(work$ABUNDANCE), 'censored'] <- TRUE
-	      
+	                
+	                work[work$LABEL == 'L' &
+	                         is.na(work$INTENSITY), 'censored'] <- TRUE
+	                
+	                message(paste('** Log2 endogenous intensities = NA were considered as censored missing values.'))
+	                
+	                processout <- rbind(processout, 
+	                                    c(paste('** Log2 endogenous intensities = NA were considered as censored missing values.')))
+	                write.table(processout, file=finalfile, row.names=FALSE)
+	                
 	            }
 	    
-	            message(paste('Log2 intensities under cutoff =', format(cutoff.lower, digits=5), ' were considered as censored missing values.'))
-	      
 	        }
 	        
 	    } else { ## will MBimpute, but not apply algorithm for cutoff
 	    
 	        if(censoredInt == '0'){
-	            work[work$LABEL == 'L' & !is.na(work$ABUNDANCE) & work$ABUNDANCE == 0, 'censored'] <- TRUE
+	            work[work$LABEL == 'L' & !is.na(work$INTENSITY) & work$INTENSITY == 1, 'censored'] <- TRUE
+	            work[work$LABEL == 'L' & !is.na(work$ABUNDANCE) & work$ABUNDANCE <= 0, 'censored'] <- TRUE
 	        }
 	        if(censoredInt == 'NA'){
 	            work[work$LABEL == 'L' & is.na(work$ABUNDANCE), 'censored'] <- TRUE
@@ -2118,18 +2172,18 @@ dataProcess  <-  function(raw,
   	##  !! need to decide how to present : keep original all data and make new column to mark, or just present selected subset    
   
 	if (featureSubset == "all") {
- 	 	message("* Use all features that the dataset origianally has.")
+ 	 	message("** Use all features that the dataset origianally has.")
  	 
- 	 	processout <- rbind(processout,c("* Use all features that the dataset origianally has."))
+ 	 	processout <- rbind(processout,c("** Use all features that the dataset origianally has."))
      	write.table(processout, file=finalfile, row.names=FALSE)
   	} 
 
 	if (featureSubset == "highQuality") {
-	    message("* Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release.")
+	    message("** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release.")
     
         featureSubset <- 'top3'
 	  
-	    processout <- rbind(processout, c("* Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release."))
+	    processout <- rbind(processout, c("** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release."))
 
 	    write.table(processout, file=finalfile, row.names=FALSE)
 	  
@@ -2184,9 +2238,9 @@ dataProcess  <-  function(raw,
 	}
   
 	if (featureSubset == "top3") {
-  		message("* Use top3 features that have highest average of log2(intensity) across runs.")
+  		message("** Use top3 features that have highest average of log2(intensity) across runs.")
   		
-  		processout <- rbind(processout, c("* Use top3 features that have highest average of log2(intensity) across runs."))
+  		processout <- rbind(processout, c("** Use top3 features that have highest average of log2(intensity) across runs."))
         write.table(processout, file=finalfile, row.names=FALSE)
 	 
   	 	## INTENSITY vs ABUNDANCE? [THT: make more sense to use ABUNDANCE]
@@ -2214,9 +2268,9 @@ dataProcess  <-  function(raw,
     
         ## check whether there is the input for 'N'
     
-	    message(paste("* Use top", n_top_feature, " features that have highest average of log2(intensity) across runs.", sep=""))
+	    message(paste("** Use top", n_top_feature, " features that have highest average of log2(intensity) across runs.", sep=""))
 	  
-	    processout <- rbind(processout, c(paste("* Use top", n_top_feature, " features that have highest average of log2(intensity) across runs.", sep="")))
+	    processout <- rbind(processout, c(paste("** Use top", n_top_feature, " features that have highest average of log2(intensity) across runs.", sep="")))
 	    write.table(processout, file=finalfile, row.names=FALSE)
 	  
 	    ## INTENSITY vs ABUNDANCE? [THT: make more sense to use ABUNDANCE]
@@ -2379,7 +2433,13 @@ dataProcess  <-  function(raw,
 	message("\n Summary of Missingness :\n" )
 	message("  # transitions are completely missing in one condition: ", sum(final.decision!=0), "\n")
 	if (sum(final.decision!=0)!=0) {
-		message("    -> ", paste(names(final.decision[final.decision!=0]),collapse = ", "))
+	    tmp.final <- final.decision[final.decision != 0]
+	    if( length(tmp.final) > 5 ){
+	        message("    -> ", paste(names(tmp.final[1:5]),collapse = ", "), " ...")
+	    } else {
+	        message("    -> ", paste(names(tmp.final),collapse = ", "), " ...")
+	    }
+	    rm(tmp.final)
 	}
   
 	without <- xtabs(~RUN, work)
@@ -2394,7 +2454,16 @@ dataProcess  <-  function(raw,
 	processout <- rbind(processout,  c("Summary of Missingness :"))
 	processout <- rbind(processout,c(paste("  # transitions are completely missing in one condition: ", sum(final.decision!=0), sep="")))
 	if (sum(final.decision!=0)!=0){
-		processout <- rbind(processout,"    -> ", paste(names(final.decision[final.decision != 0]), collapse = ", "))
+		
+		tmp.final <- final.decision[final.decision != 0]
+		if( length(tmp.final) > 5 ){
+		    processout <- rbind(processout,"    -> ", paste(names(tmp.final[1:5]),collapse = ", "), " ...")
+		    
+		} else {
+		    processout <- rbind(processout,"    -> ", paste(names(tmp.final),collapse = ", "), " ...")
+		}
+		rm(tmp.final)
+		
 	} 
   
 	processout <- rbind(processout, c(paste("  # run with 75% missing observations: ", sum(run.missing < 0.25), sep="")))
@@ -3813,10 +3882,10 @@ dataProcess  <-  function(raw,
             per.overlap.feature <- (countdiff)[-1] / max(unique(countdiff)) 
             
             ## first, technical replicate, no fraction : 
-            ## all runs should have more than 70% features should be the same.
-            if ( all( per.overlap.feature > 0.7 ) ){ ## then there are technical replicates
+            ## all runs should have more than 50% features should be the same.
+            if ( all( per.overlap.feature > 0.5 ) ){ ## then there are technical replicates
                 out <- FALSE
-            } else if ( all( per.overlap.feature < 0.7 ) ) {
+            } else if ( all( per.overlap.feature < 0.5 ) ) {
                 out <- TRUE
             } else {
                 ## hard to distinguish fractionation automatically. need information

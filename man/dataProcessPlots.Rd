@@ -43,7 +43,7 @@ dataProcessPlots(data=data,
   \item{dot.size.condition}{size of dots in condition plot. Default is 3.}
   \item{width}{width of the saved file. Default is 10.}
   \item{height}{height of the saved file. Default is 10.}
-  \item{which.Protein}{Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from levels(data$ProcessedData$PROTEIN). Default is "all", which generates all plots for each protein.}
+  \item{which.Protein}{Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from levels(data$ProcessedData$PROTEIN). Default is "all", which generates all plots for each protein. For QC plot, "allonly" will generate one QC plot with all proteins.}
   \item{originalPlot}{TRUE(default) draws original profile plots.}
   \item{summaryPlot}{TRUE(default) draws profile plots with summarization for run levels.}
   \item{save_condition_plot_result}{TRUE saves the table with values using condition plots. Default is FALSE.}

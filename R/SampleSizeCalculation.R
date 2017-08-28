@@ -112,7 +112,7 @@ designSampleSize <- function(data=data,
       	delta <- log2(seq(desiredFC[1], desiredFC[2], 0.025))
       	desiredFC <- 2^delta
       	m0_m1=99
-     	t <- delta/sqrt(2*median.sigma.error/numSample+median.sigma.subject/numSample)
+     	t <- delta/sqrt(2*(median.sigma.error/numSample+median.sigma.subject/numSample))
       	#t <- delta/sqrt(2*median.sigma.error/numPep/numTran/numSample+median.sigma.subject/numSample)
      	powerTemp <- seq(0, 1, 0.01)
       
@@ -123,7 +123,7 @@ designSampleSize <- function(data=data,
         	power[i] <- powerTemp[order(abs(diff))][1]
       	}
       
-      	CV <- round((2*median.sigma.error/(numSample)+median.sigma.subject/numSample)/desiredFC, 3)
+      	CV <- round( (2*(median.sigma.error/numSample + median.sigma.subject/numSample))/desiredFC, 3)
      
       	###
      	processout <- rbind(processout, c("Power is calculated. - okay"))
@@ -147,8 +147,8 @@ designSampleSize <- function(data=data,
         	z_alpha <- qnorm(1-alpha/2)
         	z_beta <- qnorm(power)
         	aa <- (delta/(z_alpha+z_beta))^2
-        	numSample <- round((2*median.sigma.error+median.sigma.subject)/aa,0)
-        	CV <- round((2*median.sigma.error/(numSample)+median.sigma.subject/numSample)/desiredFC,3)
+        	numSample <- round( 2*(median.sigma.error+median.sigma.subject)/aa, 0)
+        	CV <- round(2*(median.sigma.error/numSample+median.sigma.subject/numSample)/desiredFC, 3)
 
 	  		##
         	processout <- rbind(processout, c("The number of sample is calculated. - okay"))

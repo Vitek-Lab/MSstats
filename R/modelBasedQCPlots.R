@@ -7,6 +7,7 @@ modelBasedQCPlots <- function(data,
                               legend.size=7,
                               width=10, 
                               height=10,
+                              which.Protein='all',
                               address="") {
   
     if (length(setdiff(toupper(type),c("QQPLOTS","RESIDUALPLOTS")))!=0) {
@@ -15,6 +16,43 @@ modelBasedQCPlots <- function(data,
   
     datafit <- data$fittedmodel
     proid <- levels(data$ComparisonResult$Protein)
+    
+    if ( address == FALSE ){ ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+        if( which.Protein == 'all' ){
+            stop( '** Cannnot generate all plots in a screen. Please set one protein at a time.' )
+        } else if ( length(which.Protein) > 1 ) {
+            stop( '** Cannnot generate multiple plots in a screen. Please set one protein at a time.' )
+            
+        }
+    }
+    
+    ## choose Proteins or not
+    if (which.Protein != "all") {
+        ## check which.Protein is name of Protein
+        if (is.character(which.Protein)) {
+            temp.name <- which.Protein
+            
+            ## message if name of Protein is wrong.
+            if (length(setdiff(temp.name, unique(proid)))>0) {
+                stop(paste("Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "), sep=" "))
+            }
+        }
+        
+        ## check which.Protein is order number of Protein
+        if (is.numeric(which.Protein)) {
+            temp.name <- proid[which.Protein]
+            
+            ## message if name of Protein is wrong.
+            if (length(proid) < max(which.Protein)) {
+                stop(paste("Please check your selection of proteins. There are ", length(proid)," proteins in this dataset.", sep=" "))
+            }
+        }
+        
+        ## use only assigned proteins
+        datafit <- datafit[proid %in% temp.name ]
+        
+        proid <- proid[proid %in% temp.name]
+    }
   
     #############################################
     ### normality, QQ plot

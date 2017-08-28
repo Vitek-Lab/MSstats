@@ -19,10 +19,30 @@ ProgenesistoMSstatsFormat <- function(input,
     #position.Normedpeak <- which(colnames(input) == 'Normalized.abundance')
     #position.Rawpeak <- which(colnames(input) == 'Raw.abundance')
     #position.Spectra <- which(colnames(input) == 'Spectral.counts')
-  
-    input <- input[,
-                   c(1:(which(colnames(input) == 'Normalized.abundance')-1),
-                     which(colnames(input) == 'Raw.abundance') : (which(colnames(input) == 'Spectral.counts')-1))]
+    
+    if( is.element('Spectral.counts', colnames(input)) & 
+        is.element('Raw.abundance', colnames(input)) & 
+        is.element('Normalized.abundance', colnames(input)) ){
+        
+        input <- input[,
+                       c(1:(which(colnames(input) == 'Normalized.abundance')-1),
+                         which(colnames(input) == 'Raw.abundance') : (which(colnames(input) == 'Spectral.counts')-1))]
+        
+    } else if ( is.element('Raw.abundance', colnames(input)) & 
+                is.element('Normalized.abundance', colnames(input)) ){
+       
+         input <- input[,
+                       c(1:(which(colnames(input) == 'Normalized.abundance')-1),
+                         which(colnames(input) == 'Raw.abundance') : ncol(input))]
+         
+    } else if ( is.element('Raw.abundance', colnames(input)) ) {
+        
+        input <- input[,
+                       c(1:(which(colnames(input) == 'Raw.abundance')-1),
+                         which(colnames(input) == 'Raw.abundance') : ncol(input))]
+    }
+    
+    
     input <- input[-1,]
     colnames(input) <- input[1, ]
     input <- input[-1,]

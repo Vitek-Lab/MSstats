@@ -23,11 +23,13 @@ groupComparisonPlots <- function(data=data,
 				text.size=4, 
 				legend.size=13,
 				ProteinName=TRUE,
+				colorkey=TRUE,
 				numProtein=100, 
 				clustering="both", 
 				width=10, 
 				height=10, 
 				which.Comparison="all", 
+				which.Protein="all",
 				address="") {
   
 	## save process output in each step
@@ -75,8 +77,6 @@ groupComparisonPlots <- function(data=data,
     
     	stop("Only -log2 or -log10 for logarithm transformation for adjusted p-values are posssible.\n")
   	}
-  
-  	## choose comparison to draw plots
   
   	if (which.Comparison != "all") {
     	## check which.comparison is name of comparison
@@ -265,12 +265,14 @@ groupComparisonPlots <- function(data=data,
       		pdf(finalfile, width=width, height=height)
     	}
     
-    	par(mar=c(3,3,3,3), mfrow=c(3,1),oma=c(3,0,3,0))
-    	plot.new()
-   		image(z = matrix(seq(1:(length(my.colors) - 1)), ncol = 1), col = my.colors[-length(my.colors)], xaxt = "n", yaxt = "n")
-   	 	mtext("Color Key", side=3,line=1, cex=3)
-    	mtext("(sign) Adjusted p-value", side=1, line=3,at=0.5, cex=1.7)
-    	mtext(blocks, side=1, line=1, at=x.at, cex=1)
+    	if (colorkey){
+    	    par(mar=c(3,3,3,3), mfrow=c(3,1),oma=c(3,0,3,0))
+    	    plot.new()
+    	    image(z = matrix(seq(1:(length(my.colors) - 1)), ncol = 1), col = my.colors[-length(my.colors)], xaxt = "n", yaxt = "n")
+    	    mtext("Color Key", side=3,line=1, cex=3)
+    	    mtext("(sign) Adjusted p-value", side=1, line=3,at=0.5, cex=1.7)
+    	    mtext(blocks, side=1, line=1, at=x.at, cex=1)
+    	}
     
     	## draw heatmap
     
@@ -310,6 +312,18 @@ groupComparisonPlots <- function(data=data,
   	## VolcanoPlot
   	#######################
   	if (type == "VOLCANOPLOT") {
+  	    
+  	    ## choose comparison to draw plots
+  	    if ( address == FALSE ){ ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+  	        if( which.Comparison == 'all' ) {
+  	            if( length(unique(data$Label)) > 1 ){
+  	                stop( '** Cannnot generate all volcano plots in a screen. Please set one comparison at a time.' )
+  	            }
+  	        } else if ( length(which.Comparison) > 1 ) {
+  	            stop( '** Cannnot generate multiple volcano plots in a screen. Please set one comparison at a time.' )
+  	            
+  	        }
+  	    }
     
     	## If there are the file with the same name, add next numbering at the end of file name		
     	if (address != FALSE) {
@@ -678,6 +692,43 @@ groupComparisonPlots <- function(data=data,
     
     	datatemp <- data[!is.na(data$adj.pvalue), ]
     	datatemp$Protein <- factor(datatemp$Protein)
+    	
+    	## choose comparison to draw plots
+    	if ( address == FALSE ){ ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+    	    if( which.Protein == 'all' ) {
+    	        stop( '** Cannnot generate all comparison plots in a screen. Please set one protein at a time.' )
+    	    } else if ( length(which.Protein) > 1 ) {
+    	        stop( '** Cannnot generate multiple comparison plots in a screen. Please set one protein at a time.' )
+    	    }
+    	}
+    	
+    	## choose Proteins or not
+    	if (which.Protein != "all") {
+    	    ## check which.Protein is name of Protein
+    	    if (is.character(which.Protein)) {
+    	        temp.name <- which.Protein
+    	        
+    	        ## message if name of Protein is wrong.
+    	        if (length(setdiff(temp.name,unique(datatemp$Protein)))>0) {
+    	            stop(paste("Please check protein name. Data set does not have this protein. -", paste(temp.name, collapse=", "), sep=" "))
+    	        }
+    	    }
+    	    
+    	    ## check which.Protein is order number of Protein
+    	    if (is.numeric(which.Protein)) {
+    	        temp.name <- levels(datatemp$Protein)[which.Protein]
+    	        
+    	        ## message if name of Protein is wrong.
+    	        if (length(levels(datatemp$Protein)) < max(which.Protein)) {
+    	            stop(paste("Please check your selection of proteins. There are ", length(levels(datatemp$Protein))," proteins in this dataset.", sep=" "))
+    	        }
+    	    }
+    	    
+    	    ## use only assigned proteins
+    	    datatemp <- datatemp[which(datatemp$Protein %in% temp.name), ]
+    	    datatemp$Protein <- factor(datatemp$Protein)
+    	    
+    	}
     
     	## If there are the file with the same name, add next numbering at the end of file name		
     	if (address!=FALSE) {

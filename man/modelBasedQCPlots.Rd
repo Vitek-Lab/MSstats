@@ -12,6 +12,7 @@ modelBasedQCPlots(data,
                   legend.size=7,
                   width=10, 
                   height=10,
+                  which.Protein='all',
                   address="")
 }
 %- maybe also 'usage' for other objects documented here.
@@ -24,6 +25,7 @@ modelBasedQCPlots(data,
   \item{legend.size}{size of legend for feature names only in residual plots. Default is 7.}
   \item{width}{width of the saved file. Default is 10.}
   \item{height}{height of the saved file. Default is 10.}
+   \item{which.Protein}{Protein list to draw plots. List can be names of Proteins or order numbers of Proteins from levels(testResultOneComparison$ComparisonResult$Protein). Default is "all", which generates all plots for each protein.}
   \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. If type="residualPlots" or "QQPlots", "ResidualPlots.pdf" or "QQPlots.plf" will be generated. The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 

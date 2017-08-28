@@ -47,7 +47,7 @@ Gatto, L. and Lilly, K.S. (2012). MSnbase-an R Bioconductor package for isobaric
 
 \examples{
 	
-library("MSnbase")
+library(MSnbase)
 data(itraqdata)
 class(itraqdata)
 

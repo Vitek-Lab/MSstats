@@ -1,3 +1,17 @@
+CHANGES IN VERSION 3.8.3 [2017-07-13]
+-------------------------
+   NEW FEATURES
+	- SpectronauttoMSstatsFormat : if PG.Qvalue is available, filter out the data with greater than 0.01.
+	- dataProcessPlots, groupComparisonPlots, modelBasedPlots : with address=FALSE option, one plot a time can be drawn in the panel and won't be saved as in pdf.
+
+   BUG FIXES
+	- designSampleSize : fix the calculation of variance (Thanks, Tsung-Heng)
+	- SkylinetoMSstatsFormat : when Condition and BioReplicate columns are NA, there was issue for merge with annotation.
+	- SkylinetoMSstatsFormat : fix the bug to recognize the protein with one peptide only for the option: 'removeProtein_with1Peptide = TRUE'
+	- dataProcess : when cutoff.lower is negative, with maxQuantileforCensored option + censoredInt='0', zero log2 endogenous intensity should be censored.
+	- ProgenesistoMSstatsFormat : handle inputs with some limited columns. such as no Spectral.counts columns.
+
+
 CHANGES IN VERSION 3.8.2 [2017-04-21]
 -------------------------
    NEW FEATURES

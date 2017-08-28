@@ -51,7 +51,6 @@ SpectronauttoMSstatsFormat <- function(input,
         stop( paste("** Please check the required input. The required input needs at least one of '", 
                     paste(requiredinput.charge, collapse = "' or '"), "'", sep="") )
     }
-
     
     ##############################
     ### 1. loss type : use only 'no loss'
@@ -75,10 +74,18 @@ SpectronauttoMSstatsFormat <- function(input,
         f.charge <- NULL
     }
     
+    if(is.element('PG.Qvalue', colnames(input))){
+        pg.qvalue <- 'PG.Qvalue'
+    } else if(is.element('PG.Qvalue', colnames(input))) {
+        pg.qvalue <- 'PG.Qvalue'
+    } else {
+        pg.qvalue <- NULL
+    }
+    
     subsetcolumn <- c('PG.ProteinGroups', 'EG.ModifiedSequence', 'FG.Charge',
                     'F.FrgIon', f.charge,
                     'R.Condition', 'R.FileName', 'R.Replicate',
-                    'EG.Qvalue')
+                    'EG.Qvalue', pg.qvalue)
   
     if ( intensity == 'NormalizedPeakArea' ){
         ## use normalized peak area by SN
@@ -104,6 +111,16 @@ SpectronauttoMSstatsFormat <- function(input,
     ### 4. filter by Qvalue
     ##############################
 
+    ### protein FDR
+    if( is.element('PG.Qvalue', colnames(input)) ){
+        input[!is.na(input$PG.Qvalue) & input$PG.Qvalue > 0.01, "Intensity"] <- NA
+        message(paste('** Intensities with great than 0.01 in PG.Qvalue are replaced with NA.', sep=''))
+        
+        input <- input[, -which(colnames(input) %in% 'PG.Qvalue')]
+        
+    }
+    
+    ## precursor qvalue
     if( filter_with_Qvalue ){
     
         if( !is.element(c('Qvalue'), colnames(input)) ){
