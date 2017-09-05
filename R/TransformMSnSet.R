@@ -81,7 +81,7 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   	}
   	
   	if (missing(Run)) {
-  		Run <- "file"
+  		Run <- "fileIdx"
   	}
   	
   	if (missing(Condition)) {
