@@ -1,0 +1,194 @@
+CHANGES IN VERSION 3.5.5 [2016-09-30]
+-------------------------
+   BUG FIXES
+	- dataProcess with fractionation sample when filling incomplete rows. Especially, not balanced fractionation for heavy and light, (heavy in one fractionation, no heavy in other fractionation)
+	- groupComparison function : fix the issue with different columns from different summary Methods.
+	- MaxQtoMSstats function : option removeMpeptides=FALSE are now available. (Thanks, Danielle)
+	- In case of multiple injections per sample (from fractionation or multiple injections with different range of m/x), normalization is performed separately and multiple injections are merged in each sample.
+
+   NEW FEATURES
+	- Add ‘originalRUN’ column in xx$ProcessedData after dataProcess function.
+	- Profile plot from dataProcessPlot distinguish censored missing data or not with different symbol.
+
+   SIGNIFICANT CHANGES FOR METHOD
+	- applied the algorithm for deciding the threshold of censoring.
+	- Method for calculation of the LOB/LOD is changed. LOQ is not calculated anymore. Please check help files for details.
+	- summaryMethod='logOfSum' option in dataProcess is retired.
+	- modelBasedQCPlots work with output from groupComparison in order to check the normality assumption of linear mixed effect model for whole plot level inference.
+
+
+CHANGES IN VERSION 3.5.1
+-------------------------
+- Fix bug : summaryMethod=‘logOfSum’, redesign for result table.
+
+
+CHANGES IN VERSION 3.3.11
+-------------------------
+- New functionalities : calculation of the LOD and LOQ, 1) linear_quantlim, 2) nonlinear_quantlim, 3) plot_quantlim, and two example datasets, SpikeInDataLinear, SpikeInDataNonLinear are available.
+- Update for featureSelection =‘highQuality’ in dataProcess
+- allow colon(“:”) in the peptide sequence
+- fix the bug for ‘fill in incomplete rows’ in dataProcess. If there are only one feature has incomplete rows, the issue for getting run and feature ID in dataProcess and not show the list. Now, it works.
+- change the default for blimp in dataProcessPlots for profile plot and QC plot. The upper limit of y-axis with ylimUp=FALSE is calculated by maximum log2(intensity) across all proteins after normalization + 3 and then rounding off to the nearest integer.
+
+
+CHANGES IN VERSION 3.3.10
+-------------------------
+- fix the bug for dataProcess
+	-  When the number of proteins for $ProcessedData and $RunlevelData are different,  the bug happened for calculating %missing and imputation.
+- fix the bug for groupComparison
+	- when one of condition is completely missing or other special case, .fit.model.single can handle and output of .fit.model.single is not try-error. Then output for fitted and residual should be updated.
+
+
+
+CHANGES IN VERSION 3.3.9
+-------------------------
+- Condition plot from dataProcessPlots : Now condition plots are drawn with run-level summarized intensities per condition.
+- ComparisonResult from groupComparison
+	- flag about missingness and imputation : Calculation for MissingPercentage and ImputationPercentage columns is changed
+		1) MissingPercentage : number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) in the conditions used for comparison (from ‘Label’ column) by protein. Therefore different comparisons(Label in the output) from the same protein can have the different percentage of missingness.
+		2) ImputationPercentage : number of imputed intensities/total number of intensities in the conditions used for comparison (from ‘Label’ column) by protein. Therefore different comparisons(Label in the output) from the same protein can have the different percentage of imputation.
+	- new column, ‘issue’, shows special cases, such as completely missing in a condition or all conditions for comparisons.
+- VolcanoPlot
+	- flag the proteins which have the condition with completely missing. On the left of protein name, ‘*’ willz be appeared in Volcano plot
+		
+
+
+
+CHANGES IN VERSION 3.3.8
+-------------------------
+- normalization : overall median -> median of medians. For all workflow for MSstats, the result should not be changed. But, log(sum) will have slightly different result.
+- flag about missingness and imputation
+	- RunlevelData from dataProcess include two or three more columns 		
+		1) NumMeasuredFeature : number of measured features in a run
+		2) Missing percentage : number of measured features/total number of features by run
+		3) NumImputedFeature : number of imputed intensities in a run. This column is shown only if users allow to impute the missing value.
+	- ComparisonResult from groupComparison : one or two columns will be added.
+		1) MissingPercentage : number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) by protein
+		2) ImputationPercentage : number of imputed intensities/total number of intensities by protein
+
+
+CHANGES IN VERSION 3.3.4
+-------------------------
+- fix the bug for featureSubset=‘highQuality’ with label-based experiment.
+
+
+CHANGES IN VERSION 3.3.3
+-------------------------
+- add new option, remove_proteins_with_interference=FALSE (default), in dataProcess. whether it allows to remove proteins if deem interfered or not.
+
+
+CHANGES IN VERSION 3.3.2
+-------------------------
+- ProteinName=TRUE in groupComparisonPlots shows only the name of significant proteins, adjusting location. ggrepel package is used.
+- change featureSubset option in ‘dataProcess’ for selecting high quality features. featureSubset=‘highQuality’
+- Fix the bug for ‘fillIncompleteRows=TRUE’ for label-based experiments.
+- change ‘quantification’ function. use run summarization from dataProcess. If there are technical replicates, use median run summarization for each subject.
+
+
+CHANGES IN VERSION 3.3.1
+-------------------------
+- fix the bug for volcano plot in groupComparisonPlots, with logbase=2.
+- update all plots for ggplot2
+- Change the default for ‘cutoffCensored’. Now the default is “minFeature”.
+- for imputing the censored peak intensities, remove the features which has only 1 measurement for survreg function.
+
+
+CHANGES IN VERSION 3.2.3
+-------------------------
+- bug for normalization=‘globanstandards’ in dataProcess. Even though wrong normalization options, data processing is kept going. Make the process stop if wrong input for normalization
+- fix the bug with nameStandards=‘protein name’. (only peptide names worked with 3.2.2.)
+
+
+CHANGES IN VERSION 3.0.12
+-------------------------
+- remove vignetter folder to remove install and build error in Bioconductor
+
+CHANGES IN VERSION 3.0.9
+-------------------------
+- dataProcess 
+	- add options for ‘cutoffCensored=“minFeatureNRun”’.
+	- summaryMethods=“TMP” : output will have ‘more50missing’column.
+	- remove50missing=FALSE option : remove runs which has more than 50% of missing measurement. It will be affected for TMP, with censored option.
+	- MBimpute : impute censored by survival model (AFT) with cutoff censored value
+	- featureSubset option : “all”,”top3”, “highQuality”
+	- change the default.
+-groupComparisonPlots
+	- heatmap, for logBase=10, fix the bug for setting breaks.
+
+
+CHANGES IN VERSION 3.0.8
+-------------------------
+- dataProcess : when censoredInt=“0”, intensity=0 works even though skylineReport=FALSE.
+- dataProcess, with censored=“0” or “NA” : fix the bug for certain run has completely missing.
+- cutoffCensored=“minRun” or “minFeature” : cutoff for each Run or each feature is little less (99%) than minimum abundance.
+
+-summaryMethod=“TMP”, censored works. censoredInt=NA or 0, and cutoffCensored=0, minFeature, minRun
+
+CHANGES IN VERSION 3.0.3
+-------------------------
+- dataProcess : new option, skylineReport. for skyline MSstats report, there is ‘Truncated’ column. If Truncated==True, remove them. and keep zero value for summaryMethod=“skyline”.
+- groupComparison : for skyline option, t.test, val.equal=TRUE, which is no adjustment for degree of freedom, just pooled variance.
+
+
+CHANGES IN VERSION 2.1.4
+-------------------------
+- Change the numbering of file name for plots. If the file names are already existing in the folder, automatically next number will be add at the end of file name. Therefore file name will not be overwritten, and we can keep all pdf files for plots.
+
+
+CHANGES IN VERSION 2.1.3
+-------------------------
+- fix the groupComparison for label-free experiments.
+- automatically generate progress report as .txt files
+- add progress message for groupComparison and dataProcessPlots function.
+
+
+CHANGES IN VERSION 2.1.1
+-------------------------
+- fix the bug in Condition plot : 
+	1. for label-based : match reference and endogenous
+	2. for label-free : when there is one observation in each group, SD=NA. make it zero.
+- fix the bug in heatmap and comparison plots : remove NA result for plotting
+- fix the bug for label-free groupComparison :  how to get subject_nested parameter in make.contrast.free for unequal number per group
+- fix the bug in group quantification : make.contrast.group.quantification fixed for subject_nested parameter
+
+
+CHANGES IN VERSION 1.99.1
+-------------------------
+- fixed several NOTES, added .Rbuildignore, compacted vignettes
+- TODO: check remaining 'no visible binding for global variable' NOTES
+- removed warn -1 
+- added validity check when returning MSnSet
+- used inherits/is. for class testing
+- TODO fix if conditions syntax
+
+CHANGES IN VERSION 1.99.0
+-------------------------
+ o improve efficiency for computing groupComparison and quantification <2012-12-21>
+ o add .rnw <2012-12-03>
+ o update groupComparision for label-free time-course experiment with single Feature and with or without technical replicates <2013-04-08>
+ o add option for saving QQ plot and Residual plot in order to checkin the normality assumption in groupComparison function. <2013-04-08>
+ o use ggplot2 package for all plots. <2013-07-11>
+ o fix bug for volcano plot : different color labeling <2013-07-12>
+ o add power plot in sample size calculation plot <2013-07-12>
+ o add 'interference=TRUE or FALSE' in sample size calculation <2013-07-15>
+ o add 'legend.size=7'for size of feature name legends in dataProcessPlots <2013-07-23> 
+ o add 'text.angle=0'for angle of condition labeling in dataProcessPlots <2013-07-23>
+ o fix bug for quantification : when there are missing values in endogenous intensities, but values in reference intensities. <2013-07-24>
+ o fix bug for groupComparison : when there are missing values in endogenous intensities, but values in reference intensities, .make.constast.based or .free sub function were changed. <2013-07-25>
+
+o two function for transformation between required input for MSstats and MSnSet class <2013-09-04>
+o flexibility for visualization : save as pdf files or show in window with selected proteins or all proteins. <2013-09-04>
+o handle unequal variance for feature in groupComparison function with featureVar=TRUE <2013-09-04>
+
+o Add 'missing.action' for impute missing values in group comparison stage. <2013-09-20>
+
+
+
+
+
+
+
+
+
+
+

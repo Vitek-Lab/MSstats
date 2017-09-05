@@ -444,85 +444,86 @@ dataProcess  <-  function(raw,
 	    ################################################
 	    ## need additional step that remove overlapped features across several fraction
 	    ################################################
-	    
-	    tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 1, ]
-	    count.feature <- dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
-	    
-	    work$tmp <- paste(work$FEATURE, work$FRACTION, sep="_")
-	    
-	    ## 1. first, keep features which are measured in one fraction
-	    count.fraction <- apply(count.feature[, -which(colnames(count.feature) %in% c('FEATURE'))], 1, function(x) sum(x>0))
-	    keep.feature <- count.feature[count.fraction == 1, 'FEATURE']
-	    
-	    ## 2. second, if features are measured in multiple fractionations, use the fractionation with maximum number of measurements.
-	    ## if there are multiple maximum number of measurements, remove features completely.
-	    count.feature1 <- count.feature[count.fraction > 1, ]
-	    
-	    if( nrow(count.feature1) > 0 ){
-	        count.fraction <- apply(count.feature1[, -which(colnames(count.feature1) %in% c('FEATURE'))], 1, function(x) sum(x==max(x)))
-	        count.feature2 <- count.feature1[count.fraction == 1, ] ## except maximum, otherone replace with na
+	    if ( length(unique(work$FRACTION)) > 1 ){
+	        tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 1, ]
+	        count.feature <- dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
 	        
-	        if( nrow(count.feature2) > 0 ){
-	            remove.fraction <- apply(count.feature2, 1, 
-	                                     function(x) paste(x[1], names(x[-1])[x[-1] != max(x[-1]) & x[-1] != 0], sep="_" ))
-	            remove.fraction <- unlist(remove.fraction)
-	            
-	            work[work$tmp %in% remove.fraction, 'INTENSITY'] <- NA
-	            work[work$tmp %in% remove.fraction, 'ABUNDANCE'] <- NA
-	        }
+	        work$tmp <- paste(work$FEATURE, work$FRACTION, sep="_")
 	        
-	        ## 3. third, Then check whether there are multiple maximum number of measurements across fractionation
-	        count.feature3 <- count.feature1[count.fraction > 1, ]
+	        ## 1. first, keep features which are measured in one fraction
+	        count.fraction <- apply(count.feature[, -which(colnames(count.feature) %in% c('FEATURE'))], 1, function(x) sum(x>0))
+	        keep.feature <- count.feature[count.fraction == 1, 'FEATURE']
 	        
-	        if( nrow(count.feature3) > 0 ){
+	        ## 2. second, if features are measured in multiple fractionations, use the fractionation with maximum number of measurements.
+	        ## if there are multiple maximum number of measurements, remove features completely.
+	        count.feature1 <- count.feature[count.fraction > 1, ]
+	        
+	        if( nrow(count.feature1) > 0 ){
+	            count.fraction <- apply(count.feature1[, -which(colnames(count.feature1) %in% c('FEATURE'))], 1, function(x) sum(x==max(x)))
+	            count.feature2 <- count.feature1[count.fraction == 1, ] ## except maximum, otherone replace with na
 	            
-	            ## 3.1 : maximum number of measurement ==1, remove that feature
-	            max.feature <- apply(count.feature3[, -which(colnames(count.feature3) %in% c('FEATURE'))], 1, function(x) max(x))
-	            max.feature.1 <- count.feature3[max.feature==1, 'FEATURE'] 
-	            
-	            work <- work[-which(work$FEATURE %in% max.feature.1), ]
-	            
-	            count.feature3 <- count.feature3[-which(count.feature3$FEATURE %in% max.feature.1), ]
-	            
-	            if ( nrow(count.feature3) > 0 ) {
-	                
-	                ## 3.2 : remove fractionations which have not maximum number of measurements
-	                
-	                remove.fraction <- apply(count.feature3, 1, 
+	            if( nrow(count.feature2) > 0 ){
+	                remove.fraction <- apply(count.feature2, 1, 
 	                                         function(x) paste(x[1], names(x[-1])[x[-1] != max(x[-1]) & x[-1] != 0], sep="_" ))
 	                remove.fraction <- unlist(remove.fraction)
 	                
 	                work[work$tmp %in% remove.fraction, 'INTENSITY'] <- NA
 	                work[work$tmp %in% remove.fraction, 'ABUNDANCE'] <- NA
+	            }
+	            
+	            ## 3. third, Then check whether there are multiple maximum number of measurements across fractionation
+	            count.feature3 <- count.feature1[count.fraction > 1, ]
+	            
+	            if( nrow(count.feature3) > 0 ){
 	                
-	                ## 3.3 : among fractionations, keep one fractionation which has maximum average
-	                tmptmp <- work[which(work$FEATURE %in% count.feature3$FEATURE), ]
-	                tmptmp <- tmptmp[!is.na(tmptmp$ABUNDANCE), ]
+	                ## 3.1 : maximum number of measurement ==1, remove that feature
+	                max.feature <- apply(count.feature3[, -which(colnames(count.feature3) %in% c('FEATURE'))], 1, function(x) max(x))
+	                max.feature.1 <- count.feature3[max.feature==1, 'FEATURE'] 
 	                
-	                mean.frac.feature <- aggregate(ABUNDANCE ~ FEATURE + tmp, data=tmptmp, FUN=mean)
-	                mean.frac.feature$FEATURE <- factor(mean.frac.feature$FEATURE)
+	                work <- work[-which(work$FEATURE %in% max.feature.1), ]
 	                
-	                temp2 <- split(mean.frac.feature, mean.frac.feature$FEATURE)
+	                count.feature3 <- count.feature3[-which(count.feature3$FEATURE %in% max.feature.1), ]
 	                
-	                temp3 <- lapply(temp2, function(x) { 
-	                    x <- x[order(x$ABUNDANCE, decreasing=TRUE),]
-	                    x <- x$tmp[2:nrow(x)] # get the fractionation which should be removed.
-	                })
-	                
-	                remove.fraction <- unlist(temp3, use.names=FALSE)
-
-	                work[work$tmp %in% remove.fraction, 'INTENSITY'] <- NA
-	                work[work$tmp %in% remove.fraction, 'ABUNDANCE'] <- NA
-	                
-	                rm(tmp)
-	                rm(tmptmp)
-	                rm(temp2)
-	                rm(temp3)
+	                if ( nrow(count.feature3) > 0 ) {
+	                    
+	                    ## 3.2 : remove fractionations which have not maximum number of measurements
+	                    
+	                    remove.fraction <- apply(count.feature3, 1, 
+	                                             function(x) paste(x[1], names(x[-1])[x[-1] != max(x[-1]) & x[-1] != 0], sep="_" ))
+	                    remove.fraction <- unlist(remove.fraction)
+	                    
+	                    work[work$tmp %in% remove.fraction, 'INTENSITY'] <- NA
+	                    work[work$tmp %in% remove.fraction, 'ABUNDANCE'] <- NA
+	                    
+	                    ## 3.3 : among fractionations, keep one fractionation which has maximum average
+	                    tmptmp <- work[which(work$FEATURE %in% count.feature3$FEATURE), ]
+	                    tmptmp <- tmptmp[!is.na(tmptmp$ABUNDANCE), ]
+	                    
+	                    mean.frac.feature <- aggregate(ABUNDANCE ~ FEATURE + tmp, data=tmptmp, FUN=mean)
+	                    mean.frac.feature$FEATURE <- factor(mean.frac.feature$FEATURE)
+	                    
+	                    temp2 <- split(mean.frac.feature, mean.frac.feature$FEATURE)
+	                    
+	                    temp3 <- lapply(temp2, function(x) { 
+	                        x <- x[order(x$ABUNDANCE, decreasing=TRUE),]
+	                        x <- x$tmp[2:nrow(x)] # get the fractionation which should be removed.
+	                    })
+	                    
+	                    remove.fraction <- unlist(temp3, use.names=FALSE)
+	                    
+	                    work[work$tmp %in% remove.fraction, 'INTENSITY'] <- NA
+	                    work[work$tmp %in% remove.fraction, 'ABUNDANCE'] <- NA
+	                    
+	                    rm(tmp)
+	                    rm(tmptmp)
+	                    rm(temp2)
+	                    rm(temp3)
+	                }
 	            }
 	        }
+	        
+	        work <- work[, -which(colnames(work) %in% c('tmp'))]
 	    }
-	    
-	    work <- work[, -which(colnames(work) %in% c('tmp'))]
 	    
 	} else {  ## no fractionation
 	    work$FRACTION <- 1
@@ -540,7 +541,7 @@ dataProcess  <-  function(raw,
 	## here and for the case with multuple methods]
 	## only 1 method
   
-	if ( !checkMultirun$out ) {
+	if ( !checkMultirun$out | length(unique(work$FRACTION)) == 1 ) {
     
 		## label-free experiments
     	if (nlevels(work$LABEL) == 1) {
