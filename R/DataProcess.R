@@ -2780,7 +2780,7 @@ dataProcess  <-  function(raw,
       	    }
       		
       	    ## if all measurements are NA,
-      	    if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
+      	    if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE ==0)) ) {
        		    message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))
         	    next()
       	    }
@@ -2834,6 +2834,13 @@ dataProcess  <-  function(raw,
 				} else {
 					sub$FEATURE <- factor(sub$FEATURE)
 				}
+			}
+			
+			## check one more time
+			## if all measurements are NA,
+			if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE ==0)) ) {
+			    message(paste("After removing features which has only 1 measurement, Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))
+			    next()
 			}
       		
             ## remove run which has no measurement at all 
