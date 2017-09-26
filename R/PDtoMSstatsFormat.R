@@ -12,33 +12,136 @@ PDtoMSstatsFormat <- function(input,
                               fewMeasurements="remove",
                               removeOxidationMpeptides=FALSE,
                               removeProtein_with1Peptide=FALSE,
-                              which.quantification = 'Precursor.Area'){
+                              which.quantification = 'Precursor.Area',
+                              which.proteinid = 'Protein.Group.Accessions',
+                              which.sequence = 'Sequence'){
 
     ################################################
-    ## 0. which intensity : Precursor.Area vs. Intensity
+    ## 0.1. which intensity : Precursor.Area vs. Intensity vs Area
     ################################################
     ## 2017.01.11 : use 'Precursor.Area' instead of 'Intensity'
     ## default : Precursor.Area
+    which.quant <- NULL
+    
     if(which.quantification == 'Intensity'){
         which.quant <- 'Intensity'
-    } else {
+    } else if (which.quantification == 'Area'){
+        which.quant <- 'Area'
+    } else if (which.quantification == 'Precursor.Area'){
         which.quant <- 'Precursor.Area'
+    }
+    
+    if( is.null(which.quant) ){
+        stop('** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).')
+    }
+    
+    if(which.quant == 'Intensity' & !is.element('Intensity', colnames(input))){
+        ## then that is because, input came from different version
+        which.quant <- 'Precursor.Area'
+        message('** Use Precursor.Area instead of Intensity.')
+    }
+    
+    if(which.quant == 'Area' & !is.element('Area', colnames(input))){
+        ## then that is because, input come from different version
+        which.quant <- 'Precursor.Area'
+        message('** Use Precursor.Area instead of Intensity.')
+    }
+    
+    if(which.quant == 'Precursor.Area' & !is.element('Precursor.Area', colnames(input))){
+        ## then that is because, input come from different version 
+        stop('** Please select which columns should be used for quantified intensities, among two options (Intensity or Area).')
+    }
+    
+    if(!is.element(which.quant, colnames(input))){
+       stop('** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).')
+    }
+    
+    ################################################
+    ## 0.2. which protein id : Protein Accessions vs Master Protein Accesisions
+    ################################################
+    ## default : Protein Accessions
+    which.pro <- NULL
+    
+    if(which.proteinid == 'Protein.Accessions'){
+        which.pro <- 'Protein.Accessions'
+    } else if (which.proteinid == 'Master.Protein.Accessions'){
+        which.pro <- 'Master.Protein.Accessions'
+    } else if (which.proteinid == 'Protein.Group.Accessions'){ 
+        which.pro <- 'Protein.Group.Accessions'
+    }
+    
+    if( is.null(which.pro) ){
+        stop('** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).')
+    }
+    
+    if(which.pro == 'Protein.Accessions' & !is.element('Protein.Accessions', colnames(input))){
+        
+        which.pro <- 'Protein.Group.Accessions'
+        message('** Use Protein.Group.Accessions instead of Protein.Accessions.')
+    }
+    
+    if(which.pro == 'Master.Protein.Accessions' & !is.element('Master.Protein.Accessions', colnames(input))){
+        
+        which.pro <- 'Protein.Group.Accessions'
+        message('** Use Protein.Group.Accessions instead of Master.Protein.Accessions.')
+    }
+    
+    if(which.pro == 'Protein.Group.Accessions' & !is.element('Protein.Group.Accessions', colnames(input))){
+        ## then that is because, input come from different version 
+        stop('** Please select which columns should be used for protein ids, among two options (Protein.Accessions or Master.Protein.Accessions).')
+    }
+    
+    if(!is.element(which.pro, colnames(input))){
+        stop('** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).')
+    }
+    
+    ################################################
+    ## 0.3. which sequence : Sequence vs Annotated.Sequence
+    ################################################
+    ## default : Sequence
+    which.seq <- NULL
+    
+    if(which.sequence == 'Annotated.Sequence'){
+        which.seq <- 'Annotated.Sequence'
+    } else if (which.sequence == 'Sequence'){
+        which.seq <- 'Sequence'
+    } 
+    
+    if( is.null(which.sequence) ){
+        stop('** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).')
+    }
+    
+    if(which.seq == 'Annotated.Sequence' & !is.element('Annotated.Sequence', colnames(input))){
+        
+        which.seq <- 'Sequence'
+        message('** Use Sequence instead of Annotated.Sequence.')
+    }
+    
+    if(!is.element(which.seq, colnames(input))){
+        stop('** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).')
     }
     
     ################################################
     ## 1. get subset of columns
     ################################################
   
-    input <- input[, which(colnames(input) %in% c("Protein.Group.Accessions", "X..Proteins",
+    input <- input[, which(colnames(input) %in% c(which.pro, "X..Proteins",
                                                 "Sequence", "Modifications", "Charge",
                                                 "Spectrum.File", which.quant))]
     
     colnames(input)[colnames(input) == 'Protein.Group.Accessions'] <- 'ProteinName'
+    colnames(input)[colnames(input) == 'Protein.Accessions'] <- 'ProteinName'
+    colnames(input)[colnames(input) == 'Master.Protein.Accessions'] <- 'ProteinName'
+    
     colnames(input)[colnames(input) == 'X..Proteins'] <- 'numProtein'
     colnames(input)[colnames(input) == 'Sequence'] <- 'PeptideSequence'
+    colnames(input)[colnames(input) == 'Annotated.Sequence'] <- 'PeptideSequence'
+    
     colnames(input)[colnames(input) == 'Spectrum.File'] <- 'Run'
+    
     colnames(input)[colnames(input) == 'Precursor.Area'] <- 'Intensity'
-  
+    colnames(input)[colnames(input) == 'Area'] <- 'Intensity'
+    
   
     ################################################
     ## 2. remove peptides which are used in more than one protein

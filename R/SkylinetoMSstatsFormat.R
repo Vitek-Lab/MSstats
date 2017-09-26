@@ -173,7 +173,7 @@ SkylinetoMSstatsFormat <- function(input,
     any.precursor3 <- intersect( levels(input$FragmentIon), c('precursor', 'precursor [M+1]', 'precursor [M+2]'))
     
     ## if there are fragment ion and also have any 'precursor', it is the issue.
-    if( any.fragment > 0 & any.precursor3 > 0){
+    if( length(any.fragment) > 0 & length(any.precursor3) > 0){
         stop("Please check precursors information. If your experiment is DIA, please remove the precursors. If your experiments is DDA, please check the precursor information.")
     }
     

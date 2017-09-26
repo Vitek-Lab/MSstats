@@ -2029,6 +2029,12 @@ dataProcess  <-  function(raw,
 	## how to decide censored or not
 	## ------------- ##
 	
+	## after normalization, zero intensity could be negative
+	work[!is.na(work$ABUNDANCE) & work$ABUNDANCE < 0, "ABUNDANCE"] <- 0
+	
+	work[!is.na(work$INTENSITY) & work$INTENSITY == 1, "ABUNDANCE"] <- 0
+	
+	
 	### If imputation=TRUE and there is any value for maxQuantileforCensored, apply cutoff for censored missing
 	if ( summaryMethod == "TMP" & MBimpute ) {
 	  
@@ -2036,6 +2042,9 @@ dataProcess  <-  function(raw,
 	    label <- nlevels(work$LABEL)==2
 	  
 	    work$censored <- FALSE
+	    
+	    ## if intensity = 1, but abundance > cutoff after normalization, it also should be censored.
+	    
 	  
 	    if( !is.null(maxQuantileforCensored) ) {
 	        ### label-free
@@ -2108,7 +2117,7 @@ dataProcess  <-  function(raw,
 	    
 	            cutoff.lower <- (log2int.prime.quant[2] - multiplier * iqr) 
 	    
-	            work$censored <- FALSE
+	            #work$censored <- FALSE
 	            work[work$LABEL == 'L' & 
 	                     !is.na(work$INTENSITY) & 
 	                     work$ABUNDANCE < cutoff.lower, 'censored'] <- TRUE
@@ -2498,11 +2507,6 @@ dataProcess  <-  function(raw,
 	processout <- rbind(processout, c("Processing data for analysis is done. - okay"))
 	write.table(processout, file=finalfile, row.names=FALSE)
   
-	## after normalization, zero intensity could be negative
-    work[!is.na(work$ABUNDANCE) & work$ABUNDANCE < 0, "ABUNDANCE"] <- 0
-    
-    work[!is.na(work$INTENSITY) & work$INTENSITY == 1, "ABUNDANCE"] <- 0
-
 
  	## get the summarization per subplot (per RUN)   
 	## -------------------------------------------

@@ -12,7 +12,9 @@ PDtoMSstatsFormat(input,
       fewMeasurements="remove",
       removeOxidationMpeptides=FALSE,
       removeProtein_with1Peptide=FALSE,
-      which.quantification = 'Precursor.Area')	
+      which.quantification = 'Precursor.Area',
+      which.proteinid = 'Protein.Accessions',
+      which.sequence = 'Sequence' )	
 }
 
 \arguments{
@@ -25,7 +27,9 @@ PDtoMSstatsFormat(input,
   \item{fewMeasurements}{'remove'(default) will remove the features that have 1 or 2 measurements across runs.}
   \item{removeOxidationMpeptides}{TRUE will remove the modified peptides including 'Oxidation (M)' in 'Modifications' column. FALSE is default.}
   \item{removeProtein_with1Peptide}{TRUE will remove the proteins which have only 1 peptide and charge. FALSE is default.}
-  \item{which.quantification}{Use 'Precursor.Area'(default) column for quantified intensities. Or 'Intensity' can be used instead.}
+  \item{which.quantification}{Use 'Precursor.Area'(default) column for quantified intensities. 'Intensity' or 'Area' can be used instead.}
+  \item{which.proteinid}{Use 'Protein.Accessions'(default) column for protein name. 'Master.Protein.Accessions' can be used instead.}
+  \item{which.sequence}{Use 'Sequence'(default) column for peptide sequence. 'Annotated.Sequence' can be used instead.}
 }
 
 
