@@ -32,8 +32,10 @@ Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 
 \examples{
-# Please check section 5.2. Suggested workflow with Spectronaut output for DIA in MSstats user manual.
-# Output of SpectronauttoMSstatsFormat function should have the same 10 columns as an example dataset.
+# Please check section 5.2. 
+# Suggested workflow with Spectronaut output for DIA in MSstats user manual.
+# Output of SpectronauttoMSstatsFormat function 
+# should have the same 10 columns as an example dataset.
 
 head(DDARawData)
 }

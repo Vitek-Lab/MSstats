@@ -1,3 +1,17 @@
+CHANGES IN VERSION 3.8.6 [201-09-26]
+-------------------------
+   NEW FEATURES
+	- can cluster (default=1) for dataProcess and groupComparison function (Thanks John!!)
+
+
+CHANGES IN VERSION 3.8.5 [201-09-25]
+-------------------------
+   BUG FIXES
+	- PDtoMSstatsFormat : three options are added for outputs from different versions of PD. (Thanks to Felipe!)
+		- which.quantification
+ 		- which.proteinid
+		- which.sequence
+
 CHANGES IN VERSION 3.8.4 [2017-08-28]
 -------------------------
    BUG FIXES

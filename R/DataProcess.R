@@ -2,7 +2,7 @@
 #############################################
 ## dataProcess
 #############################################
-#' @export
+#' @export dataProcess
 #' @import survival 
 #' @import preprocessCore 
 #' @importFrom reshape2 dcast melt
@@ -11,6 +11,9 @@
 #' @importFrom stats predict pt qnorm qt quantile reshape rnorm runif sd var vcov xtabs
 #' @importFrom utils head read.table sessionInfo setTxtProgressBar txtProgressBar write.csv write.table
 #' @importFrom methods validObject
+#' @importFrom doSNOW registerDoSNOW
+#' @importFrom snow makeCluster
+#' @import foreach
 
 dataProcess  <-  function(raw,
                           logTrans=2,
@@ -28,7 +31,8 @@ dataProcess  <-  function(raw,
                           cutoffCensored="minFeature",
                           MBimpute=TRUE,
                           remove50missing=FALSE,
-                          maxQuantileforCensored=0.999) {
+                          maxQuantileforCensored=0.999,
+                          clusters=1) {
   
     ## save process output in each step
     allfiles <- list.files()
@@ -413,7 +417,7 @@ dataProcess  <-  function(raw,
 	            tmptmp <- tmp[which(tmp$FEATURE %in% unique.feature), ]
 	            tmptmp$condition <- paste(tmptmp$GROUP_ORIGINAL, tmptmp$SUBJECT_ORIGINAL, sep="_")
 	            
-	            count.feature <- dcast(RUN ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=tmptmp, fun.aggregate=length, value.var='ABUNDANCE')
+	            count.feature <- reshape2::dcast(RUN ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=tmptmp, fun.aggregate=length, value.var='ABUNDANCE')
                 
 	            ## !! get one run which has maximum overlapped feature by each sample
 	            same.frac <- apply(count.feature[,-which(colnames(count.feature) %in% c('RUN'))], 2, function(x) count.feature[which.max(x), 'RUN'])
@@ -444,20 +448,19 @@ dataProcess  <-  function(raw,
 	    ################################################
 	    ## need additional step that remove overlapped features across several fraction
 	    ################################################
+
 	    if ( length(unique(work$FRACTION)) > 1 ){
 	        tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 1, ]
-	        count.feature <- dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
-	        
-	        work$tmp <- paste(work$FEATURE, work$FRACTION, sep="_")
-	        
+	        count.feature <- reshape2::dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
+	    
 	        ## 1. first, keep features which are measured in one fraction
 	        count.fraction <- apply(count.feature[, -which(colnames(count.feature) %in% c('FEATURE'))], 1, function(x) sum(x>0))
 	        keep.feature <- count.feature[count.fraction == 1, 'FEATURE']
-	        
+	    
 	        ## 2. second, if features are measured in multiple fractionations, use the fractionation with maximum number of measurements.
 	        ## if there are multiple maximum number of measurements, remove features completely.
 	        count.feature1 <- count.feature[count.fraction > 1, ]
-	        
+	    
 	        if( nrow(count.feature1) > 0 ){
 	            count.fraction <- apply(count.feature1[, -which(colnames(count.feature1) %in% c('FEATURE'))], 1, function(x) sum(x==max(x)))
 	            count.feature2 <- count.feature1[count.fraction == 1, ] ## except maximum, otherone replace with na
@@ -1583,8 +1586,8 @@ dataProcess  <-  function(raw,
         
 				for (i in 1:length(namerun)) {
 					## ABUNDANCE is normalized
-					work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]
-				
+				  namerun.idx <- which(work$RUN == namerun[i])
+				  work[namerun.idx, "ABUNDANCE"] <- work[namerun.idx, "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]
 				}
 			}
 		}
@@ -1606,7 +1609,8 @@ dataProcess  <-  function(raw,
         
         		for (i in 1:length(namerun)) {
           			## ABUNDANCE is normalized
-          			work[work$RUN == namerun[i], "ABUNDANCE"] <- work[work$RUN == namerun[i], "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]
+        		  namerun.idx <- which(work$RUN == namerun[i])
+          			work[namerun.idx, "ABUNDANCE"] <- work[namerun.idx, "ABUNDANCE"] - median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] + median.method[j]
         		}
       		} # end loop method		
     	} # for labe-based 
@@ -1885,7 +1889,7 @@ dataProcess  <-  function(raw,
                                               'TECHREPLICATE')])
             
             ## if there are technical replicates from the same group and subject, can't match.
-            run.match <- try(dcast(GROUP_ORIGINAL + SUBJECT_ORIGINAL + TECHREPLICATE ~ FRACTION, 
+            run.match <- try(reshape2::dcast(GROUP_ORIGINAL + SUBJECT_ORIGINAL + TECHREPLICATE ~ FRACTION, 
                                    data=runid.multiple, value.var = 'originalRUN'), silent=TRUE)
             
             if (class(run.match) == "try-error") {
@@ -1909,7 +1913,7 @@ dataProcess  <-  function(raw,
                 ###### remove extra run NAs
                 tmp <- work[is.na(work$ABUNDANCE), ]
                 
-                na.count <- dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
+                na.count <- reshape2::dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
                 na.count.long <- melt(na.count, id.vars=c('FEATURE'))
                 na.count.long <- na.count.long[na.count.long$value == length(unique(work$newRun)), ]
                 na.count.long$tmp <- paste(na.count.long$FEATURE, na.count.long$variable, sep="_")
@@ -1936,7 +1940,7 @@ dataProcess  <-  function(raw,
                                               'FRACTION')])
             
             ## if there are technical replicates from the same group and subject, can't match.
-            run.match <- try(dcast(GROUP_ORIGINAL + SUBJECT_ORIGINAL ~ FRACTION, data=runid.multiple, value.var = 'originalRUN'), silent=TRUE)
+            run.match <- try(reshape2::dcast(GROUP_ORIGINAL + SUBJECT_ORIGINAL ~ FRACTION, data=runid.multiple, value.var = 'originalRUN'), silent=TRUE)
             
             if (class(run.match) == "try-error") {
                 
@@ -1959,7 +1963,7 @@ dataProcess  <-  function(raw,
                 ###### remove extra run NAs
                 tmp <- work[is.na(work$ABUNDANCE), ]
                 
-                na.count <- dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
+                na.count <- reshape2::dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
                 na.count.long <- melt(na.count, id.vars=c('FEATURE'))
                 na.count.long <- na.count.long[na.count.long$value == length(unique(work$newRun)), ]
                 na.count.long$tmp <- paste(na.count.long$FEATURE, na.count.long$variable, sep="_")
@@ -2516,7 +2520,7 @@ dataProcess  <-  function(raw,
 	rqresult <- try(.runQuantification(work, summaryMethod, equalFeatureVar, 
 	                                   cutoffCensored, censoredInt, remove50missing, MBimpute, 
 	                                   original_scale=FALSE, logsum=FALSE, featureSubset,
-	                                   message=TRUE), silent=TRUE)
+	                                   message=TRUE, clusters=clusters), silent=TRUE)
 
 	if (class(rqresult) == "try-error") {
 		message("*** error : can't summarize per subplot with ", summaryMethod, ".")
@@ -2583,6 +2587,11 @@ dataProcess  <-  function(raw,
 }
 
 
+# Manual function allowing foreach to return a list of multiple variables
+resultsAsLists <- function(x, ...) {
+  lapply(seq_along(x),
+         function(i) c(x[[i]], lapply(list(...), function(y) y[[i]])))
+}
 
 
 ########################################################
@@ -2591,7 +2600,7 @@ dataProcess  <-  function(raw,
                                cutoffCensored, censoredInt, remove50missing, MBimpute, 
                                original_scale, logsum, 
                                featureSubset,
-                               message) {
+                               message, clusters) {
 	
   ##Since the imputation has been done before feature selection, delete the columns of censoring indicator to avoid imputing the same intensity again	
   #if(featureSubset == "highQuality") {
@@ -2602,7 +2611,7 @@ dataProcess  <-  function(raw,
   #if(featureSubset == "highQuality" & ImputeAgain==TRUE) {
   #	data$ABUNDANCE <- data$ABUNDANCE.O	
   #}
-  
+   
     ## if there is 'remove' column, remove TRUE
     ## 2016. 08.29 should change column name for this remove variable. from feature selection??
     if( any(is.element(colnames(data), 'remove')) ) {
@@ -2750,8 +2759,16 @@ dataProcess  <-  function(raw,
     
 		result <- NULL
 	  
-		for(i in 1: nlevels(data$PROTEIN)) {
-              		
+		### create cluster for paralleled workflow
+		message(paste0("Cluster Size: ", clusters,"\n"))
+		registerDoSNOW(makeCluster(clusters, type = "SOCK"))
+		
+		# for(i in 1: nlevels(data$PROTEIN)) {
+		pb <- txtProgressBar(max = nlevels(data$PROTEIN), style = 3)
+		progress <- function(n) setTxtProgressBar(pb, n)
+		opts <- list(progress = progress)
+		MS_results <- foreach(i=1: nlevels(data$PROTEIN), .combine='resultsAsLists', .options.snow = opts, .multicombine=TRUE, .init=list(list(), list())) %dopar% {
+		  
      		sub <- data[data$PROTEIN==levels(data$PROTEIN)[i], ]
      		
      		if (message) {
@@ -2786,7 +2803,8 @@ dataProcess  <-  function(raw,
       	    ## if all measurements are NA,
       	    if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE ==0)) ) {
        		    message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all measurements are NAs."))
-        	    next()
+        	    # next()
+      	      return(NULL)
       	    }
       		
       	    ## remove features which are completely NAs
@@ -2818,7 +2836,8 @@ dataProcess  <-  function(raw,
 				
 			  	if (nrow(sub) == 0) {
 				    message(paste("Can't summarize for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(data$PROTEIN)), ") because all measurements are NAs."))
-        		    next()
+        		    # next()
+			  	  return(NULL)
         		
 				} else {
 				    sub$FEATURE <- factor(sub$FEATURE)
@@ -2833,7 +2852,8 @@ dataProcess  <-  function(raw,
 				 
 				if (nrow(sub) == 0) {
 					message(paste("Can't summarize for ", unique(sub$PROTEIN), "(", i, " of ", length(unique(data$PROTEIN)), ") because features have only one measurement across MS runs."))
-        			next()
+        			# next()
+				  return(NULL)
         		
 				} else {
 					sub$FEATURE <- factor(sub$FEATURE)
@@ -2898,7 +2918,8 @@ dataProcess  <-  function(raw,
 					## if all measurements are NA,
       				if (length(removerunid)==length(numFea)) {
        					message(paste("Can't summarize for ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),") because all runs have more than 50% NAs and are removed with the option, remove50missing=TRUE."))
-        				next()
+        				# next()
+      				  return(NULL)
       				}
 
 			}
@@ -3070,12 +3091,12 @@ dataProcess  <-  function(raw,
 				
 						### fit the model
 						if (length(unique(sub$FEATURE))==1) {
-							fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+							fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
 						}else{
 							if (countdf) {
-								fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+								fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
 							}else{
-								fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+								fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
 							}
 						}
 					
@@ -3086,7 +3107,8 @@ dataProcess  <-  function(raw,
 						sub[sub$cen==0, "ABUNDANCE"] <- sub[sub$cen==0, "pred"]	
 					
 						# save predicted value
-						predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))				
+						# predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))
+						predAbundance <- c(predict(fittest, newdata=sub, type="response"))
 					}
 				}	
 			}
@@ -3097,7 +3119,7 @@ dataProcess  <-  function(raw,
             if (nlevels(sub$FEATURE)>1) { ## for more than 1 features
                 if (!label) { ## label-free
       			
-      		        data_w <- dcast(RUN ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+      		        data_w <- reshape2::dcast(RUN ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
   				    rownames(data_w) <- data_w$RUN
   				    data_w <- data_w[,-1]
   				    data_w[data_w==1] <- NA
@@ -3160,11 +3182,11 @@ dataProcess  <-  function(raw,
 						
 					}
 								
-      		        result <- rbind(result, sub.result)
+      		        # result <- rbind(result, sub.result)
       			
       	        } else { ## labeled
 					
-					data_w = dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+					data_w = reshape2::dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
   				    rownames(data_w) <- data_w$run.label
   				    data_w <- data_w[,-1]
   				    #data_w[data_w==1] <- NA
@@ -3184,7 +3206,9 @@ dataProcess  <-  function(raw,
 
         	        for (k in 1:length(unique(h$RUN))) {
           	            ## ABUNDANCE is normalized
-          	            reformresult[reformresult$RUN==unique(h$RUN)[k],"ABUNDANCE"] <- reformresult[reformresult$RUN==unique(h$RUN)[k],"ABUNDANCE"]-reformresult[reformresult$RUN==unique(h$RUN)[k] & reformresult$LABEL=="H","ABUNDANCE"]+allmed
+        	          reformresult.logical <- reformresult$RUN==unique(h$RUN)[k]
+        	          reformresult.idx <- which(reformresult.logical)
+        	          reformresult[reformresult.idx,"ABUNDANCE"] <- reformresult[reformresult.idx,"ABUNDANCE"]-reformresult[reformresult.logical & reformresult$LABEL=="H","ABUNDANCE"]+allmed
         	        }
         			
         	        reformresult <- reformresult[reformresult$LABEL=="L", ]
@@ -3224,7 +3248,7 @@ dataProcess  <-  function(raw,
 
 					}
       				
-      		        result <- rbind(result, sub.result)
+      		        # result <- rbind(result, sub.result)
       	        }
       		
             } else { ## single feature
@@ -3236,7 +3260,9 @@ dataProcess  <-  function(raw,
 
         	        for (k in 1:length(unique(h$RUN))) {
                         ## ABUNDANCE is normalized
-          	            sub[sub$RUN==unique(h$RUN)[k],"ABUNDANCE"] <- sub[sub$RUN==unique(h$RUN)[k],"ABUNDANCE"]-sub[sub$RUN==unique(h$RUN)[k] & sub$LABEL=="H","ABUNDANCE"]+allmed
+        	          subrun.logical <- sub$RUN==unique(h$RUN)[k]
+        	          subrun.idx <- which(subrun.logical)
+        	          sub[subrun.idx,"ABUNDANCE"] <- sub[subrun.idx,"ABUNDANCE"]-sub[subrun.logical & sub$LABEL=="H","ABUNDANCE"]+allmed
         	        }
         			
         	        sub <- sub[sub$LABEL=="L", ]
@@ -3289,11 +3315,26 @@ dataProcess  <-  function(raw,
       				
 				}
 
-      	        result <- rbind(result, sub.result)
+      	        # result <- rbind(result, sub.result)
             }
-        }  ## loop for proteins
-      	
-        dataafterfit <- NULL
+			
+			return(list(sub.result, predAbundance))
+		}  ## loop for proteins
+		close(pb)
+		#stopCluster(cl)  # foreach autocloses
+		
+		## Clean up the parallelized results
+		results.list <- list()
+		predAbundance.list <- list()
+		for(j in 1:length(MS_results[[1]])){
+		  # deal with the "results" first
+		  results.list[[j]] <- MS_results[[1]][[j]]
+		  predAbundance.list[[j]] <- MS_results[[2]][[j]]
+		}
+		result <- do.call(rbind, results.list)
+		predAbundance <- do.call(c, predAbundance.list)
+		predAbundance <- predAbundance[-which(duplicated(predAbundance))] # remove duplicates
+		dataafterfit <- NULL
 	}
 		
 	###################################
@@ -3501,12 +3542,12 @@ dataProcess  <-  function(raw,
 					
 					# with single feature, not converge, wrong intercept
 					# need to check
-					fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
+					fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
 				}else{
 					if (countdf) {
-						fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
+						fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN+ref,data=sub, dist='gaussian')
 					}else{
-						fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
+						fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN+ref,data=sub, dist='gaussian')
 					}
 				}
 				
@@ -3531,7 +3572,7 @@ dataProcess  <-  function(raw,
 				result <- rbind(result, sub.result)
 			}
 
-			datamat <- dcast( Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
+			datamat <- reshape2::dcast( Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
 			datamat <- melt(datamat, id.vars=c('Protein'))
 			colnames(datamat) <- c('Protein', 'RUN', 'LogIntensities')
 			result <- datamat
@@ -3761,12 +3802,12 @@ dataProcess  <-  function(raw,
 				
 				### fit the model
 				if (length(unique(sub$FEATURE))==1) {
-					fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+					fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
 				}else{
 					if (countdf) {
-						fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+						fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
 					}else{
-						fittest <- survreg(Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+						fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
 					}
 				}
 				
@@ -3791,7 +3832,7 @@ dataProcess  <-  function(raw,
 				result <- rbind(result, sub.result)
 			}
 
-			datamat <- dcast( Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
+			datamat <- reshape2::dcast( Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
 			datamat <- melt(datamat, id.vars=c('Protein'))
 			colnames(datamat) <- c('Protein','RUN','LogIntensities')
 			result <- datamat

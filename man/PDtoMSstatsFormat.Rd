@@ -13,7 +13,7 @@ PDtoMSstatsFormat(input,
       removeOxidationMpeptides=FALSE,
       removeProtein_with1Peptide=FALSE,
       which.quantification = 'Precursor.Area',
-      which.proteinid = 'Protein.Accessions',
+      which.proteinid = 'Protein.Group.Accessions',
       which.sequence = 'Sequence' )	
 }
 
@@ -39,7 +39,8 @@ Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 
 \examples{
-# Please check section 4.5. Suggested workflow with Proteome Discoverer output for DDA in MSstats user manual.
+# Please check section 4.5. 
+## Suggested workflow with Proteome Discoverer output for DDA in MSstats user manual.
 # Output of PDtoMSstatsFormat function should have the same 10 columns as an example dataset.
 
 head(DDARawData)

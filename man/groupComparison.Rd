@@ -5,12 +5,16 @@
  experiment. It is applicable to multiple types of sample preparation, including label-free workflows, workflows that use stable isotope labeled reference proteins and peptides, and workflows that use fractionation. Experimental design of case-control study (patients are not repeatedly measured) or time course study (patients are repeatedly measured) is automatically determined based on proper statistical model.
 }
 \usage{
-groupComparison(contrast.matrix=contrast.matrix, data=data)	
+groupComparison(contrast.matrix=contrast.matrix, 
+                data=data,
+                clusters=1)	
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{contrast.matrix}{comparison between conditions of interests.}
   \item{data}{name of the (output of dataProcess function) data set.}
+  \item{clusters}{a user specified number of clusters. default is 1}
+
 }
 
 \details{

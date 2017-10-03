@@ -1,19 +1,25 @@
----
-title: "MSstats"
-author: 
-  - "Meena Choi <mnchoi67@gmail.com>" 
-  - "Tsung-Heng Tsai <tsai.tsungheng@gmail.com>" 
-  - "Cyril Galitzine <cyrildgg@gmail.com>"
-date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Vignette Title}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
 
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+```
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=7, warning=FALSE, message=FALSE)
+options(width=110)
+```
 
-# Protein/Peptide significance analysis
+<!--
+%\VignetteIndexEntry{MSstats: Protein/Peptide significance analysis}
+%\VignetteEngine{knitr::knitr}
+-->
+
+# MSstats: Protein/Peptide significance analysis
+
+Package: MSstats 
+
+Author: Meena Choi <mnchoi67@gmail.com>, Tsung-Heng Tsai <tsai.tsungheng@gmail.com>, Cyril Galitzine <cyrildgg@gmail.com>
+
+Date: October 2, 2017   
+
 
 This vignette summarizes the introduction and various options of all functionalities in MSstats. More details are available in `User Manual`.
 

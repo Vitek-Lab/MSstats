@@ -32,8 +32,10 @@ Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
 
 \examples{
-# Please check section 4.4. Suggested workflow with Progenesis output for DDA in MSstats user manual.
-# Output of ProgenesistoMSstatsFormat function should have the same 10 columns as an example dataset.
+# Please check section 4.4. 
+# Suggested workflow with Progenesis output for DDA in MSstats user manual.
+# Output of ProgenesistoMSstatsFormat function 
+# should have the same 10 columns as an example dataset.
 
 head(DDARawData)
 }

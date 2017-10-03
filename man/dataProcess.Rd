@@ -20,7 +20,8 @@ dataProcess(raw,
             cutoffCensored="minFeature",
             MBimpute=TRUE,
             remove50missing=FALSE,
-            maxQuantileforCensored=0.999)
+            maxQuantileforCensored=0.999,
+            clusters=1)
 }
 
 \arguments{
@@ -41,6 +42,7 @@ dataProcess(raw,
 \item{remove50missing}{only for summaryMethod="TMP". TRUE removes the runs which have more than 50\% missing values. FALSE is default.}
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
 \item{maxQuantileforCensored}{Maximum quantile for deciding censored missing values. default is 0.999}
+\item{clusters}{a user specified number of clusters. default is 1}
 
 }
 
