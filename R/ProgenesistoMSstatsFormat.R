@@ -100,10 +100,10 @@ ProgenesistoMSstatsFormat <- function(input,
     
         ## count how many proteins are assigned for each peptide
         structure <- aggregate(Protein ~., data=pepcount, length)
-        remove_peptide <- structure[structure$Proteins!=1, ]
+        remove_peptide <- structure[structure$Protein!=1, ]
     
         ## remove the peptides which are used in more than one protein
-        if(length(remove_peptide$Proteins != 1) != 0){
+        if(length(remove_peptide$Protein != 1) != 0){
             input <- input[-which(input$Sequence %in% remove_peptide$Sequence), ]
         }
     
