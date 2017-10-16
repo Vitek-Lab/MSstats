@@ -5,8 +5,8 @@
 
 #' @export
 #' @import Rcpp
-#' @import MSnbase 
-
+#' @importFrom MSnbase pData fData MSnSet
+#' 
 transformMSnSetToMSstats  <-  function(ProteinName,
 										PeptideSequence, 
 										PrecursorCharge, 
