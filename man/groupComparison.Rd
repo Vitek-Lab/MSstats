@@ -6,15 +6,12 @@
 }
 \usage{
 groupComparison(contrast.matrix=contrast.matrix, 
-                data=data,
-                clusters=1)	
+                data=data)	
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{contrast.matrix}{comparison between conditions of interests.}
   \item{data}{name of the (output of dataProcess function) data set.}
-  \item{clusters}{a user specified number of clusters. default is 1}
-
 }
 
 \details{

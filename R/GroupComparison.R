@@ -9,14 +9,15 @@
 #' @importFrom doSNOW registerDoSNOW
 #' @importFrom snow makeCluster
 #' @import foreach
+#' @importFrom data.table rbindlist
 
 groupComparison <- function(contrast.matrix=contrast.matrix,
-							data=data, 
-							clusters=1) {
+							data=data) {
   
     scopeOfBioReplication <- "expanded"
  	scopeOfTechReplication <- "restricted"
-  
+    message.show <- FALSE ## whether show the 'testing xx protein' or not. It consume large memory and file size.
+    
     ## save process output in each step
  	allfiles <- list.files()
     filenaming <- "msstats"
@@ -85,10 +86,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	## all input
   	processout <- rbind(processout,c(paste("labeled = ",labeled,sep="")))
   	processout <- rbind(processout,c(paste("scopeOfBioReplication = ",scopeOfBioReplication,sep="")))
-	#  processout <- rbind(processout,c(paste("scopeOfTechReplication = ", scopeOfTechReplication,sep="")))
-  
+
   	write.table(processout, file=finalfile, row.names=FALSE)
-  
   
   	## check whether case-control(FALSE) or time-course(TRUE)
   	repeated <- .checkRepeated(data$ProcessedData)
@@ -99,9 +98,6 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	processout <- rbind(processout, c(paste("Case control design of experiment - okay")))
     }
   	write.table(processout, file=finalfile, row.names=FALSE)
-  
-  
-  	#data$PROTEIN <- factor(data$PROTEIN)	
   
   	## for final result report
   	out <- NULL
@@ -130,22 +126,16 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
  
   	## need original group information
   	rqall <- data$RunlevelData
+  	rqall$Protein <- factor(rqall$Protein)
 	processall <- data$ProcessedData
 	
   	origGroup <- unique(rqall$GROUP_ORIGINAL)
   	groupinfo <- levels(data$ProcessedData$GROUP_ORIGINAL)
   	
-  	### create cluster for paralleled workflow
-  	message(paste0("Cluster Size: ", clusters,"\n"))
-  	doSNOW::registerDoSNOW(snow::makeCluster(clusters, type = "SOCK"))
+  	pb <- txtProgressBar(max = nlevels(rqall$Protein), style = 3)
   	
-  	# for (i in 1: nlevels(data$PROTEIN)) {
-  	pb <- txtProgressBar(max =  nlevels(rqall$Protein), style = 3)
-  	progress <- function(n) setTxtProgressBar(pb, n)
-  	opts <- list(progress = progress)
-  	processout_MC = c()
-  	GC_results <- foreach(i=1: nlevels(rqall$Protein), .export =c(".checkSingleSubject", '.checkTechReplicate','.checkRunbyFeature','.checkUnequalSubject','.count.missing.percentage','.getParameterFixed','.fit.model.single'), .packages = c("MSstats"), .combine='resultsAsLists', .options.snow = opts, .multicombine=TRUE, .init=list(list(), list(), list(), list())) %dopar% {
-    
+  	for (i in 1:nlevels(rqall$Protein)) {
+  	    
     	sub <- rqall[rqall$Protein == levels(rqall$Protein)[i], ]
     	colnames(sub)[colnames(sub) == "LogIntensities"] <- "ABUNDANCE"
     	colnames(sub)[colnames(sub) == "Protein"] <- "PROTEIN"
@@ -163,8 +153,10 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
 
     
     		## testing and inference in whole plot
-    		message(paste("Testing a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)), ")"))
-    	
+    		if (message.show) {
+    		    message(paste("Testing a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)), ")"))
+    		}
+    		
      		temp <- try(.ttest.logsum(contrast.matrix, sub, origGroup), silent=TRUE)
      	
      	} else { ## linear model
@@ -187,21 +179,22 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         
     
     		## testing and inference in whole plot
-    		message(paste("Testing a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)), ")"))
-    
+    		if (message.show) {
+    		    message(paste("Testing a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)), ")"))
+    		}
+    		
      		## fit the model 
-     		temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup), silent=TRUE)
+     		temp <- try(.fit.model.single(contrast.matrix, sub, TechReplicate, singleSubject, repeated, origGroup, processout), silent=TRUE)
      	
      	}
 
-    	## fix(apr 16)
+    	## 
     	if (class(temp) == "try-error") {
-      		message("*** error : can't analyze ", levels(rqall$Protein)[i], " for comparison.")
+      		#message("*** error : can't analyze ", levels(rqall$Protein)[i], " for comparison.")
       
-      		# processout <- rbind(processout,c(paste("error : can't analyze ", levels(rqall$Protein)[i], " for comparison.", sep = "")))
-    	    processout_MC <- c(paste("error : can't analyze ", levels(rqall$Protein)[i], " for comparison.", sep = ""))  # adjusted for Multicore
-    	    write.table(processout_MC, file=finalfile, row.names=FALSE)
-      
+    	    processout <- rbind(processout, c(paste("error : can't analyze ", levels(rqall$Protein)[i], " for comparison.", sep = "")))
+    	    write.table(processout, file=finalfile, row.names=FALSE)
+    	    
       		tempresult <- list(result=NULL, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)
       
       		for(k in 1:nrow(contrast.matrix)) {	
@@ -217,6 +210,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
       		}
     	} else {
       		tempresult <- temp
+      		processout <- temp$processout
     	}
     	
     	temptempresult <- tempresult$result
@@ -228,11 +222,9 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     	    temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
     	}
     	## comparison result table
-    	#	out <- rbindlist(list(out,tempresult$result))
     	temptempresult$Label <- as.character(temptempresult$Label)
     	
-    	# out <- rbind(out, temptempresult)
-    	out <- temptempresult
+    	out <- rbindlist(list(out, temptempresult))
 
     	## for checking model assumptions
     	## add residual and fitted after fitting the model
@@ -249,58 +241,24 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
           
     	} else if (data$SummaryMethod != "logOfSum"){
       
-      		sub$residuals <- temp$valueresid
-      		sub$fitted <- temp$valuefitted
+      		sub$residuals <- tempresult$valueresid
+      		sub$fitted <- tempresult$valuefitted
     	}
     
-    
-    ## order concerned
-    #	residuals <- data.frame(temp$valueresid)
-    #	fitted <- data.frame(temp$valuefitted)
-    #	sub <- merge(sub,residuals,by="row.names",all=T)
-    #	rownames(sub) <- sub$Row.names
-    #	sub <- merge(sub, fitted, by="row.names",all=T)
-    #	rownames(sub) <- data$Row.names
-    
-    #	dataafterfit <- rbindlist(list(dataafterfit,sub))
-    	# dataafterfit <- rbind(dataafterfit, sub)
-    	dataafterfit <- sub
-    
+        dataafterfit <- rbindlist(list(dataafterfit,sub))
+
     	## save fitted model
-    	# outfitted <- c(outfitted, list(tempresult$fittedmodel))
-    	outfitted <- list(tempresult$fittedmodel)
-    
-    	##
-    	if(length(processout_MC)>0){
-    	  processout_MC <- rbind(processout_MC, c(paste("Finished a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)),")")))
-    	}else{
-    	  processout_MC <- c(paste("Finished a comparison for protein ", unique(sub$PROTEIN), "(", i, " of ", length(unique(rqall$Protein)),")"))
-    	}
-    	write.table(processout, file=finalfile, row.names=FALSE)
+    	outfitted <- c(outfitted, list(tempresult$fittedmodel))
     	
-    	return( list(out, dataafterfit, outfitted, processout_MC) )
+    	## progress
+    	setTxtProgressBar(pb, i)
+    	
   	} ### end protein loop
+  	
   	close(pb)
-  	# stopCluster(cl)
-  	
-  	## Clean up the parallelized results
-  	out.list <- dataafterfit.list <- outfitted.list <- processout_MC.list <- list()
-  	for(j in 1:length(GC_results[[1]])){
-  	  # deal with the "results" first
-  	  out.list[[j]] <- GC_results[[1]][[j]]
-  	  dataafterfit.list[[j]] <- GC_results[[2]][[j]]
-  	  outfitted.list[[j]] <- GC_results[[3]][[j]]
-  	  processout_MC.list[[j]] <- GC_results[[4]][[j]]
-  	}
-  	# combine the listed results into the desired formats
-  	out <- do.call(rbind, out.list)
-  	dataafterfit <- do.call(rbind, dataafterfit.list)
-  	outfitted <- do.call(c, outfitted.list)
-  	processout_MC <- do.call(rbind, processout_MC.list)
-  	
   	
   	## Combine the processout_MC with prior processout
-  	processout <- rbind(processout, processout_MC, c("Comparisons for all proteins are done.- okay"))
+  	processout <- rbind(processout, c("Comparisons for all proteins are done.- okay"))
   	write.table(processout, file=finalfile, row.names=FALSE)
   	
   	## finalize result
@@ -312,8 +270,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
   	for(i in 1:length(unique(out$Label))) {
     	outsub <- out[out$Label == unique(out$Label)[i], ]
     	outsub <- data.frame(outsub, adj.pvalue=p.adjust(outsub$pvalue, method="BH"))
-    	#	out.all <- rbindlist(list(out.all, outsub))
-    	out.all <- rbind(out.all, outsub)
+    	out.all <- rbindlist(list(out.all, outsub))
+    	#out.all <- rbind(out.all, outsub)
     }
   	out.all$Label <- factor(out.all$Label)
   
@@ -839,7 +797,8 @@ modelBasedQCPlots <- function(data,type,
 						TechReplicate,
 						singleSubject,
 						repeated,
-						origGroup) {
+						origGroup,
+						processout) {
   
   	## input : output of run quantification
   	
@@ -860,11 +819,8 @@ modelBasedQCPlots <- function(data,type,
         	row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
             
             if( any(levels(origGroup)[contrast.matrix.sub != 0] == unique(data2$GROUP_ORIGINAL)) ){
-            	
-            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", 
-            	        row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", 
-            	        unique(data2$GROUP_ORIGINAL), ".")
-              
+                
+                processout <- rbind(processout, "*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", unique(data2$GROUP_ORIGINAL), ".")
               
             	## need to check Inf vs -Inf
                 #if( contrast.matrix.sub[levels(origGroup)[contrast.matrix.sub != 0] == unique(data2$GROUP_ORIGINAL)] > 0 ){
@@ -892,9 +848,8 @@ modelBasedQCPlots <- function(data,type,
             	
             } else {
             	
-            	message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", 
-            	        row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
-            	          	
+                processout <- rbind(processout, "*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
+                
             	out <- data.frame(Protein=unique(data2$PROTEIN), 
             	                  Label=row.names(contrast.matrix.sub), 
             	                  logFC=NA, 
@@ -992,26 +947,35 @@ modelBasedQCPlots <- function(data,type,
         		## message and output  			
         		if( flag.issue.pos & flag.issue.neg ){ ## both sides are completely missing
         			
-        			message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
-            	          	
-            		out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='completeMissing')	
+        		    processout <- rbind(processout, "*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are no measurements in both conditions.")
+        		    
+            		out <- data.frame(Protein=unique(data2$PROTEIN), 
+            		                  Label=row.names(contrast.matrix.sub), 
+            		                  logFC=NA, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, 
+            		                  issue='completeMissing')	
           		
         		} else if ( flag.issue.pos | flag.issue.neg ) {
         			
         			if(flag.issue.pos) {
         				issue.side <- count.diff.pos
         				
-        				message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", paste(issue.side, collapse = ", "), ".")
+        				processout <- rbind(processout, "*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", paste(issue.side, collapse = ", "), ".")
             	          	
-            			out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=(-Inf), SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='oneConditionMissing')
+            			out <- data.frame(Protein=unique(data2$PROTEIN), 
+            			                  Label=row.names(contrast.matrix.sub), 
+            			                  logFC=(-Inf), SE=NA, Tvalue=NA, DF=NA, pvalue=NA, 
+            			                  issue='oneConditionMissing')
         			}
         			
         			if(flag.issue.neg) {
         				issue.side <- count.diff.neg
         				
-        				message("*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", paste(issue.side, collapse = ", "), ".")
+        				processout <- rbind(processout, "*** error : results of Protein ", unique(data2$PROTEIN), " for comparison ", row.names(contrast.matrix.sub), " are NA because there are measurements only in Group ", paste(issue.side, collapse = ", "), ".")
             	          	
-            			out <- data.frame(Protein=unique(data2$PROTEIN), Label=row.names(contrast.matrix.sub), logFC=Inf, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, issue='oneConditionMissing')
+            			out <- data.frame(Protein=unique(data2$PROTEIN), 
+            			                  Label=row.names(contrast.matrix.sub), 
+            			                  logFC=Inf, SE=NA, Tvalue=NA, DF=NA, pvalue=NA, 
+            			                  issue='oneConditionMissing')
         			}       			
         			
         		} else { # then same as regulat calculation
@@ -1051,7 +1015,7 @@ modelBasedQCPlots <- function(data,type,
   		
   	} ## more than 2 conditions in the dataset
   
-  	finalout <- list(result=allout, valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full)	
+  	finalout <- list(result=allout, valueresid=finalresid, valuefitted=finalfitted, fittedmodel=fit.full, processout=processout)	
   	return(finalout)
   
 } ## .fit.model.single

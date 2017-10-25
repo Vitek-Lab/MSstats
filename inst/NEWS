@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.9.7 [201-10-23]
+-------------------------
+   NEW FEATURES
+	- cluster (default=1) is no longer available for groupComparison function, due to memory issue.
+	
+
 CHANGES IN VERSION 3.8.6 [201-09-26]
 -------------------------
    NEW FEATURES

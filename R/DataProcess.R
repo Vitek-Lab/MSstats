@@ -2520,7 +2520,7 @@ dataProcess  <-  function(raw,
 	rqresult <- try(.runQuantification(work, summaryMethod, equalFeatureVar, 
 	                                   cutoffCensored, censoredInt, remove50missing, MBimpute, 
 	                                   original_scale=FALSE, logsum=FALSE, featureSubset,
-	                                   message=TRUE, clusters=clusters), silent=TRUE)
+	                                   message.show=FALSE, clusters=clusters), silent=TRUE)
 
 	if (class(rqresult) == "try-error") {
 		message("*** error : can't summarize per subplot with ", summaryMethod, ".")
@@ -2561,7 +2561,9 @@ dataProcess  <-  function(raw,
 		
 		rqmodelqc <- rqresult$ModelQC
 		
-		workpred <- rqresult$PredictedBySurvival
+		#MC : can't use this predicted value.
+		#workpred <- rqresult$PredictedBySurvival
+		workpred <- NULL
 		
 		message("\n == the summarization per subplot is done.")
 		
@@ -2600,7 +2602,7 @@ resultsAsLists <- function(x, ...) {
                                cutoffCensored, censoredInt, remove50missing, MBimpute, 
                                original_scale, logsum, 
                                featureSubset,
-                               message, clusters) {
+                               message.show, clusters) {
 	
   ##Since the imputation has been done before feature selection, delete the columns of censoring indicator to avoid imputing the same intensity again	
   #if(featureSubset == "highQuality") {
@@ -2678,9 +2680,9 @@ resultsAsLists <- function(x, ...) {
       	    TechReplicate <- .checkTechReplicate(sub) ## use for label-free model
         
       	    ##### fit the model
-      	    if (message) {
+      	    #if (message.show) {
       		    message(paste("Getting the summarization per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
-      	    }
+      	    #}
       		
       	    fit <- try(.fit.quantification.run(sub, singleFeature, singleSubject, TechReplicate, labeled=label, equalFeatureVar), silent=TRUE)
              
@@ -2771,7 +2773,7 @@ resultsAsLists <- function(x, ...) {
 		  
      		sub <- data[data$PROTEIN==levels(data$PROTEIN)[i], ]
      		
-     		if (message) {
+     		if (message.show) {
      		    message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
      		}
      		
@@ -3084,32 +3086,72 @@ resultsAsLists <- function(x, ...) {
 				
 				if (MBimpute) {
 					
-					if (nrow(sub[sub$cen == 0, ]) > 0) {
-						## impute by survival model
-						subtemp <- sub[!is.na(sub$ABUNDANCE),]
-						countdf <- nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+				    if(!label){ ## label-free
+					    if (nrow(sub[sub$cen == 0, ]) > 0) {
+						    ## impute by survival model
+						    subtemp <- sub[!is.na(sub$ABUNDANCE),]
+						    countdf <- nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
 				
-						### fit the model
-						if (length(unique(sub$FEATURE))==1) {
-							fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
-						}else{
-							if (countdf) {
-								fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
-							}else{
-								fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
-							}
-						}
+						    ### fit the model
+						    if (length(unique(sub$FEATURE))==1) {
+							    fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+						    }else{
+							    if (countdf) {
+								    fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,data=sub, dist='gaussian')
+							    }else{
+								    fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN,data=sub, dist='gaussian')
+							    }
+						    }
 					
-						# get predicted value from survival
-						sub <- data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+						    # get predicted value from survival
+						    sub <- data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
 					
-						# the replace censored value with predicted value
-						sub[sub$cen==0, "ABUNDANCE"] <- sub[sub$cen==0, "pred"]	
+						    # the replace censored value with predicted value
+						    sub[sub$cen==0, "ABUNDANCE"] <- sub[sub$cen==0, "pred"]	
 					
-						# save predicted value
-						# predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))
-						predAbundance <- c(predict(fittest, newdata=sub, type="response"))
-					}
+						    # save predicted value
+						    # predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))
+						    #predAbundance <- c(predict(fittest, newdata=sub, type="response"))
+					    }
+				    } else { ## label-based
+				        # only endogenous will be imputed
+				        sub.h <- sub[sub$LABEL == 'H', ]
+				        sub.l <- sub[sub$LABEL == 'L', ]
+				        
+				        if (nrow(sub.l[sub.l$cen == 0, ]) > 0) {
+				            ## impute by survival model
+				            subtemp <- sub.l[!is.na(sub.l$ABUNDANCE),]
+				            countdf <- nrow(subtemp)<(length(unique(subtemp$FEATURE))+length(unique(subtemp$RUN))-1)
+				            
+				            set.seed(100)
+				            ### fit the model
+				            if (length(unique(sub.l$FEATURE))==1) {
+				                fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN, data=sub.l, dist='gaussian')
+				            }else{
+				                if (countdf) {
+				                    fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN, data=sub.l, dist='gaussian')
+				                }else{
+				                    fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE+RUN, data=sub.l, dist='gaussian')
+				                }
+				            }
+				            
+				            # get predicted value from survival
+				            sub.l <- data.frame(sub.l, pred=predict(fittest, newdata=sub.l, type="response"))
+				            
+				            # predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))
+				            #predAbundance <- c(predict(fittest, newdata=sub.l, type="response"))
+				            
+				            # the replace censored value with predicted value
+				            sub.l[sub.l$cen==0, "ABUNDANCE"] <- sub.l[sub.l$cen==0, "pred"]	
+				            
+				            sub.h$pred <- NA
+				            
+				            ## for label-based, need to merge again
+				            sub <- rbind(sub.h, sub.l)
+				            
+				        }
+				        
+				    }
 				}	
 			}
 			
@@ -3319,6 +3361,8 @@ resultsAsLists <- function(x, ...) {
             }
 			
 			return(list(sub.result, predAbundance))
+			#return(list(sub.result))
+			
 		}  ## loop for proteins
 		close(pb)
 		#stopCluster(cl)  # foreach autocloses
@@ -3333,7 +3377,7 @@ resultsAsLists <- function(x, ...) {
 		}
 		result <- do.call(rbind, results.list)
 		predAbundance <- do.call(c, predAbundance.list)
-		predAbundance <- predAbundance[-which(duplicated(predAbundance))] # remove duplicates
+		#predAbundance <- predAbundance[-which(duplicated(predAbundance))] # remove duplicates
 		dataafterfit <- NULL
 	}
 		
@@ -3357,7 +3401,9 @@ resultsAsLists <- function(x, ...) {
 	
 				sub <- data[data$PROTEIN==unique(data$PROTEIN)[i],]
 				
-				message(paste("Getting the summarization for censored missing values per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				if (message.show) {
+				    message(paste("Getting the summarization for censored missing values per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				}
 				
 				sub$FEATURE <- factor(sub$FEATURE)
 				sub$feature.label <- paste(sub$FEATURE, sub$LABEL, sep="_")
@@ -3585,7 +3631,9 @@ resultsAsLists <- function(x, ...) {
 	
 				sub <- data[data$PROTEIN==unique(data$PROTEIN)[i], ]
 				
-				message(paste("Getting the summarization for censored missing values per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				if (message.show) {
+				    message(paste("Getting the summarization for censored missing values per subplot for protein ",unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+				}
 				
 				sub$FEATURE <- factor(sub$FEATURE)
 	
