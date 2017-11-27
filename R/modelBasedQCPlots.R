@@ -70,7 +70,7 @@ modelBasedQCPlots <- function(data,
         
             while(is.element(finalfile,allfiles)) {
                 num <- num+1
-                inalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+                finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
             }	
         
             pdf(finalfile, width=width, height=height)
@@ -79,6 +79,11 @@ modelBasedQCPlots <- function(data,
         for (i in 1:length(datafit)) {	
         
             sub <- datafit[[i]]
+            
+            if( is.null(sub) ){
+                message(paste(proid[i], "could not be fitted by linear mixed effect model. Can not draw QQ plot for", "(",i," of ",length(proid),")"))
+                next()
+            }
       
             if ( class(sub)=="lm" ) {  ### lm model
                 sub.residuals <- sub$residuals
@@ -149,6 +154,11 @@ modelBasedQCPlots <- function(data,
         for (i in 1:length(datafit)) {	
       
             sub <- datafit[[i]]
+            
+            if( is.null(sub) ){
+                message(paste(proid[i], "could not be fitted by linear mixed effect model. Can not draw residual plot for", "(",i," of ",length(proid),")"))
+                next()
+            }
       
             if ( class(sub)=="lm" ) {  ### lm model
                 sub.residuals <- sub$residuals
