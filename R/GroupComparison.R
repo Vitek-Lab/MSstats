@@ -245,7 +245,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
       		sub$fitted <- tempresult$valuefitted
     	}
     
-        dataafterfit <- rbindlist(list(dataafterfit,sub))
+        dataafterfit <- rbindlist(list(dataafterfit,sub), fill=TRUE)
 
     	## save fitted model
     	outfitted <- c(outfitted, list(tempresult$fittedmodel))

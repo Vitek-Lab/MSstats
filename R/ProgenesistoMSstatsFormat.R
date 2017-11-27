@@ -14,65 +14,106 @@ ProgenesistoMSstatsFormat <- function(input,
                                       removeProtein_with1Peptide=FALSE){
 
     ##############################
-    ### 1. use only 'use in quantitation = true'
+    ### 0. check input
     ##############################
-    #position.Normedpeak <- which(colnames(input) == 'Normalized.abundance')
-    #position.Rawpeak <- which(colnames(input) == 'Raw.abundance')
-    #position.Spectra <- which(colnames(input) == 'Spectral.counts')
+
+    ## there are space in column name
+
+    if( !is.element('Modifications', input[2,]) ){
+        input[2,][grep('modifications', input[2,])] <- 'Modifications'
+    }
+
+    if( !is.element('Protein', input[2,]) & is.element('Accession', input[2,]) ){
+        ## use 'Accession' for Protein ID
+        input[2,][input[2,] == 'Accession'] <- 'Protein'
+    }
     
-    if( is.element('Spectral.counts', colnames(input)) & 
-        is.element('Raw.abundance', colnames(input)) & 
+    required.column <- c('Protein', 'Sequence', 'Charge', 'Modifications')
+    
+    if( length(grep('quantitation', input[2,])) > 0 ){
+        input[2,][grep('quantitation', input[2,])] <- 'Use.in.quantitation'
+        required.column <- c(required.column, 'Use.in.quantitation')
+    }
+    
+
+    if ( !all(required.column %in% input[2,]) ) {
+        
+        missedInput <- which(!(required.column %in% input[2,]))
+
+        stop(paste("**", paste(required.column[missedInput], collapse = ", "), "is not provided in input. Please check the input."))
+    }
+    
+    ## check annotation
+    required.annotation <- c('Run', 'BioReplicate', 'Condition')
+    
+    if ( !all(required.annotation %in% colnames(annotation)) ) {
+        
+        missedAnnotation <- which(!(required.annotation %in% colnames(annotation)))
+        
+        stop(paste("**", paste(required.annotation[missedAnnotation], collapse = ", "), "is not provided in Annotation. Please check the annotation."))
+    }
+    
+    
+    if( is.element('Raw.abundance', colnames(input)) & 
         is.element('Normalized.abundance', colnames(input)) ){
         
-        input <- input[,
-                       c(1:(which(colnames(input) == 'Normalized.abundance')-1),
-                         which(colnames(input) == 'Raw.abundance') : (which(colnames(input) == 'Spectral.counts')-1))]
+        start.column <- which(colnames(input) == 'Raw.abundance')
+        check.numRun <- which(colnames(input) == 'Normalized.abundance')
         
-    } else if ( is.element('Raw.abundance', colnames(input)) & 
-                is.element('Normalized.abundance', colnames(input)) ){
-       
-         input <- input[,
-                       c(1:(which(colnames(input) == 'Normalized.abundance')-1),
-                         which(colnames(input) == 'Raw.abundance') : ncol(input))]
+        if( start.column-check.numRun != nrow(annotation) ){
+            stop(message('** Please check annotation file. The numbers of MS runs in annotation and output are not matched.'))
+        }
+        
+        raw.abundance.column <- c(start.column:(start.column + nrow(annotation)-1))
+        
+        input <- input[,
+                       c(which(input[2, ] %in% required.column),
+                         raw.abundance.column)]
          
     } else if ( is.element('Raw.abundance', colnames(input)) ) {
         
+        start.column <- which(colnames(input) == 'Raw.abundance')
+        raw.abundance.column <- c(start.column:(start.column + nrow(annotation)-1))
+        
         input <- input[,
-                       c(1:(which(colnames(input) == 'Raw.abundance')-1),
-                         which(colnames(input) == 'Raw.abundance') : ncol(input))]
+                       c(which(input[2, ] %in% required.column),
+                         raw.abundance.column)]
     }
-    
     
     input <- input[-1,]
     colnames(input) <- input[1, ]
     input <- input[-1,]
   
     ##############################
-    ### 2. use only 'use in quantitation = true'
+    ### 1. use only 'use in quantitation = true'
     ##############################
-    ## there are space in column name
-    colnames(input)[grep('quantitation', colnames(input))] <- 'Use.in.quantitation'
-  
-    ## value for use in quantitation is True vs False
-    if( length( grep('True', unique(input$Use.in.quantitation)) ) > 0 ){ 
-        input <- input[input$Use.in.quantitation == 'True', ]
-    } else if( length( grep('TRUE', unique(input$Use.in.quantitation)) ) > 0){
-        input <- input[input$Use.in.quantitation == TRUE, ]
+
+    if( is.element('Use.in.quantitation', colnames(input)) ){
+        ## value for use in quantitation is True vs False
+        if( length( grep('True', unique(input$Use.in.quantitation)) ) > 0 ){ 
+            input <- input[input$Use.in.quantitation == 'True', ]
+        } else if( length( grep('TRUE', unique(input$Use.in.quantitation)) ) > 0){
+            input <- input[input$Use.in.quantitation == TRUE, ]
+        }
+        
+        input <- input[, -which(colnames(input) %in% c('Use.in.quantitation'))]
+        
     }
 
+    
     ##############################
     ### 2. modify column names and remove some columnts
     ##############################
-  
+    
+    input <- input[!is.na(input$Protein) & input$Protein != '', ]
+    input <- input[!is.na(input$Sequence) & input$Sequence != '', ]
+    
     ## get modified sequence
     input$ModifiedSequence <- paste(input$Sequence, input$Modifications, sep="")
   
-    ## use 'Accession' for Protein ID
-    colnames(input)[colnames(input) == 'Accession'] <- 'Protein'
-  
     ## get subset of datasets
-    input <- input[, which(colnames(input) %in% c('Protein', 'Sequence', 'Charge', 'ModifiedSequence',
-                                                as.character(annotation$Run)))]
+   # input <- input[, which(colnames(input) %in% c('Protein', 'Sequence', 'Charge', 'ModifiedSequence',
+   #                                             as.character(annotation$Run)))]
     ## remove completely duplicated rows
     input <- input[!duplicated(input), ]
   
@@ -86,7 +127,6 @@ ProgenesistoMSstatsFormat <- function(input,
         }
     
         message('Peptides including oxidation(M) in the sequence are removed.')
-    
     }
  
     ################################################
@@ -114,7 +154,7 @@ ProgenesistoMSstatsFormat <- function(input,
     ##############################
     ### 4. remove multiple measurements per feature and run
     ##############################
-    input <- input[, -which(colnames(input) %in% 'Sequence')]
+    input <- input[, -which(colnames(input) %in% c('Sequence', 'Modifications'))]
     input_remove <- melt(input, id=c('Protein', 'ModifiedSequence', 'Charge'))
 
     colnames(input_remove) <- c("ProteinName","PeptideModifiedSequence","PrecursorCharge","Run","Intensity")

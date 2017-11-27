@@ -1,3 +1,10 @@
+CHANGES IN VERSION 3.10.2 [201-11-27]
+-------------------------
+   BUG FIXES
+	- make error messages for QQ plot and residual plot, if the protein couldn't be fitted by linear mixed effect model.
+	
+	- ProgenesistoMSstatsFormat : make more generalization for different format.
+
 CHANGES IN VERSION 3.9.7 [201-10-23]
 -------------------------
    NEW FEATURES
