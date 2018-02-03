@@ -5,7 +5,7 @@
 #' @export
 #' @import Rcpp
 #' @importFrom MSnbase pData fData MSnSet
-transformMSnSetToMSstats  <-  function(ProteinName,
+transformMSnSetToMSstats <- function(ProteinName,
                                        PeptideSequence,
                                        PrecursorCharge,
                                        FragmentIon,
@@ -22,28 +22,28 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   ## if the data is an expression set, extract the different data components and reshape to "long" format
 
   ## extract the three data components
-  sampleData  <-  pData(data)
-  featureData  <-  fData(data)
-  expressionMatrix  <-  as.data.frame(exprs(data))
+  sampleData <- pData(data)
+  featureData <- fData(data)
+  expressionMatrix <- as.data.frame(exprs(data))
 
   ## extract the variable names
-  sample.variables  <-  dimnames(sampleData)[[2]]
-  feature.variables  <-  dimnames(featureData)[[2]] ## ProteinAccession, PeptideSequence, charge
+  sample.variables <- dimnames(sampleData)[[2]]
+  feature.variables <- dimnames(featureData)[[2]] ## ProteinAccession, PeptideSequence, charge
 
   ## create a patient variable by which to merge with intensities
-  sampleData$pData_rownames  <-  rownames(sampleData)
+  sampleData$pData_rownames <- rownames(sampleData)
 
   ## creat a feature variable by which to merge with intensities
-  featureData$fData_rownames  <-  rownames(featureData)
+  featureData$fData_rownames <- rownames(featureData)
 
   ## transform the matrix of intensities so that each row is a sample and feature combination
-  long.abundances  <-  reshape(expressionMatrix, idvar = "fData_rownames", ids = rownames(expressionMatrix), times = colnames(expressionMatrix), timevar = "pData_rownames", varying = list(dimnames(sampleData)[[1]]), v.names = "ABUNDANCE", direction = "long")
-  rownames(long.abundances)  <-  NULL
+  long.abundances <- reshape(expressionMatrix, idvar = "fData_rownames", ids = rownames(expressionMatrix), times = colnames(expressionMatrix), timevar = "pData_rownames", varying = list(dimnames(sampleData)[[1]]), v.names = "ABUNDANCE", direction = "long")
+  rownames(long.abundances) <- NULL
 
   ## merge with featureData and patientData to get the feature -> protein and the bio.rep -> group mappings
-  long.abundances$ABUNDANCE  <-  as.numeric(as.character(long.abundances$ABUNDANCE))
-  long.abundances.2  <-  merge(long.abundances, featureData, by = "fData_rownames")
-  final.data  <-  merge(long.abundances.2, sampleData, by = "pData_rownames")
+  long.abundances$ABUNDANCE <- as.numeric(as.character(long.abundances$ABUNDANCE))
+  long.abundances.2 <- merge(long.abundances, featureData, by = "fData_rownames")
+  final.data <- merge(long.abundances.2, sampleData, by = "pData_rownames")
 
   ## extract required information
   ## default : Protein="ProteinAccession",PeptideSequence="PeptideSequence", PrecursorCharge="charge", FragmentIon, ProductCharge ,IsotopeLabelType="mz", Bioreplicate=NA,Run=NA,
@@ -97,19 +97,19 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   ## define the group column
 
   if (length(Condition) > 1) {
-    group.variable  <-  final.data[, which(colnames(final.data) == Condition[1])]
+    group.variable <- final.data[, which(colnames(final.data) == Condition[1])]
 
     for(i in 2:length(Condition)) {
-      var  <-  final.data[, which(colnames(final.data) == Condition[i])]
-      group.variable  <-  paste(group.variable, var, sep = ".")
+      var <- final.data[, which(colnames(final.data) == Condition[i])]
+      group.variable <- paste(group.variable, var, sep = ".")
     }
-    final.data$group.column  <-  group.variable
+    final.data$group.column <- group.variable
   } else {
-    final.data$group.column  <-  final.data[, which(colnames(final.data) == Condition)]
+    final.data$group.column <- final.data[, which(colnames(final.data) == Condition)]
   }
 
   ## combine into a data frame
-  final.data.2  <-  final.data[, c(ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType,
+  final.data.2 <- final.data[, c(ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType,
                                    "group.column", Bioreplicate, Run, "ABUNDANCE")]
 
   colnames(final.data.2) <- c("ProteinName", "PeptideSequence", "PrecursorCharge", "FragmentIon",
@@ -145,7 +145,7 @@ transformMSstatsToMSnSet <- function(data) {
              c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE")]
 
   ## need to make as MSnSet class
-  e  <-  MSnSet(xx, fd, pd)
+  e <- MSnSet(xx, fd, pd)
 
   sampleNames(e) <- paste(e$ISOTOPELABELTYPE, e$CONDITION, e$BIOREPLICATE, e$RUN, sep = ".")
   featureNames(e) <- paste(fData(e)$PEPTIDESEQUENCE, fData(e)$PRECURSORCHARGE, fData(e)$FRAGMENTION, fData(e)$PRODUCTCHARGE, sep = ".")

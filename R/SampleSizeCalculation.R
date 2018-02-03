@@ -71,7 +71,7 @@ designSampleSize <- function(data=data,
       if (class(fit.full) != "mer") {
         VarComponent[i, "Error"] <- summary(fit.full)$sigma^2
       } else {
-        stddev  <-  c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
+        stddev <- c(sapply(VarCorr(fit.full), function(el) attr(el, "stddev")),attr(VarCorr(fit.full), "sc"))
         VarComponent[i, "Error"] <- stddev[names(stddev) == ""]^2
 
         if (sum(names(stddev) %in% "SUBJECT_NESTED.(Intercept)") > 0) {

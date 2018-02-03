@@ -24,8 +24,8 @@
 }
 
 .fun_error <- function(dir,peptide,site,message){
-  filename = paste(dir,"/",paste(peptide,"_",site,".txt",sep=""),sep="")
-                                        #print(filename)
+  filename <- paste(dir,"/",paste(peptide,"_",site,".txt",sep=""),sep="")
+  ##print(filename)
   write(message,file=filename)
 
 }

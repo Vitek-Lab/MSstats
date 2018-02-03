@@ -13,7 +13,7 @@
 #' @importFrom doSNOW registerDoSNOW
 #' @importFrom snow makeCluster
 #' @import foreach
-dataProcess  <-  function(raw,
+dataProcess <- function(raw,
                           logTrans=2,
                           normalization="equalizeMedians",
                           nameStandards=NULL,
@@ -85,7 +85,7 @@ dataProcess  <-  function(raw,
     write.table(processout, file = finalfile, row.names = FALSE)
                                         # if PeptideModifiedSequence is provided instead of PeptideSequence,
                                         # change the column name as PeptideSequence
-    colnames(raw)[which(providedInputUpper == "PEPTIDEMODIFIEDSEQUENCE")]  <-  "PeptideSequence"
+    colnames(raw)[which(providedInputUpper == "PEPTIDEMODIFIEDSEQUENCE")] <- "PeptideSequence"
   } else {
 		missedInput <- which(!(requiredInputUpper %in% providedInputUpper))
 		processout <- rbind(processout, c(paste("ERROR : The required input : ",
@@ -1598,8 +1598,8 @@ dataProcess  <-  function(raw,
 			## Constant normalization by endogenous per method
 
 			## [MC : use median of medians]
-			median.run.method  <-  aggregate(ABUNDANCE ~ RUN + FRACTION, data = work, median, na.rm = TRUE)
-			median.method  <-  tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION, median, na.rm = TRUE)
+			median.run.method <- aggregate(ABUNDANCE ~ RUN + FRACTION, data = work, median, na.rm = TRUE)
+			median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION, median, na.rm = TRUE)
 			nmethod <- unique(work$FRACTION)
 			for(j in 1:length(nmethod)) {
 				namerun <- unique(work[work$FRACTION == nmethod[j], "RUN"])
@@ -1615,8 +1615,8 @@ dataProcess  <-  function(raw,
 			## Constant normalization by heavy standard per method
 			h <- work[work$LABEL == "H", ]
       ## [MC : use median of medians]
-			median.run.method  <-  aggregate(ABUNDANCE ~ RUN + FRACTION, data = h, median, na.rm = TRUE)
-			median.method  <-  tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION, median, na.rm = TRUE)
+			median.run.method <- aggregate(ABUNDANCE ~ RUN + FRACTION, data = h, median, na.rm = TRUE)
+			median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION, median, na.rm = TRUE)
       nmethod <- unique(work$FRACTION)
       for(j in 1:length(nmethod)) {
         namerun <- unique(work[work$FRACTION==nmethod[j],"RUN"])
@@ -2866,7 +2866,7 @@ resultsAsLists <- function(x, ...) {
           data_w <- data_w[,-1]
           data_w[data_w==1] <- NA
           if (!original_scale) {
-            meddata  <-  medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
+            meddata <- medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
 						tmpresult <- meddata$overall + meddata$row
 						## if fractionated sample, need to get per sample run
 						## ?? if there are technical replicates, how to match sample and MS run for different fractionation??
@@ -2876,7 +2876,7 @@ resultsAsLists <- function(x, ...) {
             ##}
           } else { # original_scale
             data_w <- 2^(data_w)
-            meddata  <-  medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
+            meddata <- medpolish(data_w,na.rm=TRUE,trace.iter = FALSE)
 						tmpresult <- meddata$overall + meddata$row
             tmpresult <- log2(tmpresult)
           }
@@ -2916,7 +2916,7 @@ resultsAsLists <- function(x, ...) {
           rownames(data_w) <- data_w$run.label
           data_w <- data_w[,-1]
           ##data_w[data_w==1] <- NA
-          meddata  <-  medpolish(data_w, na.rm=TRUE, trace.iter = FALSE)
+          meddata <- medpolish(data_w, na.rm=TRUE, trace.iter = FALSE)
 					tmpresult <- meddata$overall + meddata$row
 
 					reformresult <- data.frame(tmpresult)
@@ -3227,7 +3227,7 @@ resultsAsLists <- function(x, ...) {
 
 				sub.result <- data.frame(Protein=unique(sub$PROTEIN),RUN=rep(c(levels(sub$RUN)),1),LogIntensities=NA)
         ## get the parameters
-				cf  <-  summary(fittest)$coefficients
+				cf <- summary(fittest)$coefficients
         ## calculate sample quantification for all levels of sample
         a <- 1
 
@@ -3447,7 +3447,7 @@ resultsAsLists <- function(x, ...) {
 
 				sub.result <- data.frame(Protein=unique(sub$PROTEIN),RUN=rep(c(levels(sub$RUN)),1),LogIntensities=NA)
         ## get the parameters
-				cf  <-  summary(fittest)$coefficients
+				cf <- summary(fittest)$coefficients
         ## calculate sample quantification for all levels of sample
         a <- 1
 

@@ -131,11 +131,11 @@ groupComparisonPlots <- function(data=data,
     }
 
     if (logBase.pvalue == 2) {
-      y.limUp  <- 30
+      y.limUp <- 30
     }
 
     if (logBase.pvalue == 10) {
-      y.limUp  <- 10
+      y.limUp <- 10
     }
 
     if (is.numeric(ylimUp)) y.limUp <- ylimUp
@@ -170,11 +170,11 @@ groupComparisonPlots <- function(data=data,
       sub <- data[data$Label == levels(data$Label)[i], ]
 
       if (logBase.pvalue==2) {
-        temp <-  -log2(sub$adj.pvalue)*sign(sub[,3])
+        temp <- -log2(sub$adj.pvalue)*sign(sub[,3])
       }
 
       if (logBase.pvalue==10) {
-        temp <-  -log10(sub$adj.pvalue)*sign(sub[,3])
+        temp <- -log10(sub$adj.pvalue)*sign(sub[,3])
       }
 
       final <- data.frame(cbind(final,temp))
@@ -213,8 +213,8 @@ groupComparisonPlots <- function(data=data,
                                         #obj <- subset(obj, select=-c(id))
 
     ## color scale
-    blue.red.18  <-  maPalette(low = "blue", high = "red", mid = "black", k = 12)
-    my.colors  <- blue.red.18
+    blue.red.18 <- maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    my.colors <- blue.red.18
                                         #my.colors[my.colors=="#FFFFFF"] <- "gold"
     my.colors <- c(my.colors,"grey") ## for NA
 
@@ -226,13 +226,13 @@ groupComparisonPlots <- function(data=data,
 
     if (logBase.pvalue == 10) {
 
-      neg.breaks  <-  log(breaks, 10)
-      my.breaks   <-  c(neg.breaks, 0, -neg.breaks[6:1], 101)
+      neg.breaks <- log(breaks, 10)
+      my.breaks  <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
 
 		} else if(logBase.pvalue == 2) {
 
-			neg.breaks  <-  log(breaks, 2)
-      my.breaks   <-  c(neg.breaks, 0, -neg.breaks[6:1], 101)
+			neg.breaks <- log(breaks, 2)
+      my.breaks  <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
 
 		}
 
@@ -339,11 +339,11 @@ groupComparisonPlots <- function(data=data,
     }
 
     if (logBase.pvalue == 2) {
-      y.limUp  <- 30
+      y.limUp <- 30
     }
 
     if (logBase.pvalue == 10) {
-      y.limUp  <- 10
+      y.limUp <- 10
     }
 
     if (is.numeric(ylimUp)) y.limUp <- ylimUp

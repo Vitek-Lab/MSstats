@@ -681,7 +681,7 @@ modelBasedQCPlots <- function(data,type,
                                         # check single subject for both case-control and time-course?
 #############################################
 
-.checkSingleSubject <-  function(data) {
+.checkSingleSubject <- function(data) {
 
   temp <- unique(data[,c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
   temp$GROUP_ORIGINAL <- factor(temp$GROUP_ORIGINAL)
@@ -695,7 +695,7 @@ modelBasedQCPlots <- function(data,type,
                                         # check .checkSingleFeature
 #############################################
 
-.checkSingleFeature <-  function(data) {
+.checkSingleFeature <- function(data) {
 
   sigleFeature <- length(unique(data$FEATURE)) < 2
 
@@ -706,7 +706,7 @@ modelBasedQCPlots <- function(data,type,
                                         # check .checkTechReplicate
 #############################################
 
-.checkTechReplicate <-  function(data) {
+.checkTechReplicate <- function(data) {
 
   temp <- unique(data[, c("SUBJECT_NESTED", "RUN")])
   temp$SUBJECT_NESTED <- factor(temp$SUBJECT_NESTED)
@@ -725,8 +725,8 @@ modelBasedQCPlots <- function(data,type,
 
   data.light <- data[data$LABEL=="L", ]
   RunByFeature <- table(data.light$RUN, data.light$FEATURE)
-  emptyRow  <-  apply(RunByFeature, 1, sum)
-  noRunFeature  <-  any(emptyRow == 0)
+  emptyRow <- apply(RunByFeature, 1, sum)
+  noRunFeature <- any(emptyRow == 0)
 
   return(noRunFeature)
 }
@@ -764,10 +764,10 @@ modelBasedQCPlots <- function(data,type,
 #############################################
 .checkMissFeature <- function(data) {
 
-  dataByPeptide  <-  tapply(as.numeric(data$ABUNDANCE), list(data$FEATURE, data$GROUP_ORIGINAL), function(x) sum(x > 0, na.rm = TRUE))
+  dataByPeptide <- tapply(as.numeric(data$ABUNDANCE), list(data$FEATURE, data$GROUP_ORIGINAL), function(x) sum(x > 0, na.rm = TRUE))
 
-  missPeptideInd  <-  apply(dataByPeptide, 1, function(x) any(x == 0 | is.na(x)))
-  missingPeptides  <-  names(missPeptideInd)[missPeptideInd == TRUE]
+  missPeptideInd <- apply(dataByPeptide, 1, function(x) any(x == 0 | is.na(x)))
+  missingPeptides <- names(missPeptideInd)[missPeptideInd == TRUE]
 
   return(missingPeptides)
 }

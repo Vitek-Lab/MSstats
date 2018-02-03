@@ -106,7 +106,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 ### ? can remove Retention.time column later
 	if(experiment=="SILAC"){
 
-		infile  <-  infile[c("uniqueProteins", "Protein.group.IDs", "Sequence", "Modified.sequence", "Charge", "Raw.file", "Intensity.L", "Intensity.H", "Retention.time", "id")]
+		infile <- infile[c("uniqueProteins", "Protein.group.IDs", "Sequence", "Modified.sequence", "Charge", "Raw.file", "Intensity.L", "Intensity.H", "Retention.time", "id")]
 		infile.l <- infile[, !(colnames(infile) %in% "Intensity.H")]
 		infile.h <- infile[, !(colnames(infile) %in% "Intensity.L")]
 
@@ -124,7 +124,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 
 	}else{
 
-		infile  <-  infile[c("uniqueProteins", "Protein.group.IDs",
+		infile <- infile[c("uniqueProteins", "Protein.group.IDs",
                          "Sequence", "Modified.sequence", "Modifications", "Charge",
                          "Raw.file", "Intensity", "Retention.time", "id")]
 
@@ -220,7 +220,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 		infile_l <- .melt_maxquant_to_long_glf(infile_w)
 
 		## need to set 'IsotopeLabelType' because SILAC already has it.
-		infile_l$IsotopeLabelType  <-  "L"
+		infile_l$IsotopeLabelType <- "L"
 
 	}
 

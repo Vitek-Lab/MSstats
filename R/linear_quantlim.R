@@ -17,7 +17,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
 
                                         #percentile of the prediction interval considered
   if(missing(alpha)){
-    alpha = 5/100;
+    alpha <- 5/100;
   }
 
   if( alpha >= 1 | alpha  <= 0){
@@ -33,7 +33,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
 
                                         #Number of points for the discretization interval
   if(missing(Npoints)){
-    Npoints = 100
+    Npoints <- 100
   }
 
                                         #Number of bootstrap samples for the prediction inteval for the changepoint
@@ -66,30 +66,31 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
                                         #The confidence interval for future observations of normal observations with unknown mean and variance:
                                         #t(alpha/2,dof = n-1)*s*sqrt(1+1/n)
 
-  n_blank = length(unique(tmp_blank$I))
-  noise = mean(tmp_blank$I)
-  var_noise = var(tmp_blank$I)
+  n_blank <- length(unique(tmp_blank$I))
+  noise <- mean(tmp_blank$I)
+  var_noise <- var(tmp_blank$I)
 
   if(nrow(tmp_blank) <= 1 || var_noise  <= 0){
     print("Not enough blank samples!!!")
     return(NULL)
   }
 
-  fac = qt(1-alpha,n_blank - 1)*sqrt(1+1/n_blank)
+  fac <- qt(1-alpha,n_blank - 1)*sqrt(1+1/n_blank)
 
                                         #upper bound of noise prediction interval
-  up_noise = noise   +  fac* sqrt(var_noise)
+  up_noise <- noise   +  fac* sqrt(var_noise)
 
-  unique_c = sort(unique(tmp_all$C));   var_v <- rep(0.0, length(unique_c))
-  weights  <- rep(0.0, length(tmp_all$C));
-  weights_nob  <- rep(0.0, length(tmp_nob$C));
+  unique_c <- sort(unique(tmp_all$C))
+  var_v <- rep(0.0, length(unique_c))
+  weights <- rep(0.0, length(tmp_all$C))
+  weights_nob <- rep(0.0, length(tmp_nob$C))
 
                                         #Calculate variance for all concentrations:
-  ii = 1
+  ii <- 1
   for (j in unique_c){
     data_f <- subset(tmp_all, C == j)
     var_v[ii] <- var(data_f$I)#/mean(data_f$log2Int)**2
-    ii = ii +1
+    ii <- ii +1
   }
 
 
@@ -103,8 +104,8 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
 
 
                                         #Instead simply create a  piecewise linear approximation:
-  var_v_lin = approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = xaxis_orig_2)$y
-  var_v_lin_unique = approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = unique_c)$y
+  var_v_lin <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = xaxis_orig_2)$y
+  var_v_lin_unique <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout = unique_c)$y
 
 
   ##
@@ -130,20 +131,20 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
       lin.blank_B <- NULL
       tmpB <- tmp_all[sample(1:length(tmp_all$C), replace=TRUE),] #Pick **  observations with replacement among all that are available.
                                         #Blank samples are included
-      weights = rep(0,length(tmpB$C) )
+      weights <- rep(0,length(tmpB$C) )
       for (kk in 1:length(tmpB$C)){
-        weights[kk] = 1/var_v_s_unique[which( unique_c == tmpB$C[kk])]
+        weights[kk] <- 1/var_v_s_unique[which( unique_c == tmpB$C[kk])]
       }
 
-      noise_B = mean(sample(tmp_blank$I,length(tmp_blank$I),replace=TRUE))
+      noise_B <- mean(sample(tmp_blank$I,length(tmp_blank$I),replace=TRUE))
 
-      ll = 0
+      ll <- 0
       while(ll < NMAX){
-        ll = ll + 1
-        slope = median(tmpB$I)/median(tmpB$C)*runif(1)
-        intercept = noise*runif(1)
+        ll <- ll + 1
+        slope <- median(tmpB$I)/median(tmpB$C)*runif(1)
+        intercept <- noise*runif(1)
         sink(null_output);
-        tryCatch(lin.blank_B <-  {nlsLM( I ~ .linear(C , intercept, slope),data=tmpB, trace = TRUE,start=c(intercept=intercept, slope=slope), weights = weights,
+        tryCatch(lin.blank_B <- {nlsLM( I ~ .linear(C , intercept, slope),data=tmpB, trace = TRUE,start=c(intercept=intercept, slope=slope), weights = weights,
                                         control = nls.lm.control(nprint=1,ftol = sqrt(.Machine$double.eps)/2, maxiter = 50))}, error = function(e) {NULL})
 
         sink();
@@ -153,11 +154,11 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
 
                                         #Store the curve fits obtained via bootstrap with bilinear and linear:
       if(!is.null(lin.blank_B)){#If linear fit, change = 0 anyway
-        outB[j,]  <- .linear(xaxis_orig_2,summary(lin.blank_B)$coefficient[1] , summary(lin.blank_B)$coefficient[2] )
+        outB[j,] <- .linear(xaxis_orig_2,summary(lin.blank_B)$coefficient[1] , summary(lin.blank_B)$coefficient[2] )
         change_B[j] <- 0
       }
       else{
-        outB[j,]  <- rep(NA, length(xaxis_orig_2))
+        outB[j,] <- rep(NA, length(xaxis_orig_2))
         change_B[j] <- NA
       }
 
@@ -189,41 +190,43 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
     mean_pred <- apply(outBB_pred, 2, mean,na.rm = TRUE)
     var_pred <- apply(outBB_pred, 2, var,na.rm = TRUE)
 
-    lower_Q_pred = apply(outBB_pred, 2, quantile, probs=c(alpha) ,na.rm = TRUE)
-    upper_Q_pred = apply(outBB_pred, 2, quantile, probs=c(1 - alpha) ,na.rm = TRUE)
+    lower_Q_pred <- apply(outBB_pred, 2, quantile, probs=c(alpha) ,na.rm = TRUE)
+    upper_Q_pred <- apply(outBB_pred, 2, quantile, probs=c(1 - alpha) ,na.rm = TRUE)
 
   }#Full bootstrap method
 
 
                                         #Calculate the LOD/LOQ from the prediction interval:
-  i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
+  i_before <- which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
   if(length(i_before)>0){
-    i_after = i_before+1
-    x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
-    x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
+    i_after <- i_before+1
+    x1 <- xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
+    x2 <- xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
 
                                         #Linear interpollation to find where the function changes sign:
-    LOD_pred_mean =  x1  - f1*(x2-x1)/(f2-f1)
-    LOD_pred = LOD_pred_mean
-    y_LOD_pred = up_noise
+    LOD_pred_mean <- x1  - f1*(x2-x1)/(f2-f1)
+    LOD_pred <- LOD_pred_mean
+    y_LOD_pred <- up_noise
   } else{
-    LOD_pred = 0
-    y_LOD_pred = up_noise
+    LOD_pred <- 0
+    y_LOD_pred <- up_noise
   }
 
 
                                         #Do a linear fit to find the intersection:
-  i_before = which(diff(sign(up_noise - lower_Q_pred))!=0)
+  i_before <- which(diff(sign(up_noise - lower_Q_pred))!=0)
   if(length(i_before)>0){
-    i_after = i_before+1
-    x1 = xaxis_orig_2[i_before]; f1 = (up_noise - lower_Q_pred)[i_before]
-    x2 = xaxis_orig_2[i_after];  f2 = (up_noise - lower_Q_pred)[i_after]
-    x_inter =  x1  - f1*(x2-x1)/(f2-f1)
-    LOQ_pred = x_inter
-    y_LOQ_pred = up_noise
+    i_after <- i_before+1
+    x1 <- xaxis_orig_2[i_before]
+    f1 <- (up_noise - lower_Q_pred)[i_before]
+    x2 <- xaxis_orig_2[i_after]
+    f2 <- (up_noise - lower_Q_pred)[i_after]
+    x_inter <-  x1  - f1*(x2-x1)/(f2-f1)
+    LOQ_pred <- x_inter
+    y_LOQ_pred <- up_noise
   } else{
-    LOQ_pred = 0
-    y_LOQ_pred = up_noise
+    LOQ_pred <- 0
+    y_LOQ_pred <- up_noise
 
   }
 
@@ -235,16 +238,16 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
 
   data_linear <- datain[datain$C > LOQ_pred,]
 
-  ii = 0
+  ii <- 0
   while(ii < NMAX){#Number of ii trials for bilinear fit < NMAX
-    ii = ii + 1
+    ii <- ii + 1
     {
-      intercept = noise*runif(1)
-      slope=median(data_linear$I)/median(data_linear$C)*runif(1)
+      intercept <- noise*runif(1)
+      slope <- median(data_linear$I)/median(data_linear$C)*runif(1)
 
-      weights = rep(0,length(data_linear$C) )
+      weights <- rep(0,length(data_linear$C) )
       for (kk in 1:length(data_linear$C)){
-        weights[kk] = 1/var_v_s[which( unique_c == data_linear$C[kk])]
+        weights[kk] <- 1/var_v_s[which( unique_c == data_linear$C[kk])]
       }
 
       sink(null_output);
