@@ -5,43 +5,25 @@
 #' @import ggplot2
 #' @importFrom graphics axis image legend mtext par plot.new title
 #' @importFrom grDevices dev.off hcl pdf
-dataProcessPlots <- function(data=data,
-                             type=type,
-                             featureName="Transition",
-                             ylimUp=FALSE,
-                             ylimDown=FALSE,
-                             scale=FALSE,
-                             interval="CI",
-                             x.axis.size=10,
-                             y.axis.size=10,
-                             text.size=4,
-                             text.angle=0,
-                             legend.size=7,
-                             dot.size.profile=2,
-                             dot.size.condition=3,
-                             width=10,
-                             height=10,
-                             which.Protein="all",
-                             originalPlot=TRUE,
-                             summaryPlot=TRUE,
-                             save_condition_plot_result=FALSE,
-                             address="") {
+dataProcessPlots <- function(data=data, type=type, featureName="Transition", ylimUp=FALSE,
+                             ylimDown=FALSE, scale=FALSE, interval="CI", x.axis.size=10,
+                             y.axis.size=10, text.size=4, text.angle=0, legend.size=7,
+                             dot.size.profile=2, dot.size.condition=3, width=10,
+                             height=10, which.Protein="all", originalPlot=TRUE,
+                             summaryPlot=TRUE, save_condition_plot_result=FALSE, address="") {
 
 	datafeature <- data$ProcessedData
 	datarun <- data$RunlevelData
-
 	datafeature$PROTEIN <- factor(datafeature$PROTEIN)
 	datarun$Protein <- factor(datarun$Protein)
 
 	if (!is.element("SUBJECT_NESTED", colnames(datafeature))) {
 		stop("Input for dataProcessPlots function should be processed by dataProcess function previously. Please use 'dataProcess' function first.")
 	}
-
 	if (length(setdiff(toupper(type), c(toupper("ProfilePlot"), toupper("QCPlot"), toupper("ConditionPlot")))) != 0) {
 		stop(paste0("Input for type=", type,
                 ". However,'type' should be one of \"ProfilePlot\", \"QCPlot\",\"ConditionPlot\"."))
 	}
-
 	if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
     if(which.Protein == 'all') {
       stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
@@ -87,12 +69,12 @@ dataProcessPlots <- function(data=data,
     y.limup <- ceiling(max(datafeature$ABUNDANCE, na.rm=TRUE) + 3)
 
     if (is.numeric(ylimUp)) {
-    	y.limup <- ylimUp
+      y.limup <- ylimUp
     }
 
     y.limdown <- -1
     if (is.numeric(ylimDown)) {
-    	y.limdown <- ylimDown
+      y.limdown <- ylimDown
     }
 
     datafeature <- datafeature[with(datafeature, order(GROUP_ORIGINAL, SUBJECT_ORIGINAL, LABEL)), ]
@@ -124,21 +106,20 @@ dataProcessPlots <- function(data=data,
     haverun <- FALSE
     if (sum(is.element(colnames(datarun), "RUN")) != 0) {
       datamat = dcast( Protein ~ RUN, data=datarun, value.var='LogIntensities', keep=TRUE)
-    	datarun = melt(datamat, id.vars=c('Protein'))
-     	colnames(datarun)[colnames(datarun) %in% c("variable", "value")] <- c('RUN', 'ABUNDANCE')
+      datarun = melt(datamat, id.vars=c('Protein'))
+      colnames(datarun)[colnames(datarun) %in% c("variable", "value")] <- c('RUN', 'ABUNDANCE')
       haverun <- TRUE
     }
-
     ## remove the column called 'SuggestToFilter' if there.
     if (any(is.element(colnames(datafeature), "SuggestToFilter"))) {
-    	datafeature$SuggestToFilter <- NULL
+      datafeature$SuggestToFilter <- NULL
     }
     ## remove the column called 'Fiter.Repro' if there.
     if (any(is.element(colnames(datafeature), "Filter.Repro"))) {
-    	datafeature$Filter.Repro <- NULL
+      datafeature$Filter.Repro <- NULL
     }
 
-   	## save the plots as pdf or not
+  	## save the plots as pdf or not
     ## If there are the file with the same name, add next numbering at the end of file name
     ## y-axis labeling
     temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]), ]
@@ -153,7 +134,7 @@ dataProcessPlots <- function(data=data,
     }
 
     if (originalPlot) {
-    	if (address != FALSE) {
+      if (address != FALSE) {
         allfiles <- list.files()
 
         num <- 0
@@ -166,11 +147,11 @@ dataProcessPlots <- function(data=data,
         }
 
         pdf(finalfile, width=width, height=height)
-    	}
+      }
 
-    	for (i in 1:nlevels(datafeature$PROTEIN)) {
+      for (i in 1:nlevels(datafeature$PROTEIN)) {
 
-    		sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
+        sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
         sub$FEATURE <- factor(as.character(sub$FEATURE))
         sub$SUBJECT <- factor(sub$SUBJECT)
         sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL)
@@ -183,7 +164,7 @@ dataProcessPlots <- function(data=data,
                         unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)),
                         ") because all measurements are NAs."))
           next()
-     	 	}
+        }
 
         ## seq for peptide and transition
         b <- unique(sub[, c("PEPTIDE", "FEATURE")])
@@ -209,7 +190,7 @@ dataProcessPlots <- function(data=data,
 
           if (any(is.element(colnames(sub), "censored"))) {
 
-				    sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
+            sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
 
             ## 1st plot for original plot
             ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE', linetype='FEATURE'), data=sub) +
@@ -261,7 +242,7 @@ dataProcessPlots <- function(data=data,
                                         default.unit='inch'))
           } else {
             ## 1st plot for original plot
-				    ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'),
+            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_point(size=dot.size.profile) +
@@ -306,7 +287,7 @@ dataProcessPlots <- function(data=data,
           }
 					print(ptemp)
 					message(paste0("Drew the Profile plot for ", unique(sub$PROTEIN),
-                        "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
+                         "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
 				}
 
         if (toupper(featureName) == "PEPTIDE") {
@@ -755,9 +736,9 @@ dataProcessPlots <- function(data=data,
         geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
         labs(title="All proteins") +
         geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name),
-    		          size=text.size,
-    		          angle=text.angle,
-    		          color="black")+
+                  size=text.size,
+                  angle=text.angle,
+                  color="black")+
         theme(
           panel.background=element_rect(fill='white', colour="black"),
           legend.key=element_rect(fill='white', colour='white'),
@@ -770,7 +751,7 @@ dataProcessPlots <- function(data=data,
           axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
           axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
           title=element_text(size=x.axis.size+8, vjust=1.5)
-    		)
+        )
       print(ptemp)
       message("Drew the Quality Contol plot(boxplot) for all proteins.")
     }
@@ -960,7 +941,7 @@ dataProcessPlots <- function(data=data,
       suball <- suball[order(suball$GROUP_ORIGINAL), ]
       suball <- data.frame(Protein=unique(sub$PROTEIN), suball)
       resultall <- rbind(resultall, suball)
-      if (!scale) {  ## scale: false
+      if (!scale) { ## scale: false
         ## reformat as data.frame
         ##tempsummary <- data.frame(Label=unique(sub$GROUP_ORIGINAL), mean=as.vector(sub.mean), ciw=as.vector(ciw))
         tempsummary <- suball

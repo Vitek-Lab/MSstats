@@ -1,20 +1,12 @@
 #######################################
 ## MSnSet -> input for MSstats
 #######################################
-
 #' @export
 #' @import Rcpp
 #' @importFrom MSnbase pData fData MSnSet
-transformMSnSetToMSstats <- function(ProteinName,
-                                     PeptideSequence,
-                                     PrecursorCharge,
-                                     FragmentIon,
-                                     ProductCharge,
-                                     IsotopeLabelType,
-                                     Bioreplicate,
-                                     Run,
-                                     Condition,
-                                     data) {
+transformMSnSetToMSstats <- function(ProteinName, PeptideSequence, PrecursorCharge, FragmentIon,
+                                     ProductCharge, IsotopeLabelType, Bioreplicate,
+                                     Run, Condition, data) {
 
   if (!inherits(data, "MSnSet")) {
     stop("Only MSnSet class can be converted to input format for MSstats.")

@@ -1,18 +1,13 @@
 ## Converter for Spectronaut output
-
 ## output from Spectronaut : long format
 ## columns : Condition, BioReplicate, Run, ProteinName, FragmentIon, PeptideSequence
-##           ProductCharge, PrecursorCharge, IsotopeLabelType, Intensity,
-##           F.ExcludedFromQuantification
+##   ProductCharge, PrecursorCharge, IsotopeLabelType, Intensity,
+##   F.ExcludedFromQuantification
 
 #' @export
-SpectronauttoMSstatsFormat <- function(input,
-                                       intensity='PeakArea',
-                                       filter_with_Qvalue=TRUE,
-                                       qvalue_cutoff=0.01,
-                                       useUniquePeptide=TRUE,
-                                       fewMeasurements="remove",
-                                       removeProtein_with1Feature=FALSE,
+SpectronauttoMSstatsFormat <- function(input, intensity='PeakArea', filter_with_Qvalue=TRUE,
+                                       qvalue_cutoff=0.01, useUniquePeptide=TRUE,
+                                       fewMeasurements="remove", removeProtein_with1Feature=FALSE,
                                        summaryforMultipleRows=max) {
 
   ## Check correct option or input
@@ -22,13 +17,11 @@ SpectronauttoMSstatsFormat <- function(input,
                              'R.FileName', 'R.Replicate', 'EG.Qvalue')
 
   requiredinput.int <- c('F.PeakArea', 'F.NormalizedPeakArea')
-
   requiredinput.charge <- c('F.Charge', 'F.FrgZ')
 
 ################################
-  ## general input
+### general input
 ################################
-
   if (!all(requiredinput.general %in% colnames(input))){
     misssing.col <- requiredinput.general[!requiredinput.general %in% colnames(input)]
     stop(paste("** Please check the required input. The required input needs '",
@@ -37,12 +30,12 @@ SpectronauttoMSstatsFormat <- function(input,
   ## intensity columns
   if (sum(requiredinput.int %in% colnames(input)) == 0) {
     stop(paste("** Please check the required input. The required input needs at least one of '",
-                paste(requiredinput.int, collapse = "' or '"), "'", sep=""))
+               paste(requiredinput.int, collapse = "' or '"), "'", sep=""))
   }
   ## general input
   if (sum(requiredinput.charge %in% colnames(input)) == 0) {
     stop(paste("** Please check the required input. The required input needs at least one of '",
-                paste(requiredinput.charge, collapse = "' or '"), "'", sep=""))
+               paste(requiredinput.charge, collapse = "' or '"), "'", sep=""))
   }
 
 ##############################
@@ -163,7 +156,7 @@ SpectronauttoMSstatsFormat <- function(input,
   }
 
 ##############################
-###  7. remove features which has 1 or 2 measurements across runs
+### 7. remove features which has 1 or 2 measurements across runs
 ##############################
   if (fewMeasurements=="remove") {
     ## it is the same across experiments. # measurement per feature.
@@ -212,7 +205,7 @@ SpectronauttoMSstatsFormat <- function(input,
     ## add annotation
     input <- merge(input, annotation, by="Run")
     ## reorder columns
-    input <- input[, c(2,3,4,5,6,8,1,9,7)]
+    input <- input[, c(2, 3, 4, 5, 6, 8, 1, 9, 7)]
     message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
   } else {
     ## remove column, named as 'fea'

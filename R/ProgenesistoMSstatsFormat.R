@@ -89,7 +89,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   input$ModifiedSequence <- paste(input$Sequence, input$Modifications, sep="")
   ## get subset of datasets
   ## input <- input[, which(colnames(input) %in% c('Protein', 'Sequence', 'Charge', 'ModifiedSequence',
-  ##                                             as.character(annotation$Run)))]
+  ##                       as.character(annotation$Run)))]
   ## remove completely duplicated rows
   input <- input[!duplicated(input), ]
 
@@ -169,7 +169,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   rm(input.final)
 
 ##############################
-###  6. remove features which has 1 or 2 measurements across runs
+### 6. remove features which has 1 or 2 measurements across runs
 ##############################
   if (fewMeasurements=="remove") {
     ## it is the same across experiments. # measurement per feature.
@@ -177,7 +177,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   }
 
 ##############################
-###  7. remove proteins with only one peptide and charge per protein
+### 7. remove proteins with only one peptide and charge per protein
 ##############################
 	if (removeProtein_with1Peptide) {
 ######## remove protein which has only one peptide

@@ -1,5 +1,5 @@
 #############################################
-##  quantification
+## quantification
 #############################################
 
 #' @export
@@ -90,12 +90,12 @@ quantification <- function(data, type="Sample", format="matrix") {
                    data=datarun,
                    value.var='LogIntensities',
                    fun.aggregate=median)
-		datam2  <- melt(datam, id.vars=c('Protein', "GROUP_ORIGINAL"))
+		datam2 <- melt(datam, id.vars=c('Protein', "GROUP_ORIGINAL"))
 		colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c('Subject', 'LogIntensity')
 		datam3 <- dcast(Protein ~ GROUP_ORIGINAL ,
-		                data=datam2,
-		                value.var='LogIntensity',
-		                fun.aggregate=function(x) median(x, na.rm=T))
+                    data=datam2,
+                    value.var='LogIntensity',
+                    fun.aggregate=function(x) median(x, na.rm=T))
 		rm(datam)
 		rm(datam2)
 

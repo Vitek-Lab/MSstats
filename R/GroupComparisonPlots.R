@@ -6,27 +6,11 @@
 #' @importFrom stats hclust
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom marray maPalette
-groupComparisonPlots <- function(data=data,
-                                 type=type,
-                                 sig=0.05,
-                                 FCcutoff=FALSE,
-                                 logBase.pvalue=10,
-                                 ylimUp=FALSE,
-                                 ylimDown=FALSE,
-                                 xlimUp=FALSE,
-                                 x.axis.size=10,
-                                 y.axis.size=10,
-                                 dot.size=3,
-                                 text.size=4,
-                                 legend.size=13,
-                                 ProteinName=TRUE,
-                                 colorkey=TRUE,
-                                 numProtein=100,
-                                 clustering="both",
-                                 width=10,
-                                 height=10,
-                                 which.Comparison="all",
-                                 which.Protein="all",
+groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE, logBase.pvalue=10,
+                                 ylimUp=FALSE, ylimDown=FALSE, xlimUp=FALSE, x.axis.size=10,
+                                 y.axis.size=10, dot.size=3, text.size=4, legend.size=13,
+                                 ProteinName=TRUE, colorkey=TRUE, numProtein=100, clustering="both",
+                                 width=10, height=10, which.Comparison="all", which.Protein="all",
                                  address="") {
 
 	## save process output in each step
@@ -198,10 +182,10 @@ groupComparisonPlots <- function(data=data,
 
     if (logBase.pvalue == 10) {
       neg.breaks <- log(breaks, 10)
-      my.breaks  <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
+      my.breaks <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
 		} else if(logBase.pvalue == 2) {
 			neg.breaks <- log(breaks, 2)
-      my.breaks  <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
+      my.breaks <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
 		}
 
     ## draw color key

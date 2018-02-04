@@ -208,7 +208,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   rm(input.final)
 
 ##############################
-###  6. remove features which has 1 or 2 measurements across runs
+### 6. remove features which has 1 or 2 measurements across runs
 ##############################
   if (fewMeasurements=="remove") {
     ## it is the same across experiments. # measurement per feature.
@@ -225,7 +225,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   }
 
 ##############################
-###  7. remove proteins with only one peptide and charge per protein
+### 7. remove proteins with only one peptide and charge per protein
 ##############################
 	if (removeProtein_with1Peptide) {
     ## remove protein which has only one peptide

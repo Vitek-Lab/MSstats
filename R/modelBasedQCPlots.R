@@ -76,9 +76,9 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
         next()
       }
 
-      if (class(sub)=="lm") {  ### lm model
+      if (class(sub)=="lm") { ### lm model
         sub.residuals <- sub$residuals
-      } else {   ### lmer model
+      } else {  ### lmer model
         sub.residuals <- resid(sub)
       }
       sub.residuals.table <- data.frame(residual=sub.residuals)
@@ -148,10 +148,10 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
         next()
       }
 
-      if (class(sub)=="lm") {  ### lm model
+      if (class(sub)=="lm") { ### lm model
         sub.residuals <- sub$residuals
         sub.fitted <- sub$fitted.values
-      } else {   ### lmer model
+      } else {  ### lmer model
         sub.residuals <- resid(sub)
         sub.fitted <- fitted(sub)
       }

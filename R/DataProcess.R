@@ -13,28 +13,15 @@
 #' @importFrom doSNOW registerDoSNOW
 #' @importFrom snow makeCluster
 #' @import foreach
-dataProcess <- function(raw,
-                        logTrans=2,
-                        normalization="equalizeMedians",
-                        nameStandards=NULL,
-                        betweenRunInterferenceScore=FALSE,
-                        address="",
-                        fillIncompleteRows=TRUE,
-                        featureSubset="all",
-                        remove_proteins_with_interference=FALSE,
-                        n_top_feature=3,
-                        summaryMethod="TMP",
-                        equalFeatureVar=TRUE,
-                        censoredInt="NA",
-                        cutoffCensored="minFeature",
-                        MBimpute=TRUE,
-                        remove50missing=FALSE,
-                        maxQuantileforCensored=0.999,
-                        clusters=1) {
+dataProcess <- function(raw, logTrans=2, normalization="equalizeMedians", nameStandards=NULL,
+                        betweenRunInterferenceScore=FALSE, address="", fillIncompleteRows=TRUE,
+                        featureSubset="all", remove_proteins_with_interference=FALSE,
+                        n_top_feature=3, summaryMethod="TMP", equalFeatureVar=TRUE,
+                        censoredInt="NA", cutoffCensored="minFeature", MBimpute=TRUE,
+                        remove50missing=FALSE, maxQuantileforCensored=0.999, clusters=1) {
 
   ## save process output in each step
   allfiles <- list.files()
-
   num <- 0
 	filenaming <- "msstats"
 	finalfile <- "msstats.log"
@@ -49,16 +36,13 @@ dataProcess <- function(raw,
 	## sink("sessionInfo.txt")
 	## print(session)
 	## sink()
-
   ## This is still stupid, but I need to rip out the various rbinds below before removing it.
 	processout <- as.matrix(sessionInfo(), header=TRUE, sep="\t")
 	write.table(processout, file=finalfile, row.names=FALSE)
-
 	##processout <- rbind(processout, as.matrix(c(" "," ","MSstats - dataProcess function"," "),ncol=1))
 	## make case-insensitive for function options
   ## ------------------------------------------
 	normalization <- toupper(normalization)
-
 	## Check correct option or input
 	## check right column in input
 	requiredinput <- c("ProteinName", "PeptideSequence", "PrecursorCharge",
@@ -89,14 +73,12 @@ dataProcess <- function(raw,
 	}
 	## [THT: disambiguation for PeptideSequence & PeptideModifiedSequence - end]
 
-
 	## check logTrans is 2,10 or not
 	if (logTrans != 2 & logTrans != 10) {
     processout <- rbind(processout,c("ERROR : Logarithm transformation : log2 or log10 only - stop"))
     write.table(processout, file=finalfile,row.names=FALSE)
     stop("Only log2 or log10 are posssible.\n")
 	}
-
 	## check no row for some feature : balanced structure or not
 	if (!(fillIncompleteRows == TRUE |
         fillIncompleteRows == FALSE) |
@@ -105,7 +87,6 @@ dataProcess <- function(raw,
     write.table(processout, file=finalfile, row.names=FALSE)
     stop("'fillIncompleteRows' must be one of TRUE or FALSE as a logical value.")
 	}
-
 	## check input for summaryMethod
 	if (sum(summaryMethod == c("linear", "TMP")) == 0) {
     processout <- rbind(processout,
@@ -116,7 +97,6 @@ dataProcess <- function(raw,
     processout <- rbind(processout, c(paste("summaryMethod : ", as.character(summaryMethod), sep="")))
     write.table(processout, file=finalfile, row.names=FALSE)
 	}
-
 	## check input for cutoffCensored
 	if (sum(cutoffCensored == c("minFeature","minRun","minFeatureNRun")) == 0) {
     processout <- rbind(processout,
@@ -129,9 +109,7 @@ dataProcess <- function(raw,
                         c(paste("cutoffCensored : ",as.character(cutoffCensored), sep="")))
     write.table(processout, file=finalfile, row.names=FALSE)
 	}
-
 	## check input for censoredInt
-  ## This is another bizarre choice, R has a logical value NA, so why use "NA"?
 	if (sum(censoredInt == c("0", "NA")) == 0 & !is.null(censoredInt)) {
     processout <- rbind(processout,
                         c("The required input - censoredInt : 'censoredInt' value is wrong. It should be one of '0','NA', NULL. - stop"))
@@ -141,7 +119,6 @@ dataProcess <- function(raw,
     processout <- rbind(processout, c(paste("censoredInt : ", as.character(censoredInt), sep="")))
     write.table(processout, file=finalfile, row.names=FALSE)
 	}
-
 	## check input for censoredInt and MBimpute
 	if (summaryMethod == 'TMP' & MBimpute & is.null(censoredInt)) {
     processout <- rbind(processout,
@@ -162,7 +139,6 @@ dataProcess <- function(raw,
     write.table(processout, file=finalfile, row.names=FALSE)
     stop("'normalization' must be one of \"None\", \"FALSE\", \"equalizeMedians\", \"quantile\", or \"globalStandards\". Please assign 'normalization' again.")
 	}
-
 	## need the names of global standards
 	if (!is.element("NONE", normalization) & !is.element("FALSE", normalization) &
       is.element("GLOBALSTANDARDS",normalization) & is.null(nameStandards)) {
@@ -171,7 +147,6 @@ dataProcess <- function(raw,
     write.table(processout, file=finalfile,row.names=FALSE)
     stop ("For normalization with global standards, the names of global standards are needed. Please add 'nameStandards' input." )
 	}
-
 	## check whether class of intensity is factor or chaterer, if yes, neec to chage as numeric
 	if (is.factor(raw$Intensity) | is.character(raw$Intensity)) {
 		suppressWarnings(raw$Intensity <- as.numeric(as.character(raw$Intensity)))
@@ -204,14 +179,12 @@ dataProcess <- function(raw,
     write.table(processout, file=finalfile,row.names=FALSE)
     stop ("There is missing information in 'Run' column. Please check 'Run' column." )
 	}
-
 	if (any(is.na(raw$BioReplicate))) {
     processout <- rbind(processout,
                         c("ERROR : There is missing information in 'BioReplicate' column. Please check 'BioReplicate' column."))
     write.table(processout, file=finalfile,row.names=FALSE)
     stop ("There is missing information in 'BioReplicate' column. Please check 'BioReplicate' column." )
 	}
-
 	if (any(is.na(raw$Condition))) {
     processout <- rbind(processout,
                         c("ERROR : There is missing information in 'Condition' column. Please check 'Condition' column."))
@@ -226,7 +199,6 @@ dataProcess <- function(raw,
 	} else {
     fraction <- NULL
 	}
-
 	if (any(is.element(colnames(raw), 'TECHREPLICATE'))) {
     tech.rep <- 'TECHREPLICATE'
 	} else {
@@ -234,19 +206,17 @@ dataProcess <- function(raw,
 	}
 
 	require.col <- c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE",
-	                 "FRAGMENTION", "PRODUCTCHARGE", "ISOTOPELABELTYPE",
-	                 "CONDITION", "BIOREPLICATE", "RUN", "INTENSITY", fraction, tech.rep)
+                   "FRAGMENTION", "PRODUCTCHARGE", "ISOTOPELABELTYPE",
+                   "CONDITION", "BIOREPLICATE", "RUN", "INTENSITY", fraction, tech.rep)
 	raw.temp <- raw[, require.col]
-
 	## before remove, get PeptideSequence and combination of PeptideSequence and precursorcharge for global standard normalization
 	tempPeptide <- unique(raw[, c("PEPTIDESEQUENCE", "PRECURSORCHARGE")])
 	tempPeptide$PEPTIDE <- paste(tempPeptide$PEPTIDESEQUENCE, tempPeptide$PRECURSORCHARGE, sep="_")
 	rm(raw)
-
 	## assign peptide, transition
 	raw.temp <- data.frame(raw.temp,
-	                       PEPTIDE=paste(raw.temp$PEPTIDESEQUENCE, raw.temp$PRECURSORCHARGE, sep="_"),
-	                       TRANSITION=paste(raw.temp$FRAGMENTION, raw.temp$PRODUCTCHARGE, sep="_"))
+                         PEPTIDE=paste(raw.temp$PEPTIDESEQUENCE, raw.temp$PRECURSORCHARGE, sep="_"),
+                         TRANSITION=paste(raw.temp$FRAGMENTION, raw.temp$PRODUCTCHARGE, sep="_"))
 
 	if (length(unique(raw.temp$ISOTOPELABELTYPE)) > 2) {
     processout <- rbind(processout,
@@ -265,31 +235,27 @@ dataProcess <- function(raw,
   if (nlevels(raw.temp$ISOTOPELABELTYPE) == 1) {
 		levels(raw.temp$ISOTOPELABELTYPE) <- c("L")
 	}
-
 	if (any(is.element(colnames(raw.temp), 'FRACTION'))) {
     fraction <- 'FRACTION'
 	} else {
     fraction <- NULL
 	}
-
 	if (any(is.element(colnames(raw.temp), 'TECHREPLICATE'))) {
     tech.rep <- 'TECHREPLICATE'
 	} else {
     tech.rep <- NULL
 	}
-
 	require.col <- c("PROTEINNAME", "PEPTIDE", "TRANSITION", "ISOTOPELABELTYPE",
-	                 "CONDITION", "BIOREPLICATE","RUN", "INTENSITY", fraction, tech.rep)
+                   "CONDITION", "BIOREPLICATE","RUN", "INTENSITY", fraction, tech.rep)
 
 	raw.temp <- raw.temp[, require.col]
-
 	if (ncol(raw.temp) == 10 &
       any(is.element(colnames(raw.temp), 'FRACTION')) &
       any(is.element(colnames(raw.temp), 'TECHREPLICATE'))) {
     colnames(raw.temp) <- c("Protein", "Peptide", "Transition", "Label",
                             "Condition", "Sample", "Run", "Intensity", 'Fraction', 'TechReplicate')
 	} else if (ncol(raw.temp) == 9 &
-	           any(is.element(colnames(raw.temp), 'FRACTION'))) {
+             any(is.element(colnames(raw.temp), 'FRACTION'))) {
     colnames(raw.temp) <- c("Protein", "Peptide", "Transition", "Label",
                             "Condition", "Sample", "Run", "Intensity", 'Fraction')
 	} else {
@@ -301,17 +267,18 @@ dataProcess <- function(raw,
 	## -----------------------------------
 	raw.temp <- raw.temp[!is.na(raw.temp$Protein), ]
 	raw.temp <- raw.temp[raw.temp$Protein != '', ]
-	work <- data.frame(PROTEIN=raw.temp$Protein,
-	                   PEPTIDE=raw.temp$Peptide,
-	                   TRANSITION=raw.temp$Transition,
-	                   FEATURE=paste(raw.temp$Peptide, raw.temp$Transition, sep="_"),
-	                   LABEL=raw.temp$Label,
-	                   GROUP_ORIGINAL=raw.temp$Condition,
-	                   SUBJECT_ORIGINAL=raw.temp$Sample,
-	                   RUN=raw.temp$Run,
-	                   GROUP=0,
-	                   SUBJECT=0,
-	                   INTENSITY=raw.temp$Intensity)
+	work <- data.frame(
+    "PROTEIN" = raw.temp$Protein,
+    "PEPTIDE" = raw.temp$Peptide,
+    "TRANSITION" = raw.temp$Transition,
+    "FEATURE" = paste(raw.temp$Peptide, raw.temp$Transition, sep="_"),
+    "LABEL" = raw.temp$Label,
+    "GROUP_ORIGINAL" = raw.temp$Condition,
+    "SUBJECT_ORIGINAL" = raw.temp$Sample,
+    "RUN" = raw.temp$Run,
+    "GROUP" = 0,
+    "SUBJECT" = 0,
+    "INTENSITY" = raw.temp$Intensity)
 	work$GROUP_ORIGINAL <- factor(work$GROUP_ORIGINAL)
 	work$SUBJECT_ORIGINAL <- factor(work$SUBJECT_ORIGINAL, levels=unique(work$SUBJECT_ORIGINAL))
 	work$LABEL <- factor(work$LABEL, levels=levels(work$LABEL))
@@ -331,12 +298,12 @@ dataProcess <- function(raw,
 
 	## 2016. 08.29 : replace <1 with zero for log2(intensity)
 	if (length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)) > 0) {
-	  processout <- rbind(processout,
-                        c(paste("** There are",  length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)), " intensities which are zero. These intensities are replaced with 1.", sep="")))
-	  write.table(processout, file=finalfile,row.names=FALSE)
-	  message(paste("** There are ", length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)),
-	                " intensities which are zero or less than 1. These intensities are replaced with 1.", sep=""))
-	  work[!is.na(work$INTENSITY) & work$INTENSITY < 1, 'INTENSITY'] <- 1
+    processout <- rbind(processout,
+                        c(paste("** There are", length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)), " intensities which are zero. These intensities are replaced with 1.", sep="")))
+    write.table(processout, file=finalfile,row.names=FALSE)
+    message(paste("** There are ", length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)),
+                  " intensities which are zero or less than 1. These intensities are replaced with 1.", sep=""))
+    work[!is.na(work$INTENSITY) & work$INTENSITY < 1, 'INTENSITY'] <- 1
 	}
 
 	## log transformation
@@ -361,17 +328,16 @@ dataProcess <- function(raw,
   }
 
 	processout <- rbind(processout,
-                      c(paste0("Logarithm transformation: log", logTrans, " transformation is done - okay")
-	write.table(processout, file=finalfile,row.names=FALSE)
-	## Check multi-method or not : multiple run for a replicate
-	work$RUN <- factor(work$RUN)
+                      c(paste0("Logarithm transformation: log", logTrans, " transformation is done - okay")))
+  write.table(processout, file=finalfile,row.names=FALSE)
+  ## Check multi-method or not : multiple run for a replicate
+  work$RUN <- factor(work$RUN)
 
-	checkMultirun <- .countMultiRun(work)
-	if (checkMultirun$is.risky) {
+  checkMultirun <- .countMultiRun(work)
+  if (checkMultirun$is.risky) {
     ## if can't matching fractionation, make warning and stop it.
     warning('** MSstats suspects that there are fractionations and potentially technical replicates too. Please add Fraction column in the input.')
   }
-
   if (checkMultirun$out) {
     if (any(is.element(colnames(work), 'FRACTION'))) {
       processout <- rbind(processout,
@@ -416,10 +382,10 @@ dataProcess <- function(raw,
       } else {
         processout <- rbind(processout,
                             c('** It is hard to find the same fractionation across sample, due to lots of overlapped features between fractionations.
-	                 Please add Fraction column in input.'))
+	         Please add Fraction column in input.'))
         write.table(processout, file=finalfile, row.names=FALSE)
         warning('** It is hard to find the same fractionation across sample, due to lots of overlapped features between fractionations.
-	                 Please add Fraction column in input.')
+	         Please add Fraction column in input.')
       }
     }
 
@@ -490,27 +456,27 @@ dataProcess <- function(raw,
       }
       work <- work[, -which(colnames(work) %in% c('tmp'))]
     }
-	} else {  ## no fractionation
+  } else { ## no fractionation
     work$FRACTION <- 1
-	}
+  }
 
-	## check messingness for multirun
-	## check no value for some feature : balanced structure or not
-	## need to separate label-free or label-based
-	processout <- rbind(processout,
+  ## check messingness for multirun
+  ## check no value for some feature : balanced structure or not
+  ## need to separate label-free or label-based
+  processout <- rbind(processout,
                       c(paste("fillIncompleteRows = ",fillIncompleteRows,sep="")))
-	write.table(processout, file=finalfile, row.names=FALSE)
+  write.table(processout, file=finalfile, row.names=FALSE)
 
-	## [THT: better to write a function for single method, and call that function
-	## here and for the case with multuple methods]
-	## only 1 method
+  ## [THT: better to write a function for single method, and call that function
+  ## here and for the case with multuple methods]
+  ## only 1 method
   ## I agree!
 
-  print_string <- NULL  ## I will overwrite this periodically with the various strings printed.
+  print_string <- NULL ## I will overwrite this periodically with the various strings printed.
   ## make sure that work survived this far.
   head(work)
-	if (!checkMultirun$out | length(unique(work$FRACTION)) == 1) {
-		## label-free experiments
+  if (!checkMultirun$out | length(unique(work$FRACTION)) == 1) {
+    ## label-free experiments
     if (nlevels(work$LABEL) == 1) {
       ## get feature by Run count of data
       structure = tapply (work$ABUNDANCE, list(work$FEATURE, work$RUN), function (x) length (x))
@@ -564,17 +530,18 @@ dataProcess <- function(raw,
             ## data.frame() and list() ... material which is used to create the columns/elements.
             ## But that can wait for another day, there are far far bigger problems with this code
             ## and one can easily say that my style choice in this is inconsistent.
-            tempmissingwork <- data.frame(tempfeatureID,
-                                          LABEL="L",
-                                          GROUP_ORIGINAL=nameID$GROUP_ORIGINAL,
-                                          SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL,
-                                          RUN=nameID$RUN,
-                                          GROUP=nameID$GROUP,
-                                          SUBJECT=nameID$SUBJECT,
-                                          SUBJECT_NESTED=nameID$SUBJECT_NESTED,
-                                          INTENSITY=NA,
-                                          ABUNDANCE=NA,
-                                          FRACTION=nameID$FRACTION)
+            tempmissingwork <- data.frame(
+              tempfeatureID,
+              "LABEL" = "L",
+              "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL,
+              "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL,
+              "RUN" = nameID$RUN,
+              "GROUP" = nameID$GROUP,
+              "SUBJECT" = nameID$SUBJECT,
+              "SUBJECT_NESTED" = nameID$SUBJECT_NESTED,
+              "INTENSITY" = NA,
+              "ABUNDANCE" = NA,
+              "FRACTION" = nameID$FRACTION)
             ## merge with tempary space, missingwork
             missingwork <- rbind(missingwork, tempmissingwork)
           } # end fillIncompleteRows options
@@ -632,7 +599,7 @@ dataProcess <- function(raw,
         processout <- rbind(processout, print_string)
         write.table(processout, file=finalfile, row.names=FALSE)
         warning(print_string)
-			} # end flag duplicate
+      } # end flag duplicate
 
       ## no missing and no duplicates
       if (!flagmissing & !flagduplicate) {
@@ -643,7 +610,7 @@ dataProcess <- function(raw,
       }
       ## end label-free
     } else {
-			## label-based experiment
+      ## label-based experiment
       ## count the reference and endobenous separately
       work.l <- work[work$LABEL == "L", ]
       work.h <- work[work$LABEL == "H", ]
@@ -656,7 +623,7 @@ dataProcess <- function(raw,
                             list(work.h$FEATURE, work.h$RUN),
                             function(x) length(x))
 
-			## first, check some features which completely missing across run
+      ## first, check some features which completely missing across run
       missingcomplete.l <- NULL
       missingcomplete.h <- NULL
       ## 1. reference peptides
@@ -669,9 +636,9 @@ dataProcess <- function(raw,
                                paste(featureID.h, collapse=", "),
                                ". Please check whether features in the list are correctly generated from spectral processing tool. \n")
         message(print_string)
-				## save in process file.
-				processout <- rbind(processout, print_string)
-				write.table(processout, file=finalfile, row.names=FALSE)
+        ## save in process file.
+        processout <- rbind(processout, print_string)
+        write.table(processout, file=finalfile, row.names=FALSE)
 
         ## add missing rows if option is TRUE
         if (fillIncompleteRows) {
@@ -693,20 +660,21 @@ dataProcess <- function(raw,
 
           ## MC : 2016.04.21 : use merge for simplicity
           tmp <- merge(nameID, tempfeatureID, by=NULL)
-          missingcomplete.h <- data.frame(PROTEIN=tmp$PROTEIN,
-                                          PEPTIDE=tmp$PEPTIDE,
-                                          TRANSITION=tmp$TRANSITION,
-                                          FEATURE=tmp$FEATURE,
-                                          LABEL="H",
-                                          GROUP_ORIGINAL=tmp$GROUP_ORIGINAL,
-                                          SUBJECT_ORIGINAL=tmp$SUBJECT_ORIGINAL,
-                                          RUN=tmp$RUN,
-                                          GROUP=tmp$GROUP,
-                                          SUBJECT=tmp$SUBJECT,
-                                          SUBJECT_NESTED=tmp$SUBJECT_NESTED,
-                                          INTENSITY=NA,
-                                          ABUNDANCE=NA,
-                                          FRACTION=tmp$FRACTION)
+          missingcomplete.h <- data.frame(
+            "PROTEIN" = tmp$PROTEIN,
+            "PEPTIDE" = tmp$PEPTIDE,
+            "TRANSITION" = tmp$TRANSITION,
+            "FEATURE" = tmp$FEATURE,
+            "LABEL" = "H",
+            "GROUP_ORIGINAL" = tmp$GROUP_ORIGINAL,
+            "SUBJECT_ORIGINAL" = tmp$SUBJECT_ORIGINAL,
+            "RUN" = tmp$RUN,
+            "GROUP" = tmp$GROUP,
+            "SUBJECT" = tmp$SUBJECT,
+            "SUBJECT_NESTED" = tmp$SUBJECT_NESTED,
+            "INTENSITY" = NA,
+            "ABUNDANCE" = NA,
+            "FRACTION" = tmp$FRACTION)
           rm(tmp)
         }	# end fillIncompleteRows option
       } # end for reference peptides
@@ -744,25 +712,26 @@ dataProcess <- function(raw,
 
           ## MC : 2016.04.21 : use merge for simplicity
           tmp <- merge(nameID, tempfeatureID, by=NULL)
-          missingcomplete.l <- data.frame(PROTEIN=tmp$PROTEIN,
-                                          PEPTIDE=tmp$PEPTIDE,
-                                          TRANSITION=tmp$TRANSITION,
-                                          FEATURE=tmp$FEATURE,
-                                          LABEL="L",
-                                          GROUP_ORIGINAL=tmp$GROUP_ORIGINAL,
-                                          SUBJECT_ORIGINAL=tmp$SUBJECT_ORIGINAL,
-                                          RUN=tmp$RUN,
-                                          GROUP=tmp$GROUP,
-                                          SUBJECT=tmp$SUBJECT,
-                                          SUBJECT_NESTED=tmp$SUBJECT_NESTED,
-                                          INTENSITY=NA,
-                                          ABUNDANCE=NA,
-                                          FRACTION=tmp$FRACTION)
+          missingcomplete.l <- data.frame(
+            "PROTEIN" = tmp$PROTEIN,
+            "PEPTIDE" = tmp$PEPTIDE,
+            "TRANSITION" = tmp$TRANSITION,
+            "FEATURE" = tmp$FEATURE,
+            "LABEL" = "L",
+            "GROUP_ORIGINAL" = tmp$GROUP_ORIGINAL,
+            "SUBJECT_ORIGINAL" = tmp$SUBJECT_ORIGINAL,
+            "RUN" = tmp$RUN,
+            "GROUP" = tmp$GROUP,
+            "SUBJECT" = tmp$SUBJECT,
+            "SUBJECT_NESTED" = tmp$SUBJECT_NESTED,
+            "INTENSITY" = NA,
+            "ABUNDANCE" = NA,
+            "FRACTION" = tmp$FRACTION)
           rm(tmp)
         } # end fillIncompleteRows option
       } # end endogenous peptides
 
-			## second, check other some missingness
+      ## second, check other some missingness
       ## for missign row, need to assign before looping. need to assign at the beginning because it need either cases, with missingness or not
       missingwork.l <- NULL
       missingwork.h <- NULL
@@ -771,12 +740,12 @@ dataProcess <- function(raw,
       ## if count of NA is not zero and not number of run (excluding complete missingness across runs)
       missing.l <- names(featurestructure.l[featurestructure.l != ncol(structure.l) & featurestructure.l != 0])
       missing.h <- names(featurestructure.h[featurestructure.h != ncol(structure.h) & featurestructure.h != 0])
-			flagmissing.l <- length(missing.l) > 0
-			flagmissing.h <- length(missing.h) > 0
+      flagmissing.l <- length(missing.l) > 0
+      flagmissing.h <- length(missing.h) > 0
 
-			## structure value is greater than 1, there are duplicates
-			flagduplicate.l <- sum(structure.l[!is.na(structure.l)] > 1) > 0
-			flagduplicate.h <- sum(structure.h[!is.na(structure.h)] > 1) > 0
+      ## structure value is greater than 1, there are duplicates
+      flagduplicate.l <- sum(structure.l[!is.na(structure.l)] > 1) > 0
+      flagduplicate.h <- sum(structure.h[!is.na(structure.h)] > 1) > 0
       ## if there is missing rows for endogenous
       if (flagmissing.l | flagmissing.h) {
         print_string <- "CAUTION: the input dataset has incomplete rows. If missing peaks occur they should be included in the dataset as separate rows, and the missing intensity values should be indicated with 'NA'. The incomplete rows are listed below."
@@ -839,17 +808,18 @@ dataProcess <- function(raw,
               ## get PROTEIN and FEATURE infomation
               tempfeatureID <- unique(tempTogetfeature[, c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE")])
               ## merge feature info and run info as 'work' format
-              tempmissingwork <- data.frame(tempfeatureID,
-                                            LABEL="L",
-                                            GROUP_ORIGINAL=nameID$GROUP_ORIGINAL,
-                                            SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL,
-                                            RUN=nameID$RUN,
-                                            GROUP=nameID$GROUP,
-                                            SUBJECT=nameID$SUBJECT,
-                                            SUBJECT_NESTED=nameID$SUBJECT_NESTED,
-                                            INTENSITY=NA,
-                                            ABUNDANCE=NA,
-                                            FRACTION=nameID$FRACTION)
+              tempmissingwork <- data.frame(
+                tempfeatureID,
+                "LABEL" = "L",
+                "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL,
+                "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL,
+                "RUN" = nameID$RUN,
+                "GROUP" = nameID$GROUP,
+                "SUBJECT" = nameID$SUBJECT,
+                "SUBJECT_NESTED" = nameID$SUBJECT_NESTED,
+                "INTENSITY" = NA,
+                "ABUNDANCE" = NA,
+                "FRACTION" = nameID$FRACTION)
               ## merge with tempary space, missingwork
               missingwork.l <- rbind(missingwork.l,tempmissingwork)
             } # end fillIncompleteRows options
@@ -912,17 +882,18 @@ dataProcess <- function(raw,
               ## get PROTEIN and FEATURE infomation
               tempfeatureID <- unique(tempTogetfeature[, c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE")])
               ## merge feature info and run info as 'work' format
-              tempmissingwork <- data.frame(tempfeatureID,
-                                            LABEL="H",
-                                            GROUP_ORIGINAL=nameID$GROUP_ORIGINAL,
-                                            SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL,
-                                            RUN=nameID$RUN,
-                                            GROUP=nameID$GROUP,
-                                            SUBJECT=nameID$SUBJECT,
-                                            SUBJECT_NESTED=nameID$SUBJECT_NESTED,
-                                            INTENSITY=NA,
-                                            ABUNDANCE=NA,
-                                            FRACTION=nameID$FRACTION)
+              tempmissingwork <- data.frame(
+                tempfeatureID,
+                "LABEL" = "H",
+                "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL,
+                "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL,
+                "RUN" = nameID$RUN,
+                "GROUP" = nameID$GROUP,
+                "SUBJECT" = nameID$SUBJECT,
+                "SUBJECT_NESTED" = nameID$SUBJECT_NESTED,
+                "INTENSITY" = NA,
+                "ABUNDANCE" = NA,
+                "FRACTION" = nameID$FRACTION)
               ## merge with tempary space, missingwork
               missingwork.h <- rbind(missingwork.h, tempmissingwork)
             } # end fillIncompleteRows options
@@ -948,9 +919,9 @@ dataProcess <- function(raw,
         processout <- rbind(processout, print_string)
         write.table(processout, file=finalfile, row.names=FALSE)
         warning(print_string)
-			}
+      }
 
-			## if there are duplicates measurements
+      ## if there are duplicates measurements
       if (flagduplicate.h) {
         ## first, which run has duplicates
         runstructure <- apply(structure.h, 2, function(x) sum(x[!is.na(x)] > 1) > 0)
@@ -983,9 +954,9 @@ dataProcess <- function(raw,
         processout <- rbind(processout, print_string)
         write.table(processout, file=finalfile, row.names=FALSE)
         warning(print_string)
-			} # end flag duplicate for reference
+      } # end flag duplicate for reference
 
-			if (flagduplicate.l) {
+      if (flagduplicate.l) {
         ## first, which run has duplicates
         runstructure <- apply(structure.l, 2, function(x) sum(x[!is.na(x)] > 1) > 0)
         runID <- names(runstructure[runstructure == TRUE])
@@ -1013,11 +984,11 @@ dataProcess <- function(raw,
           write.table(processout, file=finalfile,row.names=FALSE)
         }
         print_string <- "ERROR : Please remove duplicate rows in the list above. "
-				## save in process file.
-				processout <- rbind(processout, print_string)
-				write.table(processout, file=finalfile, row.names=FALSE)
-				warning(print_string)
-			} # end flag duplicate for endogenous
+        ## save in process file.
+        processout <- rbind(processout, print_string)
+        write.table(processout, file=finalfile, row.names=FALSE)
+        warning(print_string)
+      } # end flag duplicate for endogenous
 
       ## no missing and no duplicates
       if (!flagmissing.h & !flagmissing.l & !flagduplicate.h & !flagduplicate.l) {
@@ -1032,29 +1003,29 @@ dataProcess <- function(raw,
     ## This is like 500 lines of crazytown.
   } else { # multiple fractionations
     allflagmissing <- NULL
-		allflagduplicate <- NULL
+    allflagduplicate <- NULL
     ## check each method
     for (k in 1:length(unique(work$FRACTION))) {
       worktemp <- work[work$FRACTION == k, ]
-			worktemp$RUN <- factor(worktemp$RUN)
-			worktemp$FEATURE <- factor(worktemp$FEATURE)
-			structure <- tapply(worktemp$ABUNDANCE, list(worktemp$FEATURE, worktemp$RUN), function(x) length(x))
-			## structure value should be 2 for labeled, 1 for label-free, if not there are missingness
-			if (nlevels(worktemp$LABEL) == 2) { ## label-based
-				flag <- sum(is.na(structure)) > 0 | sum(structure[!is.na(structure)] < 2) > 0
-			} else {  ## label-free
-				flag <- sum(is.na(structure)) > 0
-			}
-			allflagmissing <- c(allflagmissing,flag)
+      worktemp$RUN <- factor(worktemp$RUN)
+      worktemp$FEATURE <- factor(worktemp$FEATURE)
+      structure <- tapply(worktemp$ABUNDANCE, list(worktemp$FEATURE, worktemp$RUN), function(x) length(x))
+      ## structure value should be 2 for labeled, 1 for label-free, if not there are missingness
+      if (nlevels(worktemp$LABEL) == 2) { ## label-based
+        flag <- sum(is.na(structure)) > 0 | sum(structure[!is.na(structure)] < 2) > 0
+      } else { ## label-free
+        flag <- sum(is.na(structure)) > 0
+      }
+      allflagmissing <- c(allflagmissing,flag)
 
-			## for duplicate
-			if (nlevels(worktemp$LABEL) == 2) { # label-based
+      ## for duplicate
+      if (nlevels(worktemp$LABEL) == 2) { # label-based
         worktemp.h <- worktemp[worktemp$LABEL == "H", ]
         worktemp.l <- worktemp[worktemp$LABEL == "L", ]
         structure.h <- tapply(worktemp.h$ABUNDANCE, list(worktemp.h$FEATURE, worktemp.h$RUN), function(x) length(x))
         structure.l <- tapply(worktemp.l$ABUNDANCE, list(worktemp.l$FEATURE, worktemp.l$RUN), function(x) length(x))
         flagduplicate <- sum(structure.h[!is.na(structure.h)] > 1) > 0 | sum(structure.l[!is.na(structure.l)] > 1) > 0
-      } else {  # label-free
+      } else { # label-free
         flagduplicate <- sum(structure[!is.na(structure)] > 1) > 0
       }
       allflagduplicate <- c(allflagduplicate, flag)
@@ -1062,16 +1033,16 @@ dataProcess <- function(raw,
 
     if (sum(allflagmissing) != 0) {
       print_string <- "CAUTION: the input dataset has incomplete rows. Missing feature intensities should be present in the dataset, and their intensities should be indicated with 'NA'. The incomplete rows are listed below."
-			processout <- rbind(processout, print_string)
+      processout <- rbind(processout, print_string)
       write.table(processout, file=finalfile, row.names=FALSE)
-			message(print_string)
+      message(print_string)
 
-			## for missign row, need to assign before looping
-			missingwork <- NULL
-			missingcomplete.h <- NULL
-			missingcomplete.l <- NULL
-			missingwork.h <- NULL
-			missingwork.l <- NULL
+      ## for missign row, need to assign before looping
+      missingwork <- NULL
+      missingcomplete.h <- NULL
+      missingcomplete.l <- NULL
+      missingwork.h <- NULL
+      missingwork.l <- NULL
       for (k in 1:length(unique(work$FRACTION))) {
         ## see which method has missing rows
         if (allflagmissing[k]) {
@@ -1111,17 +1082,18 @@ dataProcess <- function(raw,
                 ## get PROTEIN and FEATURE infomation
                 tempfeatureID <- unique(tempTogetfeature[, c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE")])
                 ## merge feature info and run info as 'work' format
-                tempmissingwork <- data.frame(tempfeatureID,
-                                              LABEL="L",
-                                              GROUP_ORIGINAL=nameID$GROUP_ORIGINAL,
-                                              SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL,
-                                              RUN=nameID$RUN,
-                                              GROUP=nameID$GROUP,
-                                              SUBJECT=nameID$SUBJECT,
-                                              SUBJECT_NESTED=nameID$SUBJECT_NESTED,
-                                              INTENSITY=NA,
-                                              ABUNDANCE=NA,
-                                              FRACTION=nameID$FRACTION)
+                tempmissingwork <- data.frame(
+                  tempfeatureID,
+                  "LABEL" = "L",
+                  "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL,
+                  "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL,
+                  "RUN" = nameID$RUN,
+                  "GROUP" = nameID$GROUP,
+                  "SUBJECT" = nameID$SUBJECT,
+                  "SUBJECT_NESTED" = nameID$SUBJECT_NESTED,
+                  "INTENSITY" = NA,
+                  "ABUNDANCE" = NA,
+                  "FRACTION" = nameID$FRACTION)
                 ## merge with tempary space, missingwork
                 missingwork <- rbind(missingwork, tempmissingwork)
               } # end fillIncompleteRows options
@@ -1179,22 +1151,23 @@ dataProcess <- function(raw,
                 ## then generate data.frame for missingness,
                 for (j in 1:nrow(nameID)) {
                   ## merge feature info and run info as 'work' format
-                  tempmissingwork <- data.frame(tempfeatureID,
-                                                LABEL="H",
-                                                GROUP_ORIGINAL=nameID$GROUP_ORIGINAL[j],
-                                                SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL[j],
-                                                RUN=nameID$RUN[j],
-                                                GROUP=nameID$GROUP[j],
-                                                SUBJECT=nameID$SUBJECT[j],
-                                                SUBJECT_NESTED=nameID$SUBJECT_NESTED[j],
-                                                INTENSITY=NA,
-                                                ABUNDANCE=NA,
-                                                FRACTION=nameID$FRACTION[j])
+                  tempmissingwork <- data.frame(
+                    tempfeatureID,
+                    "LABEL" = "H",
+                    "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL[j],
+                    "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL[j],
+                    "RUN" = nameID$RUN[j],
+                    "GROUP" = nameID$GROUP[j],
+                    "SUBJECT" = nameID$SUBJECT[j],
+                    "SUBJECT_NESTED" = nameID$SUBJECT_NESTED[j],
+                    "INTENSITY" = NA,
+                    "ABUNDANCE" = NA,
+                    "FRACTION" = nameID$FRACTION[j])
                   ## merge with tempary space, missingwork
                   missingcomplete.h <- rbind(missingcomplete.h, tempmissingwork)
                 }
               } # end fillIncompleteRows option
-						} # end for reference peptides
+            } # end for reference peptides
 
             ## 2. endogenous peptides
             featurestructure.l <- apply(structure.l, 1, function (x) sum(is.na(x)))
@@ -1229,24 +1202,25 @@ dataProcess <- function(raw,
                 ## then generate data.frame for missingness,
                 for (j in 1:nrow(nameID)) {
                   ## merge feature info and run info as 'work' format
-                  tempmissingwork <- data.frame(tempfeatureID,
-                                                LABEL="L",
-                                                GROUP_ORIGINAL=nameID$GROUP_ORIGINAL[j],
-                                                SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL[j],
-                                                RUN=nameID$RUN[j],
-                                                GROUP=nameID$GROUP[j],
-                                                SUBJECT=nameID$SUBJECT[j],
-                                                SUBJECT_NESTED=nameID$SUBJECT_NESTED[j],
-                                                INTENSITY=NA,
-                                                ABUNDANCE=NA,
-                                                FRACTION=nameID$FRACTION[j])
+                  tempmissingwork <- data.frame(
+                    tempfeatureID,
+                    "LABEL" = "L",
+                    "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL[j],
+                    "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL[j],
+                    "RUN" = nameID$RUN[j],
+                    "GROUP" = nameID$GROUP[j],
+                    "SUBJECT" = nameID$SUBJECT[j],
+                    "SUBJECT_NESTED" = nameID$SUBJECT_NESTED[j],
+                    "INTENSITY" = NA,
+                    "ABUNDANCE" = NA,
+                    "FRACTION" = nameID$FRACTION[j])
                   ## merge with tempary space, missingwork
                   missingcomplete.l <- rbind(missingcomplete.l, tempmissingwork)
                 }
               } # end fillIncompleteRows option
             } # end endogenous peptides
 
-						## second, check other some missingness
+            ## second, check other some missingness
             ## structure value should be 1 for reference and endogenous separately, if not there are missingness. if more there are duplicates.
             ## if count of NA is not zero and not number of run (excluding complete missingness across runs)
             missing.l <- names(featurestructure.l[featurestructure.l!=ncol(structure.l) & featurestructure.l != 0])
@@ -1287,10 +1261,10 @@ dataProcess <- function(raw,
                   finalfeatureID <- featureID[is.na(featureID)]
                   ## print features ID
                   message(paste0("*** Subject : ",
-                                as.character(nameID[,"SUBJECT_ORIGINAL"]) ,
-                                ", Condition : ", as.character(nameID[, "GROUP_ORIGINAL"]),
-                                " has incomplete rows for some ENDOGENOUS features (",
-                                paste(names(finalfeatureID), collapse=", "),")"))
+                                 as.character(nameID[,"SUBJECT_ORIGINAL"]) ,
+                                 ", Condition : ", as.character(nameID[, "GROUP_ORIGINAL"]),
+                                 " has incomplete rows for some ENDOGENOUS features (",
+                                 paste(names(finalfeatureID), collapse=", "),")"))
 
                   ## save in process file.
                   processout <- rbind(processout,
@@ -1307,17 +1281,18 @@ dataProcess <- function(raw,
                     ## get PROTEIN and FEATURE infomation
                     tempfeatureID <- unique(tempTogetfeature[, c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE")])
                     ## merge feature info and run info as 'work' format
-                    tempmissingwork <- data.frame(tempfeatureID,
-                                                  LABEL="L",
-                                                  GROUP_ORIGINAL=nameID$GROUP_ORIGINAL,
-                                                  SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL,
-                                                  RUN=nameID$RUN,
-                                                  GROUP=nameID$GROUP,
-                                                  SUBJECT=nameID$SUBJECT,
-                                                  SUBJECT_NESTED=nameID$SUBJECT_NESTED,
-                                                  INTENSITY=NA,
-                                                  ABUNDANCE=NA,
-                                                  FRACTION=nameID$FRACTION)
+                    tempmissingwork <- data.frame(
+                      tempfeatureID,
+                      "LABEL" = "L",
+                      "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL,
+                      "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL,
+                      "RUN" = nameID$RUN,
+                      "GROUP" = nameID$GROUP,
+                      "SUBJECT" = nameID$SUBJECT,
+                      "SUBJECT_NESTED" = nameID$SUBJECT_NESTED,
+                      "INTENSITY" = NA,
+                      "ABUNDANCE" = NA,
+                      "FRACTION" = nameID$FRACTION)
                     ## merge with tempary space, missingwork
                     missingwork.l <- rbind(missingwork.l, tempmissingwork)
                   } # end fillIncompleteRows options
@@ -1348,11 +1323,11 @@ dataProcess <- function(raw,
                   finalfeatureID <- featureID[is.na(featureID)]
                   ## print features ID
                   message(paste0("*** Subject : ",
-                                as.character(nameID[,"SUBJECT_ORIGINAL"]) ,
-                                ", Condition : ",
-                                as.character(nameID[,"GROUP_ORIGINAL"]),
-                                " has incomplete rows for some REFERENCE features (",
-                                paste(names(finalfeatureID), collapse=", "),")"))
+                                 as.character(nameID[,"SUBJECT_ORIGINAL"]) ,
+                                 ", Condition : ",
+                                 as.character(nameID[,"GROUP_ORIGINAL"]),
+                                 " has incomplete rows for some REFERENCE features (",
+                                 paste(names(finalfeatureID), collapse=", "),")"))
 
                   ## save in process file.
                   processout <- rbind(processout,
@@ -1369,28 +1344,29 @@ dataProcess <- function(raw,
                     ## get PROTEIN and FEATURE infomation
                     tempfeatureID <- unique(tempTogetfeature[, c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE")])
                     ## merge feature info and run info as 'work' format
-                    tempmissingwork <- data.frame(tempfeatureID,
-                                                  LABEL="H",
-                                                  GROUP_ORIGINAL=nameID$GROUP_ORIGINAL,
-                                                  SUBJECT_ORIGINAL=nameID$SUBJECT_ORIGINAL,
-                                                  RUN=nameID$RUN,
-                                                  GROUP=nameID$GROUP,
-                                                  SUBJECT=nameID$SUBJECT,
-                                                  SUBJECT_NESTED=nameID$SUBJECT_NESTED,
-                                                  INTENSITY=NA,
-                                                  ABUNDANCE=NA,
-                                                  FRACTION=nameID$FRACTION)
+                    tempmissingwork <- data.frame(
+                      tempfeatureID,
+                      "LABEL" = "H",
+                      "GROUP_ORIGINAL" = nameID$GROUP_ORIGINAL,
+                      "SUBJECT_ORIGINAL" = nameID$SUBJECT_ORIGINAL,
+                      "RUN" = nameID$RUN,
+                      "GROUP" = nameID$GROUP,
+                      "SUBJECT" = nameID$SUBJECT,
+                      "SUBJECT_NESTED" = nameID$SUBJECT_NESTED,
+                      "INTENSITY" = NA,
+                      "ABUNDANCE" = NA,
+                      "FRACTION" = nameID$FRACTION)
                     ## merge with tempary space, missingwork
                     missingwork.h <- rbind(missingwork.h, tempmissingwork)
                   } # end fillIncompleteRows options
                 } # end loop for run ID
               } # end for endogenous
             } # end any missingness
-					} # end label-based
+          } # end label-based
         } # if only any flag for method
       } # end loop for methods
 
-			if (fillIncompleteRows) {
+      if (fillIncompleteRows) {
         ## merge with work
         ## in future, use rbindlist?? rbindlist(list(work, missingwork))
         if (nlevels(worktemp$LABEL) == 1) {
@@ -1412,82 +1388,82 @@ dataProcess <- function(raw,
                             "Please check whether features in the list are generated from spectral processing tool. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
         write.table(processout, file=finalfile, row.names=FALSE)
         stop("Please check whether features in the list are generated from spectral processing tool. Or the option, fillIncompleteRows=TRUE, will add incomplete rows for missing peaks with intensity=NA.")
-			}
+      }
     } else {
       processout <- rbind(processout, c("Balanced data format with NA for missing feature intensities - okay"))
       write.table(processout, file=finalfile, row.names=FALSE)
     }
     ## for duplicate, in future
-	} # end multiple fractionations
+  } # end multiple fractionations
 
-	## factorize GROUP, SUBJECT, GROUP_ORIGINAL, SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN
+  ## factorize GROUP, SUBJECT, GROUP_ORIGINAL, SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN
   ## -------------------------------------------------------------------------------------------------
-	work$PROTEIN <- factor(work$PROTEIN)
-	work$PEPTIDE <- factor(work$PEPTIDE)
-	work$TRANSITION <- factor(work$TRANSITION)
-	work <- work[with(work,
+  work$PROTEIN <- factor(work$PROTEIN)
+  work$PEPTIDE <- factor(work$PEPTIDE)
+  work$TRANSITION <- factor(work$TRANSITION)
+  work <- work[with(work,
                     order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN,
                           PROTEIN, PEPTIDE, TRANSITION)), ]
-	work$GROUP <- factor(work$GROUP)
-	work$SUBJECT <- factor(work$SUBJECT)
-	## SUBJECT_ORIGINAL_NESTED will sorted as GROUP_ORIGINAL, SUBJECT_ORIGINAL
-	work$SUBJECT_NESTED <- factor(work$SUBJECT_NESTED, levels=unique(work$SUBJECT_NESTED))
-	## FEATURE will sorted as PROTEIN, PEPTIDE, TRANSITION
-	work$FEATURE <- factor(work$FEATURE, levels=unique(work$FEATURE))
-	## RUN will sorted as GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN
-	work$originalRUN <- work$RUN
-	work$RUN <- factor(work$RUN, levels=unique(work$RUN), labels=seq(1, length(unique(work$RUN))))
+  work$GROUP <- factor(work$GROUP)
+  work$SUBJECT <- factor(work$SUBJECT)
+  ## SUBJECT_ORIGINAL_NESTED will sorted as GROUP_ORIGINAL, SUBJECT_ORIGINAL
+  work$SUBJECT_NESTED <- factor(work$SUBJECT_NESTED, levels=unique(work$SUBJECT_NESTED))
+  ## FEATURE will sorted as PROTEIN, PEPTIDE, TRANSITION
+  work$FEATURE <- factor(work$FEATURE, levels=unique(work$FEATURE))
+  ## RUN will sorted as GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN
+  work$originalRUN <- work$RUN
+  work$RUN <- factor(work$RUN, levels=unique(work$RUN), labels=seq(1, length(unique(work$RUN))))
 
-	processout <- rbind(processout,
+  processout <- rbind(processout,
                       c("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL, SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN) - okay"))
-	write.table(processout, file=finalfile, row.names=FALSE)
+  write.table(processout, file=finalfile, row.names=FALSE)
 
-	## Normalization ##
-	## ------------- ##
+  ## Normalization ##
+  ## ------------- ##
 
-	## Normalization : option 0. none
-	if (is.element("NONE", normalization) | is.element("FALSE", normalization)) { # after 'toupper', FALSE becomes character.
+  ## Normalization : option 0. none
+  if (is.element("NONE", normalization) | is.element("FALSE", normalization)) { # after 'toupper', FALSE becomes character.
     ## To my mind, that peculiar magical recasting of FALSE by toupper() is either a semi-convincing
     ## reason to do it, or an abomination that should be killed with fire -- I'm not sure which.
-		processout <- rbind(processout, c("Normalization : no normalization - okay"))
-		write.table(processout, file=finalfile, row.names=FALSE)
-	}
+    processout <- rbind(processout, c("Normalization : no normalization - okay"))
+    write.table(processout, file=finalfile, row.names=FALSE)
+  }
 
-	## Normalization : option 1. constant normalization , equalize medians ##
-	## -------------------------------------------------------------------
-	if (!is.element("NONE", normalization) & !is.element("FALSE", normalization) &
+  ## Normalization : option 1. constant normalization , equalize medians ##
+  ## -------------------------------------------------------------------
+  if (!is.element("NONE", normalization) & !is.element("FALSE", normalization) &
       is.element("EQUALIZEMEDIANS", normalization)) {
-		if (nlevels(work$LABEL) == 1) {
-			## Constant normalization by endogenous per method
-			## [MC : use median of medians]
-			median.run.method <- aggregate(ABUNDANCE ~ RUN + FRACTION,
+    if (nlevels(work$LABEL) == 1) {
+      ## Constant normalization by endogenous per method
+      ## [MC : use median of medians]
+      median.run.method <- aggregate(ABUNDANCE ~ RUN + FRACTION,
                                      data=work,
                                      median,
                                      na.rm=TRUE)
-			median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION,
+      median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION,
                               median, na.rm = TRUE)
-			nmethod <- unique(work$FRACTION)
-			for(j in 1:length(nmethod)) {
-				namerun <- unique(work[work$FRACTION == nmethod[j], "RUN"])
-				for (i in 1:length(namerun)) {
-					## ABUNDANCE is normalized
-				  namerun.idx <- which(work$RUN == namerun[i])
-				  work[namerun.idx, "ABUNDANCE"] <- work[namerun.idx, "ABUNDANCE"] -
+      nmethod <- unique(work$FRACTION)
+      for(j in 1:length(nmethod)) {
+        namerun <- unique(work[work$FRACTION == nmethod[j], "RUN"])
+        for (i in 1:length(namerun)) {
+          ## ABUNDANCE is normalized
+          namerun.idx <- which(work$RUN == namerun[i])
+          work[namerun.idx, "ABUNDANCE"] <- work[namerun.idx, "ABUNDANCE"] -
             median.run.method[median.run.method$RUN == namerun[i], "ABUNDANCE"] +
             median.method[j]
-				}
-			}
-		}
+        }
+      }
+    }
 
-		if (nlevels(work$LABEL) == 2 ) {
-			## Constant normalization by heavy standard per method
-			h <- work[work$LABEL == "H", ]
+    if (nlevels(work$LABEL) == 2 ) {
+      ## Constant normalization by heavy standard per method
+      h <- work[work$LABEL == "H", ]
       ## [MC : use median of medians]
-			median.run.method <- aggregate(ABUNDANCE ~ RUN + FRACTION,
+      median.run.method <- aggregate(ABUNDANCE ~ RUN + FRACTION,
                                      data=h,
                                      median,
                                      na.rm=TRUE)
-			median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION,
+      median.method <- tapply(median.run.method$ABUNDANCE, median.run.method$FRACTION,
                               median, na.rm = TRUE)
       nmethod <- unique(work$FRACTION)
       for(j in 1:length(nmethod)) {
@@ -1502,17 +1478,17 @@ dataProcess <- function(raw,
       } # end loop method
     } # for labe-based
 
-		processout <- rbind(processout,
+    processout <- rbind(processout,
                         c("Normalization : Constant normalization (equalize medians) - okay"))
     write.table(processout, file=finalfile, row.names=FALSE)
   } ## end equaliemedian normalization
 
-	## Normalization : option 2. quantile normalization ##
-	## ------------------------------------------------ ##
-	if (!is.element("NONE", normalization) & !is.element("FALSE", normalization)
+  ## Normalization : option 2. quantile normalization ##
+  ## ------------------------------------------------ ##
+  if (!is.element("NONE", normalization) & !is.element("FALSE", normalization)
       & is.element("QUANTILE", normalization)) {
-		if (nlevels(work$LABEL) == 1) {
-			## for label-free, just use endogenous
+    if (nlevels(work$LABEL) == 1) {
+      ## for label-free, just use endogenous
       nmethod <- unique(work$FRACTION)
       quantileall <- NULL
       ## ABUNDANCE=0 replace with 1, in order to distinguish later.
@@ -1540,21 +1516,22 @@ dataProcess <- function(raw,
       work <- merge(work, quantileall, by=c("FEATURE", "RUN"))
       rm(quantileall)
       ## reorder
-      work <- data.frame("PROTEIN"=work$PROTEIN,
-                         "PEPTIDE"=work$PEPTIDE,
-                         "TRANSITION"=work$TRANSITION,
-                         "FEATURE"=work$FEATURE,
-                         "LABEL"=work$LABEL,
-                         "GROUP_ORIGINAL"=work$GROUP_ORIGINAL,
-                         "SUBJECT_ORIGINAL"=work$SUBJECT_ORIGINAL,
-                         "RUN"=work$RUN,
-                         "GROUP"=work$GROUP,
-                         "SUBJECT"=work$SUBJECT,
-                         "SUBJECT_NESTED"=work$SUBJECT_NESTED,
-                         "INTENSITY"=work$INTENSITY,
-                         "ABUNDANCE"=work$ABUNDANCE_quantile,
-                         "FRACTION"=work$FRACTION,
-                         "originalRUN"=work$originalRUN)
+      work <- data.frame(
+        "PROTEIN" = work$PROTEIN,
+        "PEPTIDE" = work$PEPTIDE,
+        "TRANSITION" = work$TRANSITION,
+        "FEATURE" = work$FEATURE,
+        "LABEL" = work$LABEL,
+        "GROUP_ORIGINAL" = work$GROUP_ORIGINAL,
+        "SUBJECT_ORIGINAL" = work$SUBJECT_ORIGINAL,
+        "RUN" = work$RUN,
+        "GROUP" = work$GROUP,
+        "SUBJECT" = work$SUBJECT,
+        "SUBJECT_NESTED" = work$SUBJECT_NESTED,
+        "INTENSITY" = work$INTENSITY,
+        "ABUNDANCE" = work$ABUNDANCE_quantile,
+        "FRACTION" = work$FRACTION,
+        "originalRUN" = work$originalRUN)
 
       work <- work[with(work,
                         order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, PROTEIN, PEPTIDE,
@@ -1608,25 +1585,26 @@ dataProcess <- function(raw,
         quantileall <- rbind(quantileall,quantilelong.h, quantilelong.l)
       }
 
-			## merge with original data
+      ## merge with original data
       work <- merge(work, quantileall, by=c("FEATURE","RUN","LABEL"))
 
       ## reorder
-      work <- data.frame("PROTEIN"=work$PROTEIN,
-                         "PEPTIDE"=work$PEPTIDE,
-                         "TRANSITION"=work$TRANSITION,
-                         "FEATURE"=work$FEATURE,
-                         "LABEL"=work$LABEL,
-                         "GROUP_ORIGINAL"=work$GROUP_ORIGINAL,
-                         "SUBJECT_ORIGINAL"=work$SUBJECT_ORIGINAL,
-                         "RUN"=work$RUN,
-                         "GROUP"=work$GROUP,
-                         "SUBJECT"=work$SUBJECT,
-                         "SUBJECT_NESTED"=work$SUBJECT_NESTED,
-                         "INTENSITY"=work$INTENSITY,
-                         "ABUNDANCE"=work$ABUNDANCE_quantile,
-                         "FRACTION"=work$FRACTION,
-                         "originalRUN" = work$originalRUN)
+      work <- data.frame(
+        "PROTEIN" = work$PROTEIN,
+        "PEPTIDE" = work$PEPTIDE,
+        "TRANSITION" = work$TRANSITION,
+        "FEATURE" = work$FEATURE,
+        "LABEL" = work$LABEL,
+        "GROUP_ORIGINAL" = work$GROUP_ORIGINAL,
+        "SUBJECT_ORIGINAL" = work$SUBJECT_ORIGINAL,
+        "RUN" = work$RUN,
+        "GROUP" = work$GROUP,
+        "SUBJECT" = work$SUBJECT,
+        "SUBJECT_NESTED" = work$SUBJECT_NESTED,
+        "INTENSITY" = work$INTENSITY,
+        "ABUNDANCE" = work$ABUNDANCE_quantile,
+        "FRACTION" = work$FRACTION,
+        "originalRUN" = work$originalRUN)
 
       work <- work[with(work,
                         order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
@@ -1639,21 +1617,21 @@ dataProcess <- function(raw,
     write.table(processout, file=finalfile, row.names=FALSE)
   }
 
-	## Normalization : option 3. global standards - for endogenous ##
-	## ----------------------------------------------------------- ##
-	if (!is.element("NONE", normalization) & !is.element("FALSE", normalization) &
+  ## Normalization : option 3. global standards - for endogenous ##
+  ## ----------------------------------------------------------- ##
+  if (!is.element("NONE", normalization) & !is.element("FALSE", normalization) &
       is.element("GLOBALSTANDARDS", normalization)) {
-		work$RUN <- factor(work$RUN)
-		combine <- data.frame(RUN=levels(work$RUN))
-		allPeptide <- unique(work$PEPTIDE)
-		allProtein <- unique(work$PROTEIN)
-		for (i in 1:length(nameStandards)) {
-			## if Peptides
-			## namePeptide <- allPeptide[grep(nameStandards[i],allPeptide)] ## cannot grep for modified peptide sequence, [,],+ sign
+    work$RUN <- factor(work$RUN)
+    combine <- data.frame(RUN=levels(work$RUN))
+    allPeptide <- unique(work$PEPTIDE)
+    allProtein <- unique(work$PROTEIN)
+    for (i in 1:length(nameStandards)) {
+      ## if Peptides
+      ## namePeptide <- allPeptide[grep(nameStandards[i],allPeptide)] ## cannot grep for modified peptide sequence, [,],+ sign
       namePeptide <- tempPeptide[tempPeptide$PEPTIDESEQUENCE == nameStandards[i], "PEPTIDE"]
-			if (length(namePeptide) != 0) {
-				tempStandard <- work[work$PEPTIDE == namePeptide,]
-			} else {
+      if (length(namePeptide) != 0) {
+        tempStandard <- work[work$PEPTIDE == namePeptide,]
+      } else {
         ## if Proteins
         nameProtein <- allProtein[allProtein == nameStandards[i]] # if we use 'grep', can' find the proteins name with some symbol, such as 'sp|P30153|2AAA_HUMAN'
         if (length(nameProtein) != 0) {
@@ -1661,8 +1639,8 @@ dataProcess <- function(raw,
         } else {
           processout <- rbind(processout,
                               c(paste0("global standard peptides or proteins, ",
-                                      nameStandards[i] ,
-                                      ", is not in dataset. Please check whether 'nameStandards' input is correct or not.")))
+                                       nameStandards[i] ,
+                                       ", is not in dataset. Please check whether 'nameStandards' input is correct or not.")))
           write.table(processout, file=finalfile,row.names=FALSE)
           stop(paste0("global standard peptides or proteins, ",
                       nameStandards[i] ,
@@ -1706,11 +1684,11 @@ dataProcess <- function(raw,
     processout <- rbind(processout,
                         c("Normalization : normalization with global standards protein - okay"))
     write.table(processout, file=finalfile, row.names=FALSE)
-	}
+  }
 
-	## ----------------------------------------------------------- ##
-	## if there are multiple method, need to merge after normalization + before feature selection ##
-	if (length(unique(work$FRACTION)) > 1) {
+  ## ----------------------------------------------------------- ##
+  ## if there are multiple method, need to merge after normalization + before feature selection ##
+  if (length(unique(work$FRACTION)) > 1) {
     ## check any features measured across all runs.
     tmp <- work[!is.na(work$ABUNDANCE), ]
     check.multiple.run <- xtabs(~ FEATURE + FRACTION, tmp)
@@ -1813,10 +1791,10 @@ dataProcess <- function(raw,
         work <- work[, -which(colnames(work) %in% c('tmp','newRun'))]
       }
     }
-	}
+  }
 
-	## BetweenRunInterferenceScore
-	## need to make new function
+  ## BetweenRunInterferenceScore
+  ## need to make new function
   if (betweenRunInterferenceScore) {
     ## only output light
     l <- subset(work,LABEL=="L")
@@ -1854,15 +1832,15 @@ dataProcess <- function(raw,
   ##work.NoImpute <- work
   ##AbundanceAfterImpute <- .Imputation(work, cutoffCensored, censoredInt, remove50missing, MBimpute, original_scale)
 
-	## ------------- ##
-	## how to decide censored or not
-	## ------------- ##
+  ## ------------- ##
+  ## how to decide censored or not
+  ## ------------- ##
 
-	## after normalization, zero intensity could be negative
-	work[!is.na(work$ABUNDANCE) & work$ABUNDANCE < 0, "ABUNDANCE"] <- 0
-	work[!is.na(work$INTENSITY) & work$INTENSITY == 1, "ABUNDANCE"] <- 0
+  ## after normalization, zero intensity could be negative
+  work[!is.na(work$ABUNDANCE) & work$ABUNDANCE < 0, "ABUNDANCE"] <- 0
+  work[!is.na(work$INTENSITY) & work$INTENSITY == 1, "ABUNDANCE"] <- 0
   ## If imputation=TRUE and there is any value for maxQuantileforCensored, apply cutoff for censored missing
-	if (summaryMethod == "TMP" & MBimpute) {
+  if (summaryMethod == "TMP" & MBimpute) {
     work$LABEL <- factor(work$LABEL)
     label <- nlevels(work$LABEL) == 2
     work$censored <- FALSE
@@ -1965,19 +1943,19 @@ dataProcess <- function(raw,
         work[work$LABEL == "L" & is.na(work$ABUNDANCE), "censored"] <- TRUE
       }
     } ## End of MBimpute testing
-	}
+  }
 
-	## ------------- ##
-	## featureSubset ##
-	## ------------- ##
-  ##  !! need to decide how to present : keep original all data and make new column to mark, or just present selected subset
-	if (featureSubset == "all") {
+  ## ------------- ##
+  ## featureSubset ##
+  ## ------------- ##
+  ## !! need to decide how to present : keep original all data and make new column to mark, or just present selected subset
+  if (featureSubset == "all") {
     print_string <- "** Use all features that the dataset origianally has."
- 	 	message(print_string)
- 	 	processout <- rbind(processout, print_string)
+    message(print_string)
+    processout <- rbind(processout, print_string)
     write.table(processout, file=finalfile, row.names=FALSE)
   }
-	if (featureSubset == "highQuality") {
+  if (featureSubset == "highQuality") {
     print_string <- "** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release."
     message(print_string)
     featureSubset <- "top3"
@@ -1994,34 +1972,34 @@ dataProcess <- function(raw,
     ##work$remove <- FALSE
 
     ##Impute the missing valuess before feature selection
-	  ## It should be handle within feature_selection function using .runQuantification function
+    ## It should be handle within feature_selection function using .runQuantification function
     ##AbundanceAfterImpute <- .Imputation(work, cutoffCensored, censoredInt, MBimpute, remove50missing)
     ##work <- AbundanceAfterImpute
     ##
     ##selection_list <- .feature_selection(work,
-    ##                                     cutoffCensored,
-    ##                                     censoredInt,
-    ##                                     remove_proteins_with_interference)
-	  ##SelectionAfterImpute <- work
+    ##                   cutoffCensored,
+    ##                   censoredInt,
+    ##                   remove_proteins_with_interference)
+    ##SelectionAfterImpute <- work
     ## 20160425-MC : after selecting feature, original ABUNCANCE should be used.
     ##work$ABUNDANCE <- work$ABUNDANCE.O
     ##work <- work[, -which(colnames(work) %in% c("ABUNDANCE.O", "feature.label", "run.label", "cen", "pred", "ref", "Protein_Peptide"))]
     ## if (cutoff_peptidelist == 'distance.perProtein') {
-    ##  work[which(work$PEPTIDE %in% c(selection_list$PeptideList.remove.perProteinCutoff, selection_list$PeptideList.issue)), 'remove'] <- TRUE
+    ## work[which(work$PEPTIDE %in% c(selection_list$PeptideList.remove.perProteinCutoff, selection_list$PeptideList.issue)), 'remove'] <- TRUE
     ##}
     ##if (cutoff_peptidelist == 'distance.amongAllProteins') {
-    ##  work[which(work$PEPTIDE %in% c(selection_list$PeptideList.remove.allProteinCutoff, selection_list$PeptideList.issue)), 'remove'] <- TRUE
+    ## work[which(work$PEPTIDE %in% c(selection_list$PeptideList.remove.allProteinCutoff, selection_list$PeptideList.issue)), 'remove'] <- TRUE
     ##}
     ##if (cutoff_peptidelist == 'error.amongAllProteins') {
-    ##  tmp <- selection_list$Model.Based.Error
-    ##  tmp <- tmp[tmp$Model.Based.Error > 0, ]
-    ##  cutoff_error <- quantile(tmp$Model.Based.Error, prob=cutoff_percentile)
-    ##  removePeptide <- tmp[tmp$Model.Based.Error > cutoff_error, 'Peptide']
-    ##  work[which(work$PEPTIDE %in% c(removePeptide)), 'remove'] <- TRUE
+    ## tmp <- selection_list$Model.Based.Error
+    ## tmp <- tmp[tmp$Model.Based.Error > 0, ]
+    ## cutoff_error <- quantile(tmp$Model.Based.Error, prob=cutoff_percentile)
+    ## removePeptide <- tmp[tmp$Model.Based.Error > cutoff_error, 'Peptide']
+    ## work[which(work$PEPTIDE %in% c(removePeptide)), 'remove'] <- TRUE
     ##}
-	}
+  }
 
-	if (featureSubset == "top3") {
+  if (featureSubset == "top3") {
     message("** Use top3 features that have highest average of log2(intensity) across runs.")
     processout <- rbind(processout,
                         c("** Use top3 features that have highest average of log2(intensity) across runs."))
@@ -2029,21 +2007,21 @@ dataProcess <- function(raw,
     ## INTENSITY vs ABUNDANCE? [THT: make more sense to use ABUNDANCE]
     ## how to decide top3 for DIA?
     work$remove <- FALSE
-		temp1 <- aggregate(INTENSITY ~ PROTEIN + FEATURE,
+    temp1 <- aggregate(INTENSITY ~ PROTEIN + FEATURE,
                        data=work,
                        function(x) mean(x, na.rm=TRUE))
-		temp2 <- split(temp1, temp1$PROTEIN)
-		temp3 <- lapply(temp2, function(x) {
-			x <- x[order(x$INTENSITY, decreasing=TRUE),]
-			x <- x$FEATURE[1:3]
+    temp2 <- split(temp1, temp1$PROTEIN)
+    temp3 <- lapply(temp2, function(x) {
+      x <- x[order(x$INTENSITY, decreasing=TRUE),]
+      x <- x$FEATURE[1:3]
     })
-		selectfeature <- unlist(temp3, use.names=FALSE)
-		selectfeature <- selectfeature[!is.na(selectfeature)]
-		## get subset
-		work[-which(work$FEATURE %in% selectfeature), 'remove']	<- TRUE
+    selectfeature <- unlist(temp3, use.names=FALSE)
+    selectfeature <- selectfeature[!is.na(selectfeature)]
+    ## get subset
+    work[-which(work$FEATURE %in% selectfeature), 'remove']	<- TRUE
   }
 
-	if (featureSubset == "topN") {
+  if (featureSubset == "topN") {
     ## check whether there is the input for 'N'
     message(paste0("** Use top", n_top_feature,
                    " features that have highest average of log2(intensity) across runs."))
@@ -2067,11 +2045,11 @@ dataProcess <- function(raw,
     selectfeature <- selectfeature[!is.na(selectfeature)]
     ## get subset
     work[-which(work$FEATURE %in% selectfeature), 'remove']	<- TRUE
-	}
+  }
 
-	## check missingness
-	## transitions are completely missing in one condition : missingness ##
-	if (nlevels(work$LABEL) == 1) {
+  ## check missingness
+  ## transitions are completely missing in one condition : missingness ##
+  if (nlevels(work$LABEL) == 1) {
     ##Use the data frame before imputation to summarize the missingness
     all.work <- work
     test <- tapply(is.na(work[, "ABUNDANCE"]),
@@ -2084,29 +2062,29 @@ dataProcess <- function(raw,
     test2 <- apply(test1, 2, function(x) sum(x, na.rm=TRUE))
     filterList <- names(test2)[test2 > 0]
     final.decision <- ifelse(test2 > 0, 1, 0)
-	}
+  }
 
-	if (nlevels(work$LABEL) == 2) {
+  if (nlevels(work$LABEL) == 2) {
     ##Use the data frame before imputation to summarize the missingness
     ## first, remove NA
-    all.work <- work   # with all NA observations
+    all.work <- work  # with all NA observations
     work.miss <- na.omit(work)
-		## draw table
-		light <- subset(work.miss, LABEL=="L")
+    ## draw table
+    light <- subset(work.miss, LABEL=="L")
     heavy <- subset(work.miss, LABEL=="H")
-		## use FEATURE because the name of transition can be used in other peptide
-		count.light <- xtabs(~ FEATURE + GROUP_ORIGINAL, light)
-		count.heavy <- xtabs(~ FEATURE + GROUP_ORIGINAL, heavy)
-		count.light <- count.light == 0
-		count.heavy <- count.heavy == 0
-		count.light <- as.data.frame(count.light)
-		count.heavy <- as.data.frame(count.heavy)
-		## summary of missingness
-		decision <- count.light
-		decision[] <- 0
-		for (i in 1:ncol(decision)) {
-			for (j in 1:nrow(decision)) {
-				## either light or heavy has no obs -> subject to filter
+    ## use FEATURE because the name of transition can be used in other peptide
+    count.light <- xtabs(~ FEATURE + GROUP_ORIGINAL, light)
+    count.heavy <- xtabs(~ FEATURE + GROUP_ORIGINAL, heavy)
+    count.light <- count.light == 0
+    count.heavy <- count.heavy == 0
+    count.light <- as.data.frame(count.light)
+    count.heavy <- as.data.frame(count.heavy)
+    ## summary of missingness
+    decision <- count.light
+    decision[] <- 0
+    for (i in 1:ncol(decision)) {
+      for (j in 1:nrow(decision)) {
+        ## either light or heavy has no obs -> subject to filter
         if (count.light[j, i]==TRUE || count.heavy[j, i]==TRUE) {
           decision[j, i] <- 1
         }
@@ -2121,115 +2099,115 @@ dataProcess <- function(raw,
       if (final.decision[i] != 0) {
         work[work$FEATURE == names(final.decision[i]), "SuggestToFilter"] <- 1
       }
-		}
-	}
+    }
+  }
 
-	## output : summary ##
-	## ---------------- ##
-	## output for label
+  ## output : summary ##
+  ## ---------------- ##
+  ## output for label
   processout <- rbind(processout,
                       c(paste0(length(unique(work$LABEL)), " level of Isotope type labeling in this experiment")))
-	write.table(processout, file=finalfile, row.names=FALSE)
-	temp <- data.frame("Summary of Features :")
-	colnames(temp) <- " "
-	rownames(temp) <- " "
-	print(temp)
-	summary.f <- matrix(NA, nrow=3)
-	summary.f[1] <- nlevels(work$PROTEIN)
-	temp <- unique(work[, c("PROTEIN", "PEPTIDE")])
-	temp1 <- xtabs(~ PROTEIN, data=temp)
-	temp2 <- summary(as.numeric(temp1))
-	summary.f[2] <- paste(temp2["Min."], temp2["Max."], sep="-")
-	temp <- unique(work[, c("PEPTIDE", "FEATURE")])
-	temp1 <- xtabs(~ PEPTIDE, data=temp)
-	temp2 <- summary(as.numeric(temp1))
-	summary.f[3] <- paste(temp2["Min."], temp2["Max."], sep="-")
-	colnames(summary.f) <- "count"
-	rownames(summary.f) <- c("# of Protein", "# of Peptides/Protein", "# of Transitions/Peptide")
-	print(as.data.frame(summary.f))
+  write.table(processout, file=finalfile, row.names=FALSE)
+  temp <- data.frame("Summary of Features :")
+  colnames(temp) <- " "
+  rownames(temp) <- " "
+  print(temp)
+  summary.f <- matrix(NA, nrow=3)
+  summary.f[1] <- nlevels(work$PROTEIN)
+  temp <- unique(work[, c("PROTEIN", "PEPTIDE")])
+  temp1 <- xtabs(~ PROTEIN, data=temp)
+  temp2 <- summary(as.numeric(temp1))
+  summary.f[2] <- paste(temp2["Min."], temp2["Max."], sep="-")
+  temp <- unique(work[, c("PEPTIDE", "FEATURE")])
+  temp1 <- xtabs(~ PEPTIDE, data=temp)
+  temp2 <- summary(as.numeric(temp1))
+  summary.f[3] <- paste(temp2["Min."], temp2["Max."], sep="-")
+  colnames(summary.f) <- "count"
+  rownames(summary.f) <- c("# of Protein", "# of Peptides/Protein", "# of Transitions/Peptide")
+  print(as.data.frame(summary.f))
 
-	## output for process
-	processout <- rbind(processout, c("Summary of Features :"))
-	processout <- rbind(processout, c(paste0(rownames(summary.f)[1]," : ", summary.f[1])))
-	processout <- rbind(processout, c(paste0(rownames(summary.f)[2]," : ", summary.f[2])))
-	processout <- rbind(processout, c(paste0(rownames(summary.f)[3]," : ", summary.f[3])))
-	write.table(processout, file=finalfile, row.names=FALSE)
+  ## output for process
+  processout <- rbind(processout, c("Summary of Features :"))
+  processout <- rbind(processout, c(paste0(rownames(summary.f)[1]," : ", summary.f[1])))
+  processout <- rbind(processout, c(paste0(rownames(summary.f)[2]," : ", summary.f[2])))
+  processout <- rbind(processout, c(paste0(rownames(summary.f)[3]," : ", summary.f[3])))
+  write.table(processout, file=finalfile, row.names=FALSE)
 
-	## protein list with 1 feature
-	temp <- unique(work[, c("PROTEIN", "FEATURE")])
-	temp1 <- xtabs(~ PROTEIN, data=temp)
-	temp2 <- as.data.frame(temp1[temp1 == 1])
-	if (nrow(temp2) > 0) {
-		message("\n","** Protein (",
+  ## protein list with 1 feature
+  temp <- unique(work[, c("PROTEIN", "FEATURE")])
+  temp1 <- xtabs(~ PROTEIN, data=temp)
+  temp2 <- as.data.frame(temp1[temp1 == 1])
+  if (nrow(temp2) > 0) {
+    message("\n","** Protein (",
             paste(rownames(temp2),collapse = ", "),
             ") has only single transition : Consider excluding this protein from the dataset.", "\n")
-	}
-	temp <- data.frame("Summary of Samples :")
-	colnames(temp) <- " "
-	rownames(temp) <- " "
-	print(temp)
-	summary.s <- matrix(NA, ncol=nlevels(work$GROUP_ORIGINAL), nrow=3)
-	## # of MS runs
-	temp <- unique(work[, c("GROUP_ORIGINAL", "RUN")])
-	temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
-	summary.s[1, ] <- temp1
-	## # of biological replicates
-	temp <- unique(work[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
-	temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
-	summary.s[2, ] <- temp1
-	## # of technical replicates
-	c.tech <- round(summary.s[1, ] / (summary.s[2, ] * length(unique(work$FRACTION))))
-	##summary.s[3, ] <- ifelse(c.tech==1, 0, c.tech)
-	summary.s[3, ] <- c.tech
-	colnames(summary.s) <- unique(work$GROUP_ORIGINAL)
-	rownames(summary.s) <- c("# of MS runs","# of Biological Replicates", "# of Technical Replicates")
-	print(summary.s)
+  }
+  temp <- data.frame("Summary of Samples :")
+  colnames(temp) <- " "
+  rownames(temp) <- " "
+  print(temp)
+  summary.s <- matrix(NA, ncol=nlevels(work$GROUP_ORIGINAL), nrow=3)
+  ## # of MS runs
+  temp <- unique(work[, c("GROUP_ORIGINAL", "RUN")])
+  temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
+  summary.s[1, ] <- temp1
+  ## # of biological replicates
+  temp <- unique(work[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
+  temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
+  summary.s[2, ] <- temp1
+  ## # of technical replicates
+  c.tech <- round(summary.s[1, ] / (summary.s[2, ] * length(unique(work$FRACTION))))
+  ##summary.s[3, ] <- ifelse(c.tech==1, 0, c.tech)
+  summary.s[3, ] <- c.tech
+  colnames(summary.s) <- unique(work$GROUP_ORIGINAL)
+  rownames(summary.s) <- c("# of MS runs","# of Biological Replicates", "# of Technical Replicates")
+  print(summary.s)
 
-	message("\n Summary of Missingness :\n" )
-	message(paste0("  # transitions are completely missing in one condition: ", sum(final.decision!=0), "\n"))
-	if (sum(final.decision != 0) != 0) {
+  message("\n Summary of Missingness :\n" )
+  message(paste0(" # transitions are completely missing in one condition: ", sum(final.decision!=0), "\n"))
+  if (sum(final.decision != 0) != 0) {
     tmp.final <- final.decision[final.decision != 0]
     if (length(tmp.final) > 5) {
-      message(paste0("    -> ", toString(names(tmp.final[1:5])), " ..."))
+      message(paste0("  -> ", toString(names(tmp.final[1:5])), " ..."))
     } else {
-      message(paste0("    -> ", toString(names(tmp.final)), " ..."))
+      message(paste0("  -> ", toString(names(tmp.final)), " ..."))
     }
     rm(tmp.final)
-	}
+  }
 
-	without <- xtabs(~ RUN, work)
-	withall <- xtabs(~ RUN, all.work)
-	run.missing <- without / withall
-	message(paste0("\n  # run with 75% missing observations: ", sum(run.missing < 0.25), "\n"))
-	if (sum(run.missing < 0.25) != 0) {
-		message(paste0("    -> ", paste("RUN", names(without[run.missing < 0.25]), sep=" ")))
-	}
+  without <- xtabs(~ RUN, work)
+  withall <- xtabs(~ RUN, all.work)
+  run.missing <- without / withall
+  message(paste0("\n # run with 75% missing observations: ", sum(run.missing < 0.25), "\n"))
+  if (sum(run.missing < 0.25) != 0) {
+    message(paste0("  -> ", paste("RUN", names(without[run.missing < 0.25]), sep=" ")))
+  }
 
-	## output process
-	processout <- rbind(processout,  c("Summary of Missingness :"))
-	processout <- rbind(processout,
-                      c(paste0("  # transitions are completely missing in one condition: ",
+  ## output process
+  processout <- rbind(processout, c("Summary of Missingness :"))
+  processout <- rbind(processout,
+                      c(paste0(" # transitions are completely missing in one condition: ",
                                sum(final.decision != 0))))
-	if (sum(final.decision != 0) != 0) {
-		tmp.final <- final.decision[final.decision != 0]
-		if (length(tmp.final) > 5 ) {
-      processout <- rbind(processout,"    -> ", toString(names(tmp.final[1:5])), " ...")
-		} else {
-      processout <- rbind(processout,"    -> ", toString(names(tmp.final)), " ...")
-		}
-		rm(tmp.final)
-	}
+  if (sum(final.decision != 0) != 0) {
+    tmp.final <- final.decision[final.decision != 0]
+    if (length(tmp.final) > 5 ) {
+      processout <- rbind(processout,"  -> ", toString(names(tmp.final[1:5])), " ...")
+    } else {
+      processout <- rbind(processout,"  -> ", toString(names(tmp.final)), " ...")
+    }
+    rm(tmp.final)
+  }
 
-	processout <- rbind(processout,
-                      c(paste0("  # run with 75% missing observations: ", sum(run.missing < 0.25))))
-	if (sum(run.missing < 0.25) != 0) {
-		processout <- rbind(processout, "    -> ",
+  processout <- rbind(processout,
+                      c(paste0(" # run with 75% missing observations: ", sum(run.missing < 0.25))))
+  if (sum(run.missing < 0.25) != 0) {
+    processout <- rbind(processout, "  -> ",
                         paste("RUN", names(without[run.missing < 0.25]), sep=" "))
   }
   write.table(processout, file=finalfile, row.names=FALSE)
 
-	## check any protein has only light for labeled-experiment
-	if (nlevels(work$LABEL) == 2) {
+  ## check any protein has only light for labeled-experiment
+  if (nlevels(work$LABEL) == 2) {
     temp <- unique(work[, c("PROTEIN", "LABEL")])
     temp1 <- xtabs(~ PROTEIN, data=temp)
     if (any(temp1 != 2)) {
@@ -2246,65 +2224,65 @@ dataProcess <- function(raw,
         }
       }
     }
-	}
-	processout <- rbind(processout, c("Processing data for analysis is done. - okay"))
-	write.table(processout, file=finalfile, row.names=FALSE)
+  }
+  processout <- rbind(processout, c("Processing data for analysis is done. - okay"))
+  write.table(processout, file=finalfile, row.names=FALSE)
 
- 	## get the summarization per subplot (per RUN)
-	## -------------------------------------------
-	message("\n == Start the summarization per subplot...")
+  ## get the summarization per subplot (per RUN)
+  ## -------------------------------------------
+  message("\n == Start the summarization per subplot...")
   rqresult <- try(.runQuantification(work, summaryMethod, equalFeatureVar,
-	                                   cutoffCensored, censoredInt, remove50missing, MBimpute,
-	                                   original_scale=FALSE, logsum=FALSE, featureSubset,
-	                                   message.show=FALSE, clusters=clusters), silent=TRUE)
-	if (class(rqresult) == "try-error") {
-		message("*** error : can't summarize per subplot with ", summaryMethod, ".")
+                                     cutoffCensored, censoredInt, remove50missing, MBimpute,
+                                     original_scale=FALSE, logsum=FALSE, featureSubset,
+                                     message.show=FALSE, clusters=clusters), silent=TRUE)
+  if (class(rqresult) == "try-error") {
+    message("*** error : can't summarize per subplot with ", summaryMethod, ".")
     processout <- rbind(processout,
                         c(paste0("error : can't summarize per subplot with ", summaryMethod, ".")))
     write.table(processout, file=finalfile, row.names=FALSE)
     rqall <- NULL
     rqmodelqc <- NULL
     workpred <- NULL
-	} else {
-		label <- nlevels(work$LABEL) == 2
-		if (sum(is.element(colnames(rqresult$rqdata), "RUN")) == 0) {
-			## logsum is summarization per subject
-			lab <- unique(work[, c("GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
+  } else {
+    label <- nlevels(work$LABEL) == 2
+    if (sum(is.element(colnames(rqresult$rqdata), "RUN")) == 0) {
+      ## logsum is summarization per subject
+      lab <- unique(work[, c("GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
                              "SUBJECT_NESTED", "SUBJECT")])
-			if (label) {
+      if (label) {
         lab <- lab[lab$GROUP != 0, ]
-			}
-			rqall <- merge(rqresult$rqdata, lab, by="SUBJECT_ORIGINAL")
-		} else {
-			lab <- unique(work[, c("RUN", "originalRUN", "GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
+      }
+      rqall <- merge(rqresult$rqdata, lab, by="SUBJECT_ORIGINAL")
+    } else {
+      lab <- unique(work[, c("RUN", "originalRUN", "GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
                              "SUBJECT_NESTED", "SUBJECT")])
-			if (label) {
+      if (label) {
         lab <- lab[lab$GROUP != 0, ]
-			}
-			rqall <- merge(rqresult$rqdata, lab, by="RUN")
-		}
-		rqall$GROUP <- factor(rqall$GROUP)
-		rqall$Protein <- factor(rqall$Protein)
-		rqmodelqc <- rqresult$ModelQC
+      }
+      rqall <- merge(rqresult$rqdata, lab, by="RUN")
+    }
+    rqall$GROUP <- factor(rqall$GROUP)
+    rqall$Protein <- factor(rqall$Protein)
+    rqmodelqc <- rqresult$ModelQC
     ##MC : can't use this predicted value.
     ##workpred <- rqresult$PredictedBySurvival
-		workpred <- NULL
-		message("\n == the summarization per subplot is done.")
-		processout <- rbind(processout,
+    workpred <- NULL
+    message("\n == the summarization per subplot is done.")
+    processout <- rbind(processout,
                         c(paste0("the summarization per subplot is done.- okay : ", summaryMethod)))
-		write.table(processout, file=finalfile, row.names=FALSE)
-	}
+    write.table(processout, file=finalfile, row.names=FALSE)
+  }
 
   ## return work data.frame	and run quantification
   ##Align the run quantification data
-	if (any(is.element(colnames(rqall), "RUN"))) {
+  if (any(is.element(colnames(rqall), "RUN"))) {
     rqall <- rqall[order(rqall$Protein, as.numeric(as.character(rqall$RUN))),]
     rownames(rqall) <- NULL
-	}
+  }
 
   ##Mike: Below is for in-house verification occasionally
   ##processedquant <- list(ProcessedData=work.NoImpute, RunlevelData=rqall, SummaryMethod=summaryMethod, ModelQC=rqmodelqc, PredictBySurvival=workpred, ImputedData=AbundanceAfterImpute)
-	processedquant <- list(
+  processedquant <- list(
     "ProcessedData" = work,
     "RunlevelData" = rqall,
     "SummaryMethod" = summaryMethod,
@@ -2341,25 +2319,25 @@ resultsAsLists <- function(x, ...) {
   label <- nlevels(data$LABEL) == 2
 
   ## set ref which is distinguish reference and endogenous. any reference=0. endogenous is the same as RUN
-	if (label) {
-		data$ref <- 0
-		data$ref[data$LABEL != "H"] <- data$RUN[data$LABEL != "H"]
-		data$ref <- factor(data$ref)
+  if (label) {
+    data$ref <- 0
+    data$ref[data$LABEL != "H"] <- data$RUN[data$LABEL != "H"]
+    data$ref <- factor(data$ref)
     ##		unique(data[,c("RUN","LABEL","GROUP","ref")])
-	}
+  }
 
-  ##   finalresult <- data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$RUN)),RUN=rep(c(levels(data$RUN)),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA,LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
+  ##  finalresult <- data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$RUN)),RUN=rep(c(levels(data$RUN)),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA,LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
   ## for saving predicting value for impute option
-	predAbundance <- NULL
+  predAbundance <- NULL
 ###################################
 ### method 1 : model based summarization
-	if (summaryMethod == "linear"  & is.null(censoredInt)) {
-		data <- data[!is.na(data$ABUNDANCE), ]
+  if (summaryMethod == "linear" & is.null(censoredInt)) {
+    data <- data[!is.na(data$ABUNDANCE), ]
     data$PROTEIN <- factor(data$PROTEIN)
     data$RUN <- factor(data$RUN)
-		result <- NULL
+    result <- NULL
     dataafterfit <- NULL
-		for (i in 1: nlevels(data$PROTEIN)) {
+    for (i in 1: nlevels(data$PROTEIN)) {
       sub <- data[data$PROTEIN==levels(data$PROTEIN)[i],]
       sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
       sub$FEATURE <- factor(sub$FEATURE)
@@ -2432,10 +2410,10 @@ resultsAsLists <- function(x, ...) {
         }
 
         result <- rbind(result, sub.result)
- 				if (class(fit) == "lm") {  ### lm model
+        if (class(fit) == "lm") { ### lm model
           sub$residuals <- fit$residuals
           sub$fitted <- fit$fitted.values
-        } else {   ### lmer model
+        } else {  ### lmer model
           sub$residuals <- resid(fit)
           sub$fitted <- fitted(fit)
         }
@@ -2443,24 +2421,24 @@ resultsAsLists <- function(x, ...) {
         dataafterfit <- rbind(dataafterfit, sub)
       }
     } ## end-loop for each protein
-	} ## for linear model summary
+  } ## for linear model summary
 
 ###################################
 ### Method 2 : Tukey Median Polish
-	if (summaryMethod == "TMP") {
+  if (summaryMethod == "TMP") {
     ##data <- data[!is.na(data$ABUNDANCE),]
     data$PROTEIN <- factor(data$PROTEIN)
     data$RUN <- factor(data$RUN)
-		result <- NULL
+    result <- NULL
 
     ## create cluster for paralleled workflow
-		message(paste0("Cluster Size: ", clusters, "\n"))
-		registerDoSNOW(makeCluster(clusters, type="SOCK"))
+    message(paste0("Cluster Size: ", clusters, "\n"))
+    registerDoSNOW(makeCluster(clusters, type="SOCK"))
     ## for(i in 1: nlevels(data$PROTEIN)) {
-		pb <- txtProgressBar(max=nlevels(data$PROTEIN), style=3)
-		progress <- function(n) setTxtProgressBar(pb, n)
-		opts <- list(progress=progress)
-		MS_results <- foreach(i=1: nlevels(data$PROTEIN), .combine='resultsAsLists', .options.snow = opts, .multicombine=TRUE, .init=list(list(), list())) %dopar% {
+    pb <- txtProgressBar(max=nlevels(data$PROTEIN), style=3)
+    progress <- function(n) setTxtProgressBar(pb, n)
+    opts <- list(progress=progress)
+    MS_results <- foreach(i=1: nlevels(data$PROTEIN), .combine='resultsAsLists', .options.snow = opts, .multicombine=TRUE, .init=list(list(), list())) %dopar% {
       sub <- data[data$PROTEIN == levels(data$PROTEIN)[i], ]
       if (message.show) {
         message(paste0("Getting the summarization by Tukey's median polish per subplot for protein ",
@@ -2515,8 +2493,8 @@ resultsAsLists <- function(x, ...) {
       }
 
       countfeature <- xtabs(~ FEATURE, subtemp)
-			namefeature <- names(countfeature)[countfeature == 0]
-			if (length(namefeature) != 0) {
+      namefeature <- names(countfeature)[countfeature == 0]
+      if (length(namefeature) != 0) {
         sub <- sub[-which(sub$FEATURE %in% namefeature), ]
         if (nrow(sub) == 0) {
           message(paste0("Can't summarize for ",
@@ -2525,40 +2503,40 @@ resultsAsLists <- function(x, ...) {
                          ") because all measurements are NAs."))
           ## next()
           return(NULL)
-				} else {
+        } else {
           sub$FEATURE <- factor(sub$FEATURE)
-				}
-			}
+        }
+      }
 
-			## remove features which have only 1 measurement.
-			namefeature1 <- names(countfeature)[countfeature == 1]
-			if (length(namefeature1) != 0) {
-				sub <- sub[-which(sub$FEATURE %in% namefeature1), ]
-				if (nrow(sub) == 0) {
-					message(paste0("Can't summarize for ",
+      ## remove features which have only 1 measurement.
+      namefeature1 <- names(countfeature)[countfeature == 1]
+      if (length(namefeature1) != 0) {
+        sub <- sub[-which(sub$FEATURE %in% namefeature1), ]
+        if (nrow(sub) == 0) {
+          message(paste0("Can't summarize for ",
                          unique(sub$PROTEIN), "(", i, " of ",
                          length(unique(data$PROTEIN)),
                          ") because features have only one measurement across MS runs."))
           ## next()
-				  return(NULL)
-				} else {
-					sub$FEATURE <- factor(sub$FEATURE)
-				}
-			}
+          return(NULL)
+        } else {
+          sub$FEATURE <- factor(sub$FEATURE)
+        }
+      }
 
-			## check one more time
-			## if all measurements are NA,
-			if (nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE ==0))) {
+      ## check one more time
+      ## if all measurements are NA,
+      if (nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE ==0))) {
         message(paste0("After removing features which has only 1 measurement, Can't summarize for ",
                        unique(sub$PROTEIN), "(", i,
                        " of ",length(unique(data$PROTEIN)),
                        ") because all measurements are NAs."))
         next()
-			}
+      }
 
       ## remove run which has no measurement at all
-			## remove features which are completely NAs
-			if (MBimpute) {
+      ## remove features which are completely NAs
+      if (MBimpute) {
         if (!is.null(censoredInt)) {
           ## 1. censored
           if (censoredInt == "0") {
@@ -2569,28 +2547,28 @@ resultsAsLists <- function(x, ...) {
             subtemp <- sub[sub$LABEL == "L" & !is.na(sub$ABUNDANCE), ]
           }
         }
-			} else {
+      } else {
         subtemp <- sub[sub$LABEL == "L" & !is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0, ]
-			}
-			count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
-			norun <- setdiff(unique(data$RUN), count$RUN)
-			if (length(norun) != 0 &
+      }
+      count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
+      norun <- setdiff(unique(data$RUN), count$RUN)
+      if (length(norun) != 0 &
           length(intersect(norun, as.character(unique(sub$RUN))))) {
         ## removed NA rows already, if there is no overlapped run, error
-				sub <- sub[-which(sub$RUN %in% norun), ]
-				sub$RUN <- factor(sub$RUN)
-			}
+        sub <- sub[-which(sub$RUN %in% norun), ]
+        sub$RUN <- factor(sub$RUN)
+      }
 
-			if (remove50missing) {
+      if (remove50missing) {
         ## count # feature per run
         if (!is.null(censoredInt)) {
-					if (censoredInt == "NA") {
-						subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
-					}
-					if (censoredInt == "0") {
-						subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-					}
-				}
+          if (censoredInt == "NA") {
+            subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
+          }
+          if (censoredInt == "0") {
+            subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+          }
+        }
 
         numFea <- xtabs(~ RUN, subtemp) ## RUN or run.label?
         numFea <- numFea / length(unique(subtemp$FEATURE))
@@ -2606,10 +2584,10 @@ resultsAsLists <- function(x, ...) {
           ## next()
           return(NULL)
         }
-			}
+      }
 
       ## check whether we need to impute or not.
-			if (sum(sub$cen == 0) > 0) {
+      if (sum(sub$cen == 0) > 0) {
         ## cutoffCensored
         ## 1. put 0 to censored
         ##if (cutoffCensored=="0") {
@@ -2621,146 +2599,146 @@ resultsAsLists <- function(x, ...) {
         ##	}
         ##}
 
-				## 2. put minimum in feature level to NA
-				if (cutoffCensored == "minFeature") {
-					if (censoredInt == "NA") {
-						cut <- aggregate(ABUNDANCE ~ feature.label, data=sub,
+        ## 2. put minimum in feature level to NA
+        if (cutoffCensored == "minFeature") {
+          if (censoredInt == "NA") {
+            cut <- aggregate(ABUNDANCE ~ feature.label, data=sub,
                              function(x) min(x, na.rm=TRUE))
-						## cutoff for each feature is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						## remove runs which has more than 50% missing values
-						if (remove50missing) {
-							if (length(removerunid) != 0) {
-								sub <- sub[-which(sub$RUN %in% removerunid), ]
-								sub$RUN <- factor(sub$RUN)
-							}
-						}
-						for (j in 1:length(unique(cut$feature.label))) {
-							sub[is.na(sub$ABUNDANCE) &
+            ## cutoff for each feature is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            ## remove runs which has more than 50% missing values
+            if (remove50missing) {
+              if (length(removerunid) != 0) {
+                sub <- sub[-which(sub$RUN %in% removerunid), ]
+                sub$RUN <- factor(sub$RUN)
+              }
+            }
+            for (j in 1:length(unique(cut$feature.label))) {
+              sub[is.na(sub$ABUNDANCE) &
                   sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0, ]
-						cut <- aggregate(ABUNDANCE ~ feature.label, data=subtemptemp, FUN=min)
-						## cutoff for each feature is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            }
+          }
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0, ]
+            cut <- aggregate(ABUNDANCE ~ feature.label, data=subtemptemp, FUN=min)
+            ## cutoff for each feature is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
 
-						## remove runs which has more than 50% missing values
-						if (remove50missing) {
-							if (length(removerunid) != 0) {
-								sub <- sub[-which(sub$RUN %in% removerunid), ]
-								sub$RUN <- factor(sub$RUN)
-							}
-						}
-						for (j in 1:length(unique(cut$feature.label))) {
-							sub[!is.na(sub$ABUNDANCE) &
+            ## remove runs which has more than 50% missing values
+            if (remove50missing) {
+              if (length(removerunid) != 0) {
+                sub <- sub[-which(sub$RUN %in% removerunid), ]
+                sub$RUN <- factor(sub$RUN)
+              }
+            }
+            for (j in 1:length(unique(cut$feature.label))) {
+              sub[!is.na(sub$ABUNDANCE) &
                   sub$ABUNDANCE == 0 &
                   sub$feature.label == cut$feature.label[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-				}
+            }
+          }
+        }
 
-				## 3. put minimum in RUN to NA
-				if (cutoffCensored=="minRun") {
-					## remove runs which has more than 50% missing values
-					if (remove50missing) {
-						if (length(removerunid) != 0) {
-							sub <- sub[-which(sub$RUN %in% removerunid), ]
-							sub$RUN <- factor(sub$RUN)
-						}
-					}
-					if (censoredInt == "NA") {
-						cut <- aggregate(ABUNDANCE ~ run.label,data=sub, function(x) min(x, na.rm=TRUE))
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$run.label))) {
-							sub[is.na(sub$ABUNDANCE) &
+        ## 3. put minimum in RUN to NA
+        if (cutoffCensored=="minRun") {
+          ## remove runs which has more than 50% missing values
+          if (remove50missing) {
+            if (length(removerunid) != 0) {
+              sub <- sub[-which(sub$RUN %in% removerunid), ]
+              sub$RUN <- factor(sub$RUN)
+            }
+          }
+          if (censoredInt == "NA") {
+            cut <- aggregate(ABUNDANCE ~ run.label,data=sub, function(x) min(x, na.rm=TRUE))
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$run.label))) {
+              sub[is.na(sub$ABUNDANCE) &
                   sub$run.label == cut$run.label[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
+            }
+          }
 
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0, ]
-						cut <- aggregate(ABUNDANCE ~ run.label, data=subtemptemp, FUN=min)
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$run.label))) {
-							sub[!is.na(sub$ABUNDANCE) &
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0, ]
+            cut <- aggregate(ABUNDANCE ~ run.label, data=subtemptemp, FUN=min)
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$run.label))) {
+              sub[!is.na(sub$ABUNDANCE) &
                   sub$ABUNDANCE == 0 &
                   sub$run.label == cut$run.label[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-				}
+            }
+          }
+        }
 
-				## 20150829 : 4. put minimum RUN and FEATURE
-				if (cutoffCensored == "minFeatureNRun") {
-					if (censoredInt == "NA") {
-						## cutoff for each feature is little less than minimum abundance in a run.
-						cut.fea <- aggregate(ABUNDANCE ~ feature.label, data=sub, function(x) min(x, na.rm=TRUE))
-						cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
-						## remove runs which has more than 50% missing values
-						## before removing, need to contribute min feature calculation
-						if (remove50missing) {
-							if (length(removerunid) != 0) {
-								sub <- sub[-which(sub$RUN %in% removerunid), ]
-								sub$RUN <- factor(sub$RUN)
-							}
-						}
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut.run <- aggregate(ABUNDANCE ~ run.label,data=sub, function(x) min(x, na.rm=TRUE))
-						cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
-						if (length(unique(cut.fea$feature.label)) > 1) {
-							for (j in 1:length(unique(cut.fea$feature.label))) {
-								for (k in 1:length(unique(cut.run$run.label))) {
+        ## 20150829 : 4. put minimum RUN and FEATURE
+        if (cutoffCensored == "minFeatureNRun") {
+          if (censoredInt == "NA") {
+            ## cutoff for each feature is little less than minimum abundance in a run.
+            cut.fea <- aggregate(ABUNDANCE ~ feature.label, data=sub, function(x) min(x, na.rm=TRUE))
+            cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
+            ## remove runs which has more than 50% missing values
+            ## before removing, need to contribute min feature calculation
+            if (remove50missing) {
+              if (length(removerunid) != 0) {
+                sub <- sub[-which(sub$RUN %in% removerunid), ]
+                sub$RUN <- factor(sub$RUN)
+              }
+            }
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut.run <- aggregate(ABUNDANCE ~ run.label,data=sub, function(x) min(x, na.rm=TRUE))
+            cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
+            if (length(unique(cut.fea$feature.label)) > 1) {
+              for (j in 1:length(unique(cut.fea$feature.label))) {
+                for (k in 1:length(unique(cut.run$run.label))) {
                   ## get smaller value for min Run and min Feature
-									finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
-									sub[is.na(sub$ABUNDANCE) &
+                  finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
+                  sub[is.na(sub$ABUNDANCE) &
                       sub$feature.label == cut.fea$feature.label[j] &
                       sub$run.label == cut.run$run.label[k], "ABUNDANCE"] <- finalcut
-								}
-							}
-						}
+                }
+              }
+            }
             ## if single feature, not impute
-					}
+          }
 
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0,]
-						cut.fea <- aggregate(ABUNDANCE ~ feature.label, data=subtemptemp, FUN=min)
-						cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE != 0,]
+            cut.fea <- aggregate(ABUNDANCE ~ feature.label, data=subtemptemp, FUN=min)
+            cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
             ## remove runs which has more than 50% missing values
-						## before removing, need to contribute min feature calculation
-						if (remove50missing) {
-							if (length(removerunid) != 0) {
-								sub <- sub[-which(sub$RUN %in% removerunid),]
-								sub$RUN <- factor(sub$RUN)
-							}
-						}
+            ## before removing, need to contribute min feature calculation
+            if (remove50missing) {
+              if (length(removerunid) != 0) {
+                sub <- sub[-which(sub$RUN %in% removerunid),]
+                sub$RUN <- factor(sub$RUN)
+              }
+            }
 
-						cut.run <- aggregate(ABUNDANCE ~ run.label, data=subtemptemp, FUN=min)
-						cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
-						if (length(unique(cut.fea$feature.label)) > 1) {
-							for (j in 1:length(unique(cut.fea$feature.label))) {
-								for (k in 1:length(unique(cut.run$run.label))) {
+            cut.run <- aggregate(ABUNDANCE ~ run.label, data=subtemptemp, FUN=min)
+            cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
+            if (length(unique(cut.fea$feature.label)) > 1) {
+              for (j in 1:length(unique(cut.fea$feature.label))) {
+                for (k in 1:length(unique(cut.run$run.label))) {
                   ## get smaller value for min Run and min Feature
-									finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
+                  finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
 
-									sub[!is.na(sub$ABUNDANCE) &
+                  sub[!is.na(sub$ABUNDANCE) &
                       sub$ABUNDANCE == 0 &
                       sub$feature.label == cut.fea$feature.label[j] &
                       sub$run.label == cut.run$run.label[k],
                       "ABUNDANCE"] <- finalcut
-								}
-							}
-						} else { # single feature
-							sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE == 0, "ABUNDANCE"] <- cut.fea$ABUNDANCE
-						}
-					}
-				}
+                }
+              }
+            } else { # single feature
+              sub[!is.na(sub$ABUNDANCE) & sub$ABUNDANCE == 0, "ABUNDANCE"] <- cut.fea$ABUNDANCE
+            }
+          }
+        }
 
-				if (MBimpute) {
+        if (MBimpute) {
           if (!label) { ## label-free
             if (nrow(sub[sub$cen == 0, ]) > 0) {
               ## impute by survival model
@@ -2828,11 +2806,11 @@ resultsAsLists <- function(x, ...) {
               sub <- rbind(sub.h, sub.l)
             }
           }
-				}
-			}
+        }
+      }
 
-			## then, finally remove NA in abundance
-			sub <- sub[!is.na(sub$ABUNDANCE), ]
+      ## then, finally remove NA in abundance
+      sub <- sub[!is.na(sub$ABUNDANCE), ]
       if (nlevels(sub$FEATURE) > 1) { ## for more than 1 features
         if (!label) { ## label-free
           data_w <- reshape2::dcast(RUN ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
@@ -2841,79 +2819,79 @@ resultsAsLists <- function(x, ...) {
           data_w[data_w == 1] <- NA
           if (!original_scale) {
             meddata <- medpolish(data_w, na.rm=TRUE, trace.iter=FALSE)
-						tmpresult <- meddata$overall + meddata$row
-						## if fractionated sample, need to get per sample run
-						## ?? if there are technical replicates, how to match sample and MS run for different fractionation??
+            tmpresult <- meddata$overall + meddata$row
+            ## if fractionated sample, need to get per sample run
+            ## ?? if there are technical replicates, how to match sample and MS run for different fractionation??
             ##if( length(unique(sub$METHOD)) > 1 ) {
-            ##  runinfo <- unique(sub[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "METHOD")])
-            ##  runinfo$uniquesub <- paste(runinfo$GROUP_ORIGINAL, runinfo$SUBJECT_ORIGINAL, sep="_")
+            ## runinfo <- unique(sub[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "METHOD")])
+            ## runinfo$uniquesub <- paste(runinfo$GROUP_ORIGINAL, runinfo$SUBJECT_ORIGINAL, sep="_")
             ##}
           } else { # original_scale
             data_w <- 2 ^ data_w
             meddata <- medpolish(data_w, na.rm=TRUE, trace.iter=FALSE)
-						tmpresult <- meddata$overall + meddata$row
+            tmpresult <- meddata$overall + meddata$row
             tmpresult <- log2(tmpresult)
           }
 
           ## count # feature per run
-					if (!is.null(censoredInt)) {
-						if (censoredInt=="NA") {
-							subtemp <- sub[!is.na(sub$INTENSITY), ]
-							subtempimpute <- sub[is.na(sub$INTENSITY), ]
-							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
-						}
-						if (censoredInt == "0") {
-							subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-							subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0, ]
-							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) &
+          if (!is.null(censoredInt)) {
+            if (censoredInt=="NA") {
+              subtemp <- sub[!is.na(sub$INTENSITY), ]
+              subtempimpute <- sub[is.na(sub$INTENSITY), ]
+              subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
+            }
+            if (censoredInt == "0") {
+              subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+              subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0, ]
+              subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) &
                                              subtempimpute$ABUNDANCE != 0, ]
-						}
+            }
 
             subtemp$RUN <- factor(subtemp$RUN, levels=rownames(data_w))
-						numFea <- xtabs(~ RUN, subtemp)
-						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
-						numFeaTF <- numFeaPercentage >= 0.5
-						subtempimpute$RUN <- factor(subtempimpute$RUN, levels=rownames(data_w))
-						numimpute <- xtabs(~ RUN, subtempimpute)
-						sub.result <- data.frame(
+            numFea <- xtabs(~ RUN, subtemp)
+            numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+            numFeaTF <- numFeaPercentage >= 0.5
+            subtempimpute$RUN <- factor(subtempimpute$RUN, levels=rownames(data_w))
+            numimpute <- xtabs(~ RUN, subtempimpute)
+            sub.result <- data.frame(
               "Protein" = unique(sub$PROTEIN),
               "LogIntensities" = tmpresult,
-              "RUN"=names(tmpresult),
+              "RUN" = names(tmpresult),
               "NumMeasuredFeature" = as.vector(numFea),
               "MissingPercentage" = as.vector(numFeaPercentage),
               "more50missing" = numFeaTF,
               "NumImputedFeature" = as.vector(numimpute))
-					} else {
-						subtemp <- sub[!is.na(sub$INTENSITY), ]
-						subtemp$RUN <- factor(subtemp$RUN, levels=rownames(data_w))
-						numFea <- xtabs(~ RUN, subtemp)
-						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
-						numFeaTF <- numFeaPercentage >= 0.5
-						sub.result <- data.frame(
+          } else {
+            subtemp <- sub[!is.na(sub$INTENSITY), ]
+            subtemp$RUN <- factor(subtemp$RUN, levels=rownames(data_w))
+            numFea <- xtabs(~ RUN, subtemp)
+            numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+            numFeaTF <- numFeaPercentage >= 0.5
+            sub.result <- data.frame(
               "Protein" = unique(sub$PROTEIN),
               "LogIntensities" = tmpresult,
               "RUN" = names(tmpresult),
               "NumMeasuredFeature" = as.vector(numFea),
               "MissingPercentage" = as.vector(numFeaPercentage),
               "more50missing" = numFeaTF)
-					}
+          }
           ## result <- rbind(result, sub.result)
         } else { ## labeled
-					data_w = reshape2::dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+          data_w = reshape2::dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
           rownames(data_w) <- data_w$run.label
           data_w <- data_w[, -1]
           ##data_w[data_w==1] <- NA
           meddata <- medpolish(data_w, na.rm=TRUE, trace.iter=FALSE)
-					tmpresult <- meddata$overall + meddata$row
+          tmpresult <- meddata$overall + meddata$row
 
-					reformresult <- data.frame(tmpresult)
-					end <- nchar(rownames(reformresult))
-					reformresult$LABEL <- substr(rownames(reformresult), end, end)
-					reformresult$RUN <- substr(rownames(reformresult), 1, end - 2)
-					colnames(reformresult)[1] <- "ABUNDANCE"
-					## now single feature, adjust reference feature difference
+          reformresult <- data.frame(tmpresult)
+          end <- nchar(rownames(reformresult))
+          reformresult$LABEL <- substr(rownames(reformresult), end, end)
+          reformresult$RUN <- substr(rownames(reformresult), 1, end - 2)
+          colnames(reformresult)[1] <- "ABUNDANCE"
+          ## now single feature, adjust reference feature difference
           h <- reformresult[reformresult$LABEL=="H", ]
- 					allmed <- median(h$ABUNDANCE, na.rm=TRUE)
+          allmed <- median(h$ABUNDANCE, na.rm=TRUE)
           for (k in 1:length(unique(h$RUN))) {
             ## ABUNDANCE is normalized
             reformresult.logical <- reformresult$RUN == unique(h$RUN)[k]
@@ -2926,24 +2904,24 @@ resultsAsLists <- function(x, ...) {
           subtemp <- reformresult[!is.na(reformresult$ABUNDANCE), ]
           ## count # feature per run
           if (!is.null(censoredInt)) {
-						if (censoredInt == "NA") {
-							subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
-							subtempimpute <- sub[sub$LABEL == "L" & is.na(sub$INTENSITY), ]
-							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
-						}
+            if (censoredInt == "NA") {
+              subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
+              subtempimpute <- sub[sub$LABEL == "L" & is.na(sub$INTENSITY), ]
+              subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
+            }
 
-						if (censoredInt == "0") {
-							subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-							subtempimpute <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) &
+            if (censoredInt == "0") {
+              subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+              subtempimpute <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
+              subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) &
                                              subtempimpute$ABUNDANCE != 0, ]
-						}
+            }
 
             numFea <- xtabs(~ RUN, subtemp)
-						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
-						numFeaTF <- numFeaPercentage >= 0.5
-						numimpute <- xtabs(~ RUN, subtempimpute)
-						sub.result <- data.frame(
+            numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+            numFeaTF <- numFeaPercentage >= 0.5
+            numimpute <- xtabs(~ RUN, subtempimpute)
+            sub.result <- data.frame(
               "Protein" = unique(sub$PROTEIN),
               "LogIntensities" = reformresult$ABUNDANCE,
               "RUN" = reformresult$RUN,
@@ -2951,26 +2929,26 @@ resultsAsLists <- function(x, ...) {
               "MissingPercentage" = as.vector(numFeaPercentage),
               "more50missing" = numFeaTF,
               "NumImputedFeature" = as.vector(numimpute))
-					} else {
-						subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
-						numFea <- xtabs(~ RUN, subtemp)
-						numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
-						numFeaTF <- numFeaPercentage >= 0.5
-						sub.result <- data.frame(
+          } else {
+            subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
+            numFea <- xtabs(~ RUN, subtemp)
+            numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+            numFeaTF <- numFeaPercentage >= 0.5
+            sub.result <- data.frame(
               "Protein" = unique(sub$PROTEIN),
               "LogIntensities" = reformresult$ABUNDANCE,
               "RUN" = reformresult$RUN,
               "NumMeasuredFeature" = as.vector(numFea),
               "MissingPercentage" = as.vector(numFeaPercentage),
               "more50missing" = numFeaTF)
-					}
+          }
           ## result <- rbind(result, sub.result)
         }
       } else { ## single feature
         if (label) { ## label-based
           ## single feature, adjust reference feature difference
           h <- sub[sub$LABEL == "H", ]
- 					allmed <- median(h$ABUNDANCE, na.rm=TRUE)
+          allmed <- median(h$ABUNDANCE, na.rm=TRUE)
           for (k in 1:length(unique(h$RUN))) {
             ## ABUNDANCE is normalized
             subrun.logical <- sub$RUN == unique(h$RUN)[k]
@@ -2980,27 +2958,27 @@ resultsAsLists <- function(x, ...) {
           }
           sub <- sub[sub$LABEL=="L", ]
         }
-				## single feature, use original values
+        ## single feature, use original values
         subtemp <- sub[!is.na(sub$ABUNDANCE), ]
         if (!is.null(censoredInt)) {
           if (censoredInt == "NA") {
-						subtempcount <- sub[!is.na(sub$INTENSITY), ]
-						subtempimpute <- sub[is.na(sub$INTENSITY), ]
-						subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
-					}
+            subtempcount <- sub[!is.na(sub$INTENSITY), ]
+            subtempimpute <- sub[is.na(sub$INTENSITY), ]
+            subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE), ]
+          }
 
-					if (censoredInt == "0") {
-						subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-						subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-						subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) &
+          if (censoredInt == "0") {
+            subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+            subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
+            subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) &
                                            subtempimpute$ABUNDANCE != 0, ]
-					}
+          }
 
-					numFea <- xtabs(~ RUN, subtempcount)
-					numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
-					numFeaTF <- numFeaPercentage >= 0.5
-					numimpute <- xtabs(~ RUN, subtempimpute)
-					sub.result <- data.frame(
+          numFea <- xtabs(~ RUN, subtempcount)
+          numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+          numFeaTF <- numFeaPercentage >= 0.5
+          numimpute <- xtabs(~ RUN, subtempimpute)
+          sub.result <- data.frame(
             "Protein" = subtemp$PROTEIN,
             "LogIntensities" = subtemp$ABUNDANCE,
             "RUN" = subtemp$RUN,
@@ -3008,11 +2986,11 @@ resultsAsLists <- function(x, ...) {
             "MissingPercentage" = as.vector(numFeaPercentage),
             "more50missing" = numFeaTF,
             "NumImputedFeature" = as.vector(numimpute))
-				} else {
-					subtempcount <- subtemp
-					numFea <- xtabs(~ RUN, subtempcount)
-					numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
-					numFeaTF <- numFeaPercentage >= 0.5
+        } else {
+          subtempcount <- subtemp
+          numFea <- xtabs(~ RUN, subtempcount)
+          numFeaPercentage <- 1 - numFea / length(unique(subtemp$FEATURE))
+          numFeaTF <- numFeaPercentage >= 0.5
           sub.result <- data.frame(
             "Protein" = subtemp$PROTEIN,
             "LogIntensities" = subtemp$ABUNDANCE,
@@ -3020,50 +2998,50 @@ resultsAsLists <- function(x, ...) {
             "NumMeasuredFeature" = as.vector(numFea),
             "MissingPercentage" = as.vector(numFeaPercentage),
             "more50missing" = numFeaTF)
-				}
+        }
         ## result <- rbind(result, sub.result)
       }
-			return(list(sub.result, predAbundance))
+      return(list(sub.result, predAbundance))
       ##return(list(sub.result))
-		}  ## loop for proteins
-		close(pb)
-    ##stopCluster(cl)  # foreach autocloses
+    } ## loop for proteins
+    close(pb)
+    ##stopCluster(cl) # foreach autocloses
 
-		## Clean up the parallelized results
-		results.list <- list()
-		predAbundance.list <- list()
-		for (j in 1:length(MS_results[[1]])) {
+    ## Clean up the parallelized results
+    results.list <- list()
+    predAbundance.list <- list()
+    for (j in 1:length(MS_results[[1]])) {
       ## deal with the "results" first
-		  results.list[[j]] <- MS_results[[1]][[j]]
-		  predAbundance.list[[j]] <- MS_results[[2]][[j]]
-		}
-		result <- do.call(rbind, results.list)
-		predAbundance <- do.call(c, predAbundance.list)
+      results.list[[j]] <- MS_results[[1]][[j]]
+      predAbundance.list[[j]] <- MS_results[[2]][[j]]
+    }
+    result <- do.call(rbind, results.list)
+    predAbundance <- do.call(c, predAbundance.list)
     ##predAbundance <- predAbundance[-which(duplicated(predAbundance))] # remove duplicates
-		dataafterfit <- NULL
-	}
+    dataafterfit <- NULL
+  }
 
 ###################################
 ### Method 3 : log sum
 ### retired on Aug 2 2016
 ###################################
 ### method 4 : survival model for censored missing values
-	if (summaryMethod=="linear" & !is.null(censoredInt)) {
+  if (summaryMethod=="linear" & !is.null(censoredInt)) {
     ##data <- data[!is.na(data$ABUNDANCE),]
     data$PROTEIN <- factor(data$PROTEIN)
     data$RUN <- factor(data$RUN)
-		if (label) {
-			result <- NULL
-			for(i in 1:length(unique(data$PROTEIN))) {
-				sub <- data[data$PROTEIN==unique(data$PROTEIN)[i], ]
-				if (message.show) {
+    if (label) {
+      result <- NULL
+      for(i in 1:length(unique(data$PROTEIN))) {
+        sub <- data[data$PROTEIN==unique(data$PROTEIN)[i], ]
+        if (message.show) {
           message(paste0("Getting the summarization for censored missing values per subplot for protein ",
                          unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
-				}
-				sub$FEATURE <- factor(sub$FEATURE)
-				sub$feature.label <- paste(sub$FEATURE, sub$LABEL, sep="_")
-				sub$run.label <- paste(sub$RUN, sub$LABEL, sep="_")
-				## if all measurements are NA,
+        }
+        sub$FEATURE <- factor(sub$FEATURE)
+        sub$feature.label <- paste(sub$FEATURE, sub$LABEL, sep="_")
+        sub$run.label <- paste(sub$RUN, sub$LABEL, sep="_")
+        ## if all measurements are NA,
         if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
           message(paste0("Can't summarize for ",
                          unique(sub$PROTEIN), "(",
@@ -3071,44 +3049,44 @@ resultsAsLists <- function(x, ...) {
                          ") because all measurements are NAs."))
           next()
         }
-				## remove run which has no measurement at all
-				subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
-				count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
-				norun <- setdiff(unique(data$RUN), count$RUN)
+        ## remove run which has no measurement at all
+        subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
+        count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
+        norun <- setdiff(unique(data$RUN), count$RUN)
 
-				if (length(norun) != 0 & length(intersect(norun, as.character(unique(sub$RUN))))) {
+        if (length(norun) != 0 & length(intersect(norun, as.character(unique(sub$RUN))))) {
           ## removed NA rows already, if there is no overlapped run, error
-					sub <- sub[-which(sub$RUN %in% norun), ]
-					sub$RUN <- factor(sub$RUN)
-				}
-				if (length(unique(sub$RUN)) == 1) {
-					message(paste0("* Only 1 MS run in ",
+          sub <- sub[-which(sub$RUN %in% norun), ]
+          sub$RUN <- factor(sub$RUN)
+        }
+        if (length(unique(sub$RUN)) == 1) {
+          message(paste0("* Only 1 MS run in ",
                          levels(data$PROTEIN)[i],
                          " has measurement. Can't summarize with censored intensities."))
-					next
-				}
+          next
+        }
 
-				## remove features which are completely NAs or zero
-				subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-				countfeature <- xtabs(~ FEATURE, subtemp)
-				namefeature <- names(countfeature)[countfeature == 0]
-				if (length(namefeature) != 0) {
-					sub <- sub[-which(sub$FEATURE %in% namefeature), ]
-					sub$FEATURE <- factor(sub$FEATURE)
-				}
+        ## remove features which are completely NAs or zero
+        subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+        countfeature <- xtabs(~ FEATURE, subtemp)
+        namefeature <- names(countfeature)[countfeature == 0]
+        if (length(namefeature) != 0) {
+          sub <- sub[-which(sub$FEATURE %in% namefeature), ]
+          sub$FEATURE <- factor(sub$FEATURE)
+        }
 
         ## how to decide censored or not
-				## 1. censored
-				if (censoredInt == "0") {
-					sub$cen <- ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY == 0, 0, 1)
-				}
+        ## 1. censored
+        if (censoredInt == "0") {
+          sub$cen <- ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY == 0, 0, 1)
+        }
         ## 2. all censored missing
-				if (censoredInt == "NA") {
-					sub$cen <- ifelse(is.na(sub$INTENSITY), 0, 1)
-				}
+        if (censoredInt == "NA") {
+          sub$cen <- ifelse(is.na(sub$INTENSITY), 0, 1)
+        }
 
         ## cutoffCensored
-				## 1. put minimum in protein level to NA
+        ## 1. put minimum in protein level to NA
         ##if (cutoffCensored=="minEachProtein") {
         ##	if (censoredInt=="NA") {
         ##		cut <- min(sub$ABUNDANCE, na.rm=TRUE)
@@ -3120,154 +3098,154 @@ resultsAsLists <- function(x, ...) {
         ##	}
         ##}
 
-				## 2. put minimum in feature level to NA
-				if (cutoffCensored == "minFeature") {
-					if (censoredInt == "NA") {
-						cut <- aggregate(ABUNDANCE ~ feature.label,
+        ## 2. put minimum in feature level to NA
+        if (cutoffCensored == "minFeature") {
+          if (censoredInt == "NA") {
+            cut <- aggregate(ABUNDANCE ~ feature.label,
                              data=sub, function(x) min(x, na.rm=TRUE))
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$feature.label))) {
-							sub[is.na(sub$INTENSITY) &
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$feature.label))) {
+              sub[is.na(sub$INTENSITY) &
                   sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-						cut <- aggregate(ABUNDANCE ~ feature.label, data=subtemptemp, FUN=min)
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$feature.label))) {
-							sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0 &
+            }
+          }
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+            cut <- aggregate(ABUNDANCE ~ feature.label, data=subtemptemp, FUN=min)
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$feature.label))) {
+              sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0 &
                   sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-				}
-				## 3. put minimum in RUN to NA
-				if (cutoffCensored == "minRun") {
-					if (censoredInt == "NA") {
-						cut <- aggregate(ABUNDANCE ~ run.label, data=sub, function(x) min(x, na.rm=TRUE))
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$run.label))) {
-							sub[is.na(sub$INTENSITY) &
+            }
+          }
+        }
+        ## 3. put minimum in RUN to NA
+        if (cutoffCensored == "minRun") {
+          if (censoredInt == "NA") {
+            cut <- aggregate(ABUNDANCE ~ run.label, data=sub, function(x) min(x, na.rm=TRUE))
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$run.label))) {
+              sub[is.na(sub$INTENSITY) &
                   sub$run.label == cut$run.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-						cut <- aggregate(ABUNDANCE ~ run.label, data=subtemptemp, FUN=min)
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$run.label))) {
-							sub[!is.na(sub$INTENSITY) &
+            }
+          }
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+            cut <- aggregate(ABUNDANCE ~ run.label, data=subtemptemp, FUN=min)
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$run.label))) {
+              sub[!is.na(sub$INTENSITY) &
                   sub$INTENSITY == 0 &
                   sub$run.label == cut$run.label[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-				}
+            }
+          }
+        }
 
-				## 20150829 : 4. put minimum RUN and FEATURE
-				if (cutoffCensored == "minFeatureNRun") {
-					if (censoredInt == "NA") {
-						## cutoff for each feature is little less than minimum abundance in a run.
-						cut.fea <- aggregate(ABUNDANCE ~ feature.label,
+        ## 20150829 : 4. put minimum RUN and FEATURE
+        if (cutoffCensored == "minFeatureNRun") {
+          if (censoredInt == "NA") {
+            ## cutoff for each feature is little less than minimum abundance in a run.
+            cut.fea <- aggregate(ABUNDANCE ~ feature.label,
                                  data=sub, function(x) min(x, na.rm=TRUE))
-						cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut.run <- aggregate(ABUNDANCE ~ run.label,
+            cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut.run <- aggregate(ABUNDANCE ~ run.label,
                                  data=sub, function(x) min(x, na.rm=TRUE))
-						cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
+            cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
 
-						if (length(unique(sub$feature.label)) > 1) {
-							for (j in 1:length(unique(sub$feature.label))) {
-								for (k in 1:length(unique(sub$run.label))) {
+            if (length(unique(sub$feature.label)) > 1) {
+              for (j in 1:length(unique(sub$feature.label))) {
+                for (k in 1:length(unique(sub$run.label))) {
                   ## get smaller value for min Run and min Feature
-									finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
-									sub[is.na(sub$INTENSITY) &
+                  finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
+                  sub[is.na(sub$INTENSITY) &
                       sub$feature.label == cut.fea$feature.label[j] &
                       sub$run.label == cut.run$run.label[k],
                       "ABUNDANCE"] <- finalcut
-								}
-							}
-						}
+                }
+              }
+            }
             ## if single feature, not impute
-					}
+          }
 
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-						cut.fea <- aggregate(ABUNDANCE ~ feature.label,
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+            cut.fea <- aggregate(ABUNDANCE ~ feature.label,
                                  data=subtemptemp, FUN=min)
-						cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
-						## remove runs which has more than 50% missing values
-						## before removing, need to contribute min feature calculation
-						if (remove50missing) {
-							if (length(removerunid) != 0) {
-								sub <- sub[-which(sub$RUN %in% removerunid), ]
-								sub$RUN <- factor(sub$RUN)
-							}
-						}
+            cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
+            ## remove runs which has more than 50% missing values
+            ## before removing, need to contribute min feature calculation
+            if (remove50missing) {
+              if (length(removerunid) != 0) {
+                sub <- sub[-which(sub$RUN %in% removerunid), ]
+                sub$RUN <- factor(sub$RUN)
+              }
+            }
 
-						cut.run <- aggregate(ABUNDANCE ~ run.label,
+            cut.run <- aggregate(ABUNDANCE ~ run.label,
                                  data=subtemptemp, FUN=min)
-						cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
-						if (length(unique(sub$feature.label)) > 1) {
-							for (j in 1:length(unique(sub$feature.label))) {
-								for (k in 1:length(unique(sub$run.label))) {
+            cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
+            if (length(unique(sub$feature.label)) > 1) {
+              for (j in 1:length(unique(sub$feature.label))) {
+                for (k in 1:length(unique(sub$run.label))) {
                   ## get smaller value for min Run and min Feature
-									finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
-									sub[!is.na(sub$INTENSITY) &
+                  finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
+                  sub[!is.na(sub$INTENSITY) &
                       sub$INTENSITY == 0 &
                       sub$feature.label == cut.fea$feature.label[j] &
                       sub$run.label == cut.run$run.label[k],
                       "ABUNDANCE"] <- finalcut
-								}
-							}
-						} else{ # single feature
-							sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, "ABUNDANCE"] <- cut.fea$ABUNDANCE
-						}
-					}
-				}
+                }
+              }
+            } else{ # single feature
+              sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, "ABUNDANCE"] <- cut.fea$ABUNDANCE
+            }
+          }
+        }
 
-				## when number of measurement is less than df, error for fitting
-				subtemp <- sub[!is.na(sub$ABUNDANCE), ]
-				countdf <- nrow(subtemp) < (length(unique(subtemp$FEATURE)) +
+        ## when number of measurement is less than df, error for fitting
+        subtemp <- sub[!is.na(sub$ABUNDANCE), ]
+        countdf <- nrow(subtemp) < (length(unique(subtemp$FEATURE)) +
                                     length(unique(subtemp$RUN)) - 1)
         ## fit the model
-				if (length(unique(sub$FEATURE)) == 1) {
+        if (length(unique(sub$FEATURE)) == 1) {
           ## with single feature, not converge, wrong intercept
           ## need to check
-					fittest <- survival::survreg(
+          fittest <- survival::survreg(
                                  survival::Surv(
                                              ABUNDANCE,
                                              cen,
                                              type='left') ~ RUN + ref,
                                  data=sub, dist='gaussian')
-				} else {
-					if (countdf) {
-						fittest <- survival::survreg(
+        } else {
+          if (countdf) {
+            fittest <- survival::survreg(
                                    survival::Surv(
                                                ABUNDANCE,
                                                cen,
                                                type='left') ~ RUN + ref,
                                    data=sub, dist='gaussian')
-					} else {
-						fittest <- survival::survreg(
+          } else {
+            fittest <- survival::survreg(
                                    survival::Surv(
                                                ABUNDANCE,
                                                cen,
                                                type='left') ~ FEATURE + RUN + ref,
                                    data=sub, dist='gaussian')
-					}
-				}
+          }
+        }
 
-				sub.result <- data.frame(
+        sub.result <- data.frame(
           "Protein" = unique(sub$PROTEIN),
           "RUN" = rep(c(levels(sub$RUN)), 1),
           "LogIntensities" = NA)
         ## get the parameters
-				cf <- summary(fittest)$coefficients
+        cf <- summary(fittest)$coefficients
         ## calculate sample quantification for all levels of sample
         a <- 1
 
@@ -3280,25 +3258,25 @@ resultsAsLists <- function(x, ...) {
           sub.result[a, 3] <- .estimableFixedQuantificationSurvival(cf, contrast)
           a <- a + 1
         }
-				result <- rbind(result, sub.result)
-			}
+        result <- rbind(result, sub.result)
+      }
 
-			datamat <- reshape2::dcast(Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
-			datamat <- melt(datamat, id.vars=c('Protein'))
-			colnames(datamat) <- c('Protein', 'RUN', 'LogIntensities')
-			result <- datamat
-		} else {
-			result <- NULL
-			for (i in 1:length(unique(data$PROTEIN))) {
-				sub <- data[data$PROTEIN == unique(data$PROTEIN)[i], ]
-				if (message.show) {
+      datamat <- reshape2::dcast(Protein ~ RUN, data=result, value.var='LogIntensities', keep=TRUE)
+      datamat <- melt(datamat, id.vars=c('Protein'))
+      colnames(datamat) <- c('Protein', 'RUN', 'LogIntensities')
+      result <- datamat
+    } else {
+      result <- NULL
+      for (i in 1:length(unique(data$PROTEIN))) {
+        sub <- data[data$PROTEIN == unique(data$PROTEIN)[i], ]
+        if (message.show) {
           message(paste0("Getting the summarization for censored missing values per subplot for protein ",
                          unique(sub$PROTEIN), "(",
                          i," of ", length(unique(data$PROTEIN)),")"))
-				}
+        }
 
-				sub$FEATURE <- factor(sub$FEATURE)
-				## if all measurements are NA,
+        sub$FEATURE <- factor(sub$FEATURE)
+        ## if all measurements are NA,
         if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
           message(paste0("Can't summarize for ",
                          unique(sub$PROTEIN), "(",
@@ -3306,50 +3284,50 @@ resultsAsLists <- function(x, ...) {
                          ") because all measurements are NAs."))
           next
         }
-				## remove run which has no measurement at all
-				subtemp <- sub[!is.na(sub$INTENSITY), ]
-				count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
-				norun <- setdiff(unique(data$RUN), count$RUN)
-				if (length(norun) != 0 &
+        ## remove run which has no measurement at all
+        subtemp <- sub[!is.na(sub$INTENSITY), ]
+        count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
+        norun <- setdiff(unique(data$RUN), count$RUN)
+        if (length(norun) != 0 &
             length(intersect(norun, as.character(unique(sub$RUN)))) != 0) {
           ## removed NA rows already, if there is no overlapped run, error
-					sub <- sub[-which(sub$RUN %in% norun), ]
-					sub$RUN <- factor(sub$RUN)
-				}
+          sub <- sub[-which(sub$RUN %in% norun), ]
+          sub$RUN <- factor(sub$RUN)
+        }
 
-				if (length(unique(sub$RUN)) == 1) {
-					message(paste0("* Only 1 MS run in ",
+        if (length(unique(sub$RUN)) == 1) {
+          message(paste0("* Only 1 MS run in ",
                          levels(data$PROTEIN)[i],
                          " has measurement. Can't summarize with censored intensities."))
-					next
-				}
+          next
+        }
 
-				## remove features which are (completely NAs or zero)
-				subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-				countfeature <- xtabs(~ FEATURE, subtemp)
-				namefeature <- names(countfeature)[countfeature == 0]
-				if (length(namefeature) != 0) {
-					sub <- sub[-which(sub$FEATURE %in% namefeature), ]
-					sub$FEATURE <- factor(sub$FEATURE)
-				}
-				if (nrow(sub) == 0) {
-					message(paste0("* All measurements are NAs or only one measurement per feature in ",
+        ## remove features which are (completely NAs or zero)
+        subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+        countfeature <- xtabs(~ FEATURE, subtemp)
+        namefeature <- names(countfeature)[countfeature == 0]
+        if (length(namefeature) != 0) {
+          sub <- sub[-which(sub$FEATURE %in% namefeature), ]
+          sub$FEATURE <- factor(sub$FEATURE)
+        }
+        if (nrow(sub) == 0) {
+          message(paste0("* All measurements are NAs or only one measurement per feature in ",
                          levels(data$PROTEIN)[i],
                          ". Can't summarize with censored intensities."))
-					next
-				}
+          next
+        }
 
         ## how to decide censored or not
-				## 1. censored
-				if (censoredInt == "0") {
-					sub$cen <- ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY == 0, 0, 1)
-				}
+        ## 1. censored
+        if (censoredInt == "0") {
+          sub$cen <- ifelse(!is.na(sub$INTENSITY) & sub$INTENSITY == 0, 0, 1)
+        }
         ## 2. all censored missing
-				if (censoredInt == "NA") {
-					sub$cen <- ifelse(is.na(sub$INTENSITY), 0, 1)
-				}
-				## 3. decide random above some point
-				## get runs which has all features
+        if (censoredInt == "NA") {
+          sub$cen <- ifelse(is.na(sub$INTENSITY), 0, 1)
+        }
+        ## 3. decide random above some point
+        ## get runs which has all features
         ##subtemp <- sub[!is.na(sub$INTENSITY),]
         ##count <- aggregate(ABUNDANCE~RUN,data=subtemp, length)
         ##completerun <- count[count$ABUNDANCE==length(unique(sub$FEATURE)),"RUN"]
@@ -3382,7 +3360,7 @@ resultsAsLists <- function(x, ...) {
         ##}
 
         ## cutoffCensored
-				## 1. put minimum in protein level to NA
+        ## 1. put minimum in protein level to NA
         ##if (cutoffCensored=="minEachProtein") {
         ##	if (censoredInt=="NA") {
         ##		cut <- min(sub$ABUNDANCE, na.rm=TRUE)
@@ -3395,131 +3373,131 @@ resultsAsLists <- function(x, ...) {
         ##	}
         ##}
 
-				## 2. put minimum in feature level to NA
-				if (cutoffCensored == "minFeature") {
-					if (censoredInt == "NA") {
-						cut <- aggregate(ABUNDANCE ~ FEATURE,
+        ## 2. put minimum in feature level to NA
+        if (cutoffCensored == "minFeature") {
+          if (censoredInt == "NA") {
+            cut <- aggregate(ABUNDANCE ~ FEATURE,
                              data=sub, function(x) min(x, na.rm=TRUE))
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$FEATURE))) {
-							sub[is.na(sub$INTENSITY) &
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$FEATURE))) {
+              sub[is.na(sub$INTENSITY) &
                   sub$FEATURE == cut$FEATURE[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0 ,]
-						cut <- aggregate(ABUNDANCE ~ FEATURE,
+            }
+          }
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0 ,]
+            cut <- aggregate(ABUNDANCE ~ FEATURE,
                              data=subtemptemp, FUN=min)
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$FEATURE))) {
-							sub[!is.na(sub$INTENSITY) &
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$FEATURE))) {
+              sub[!is.na(sub$INTENSITY) &
                   sub$INTENSITY == 0 &
                   sub$FEATURE == cut$FEATURE[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-				}
-				## 3. put minimum in RUN to NA
-				if (cutoffCensored == "minRun") {
-					if (censoredInt == "NA") {
-						cut <- aggregate(ABUNDANCE ~ RUN,
+            }
+          }
+        }
+        ## 3. put minimum in RUN to NA
+        if (cutoffCensored == "minRun") {
+          if (censoredInt == "NA") {
+            cut <- aggregate(ABUNDANCE ~ RUN,
                              data=sub, function(x) min(x, na.rm=TRUE))
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$RUN))) {
-							sub[is.na(sub$INTENSITY) &
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$RUN))) {
+              sub[is.na(sub$INTENSITY) &
                   sub$RUN == cut$RUN[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-						cut <- aggregate(ABUNDANCE ~ RUN, data=subtemptemp, FUN=min)
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
-						for (j in 1:length(unique(cut$RUN))) {
-							sub[!is.na(sub$INTENSITY) &
+            }
+          }
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+            cut <- aggregate(ABUNDANCE ~ RUN, data=subtemptemp, FUN=min)
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut$ABUNDANCE <- 0.99 * cut$ABUNDANCE
+            for (j in 1:length(unique(cut$RUN))) {
+              sub[!is.na(sub$INTENSITY) &
                   sub$INTENSITY == 0 &
                   sub$RUN == cut$RUN[j],
                   "ABUNDANCE"] <- cut$ABUNDANCE[j]
-						}
-					}
-				}
-				## 20150829 : 4. put minimum RUN and FEATURE
-				if (cutoffCensored == "minFeatureNRun") {
-					if (censoredInt == "NA") {
-						## cutoff for each feature is little less than minimum abundance in a run.
-						cut.fea <- aggregate(ABUNDANCE ~ FEATURE,
+            }
+          }
+        }
+        ## 20150829 : 4. put minimum RUN and FEATURE
+        if (cutoffCensored == "minFeatureNRun") {
+          if (censoredInt == "NA") {
+            ## cutoff for each feature is little less than minimum abundance in a run.
+            cut.fea <- aggregate(ABUNDANCE ~ FEATURE,
                                  data=sub, function(x) min(x, na.rm=TRUE))
-						cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
-						## cutoff for each Run is little less than minimum abundance in a run.
-						cut.run <- aggregate(ABUNDANCE ~ RUN,
+            cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
+            ## cutoff for each Run is little less than minimum abundance in a run.
+            cut.run <- aggregate(ABUNDANCE ~ RUN,
                                  data=sub, function(x) min(x, na.rm=TRUE))
-						cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
-						if (length(unique(sub$FEATURE)) > 1) {
-							for (j in 1:length(unique(sub$FEATURE))) {
-								for (k in 1:length(unique(sub$RUN))) {
+            cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
+            if (length(unique(sub$FEATURE)) > 1) {
+              for (j in 1:length(unique(sub$FEATURE))) {
+                for (k in 1:length(unique(sub$RUN))) {
                   ## get smaller value for min Run and min Feature
-									finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
-									sub[is.na(sub$INTENSITY) &
+                  finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
+                  sub[is.na(sub$INTENSITY) &
                       sub$FEATURE == cut.fea$FEATURE[j] &
                       sub$RUN == cut.run$RUN[k], "ABUNDANCE"] <- finalcut
-								}
-							}
-						}
+                }
+              }
+            }
             ## if single feature, not impute
-					}
-					if (censoredInt == "0") {
-						subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-						cut.fea <- aggregate(ABUNDANCE ~ FEATURE, data=subtemptemp, FUN=min)
-						cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
-						cut.run <- aggregate(ABUNDANCE ~ RUN, data=subtemptemp, FUN=min)
-						cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
-						if (length(unique(sub$FEATURE)) > 1) {
-							for (j in 1:length(unique(sub$FEATURE))) {
-								for (k in 1:length(unique(sub$RUN))) {
+          }
+          if (censoredInt == "0") {
+            subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
+            cut.fea <- aggregate(ABUNDANCE ~ FEATURE, data=subtemptemp, FUN=min)
+            cut.fea$ABUNDANCE <- 0.99 * cut.fea$ABUNDANCE
+            cut.run <- aggregate(ABUNDANCE ~ RUN, data=subtemptemp, FUN=min)
+            cut.run$ABUNDANCE <- 0.99 * cut.run$ABUNDANCE
+            if (length(unique(sub$FEATURE)) > 1) {
+              for (j in 1:length(unique(sub$FEATURE))) {
+                for (k in 1:length(unique(sub$RUN))) {
                   ## get smaller value for min Run and min Feature
-									finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
-									sub[!is.na(sub$INTENSITY) &
+                  finalcut <- min(cut.fea$ABUNDANCE[j], cut.run$ABUNDANCE[k])
+                  sub[!is.na(sub$INTENSITY) &
                       sub$INTENSITY == 0 &
                       sub$FEATURE == cut.fea$FEATURE[j] &
                       sub$RUN == cut.run$RUN[k],
                       "ABUNDANCE"] <- finalcut
-								}
-							}
-						} else{ # single feature
-							sub[!is.na(sub$INTENSITY) &
+                }
+              }
+            } else{ # single feature
+              sub[!is.na(sub$INTENSITY) &
                   sub$INTENSITY == 0, "ABUNDANCE"] <- cut.fea$ABUNDANCE
-						}
-					}
-				}
+            }
+          }
+        }
 
-				## when number of measurement is less than df, error for fitting
-				subtemp <- sub[!is.na(sub$ABUNDANCE), ]
-				countdf <- nrow(subtemp) < (length(unique(subtemp$FEATURE)) +
+        ## when number of measurement is less than df, error for fitting
+        subtemp <- sub[!is.na(sub$ABUNDANCE), ]
+        countdf <- nrow(subtemp) < (length(unique(subtemp$FEATURE)) +
                                     length(unique(subtemp$RUN)) - 1)
         ## fit the model
-				if (length(unique(sub$FEATURE)) == 1) {
-					fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,
+        if (length(unique(sub$FEATURE)) == 1) {
+          fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,
                                        data=sub, dist='gaussian')
-				} else {
-					if (countdf) {
-						fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,
+        } else {
+          if (countdf) {
+            fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ RUN,
                                          data=sub, dist='gaussian')
-					}else{
-						fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE + RUN,
+          }else{
+            fittest <- survival::survreg(survival::Surv(ABUNDANCE, cen, type='left') ~ FEATURE + RUN,
                                          data=sub, dist='gaussian')
-					}
-				}
+          }
+        }
 
-				sub.result <- data.frame(
+        sub.result <- data.frame(
           "Protein" = unique(sub$PROTEIN),
           "RUN" = rep(c(levels(sub$RUN)), 1),
           "LogIntensities" = NA)
         ## get the parameters
-				cf <- summary(fittest)$coefficients
+        cf <- summary(fittest)$coefficients
         ## calculate sample quantification for all levels of sample
         a <- 1
         for (j in 1:nlevels(sub$RUN)) {
@@ -3530,50 +3508,50 @@ resultsAsLists <- function(x, ...) {
           sub.result[a, 3] <- .estimableFixedQuantificationSurvival(cf, contrast)
           a <- a + 1
         }
-				result <- rbind(result, sub.result)
-			}
+        result <- rbind(result, sub.result)
+      }
 
-			datamat <- reshape2::dcast(Protein ~ RUN,
+      datamat <- reshape2::dcast(Protein ~ RUN,
                                  data=result, value.var='LogIntensities', keep=TRUE)
-			datamat <- melt(datamat, id.vars=c('Protein'))
-			colnames(datamat) <- c('Protein', 'RUN', 'LogIntensities')
-			result <- datamat
-		}
-		dataafterfit <- NULL
-	}
+      datamat <- melt(datamat, id.vars=c('Protein'))
+      colnames(datamat) <- c('Protein', 'RUN', 'LogIntensities')
+      result <- datamat
+    }
+    dataafterfit <- NULL
+  }
 
-	## final result
-	finalout <- list(
+  ## final result
+  finalout <- list(
     "rqdata" = result,
     "ModelQC" = dataafterfit,
     "PredictedBySurvival" = predAbundance)
-	return(finalout)
+  return(finalout)
 }
 
 ##########################################################################################
 ## updated v3
 .fit.quantification.run <- function(sub, singleFeature, singleSubject,
                                     TechReplicate, labeled, equalFeatureVar) {
-	if (!labeled) { ### label-free case
-		## for single Feature, original value is the run quantification
-		if (singleFeature) {
-			fit.full <- lm(ABUNDANCE ~ RUN, data=sub)
-		} else {
-			fit.full <- lm(ABUNDANCE ~ FEATURE + RUN, data=sub)
-		}
-	} else { ### labeled-based case
+  if (!labeled) { ### label-free case
+    ## for single Feature, original value is the run quantification
+    if (singleFeature) {
+      fit.full <- lm(ABUNDANCE ~ RUN, data=sub)
+    } else {
+      fit.full <- lm(ABUNDANCE ~ FEATURE + RUN, data=sub)
+    }
+  } else { ### labeled-based case
     ## update v3
-		if (singleFeature) {
-			fit.full <- lm(ABUNDANCE ~ RUN + ref, data=sub)
-		}else{ ## several subjects
-			fit.full <- lm(ABUNDANCE ~ FEATURE + RUN + ref, data=sub)
-		}
-	}
-	## make equal variance for feature : need to be updated
+    if (singleFeature) {
+      fit.full <- lm(ABUNDANCE ~ RUN + ref, data=sub)
+    }else{ ## several subjects
+      fit.full <- lm(ABUNDANCE ~ FEATURE + RUN + ref, data=sub)
+    }
+  }
+  ## make equal variance for feature : need to be updated
   if (!equalFeatureVar) {
     fit.full <- .iter.wls.fit.model(data=sub, fit=fit.full, nrepeats=1)
   }
-	return(fit.full)
+  return(fit.full)
 }
 
 ## check whether there are multiple runs for a replicate

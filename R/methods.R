@@ -116,7 +116,7 @@
   ## 	temp1<-t(matrix(unlist(strsplit(as.character(temp),"\\:")),nrow=2))
   ## 	temp2<-as.vector(xtabs(~temp1[,2]))	## count per GROUP
   ## 	#gs_c<-rep(as.vector(contrast.matrix[-1]/(tempSub2)),temp2[1]) ## assume no missing for group and subject
-  ## 	# when Group completely  missing
+  ## 	# when Group completely missing
   ## 	sub.matrix<-contrast.matrix[unique(tempSub$GROUP)]
   ## 	gs_c<-rep(as.vector(sub.matrix[-1]/(tempSub2)),each=temp2[1])
   ## 	names(gs_c)<-temp
@@ -154,7 +154,7 @@
         count <- as.numeric(patient_count[names(patient_count) == group])
         value <- as.numeric(as.character(patients[i, ]$Value))
         interaction_value <- c(rep(0, index - 1),
-                               value/count,
+                               value / count,
                                rep(0, length(temp) - index))
       } else {
         interaction_value <- rep(0, length(temp))
@@ -173,7 +173,7 @@
   ## when there are some groups which are all missing
   tempSub <- as.numeric(as.character(unique(sub1[, c("GROUP")])))
   tempcontrast <- contrast.matrix[tempSub]
-  group_c <- tempcontrast[-1]  # for label-free, remove the first element
+  group_c <- tempcontrast[-1] # for label-free, remove the first element
   names(group_c) <- temp
 	if (length(temp) == 0) {
     group_c <- NULL
@@ -181,7 +181,7 @@
 
 	## feature by group in label-free (different from labeled)
 	temp <- coef_name[intersect(grep("GROUP", coef_name),
-	                            grep("FEATURE", coef_name))]
+                              grep("FEATURE", coef_name))]
 	tempSub <- unique(sub1[, c("GROUP", "FEATURE")])
 	tempSub1 <- xtabs(~ GROUP, data=tempSub)
 	tempSub2 <- tempSub1[-1]
@@ -196,7 +196,7 @@
 
 	## be careful of the order
 	contrast <- c(intercept_c, feature_c, subjectNested_c, subject_c, group_c,
-	              gs_c, gf_c)
+                gs_c, gf_c)
 	if (class(fit) == "lm") {
     contrast1 <- contrast[!is.na(coef(fit))]
 	} else {
@@ -252,7 +252,7 @@
 
 	## subject in label-based
 	temp <- coef_name[setdiff(grep("SUBJECT", coef_name),
-	                          grep(":|NESTED", coef_name))]
+                            grep(":|NESTED", coef_name))]
 	if (length(temp) > 0) {
     subject_c <- rep(0, length(temp))
     names(subject_c) <- temp
@@ -262,7 +262,7 @@
 
 	## subject by group in label-based
 	temp <- coef_name[intersect(grep("SUBJECT", coef_name),
-	                            grep("GROUP", coef_name))]
+                              grep("GROUP", coef_name))]
 	tempSub <- unique(sub1[ ,c("GROUP", "SUBJECT")])
 	tempSub1 <- xtabs(~ GROUP, data=tempSub)
 	tempSub2 <- tempSub1[-1]
@@ -311,7 +311,7 @@
 
 	## feature by group in label-based (different from label-free)
 	temp <- coef_name[intersect(grep("GROUP", coef_name),
-	                            grep("FEATURE", coef_name))]
+                              grep("FEATURE", coef_name))]
 	tempSub <- unique(sub1[, c("GROUP", "FEATURE")])
 	tempSub1 <- xtabs(~ GROUP, data=tempSub)
 	tempSub2 <- tempSub1[-1]
@@ -327,7 +327,7 @@
 
 	## run by feature in label-based
 	temp <- coef_name[intersect(grep("RUN", coef_name),
-	                            grep("FEATURE", coef_name))]
+                              grep("FEATURE", coef_name))]
 	if (length(temp) > 0) {
     rf_c <- rep(0, length(temp))
     names(rf_c) <- temp
@@ -336,7 +336,7 @@
 	}
 
 	contrast <- c(intercept_c, feature_c, subjectNested_c, subject_c,
-	              subjectOriginalNested_c, group_c, run_c, gs_c, gf_c, rf_c)
+                subjectOriginalNested_c, group_c, run_c, gs_c, gf_c, rf_c)
 	if (class(fit) == "lm") {
     contrast1 <- contrast[!is.na(coef(fit))]
 	} else {
@@ -817,7 +817,7 @@
   }
 
 	contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c,
-	              subjectOrigGroup_c, group_c, run_c, gf_c, rf_c)
+                subjectOrigGroup_c, group_c, run_c, gf_c, rf_c)
 	if (class(fit) == "lm") {
     contrast1 <- contrast[!is.na(coef(fit))]
 	} else {
@@ -849,7 +849,7 @@
     contrastList$GROUP <- factor(contrastList$GROUP)
 		contrastGroup <- rep(0, nlevels(sub1$GROUP) - 1)
 		contrastGroup[as.numeric(contrastList[contrast.matrix == 1,
-		                                      "GROUP"])] <- 1
+                                          "GROUP"])] <- 1
 	} else {
     ## for label-free
     contrastList <- unique(sub1[, c("GROUP", "SUBJECT_ORIGINAL")])
@@ -1009,7 +1009,7 @@
 		contrastList$SUBJECT_ORIGINAL <- factor(contrastList$SUBJECT_ORIGINAL)
 		contrastGroup <- rep(0, nlevels(sub1$GROUP) - 1)
 		contrastGroup[as.numeric(contrastList[contrast.matrix == 1,
-		                                      "GROUP"])] <- 1
+                                          "GROUP"])] <- 1
 		contrastSubjectOriginal <- rep(0, nlevels(sub1$SUBJECT_ORIGINAL))
 		contrastSubjectOriginal[as.numeric(
       contrastList[contrast.matrix == 1, "SUBJECT_ORIGINAL"])] <- 1
@@ -1146,7 +1146,7 @@
   }
 
 	contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c,
-	              group_c, run_c, gf_c, rf_c)
+                group_c, run_c, gf_c, rf_c)
 	if (class(fit) == "lm") {
     contrast1 <- contrast[!is.na(coef(fit))]
 	} else {
@@ -1218,7 +1218,7 @@
 
 	## subject_original
 	temp <- coef_name[setdiff(grep("SUBJECT_ORIGINAL", coef_name),
-	                          grep(":", coef_name))]
+                            grep(":", coef_name))]
 	if (length(temp) > 0) {
     subjectOrig_c <- rep(0, length(temp))
     names(subjectOrig_c) <- temp
@@ -1252,7 +1252,7 @@
 
 	## feature by group
 	temp <- coef_name[intersect(grep("GROUP", coef_name),
-	                            grep("FEATURE", coef_name))]
+                              grep("FEATURE", coef_name))]
 	if (length(temp) > 0) {
     gf_c <- rep(0, length(temp))
 		names(gf_c) <- temp
@@ -1262,7 +1262,7 @@
 
 	## run by feature
 	temp <- coef_name[intersect(grep("RUN", coef_name),
-	                            grep("FEATURE", coef_name))]
+                              grep("FEATURE", coef_name))]
 	tempSub <-dim(unique(sub1[, c("RUN", "FEATURE")]))[1]
 	if (length(temp) > 0) {
     rf_c <- rep(1 / tempSub, length(temp))
@@ -1272,7 +1272,7 @@
 	}
 
 	contrast <- c(intercept_c, feature_c, subjectNested_c, subjectOrig_c,
-	              run_c, gf_c, rf_c)
+                run_c, gf_c, rf_c)
 	if (class(fit) == "lm") {
     contrast1 <- contrast[!is.na(coef(fit))]
 	} else {
@@ -1403,7 +1403,7 @@
 
 	## subject by group: only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
 	temp <- coef_name[intersect(grep("SUBJECT", coef_name),
-	                            grep("GROUP", coef_name))]
+                              grep("GROUP", coef_name))]
 	if (length(temp) > 0) {
     ## subject_c<-rep(0,length(temp))
     ## names(subject_c)<-temp
@@ -1460,7 +1460,7 @@
 
 ##################################
 ##################################
-########### estimate   ###########
+########### estimate  ###########
 ##################################
 ##################################
 .getParameterFixed <- function(obj) {
@@ -1665,7 +1665,7 @@
 ## Multiple plot function
 ##
 ## ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
-## - cols:   Number of columns in layout
+## - cols:  Number of columns in layout
 ## - layout: A matrix specifying the layout. If present, 'cols' is ignored.
 ##
 ## If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),

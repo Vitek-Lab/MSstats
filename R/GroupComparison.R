@@ -1,7 +1,6 @@
 #############################################
 ## Whole plot testing
 #############################################
-
 #' @export groupComparison
 #' @import lme4
 #' @import limma
@@ -920,10 +919,10 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
       allout <- rbind(allout, out)
     } ## end loop for comparion
 
-    if (class(fit.full) == "lm") {  ## lm model
+    if (class(fit.full) == "lm") { ## lm model
       finalresid <- fit.full$residuals
       finalfitted <- fit.full$fitted.values
-    } else {   ## lmer model
+    } else {  ## lmer model
       finalresid <- resid(fit.full)
       finalfitted <- fitted(fit.full)
     }
@@ -946,10 +945,10 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
     contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
     row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
     ##GroupComparisonAgreement <- .chechGroupComparisonAgreement(data,contrast.matrix.sub)
-    ##       if (GroupComparisonAgreement$sign==TRUE) {
-    ##         message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
-    ##         out <- data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
-    ##       }else{
+    ##    if (GroupComparisonAgreement$sign==TRUE) {
+    ##     message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
+    ##     out <- data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
+    ##    }else{
 
     ## get two groups from contrast.matrix
     datasub <- data[which(data$GROUP_ORIGINAL %in% origGroup[contrast.matrix.sub != 0]), ]

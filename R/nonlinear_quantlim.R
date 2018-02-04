@@ -7,8 +7,8 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
   switch(Sys.info()[['sysname']],
          Windows = {
            null_output <- "NUL" },
-         Linux  = {
-             null_output <- "/dev/null" },
+         Linux = {
+           null_output <- "/dev/null" },
          Darwin = {
            null_output <- "/dev/null" })
   ##Need to rename variables as needed:
@@ -20,8 +20,8 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
     alpha <- 5 / 100;
   }
 
-  if (alpha >= 1 | alpha  <= 0) {
-    print("incorrect specified value for alpha,  0 < alpha < 1")
+  if (alpha >= 1 | alpha <= 0) {
+    print("incorrect specified value for alpha, 0 < alpha < 1")
     return(NULL)
   }
 
@@ -59,7 +59,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
   pb <- txtProgressBar(min=0, max=1, initial=0, char="%",
                        width=40, title, label, style=1, file="")
   n_blank <- length(unique(tmp_blank$I))
-  if (nrow(tmp_blank) <= 1 || var_noise  <= 0) {
+  if (nrow(tmp_blank) <= 1 || var_noise <= 0) {
     print("Not enough blank samples!!!")
     return(NULL)
   }
@@ -87,7 +87,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
                             by=log(1 + max(unique_c)) / Npoints))) - 10 #0.250 to go fast here
   xaxis_orig_2 <- unique(sort(c(xaxis_orig_2, unique_c)))
 
-  ##Instead simply create a  piecewise linear approximation:
+  ##Instead simply create a piecewise linear approximation:
   var_v_lin <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=xaxis_orig_2)$y
   var_v_lin_unique <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=unique_c)$y
 
@@ -108,7 +108,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
       setTxtProgressBar(pb, j / B, title=NULL, label=NULL)
       lin.blank_B <- NULL
       tmpB <- tmp_all[sample(1:nrow(tmp_all), replace=TRUE), ]
-      ##Pick **  observations with replacement among all that are available.
+      ##Pick ** observations with replacement among all that are available.
       ##Blank samples are included
 
       weights <- rep(0, length(tmpB$C))
@@ -189,24 +189,24 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
                 break
               }
             } #Number of iii trials for convergence of bilinear
-            ##if(sum(is.na(change_BB))>10  && mean(change_BB, na.rm = TRUE) < 0){ out_loop = 1; break; }
+            ##if(sum(is.na(change_BB))>10 && mean(change_BB, na.rm = TRUE) < 0){ out_loop = 1; break; }
           } #Number of second boostrap samples bb < B1
 
           ## #print(change_BB[order(change_BB)])
           ## CI_change <- quantile(change_BB,probs=c(0.1),na.rm= TRUE)
           ##
           ## #Ensure that the 95% confidence interval is included inside the concentration range:
-          ## if(is.na(CI_change[1]  && out_loop == 0) ){
-          ##   fit.blank_B <- NULL
-          ##   out_loop =1
+          ## if(is.na(CI_change[1] && out_loop == 0) ){
+          ##  fit.blank_B <- NULL
+          ##  out_loop =1
           ## }
           ##
           ##
-          ## if(!is.na(CI_change[1])  && out_loop == 0) if(CI_change[1] < min(tmp_all$C)){
-          ##   fit.blank_B <- NULL
-          ##   out_loop =1
+          ## if(!is.na(CI_change[1]) && out_loop == 0) if(CI_change[1] < min(tmp_all$C)){
+          ##  fit.blank_B <- NULL
+          ##  out_loop =1
           ## }else{
-          ##   #fit.blank_B <- NULL#print('Acceptable fit')
+          ##  #fit.blank_B <- NULL#print('Acceptable fit')
           ## }
           ##
           CI_change <- quantile(change_BB, probs=c(0.05, 1 - 0.05), na.rm=TRUE)

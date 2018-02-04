@@ -11,8 +11,8 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
   if (missing(alpha)) {
     alpha = 5 / 100
   }
-  if (alpha >= 1 | alpha  <= 0) {
-    print("incorrect specified value for alpha,  0 < alpha < 1")
+  if (alpha >= 1 | alpha <= 0) {
+    print("incorrect specified value for alpha, 0 < alpha < 1")
     return(NULL)
   }
 
@@ -117,7 +117,7 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
     scale_color_manual(values=c(orange1, blue1, red1),
                        labels=c(low_pred, upp_noise, "mean prediction"))
 
-  ##p1 <- p1 + scale_colour_manual(values=c('mean prediction'= red1,'upper 95% prediction' = orange1, '5% percentile of predictions' = orange1, '95% upper bound of noise' = blue1))  + theme(legend.title = element_blank())
+  ##p1 <- p1 + scale_colour_manual(values=c('mean prediction'= red1,'upper 95% prediction' = orange1, '5% percentile of predictions' = orange1, '95% upper bound of noise' = blue1)) + theme(legend.title = element_blank())
   ##colour_scales <- setNames(c('mean prediction','upper 95% prediction','5% percentile of predictions'),c('dasssta','messssan',"rrrr"))
   ##p1 <- p1 + scale_colour_manual(values = colour_scales)
   p1 <- p1 + theme(legend.title=element_blank()) +
@@ -195,7 +195,7 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
     scale_color_manual(values=c(blue1, orange1, red1),
                        labels=c(upp_noise, low_pred, "mean prediction"))
 
-  ##p1 <- p1 + scale_colour_manual(values=c('mean prediction'= red1,'upper 95% prediction' = orange1, 'lower 95% prediction' = orange1, '95% upper bound of noise' = blue1))  + theme(legend.title = element_blank())
+  ##p1 <- p1 + scale_colour_manual(values=c('mean prediction'= red1,'upper 95% prediction' = orange1, 'lower 95% prediction' = orange1, '95% upper bound of noise' = blue1)) + theme(legend.title = element_blank())
   ##p1 <- p1 + scale_linetype_manual(values=c('dashed','dashed','solid','solid'))
   p1 <- p1 + theme(legend.title=element_blank()) +
     theme(legend.position=c(0.05, 0.5),

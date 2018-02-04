@@ -1,7 +1,7 @@
 ## Pre-processing for Skyline output
 ## columns from Skyline : ProteinName, PeptideSequence, PeptideModifiedSequence,
-##                        PrecursorCharge, PrecursorMz, FragmentIon, ProductCharge, ProductMz, IsotopeLabelType,
-##                        Condition, BioReplicate, FileName, Area, StandardType, Truncated, DetectionQValue
+##            PrecursorCharge, PrecursorMz, FragmentIon, ProductCharge, ProductMz, IsotopeLabelType,
+##            Condition, BioReplicate, FileName, Area, StandardType, Truncated, DetectionQValue
 #' @export
 SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUniquePeptide=TRUE,
                                    removeOxidationMpeptides=FALSE, removeProtein_with1Peptide=FALSE,
@@ -103,7 +103,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
   input$Intensity <- as.numeric(as.character(input$Intensity))
 
 ##############################
-###  7. remove truncated peaks with NA
+### 7. remove truncated peaks with NA
 ##############################
   if (is.element('True', input$Truncated)) {
     if (sum(!is.na(input$Truncated) & input$Truncated == 'True') > 0) {
@@ -119,7 +119,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
   }
 
 ##############################
-###  8. Sum for isotopic peaks per peptide and precursor charge for DDA
+### 8. Sum for isotopic peaks per peptide and precursor charge for DDA
 ##############################
   DDA <- FALSE
   ## check whether the dataset for DDA or not
@@ -199,7 +199,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
   }
 
 ##############################
-###  9. if annotation is missing,
+### 9. if annotation is missing,
 ##############################
   missing.annotation <- any(is.na(input$Condition) | is.na(input$BioReplicate))
   if (missing.annotation & is.null(annotation)) {
@@ -234,7 +234,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
   }
 
 ##############################
-###  10. remove proteins with only one peptide and charge per protein
+### 10. remove proteins with only one peptide and charge per protein
 ##############################
 	if (removeProtein_with1Peptide) {
 ######## remove protein which has only one peptide
@@ -251,14 +251,14 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
     if (length(removepro) > 0) {
       input <- input[-which(input$ProteinName %in% removepro), ]
       message(paste0("*** ", length(removepro),
-                    ' proteins, which have only one feature in a protein, are removed among ',
-                    lengthtotalprotein, ' proteins.'))
+                     ' proteins, which have only one feature in a protein, are removed among ',
+                     lengthtotalprotein, ' proteins.'))
     }
     input <- input[, -which(colnames(input) %in% c('feature'))]
 	}
 
 ##############################
-###  11. filter by Qvalue
+### 11. filter by Qvalue
 ##############################
   if (!DDA & filter_with_Qvalue) {
     if(!is.element(c('DetectionQValue'), colnames(input))) {

@@ -1,12 +1,11 @@
 ### The goal of this function is to calculate the LoD/LoQ of the data provided in the data frame.
 ### The function returns a new data frame containing the value of the LoD/LoQ
-
 #' @export
 #' @import minpack.lm
 linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500) {
   switch(Sys.info()[['sysname']],
          Windows = {null_output <- "NUL"},
-         Linux  = {null_output <- "/dev/null"},
+         Linux = {null_output <- "/dev/null"},
          Darwin = {null_output <- "/dev/null"})
   ##Need to rename variables as needed:
   names(datain)[names(datain) == 'CONCENTRATION'] <- 'C'
@@ -17,8 +16,8 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
     alpha <- 5 / 100;
   }
 
-  if (alpha >= 1 | alpha  <= 0) {
-    print("incorrect specified value for alpha,  0 < alpha < 1")
+  if (alpha >= 1 | alpha <= 0) {
+    print("incorrect specified value for alpha, 0 < alpha < 1")
     return(NULL)
   }
   ##Number of boostrap samples
@@ -43,7 +42,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
   datain <- datain[!is.na(datain$I) & !is.na(datain$C), ]
   datain <- datain[!is.infinite(datain$I) & !is.infinite(datain$C), ]
 
-  datain <- datain[order(datain$C), ]  #arrange(datain,C)
+  datain <- datain[order(datain$C), ] #arrange(datain,C)
   tmp_nob <- datain[datain$C > 0, ]
   tmp_all <- datain
   tmp_blank <- datain[datain$C == 0, ]
@@ -60,7 +59,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
   n_blank <- length(unique(tmp_blank$I))
   noise <- mean(tmp_blank$I)
   var_noise <- var(tmp_blank$I)
-  if (nrow(tmp_blank) <= 1 || var_noise  <= 0) {
+  if (nrow(tmp_blank) <= 1 || var_noise <= 0) {
     print("Not enough blank samples!!!")
     return(NULL)
   }
@@ -87,7 +86,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
   xaxis_orig_2 <- unique(sort(c(xaxis_orig_2, unique_c)))
 
   ##Loop here to make sure that the discretization is fine enough##
-  ##Instead simply create a  piecewise linear approximation:
+  ##Instead simply create a piecewise linear approximation:
   var_v_lin <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=xaxis_orig_2)$y
   var_v_lin_unique <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=unique_c)$y
   ##
@@ -110,7 +109,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
       ##if(j %% 10 == 0) print(paste("Boot=",j))
       lin.blank_B <- NULL
       tmpB <- tmp_all[sample(1:length(tmp_all$C), replace=TRUE), ]
-      ##Pick **  observations with replacement among all that are available.
+      ##Pick ** observations with replacement among all that are available.
       ##Blank samples are included
 
       weights <- rep(0,length(tmpB$C))
@@ -165,8 +164,8 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
     mean_bilinear <- apply(outB, 2, mean, na.rm=TRUE)
     ##Calculate confidence interval based on quantiles:
     ## Do not use: based on normal distribution
-    ##lower_CI = mean_bilinear  - 1.96* sqrt(var_bilinear)
-    ##upper_CI = mean_bilinear  + 1.96* sqrt(var_bilinear)
+    ##lower_CI = mean_bilinear - 1.96* sqrt(var_bilinear)
+    ##upper_CI = mean_bilinear + 1.96* sqrt(var_bilinear)
     mean_pred <- apply(outBB_pred, 2, mean, na.rm=TRUE)
     var_pred <- apply(outBB_pred, 2, var, na.rm=TRUE)
     lower_Q_pred <- apply(outBB_pred, 2, quantile, probs=c(alpha), na.rm=TRUE)
