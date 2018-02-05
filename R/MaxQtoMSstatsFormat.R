@@ -16,10 +16,10 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
                                 removeOxidationMpeptides=FALSE, removeProtein_with1Peptide=FALSE) {
 
   if(is.null(feaMeasurements)) {
-    stop('** Please select \'remove\' or \'keep\' for \'feaMeasurements\'.')
+    stop("** Please select 'remove' or 'keep' for 'feaMeasurements'.")
   }
-  if(!is.element(feaMeasurements, c('remove', 'keep'))) {
-    stop('** Please select \'remove\' or \'keep\' for \'feaMeasurements\'.')
+  if(!is.element(feaMeasurements, c("remove", "keep"))) {
+    stop("** Please select 'remove' or 'keep' for 'feaMeasurements'.")
   }
 	experiment <- "DDA"
 
@@ -121,7 +121,7 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
     if (length(remove_m_sequence) > 0) {
       infile <- infile[-which(infile$Modified.sequence %in% remove_m_sequence), ]
     }
-		message('** Peptides including M in the sequence are removed.')
+		message("** Peptides including M in the sequence are removed.")
 	}
 
   if (removeOxidationMpeptides) {
@@ -129,7 +129,7 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
     if(length(remove_oxim_sequence) > 0) {
       infile <- infile[-which(infile$Modifications %in% remove_oxim_sequence), ]
     }
-    message('** Peptides including oxidation (M) in the sequence are removed.')
+    message("** Peptides including oxidation (M) in the sequence are removed.")
   }
 
 ################################################
@@ -145,7 +145,7 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
 		## remove the peptides which are used in more than one protein
 		if(length(remove_peptide$Proteins != 1) != 0) {
 			infile <- infile[-which(infile$Modified.sequence %in% remove_peptide$Modified.sequence), ]
-			message('** Peptides, that are used in more than one proteins, are removed.')
+			message("** Peptides, that are used in more than one proteins, are removed.")
 		}
 	}
 
@@ -172,7 +172,7 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
 		## good to remove before reformatting to long-format
 		if (fewMeasurements == "remove") {
 			infile_w <- .remove_feature_with_few(infile_w)
-			message('** Peptide and charge, that have 1 or 2 measurements across runs, are removed.')
+			message("** Peptide and charge, that have 1 or 2 measurements across runs, are removed.")
 		}
 
 		## then, go back to long-format
@@ -212,15 +212,15 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
 	if (removeProtein_with1Peptide) {
 ######## remove protein which has only one peptide
     infile_l$feature <- paste(infile_l$Modified.sequence, infile_l$Charge, sep="_")
-    tmp <- unique(infile_l[, c("Proteins", 'feature')])
+    tmp <- unique(infile_l[, c("Proteins", "feature")])
     tmp$Proteins <- factor(tmp$Proteins)
     count <- xtabs( ~ Proteins, data=tmp)
     lengthtotalprotein <- length(count)
     removepro <- names(count[count <= 1])
     infile_l <- infile_l[-which(infile_l$Proteins %in% removepro), ]
-    message(paste("** ", length(removepro),
-                  ' proteins, which have only peptide and charge in a protein, are removed among ',
-                  lengthtotalprotein, ' proteins.', sep=""))
+    message(paste0("** ", length(removepro),
+                  " proteins, which have only peptide and charge in a protein, are removed among ",
+                  lengthtotalprotein, " proteins."))
 	}
 
 ################################################
@@ -238,12 +238,12 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
                                    "FragmentIon", "ProductCharge", "IsotopeLabelType",
                                    "Condition", "BioReplicate", "Raw.file", "Intensity"))]
 	colnames(infile_l.final)[9] <- "Run"
-	if (any(is.element(colnames(infile_l), 'Fraction'))) {
+	if (any(is.element(colnames(infile_l), "Fraction"))) {
     infile_l.final <- data.frame(infile_l.final,
                                  "Fraction" = infile_l$Fraction)
 	}
 
-	if (any(is.element(colnames(infile_l), 'TechReplicate'))) {
+	if (any(is.element(colnames(infile_l), "TechReplicate"))) {
     infile_l.final <- data.frame(infile_l.final,
                                  "TechReplicate" = infile_l$TechReplicate)
 	}
@@ -257,7 +257,7 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
 
 .cast_maxquant_to_wide_glf <- function(d_long, aggregateFun=aggregateFun) {
 	data_w <- dcast(Proteins + Modified.sequence + Charge ~ Raw.file,
-                  data=d_long, value.var='Intensity',
+                  data=d_long, value.var="Intensity",
                   fun.aggregate=aggregateFun, keep=TRUE)
 	## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
 	## when there is completely missing in certain feature and certain run, '1' will be filled. Therefore put NA instead of 1.
@@ -275,7 +275,7 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
 	##data_w[16300,]
 	##d_long[d_long$Modified.sequence=="HIILVLSGK" & d_long$Charge=="2" & d_long$IsotopeLabelType=="L",]
 	data_w <- dcast(Proteins + Modified.sequence + Charge + IsotopeLabelType ~ Raw.file, data=d_long,
-                  value.var='Intensity', fun.aggregate=aggregateFun, keep=TRUE)
+                  value.var="Intensity", fun.aggregate=aggregateFun, keep=TRUE)
 	## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
 	## when there is completely missing in certain feature and certain run, '1' will be filled. Therefore put NA instead of 1.
 	data_w[data_w == 1] <- NA
@@ -283,14 +283,14 @@ MaxQtoMSstatsFormat <- function(evidence, annotation, proteinGroups, proteinID="
 }
 
 .melt_maxquant_to_long_glf <- function(d_wide) {
-	data_l <- melt(d_wide, id.vars=c('Proteins', 'Modified.sequence', 'Charge'))
-	colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c('Raw.file', 'Intensity')
+	data_l <- melt(d_wide, id.vars=c("Proteins", "Modified.sequence", "Charge"))
+	colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c("Raw.file", "Intensity")
 	return(data_l)
 }
 
 .melt_maxquant_to_long_silac <- function(d_wide) {
-	data_l <- melt(d_wide, id.vars=c('Proteins', 'Modified.sequence', 'Charge', "IsotopeLabelType"))
-	colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c('Raw.file', 'Intensity')
+	data_l <- melt(d_wide, id.vars=c("Proteins", "Modified.sequence", "Charge", "IsotopeLabelType"))
+	colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c("Raw.file", "Intensity")
 	return(data_l)
 }
 

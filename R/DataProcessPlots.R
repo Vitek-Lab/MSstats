@@ -18,17 +18,19 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 	datarun$Protein <- factor(datarun$Protein)
 
 	if (!is.element("SUBJECT_NESTED", colnames(datafeature))) {
-		stop("Input for dataProcessPlots function should be processed by dataProcess function previously. Please use 'dataProcess' function first.")
+		stop("Input for dataProcessPlots function should be processed by dataProcess().")
 	}
-	if (length(setdiff(toupper(type), c(toupper("ProfilePlot"), toupper("QCPlot"), toupper("ConditionPlot")))) != 0) {
+	if (length(setdiff(toupper(type), c(toupper("ProfilePlot"),
+                                      toupper("QCPlot"),
+                                      toupper("ConditionPlot")))) != 0) {
 		stop(paste0("Input for type=", type,
-                ". However,'type' should be one of \"ProfilePlot\", \"QCPlot\",\"ConditionPlot\"."))
+                ". However, 'type' should be one of 'ProfilePlot', 'QCPlot', 'ConditionPlot'."))
 	}
 	if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
-    if(which.Protein == 'all') {
-      stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
+    if(which.Protein == "all") {
+      stop("** Cannnot generate all plots in a screen. Please set one protein at a time.")
     } else if (length(which.Protein) > 1) {
-      stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
+      stop("** Cannnot generate multiple plots in a screen. Please set one protein at a time.")
     }
 	}
 
@@ -105,16 +107,16 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     ## need to fill in incomplete rows for Runlevel data
     haverun <- FALSE
     if (sum(is.element(colnames(datarun), "RUN")) != 0) {
-      datamat = dcast( Protein ~ RUN, data=datarun, value.var='LogIntensities', keep=TRUE)
-      datarun = melt(datamat, id.vars=c('Protein'))
-      colnames(datarun)[colnames(datarun) %in% c("variable", "value")] <- c('RUN', 'ABUNDANCE')
+      datamat = dcast( Protein ~ RUN, data=datarun, value.var="LogIntensities", keep=TRUE)
+      datarun = melt(datamat, id.vars=c("Protein"))
+      colnames(datarun)[colnames(datarun) %in% c("variable", "value")] <- c("RUN", "ABUNDANCE")
       haverun <- TRUE
     }
-    ## remove the column called 'SuggestToFilter' if there.
+    ## remove the column called "SuggestToFilter" if there.
     if (any(is.element(colnames(datafeature), "SuggestToFilter"))) {
       datafeature$SuggestToFilter <- NULL
     }
-    ## remove the column called 'Fiter.Repro' if there.
+    ## remove the column called "Fiter.Repro" if there.
     if (any(is.element(colnames(datafeature), "Filter.Repro"))) {
       datafeature$Filter.Repro <- NULL
     }
@@ -128,9 +130,9 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"])
 
     if (temptest) {
-      yaxis.name <- 'Log2-intensities'
+      yaxis.name <- "Log2-intensities"
     } else {
-      yaxis.name <- 'Log10-intensities'
+      yaxis.name <- "Log10-intensities"
     }
 
     if (originalPlot) {
@@ -160,7 +162,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
         ## if all measurements are NA,
         if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
-          message(paste("Can't the Profile plot for ",
+          message(paste("Cannot plot the Profile for ",
                         unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)),
                         ") because all measurements are NAs."))
           next()
@@ -190,30 +192,30 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
           if (any(is.element(colnames(sub), "censored"))) {
 
-            sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
+            sub$censored <- factor(sub$censored, levels=c("FALSE", "TRUE"))
 
             ## 1st plot for original plot
-            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE', linetype='FEATURE'), data=sub) +
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="FEATURE", linetype="FEATURE"), data=sub) +
               facet_grid(~LABEL) +
               geom_line(size=0.5) +
-              geom_point(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE', shape='censored'),
+              geom_point(aes_string(x="RUN", y="ABUNDANCE", color="FEATURE", shape="censored"),
                          data=sub,
                          size=dot.size.profile) +
               scale_colour_manual(values=s) +
               scale_linetype_manual(values=ss) +
               scale_shape_manual(values=c(16, 1),
                                  labels=c("Detected data", "Censored missing data")) +
-              scale_x_continuous('MS runs', breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash") +
               labs(title=unique(sub$PROTEIN)) +
               geom_text(data=groupNametemp,
                         aes(x=RUN, y=ABUNDANCE, label=Name), size=text.size, angle=text.angle, color="black") +
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor = element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -227,22 +229,22 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         title.theme=element_text(size=13, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch',
+                                        default.unit="inch",
                                         ncol=3),
                      linetype=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)),
                                            title.theme=element_text(size=13, angle=0),
                                            keywidth=0.1,
                                            keyheight=0.1,
-                                           default.unit='inch',
+                                           default.unit="inch",
                                            ncol=3),
                      shape=guide_legend(title=NULL,
                                         label.theme=element_text(size=11, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch'))
+                                        default.unit="inch"))
           } else {
             ## 1st plot for original plot
-            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE',linetype='FEATURE'),
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="FEATURE",linetype="FEATURE"),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_point(size=dot.size.profile) +
@@ -250,7 +252,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_colour_manual(values=s) +
               scale_linetype_manual(values=ss) +
               scale_shape_manual(values=c(16)) +
-              scale_x_continuous('MS runs', breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash") +
               labs(title=unique(sub$PROTEIN)) +
@@ -259,10 +261,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black") +
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor=element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -276,13 +278,13 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         title.theme=element_text(size=13, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch',
+                                        default.unit="inch",
                                         ncol=3),
                      linetype=guide_legend(title=paste("# peptide:", nlevels(sub$PEPTIDE)),
                                            title.theme=element_text(size=13, angle=0),
                                            keywidth=0.1,
                                            keyheight=0.1,
-                                           default.unit='inch',
+                                           default.unit="inch",
                                            ncol=3))
           }
 					print(ptemp)
@@ -292,19 +294,19 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
         if (toupper(featureName) == "PEPTIDE") {
           if (any(is.element(colnames(sub), "censored"))) {
-            sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
-            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'),
+            sub$censored <- factor(sub$censored, levels=c("FALSE", "TRUE"))
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="PEPTIDE", linetype="FEATURE"),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_line(size=0.5) +
-              geom_point(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', shape='censored'),
+              geom_point(aes_string(x="RUN", y="ABUNDANCE", color="PEPTIDE", shape="censored"),
                          data=sub,
                          size=dot.size.profile) +
               scale_colour_manual(values=unique(s)) + ## unique(s) ??
               scale_linetype_manual(values=ss, guide="none") +
               scale_shape_manual(values=c(16, 1),
                                  labels=c("Detected data", "Censored missing data")) +
-              scale_x_continuous('MS runs', breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
               labs(title=unique(sub$PROTEIN)) +
@@ -314,10 +316,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black") +
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor = element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -331,15 +333,15 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         title.theme=element_text(size=13, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch',
+                                        default.unit="inch",
                                         ncol=3),
                      shape=guide_legend(title=NULL,
                                         label.theme=element_text(size=11, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch'))
+                                        default.unit="inch"))
           } else {
-            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'),
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="PEPTIDE", linetype="FEATURE"),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_point(size=dot.size.profile) +
@@ -347,7 +349,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_colour_manual(values=unique(s)) +
               scale_linetype_manual(values=ss, guide="none") +
               scale_shape_manual(values=c(16)) +
-              scale_x_continuous('MS runs', breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
               labs(title=unique(sub$PROTEIN)) +
@@ -356,10 +358,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black") +
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor=element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -373,7 +375,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         title.theme=element_text(size=13, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch',
+                                        default.unit="inch",
                                         ncol=3))
           }
           print(ptemp)
@@ -383,18 +385,18 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
         if (toupper(featureName) == "NA") {
           if (any(is.element(colnames(sub), "censored"))) {
-            sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
-            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'),
+            sub$censored <- factor(sub$censored, levels=c("FALSE", "TRUE"))
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="PEPTIDE", linetype="FEATURE"),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_line(size=0.5) +
-              geom_point(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', shape='censored'),
+              geom_point(aes_string(x="RUN", y="ABUNDANCE", color="PEPTIDE", shape="censored"),
                          data=sub,
                          size=dot.size.profile) +
               scale_colour_manual(values=unique(s), guide="none") +
               scale_linetype_manual(values=ss, guide="none") +
               scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data")) +
-              scale_x_continuous('MS runs', breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
               labs(title=unique(sub$PROTEIN)) +
@@ -403,10 +405,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black") +
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor=element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -420,9 +422,9 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         label.theme=element_text(size=11, angle=0),
                                         keywidth=0.1,
                                         keyheight=0.1,
-                                        default.unit='inch'))
+                                        default.unit="inch"))
           } else {
-            ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='PEPTIDE', linetype='FEATURE'),
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="PEPTIDE", linetype="FEATURE"),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_point(size=dot.size.profile) +
@@ -430,7 +432,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_colour_manual(values=unique(s), guide="none") +
               scale_linetype_manual(values=ss, guide="none") +
               scale_shape_manual(values=c(16)) +
-              scale_x_continuous('MS runs', breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash")+
               labs(title=unique(sub$PROTEIN)) +
@@ -439,10 +441,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black")+
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor=element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -489,7 +491,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
         ## if all measurements are NA,
         if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
-          message(paste("Can't the Profile plot for ", unique(sub$PROTEIN), "(", i,
+          message(paste("Cannot plot the profile for ", unique(sub$PROTEIN), "(", i,
                         " of ", length(unique(datafeature$PROTEIN)),
                         ") because all measurements are NAs."))
           next()
@@ -543,7 +545,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 					}
 					quantrun$analysis <- "Run summary"
 					sub$analysis <- "Processed feature-level data"
-					## if 'Filter' column after feature selection, remove this column in order to match columns with run quantification
+					## if "Filter" column after feature selection, remove this column in order to match columns with run quantification
 					filter_column <- is.element(colnames(sub), "Filter")
 					if (any(filter_column)) {
             sub<-sub[, !filter_column]
@@ -554,13 +556,13 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 					final$FEATURE <- factor(final$FEATURE)
 					final$RUN <- as.numeric(final$RUN)
 					if (any(is.element(colnames(sub), "censored"))) {
-            final$censored <- factor(final$censored, levels=c('FALSE', 'TRUE'))
-            ptempall <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis',
-                                          linetype='FEATURE', size='analysis'), data=final) +
+            final$censored <- factor(final$censored, levels=c("FALSE", "TRUE"))
+            ptempall <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="analysis",
+                                          linetype="FEATURE", size="analysis"), data=final) +
               facet_grid(~LABEL) +
               geom_line(size=0.5) +
               geom_point(
-                aes_string(x='RUN', y='ABUNDANCE', color='analysis', size='analysis', shape='censored'),
+                aes_string(x="RUN", y="ABUNDANCE", color="analysis", size="analysis", shape="censored"),
                 data=final) +
               scale_colour_manual(values=c("lightgray", "darkred")) +
               scale_shape_manual(values=c(16, 1),
@@ -568,7 +570,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_size_manual(values=c(1.7, 2), guide="none") +
               scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2),
                                     guide="none") +
-              scale_x_continuous('MS runs',breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs",breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
               labs(title=unique(final$PROTEIN)) +
@@ -577,10 +579,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black")+
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor=element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -598,8 +600,8 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         title=NULL,
                                         label.theme = element_text(size=10, angle=0)))
           } else {
-            ptempall <- ggplot(aes_string(x='RUN', y='ABUNDANCE', color='analysis',
-                                          linetype='FEATURE', size='analysis'),
+            ptempall <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="analysis",
+                                          linetype="FEATURE", size="analysis"),
                                data=final) +
               facet_grid(~LABEL) +
               geom_point(size=dot.size.profile) +
@@ -609,7 +611,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_size_manual(values=c(1.7, 2), guide="none") +
               scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2),
                                     guide="none") +
-              scale_x_continuous('MS runs',breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs",breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
               labs(title=unique(final$PROTEIN)) +
@@ -618,10 +620,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                         angle=text.angle,
                         color="black") +
               theme(
-                panel.background=element_rect(fill='white', colour="black"),
-                legend.key=element_rect(fill='white', colour='white'),
+                panel.background=element_rect(fill="white", colour="black"),
+                legend.key=element_rect(fill="white", colour="white"),
                 panel.grid.minor=element_blank(),
-                strip.background=element_rect(fill='gray95'),
+                strip.background=element_rect(fill="gray95"),
                 strip.text.x=element_text(colour=c("#00B0F6"), size=14),
                 axis.text.x=element_text(size=x.axis.size, colour="black"),
                 axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -662,9 +664,9 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
 
     if (temptest) {
-      yaxis.name <- 'Log2-intensities'
+      yaxis.name <- "Log2-intensities"
     } else {
-      yaxis.name <- 'Log10-intensities'
+      yaxis.name <- "Log10-intensities"
     }
 
 		## save the plots as pdf or not
@@ -726,12 +728,12 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                             Name=levels(datafeature$GROUP_ORIGINAL))
 
     ## all protein
-    if (which.Protein == 'all' | which.Protein == 'allonly') {
-      ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=datafeature) +
+    if (which.Protein == "all" | which.Protein == "allonly") {
+      ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE"), data=datafeature) +
         facet_grid(~LABEL) +
-        geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5) +
+        geom_boxplot(aes_string(fill="LABEL"), outlier.shape=1, outlier.size=1.5) +
         scale_fill_manual(values=label.color, guide="none") +
-        scale_x_discrete('MS runs', breaks=cumGroupAxis) +
+        scale_x_discrete("MS runs", breaks=cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
         geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
         labs(title="All proteins") +
@@ -740,10 +742,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                   angle=text.angle,
                   color="black")+
         theme(
-          panel.background=element_rect(fill='white', colour="black"),
-          legend.key=element_rect(fill='white', colour='white'),
+          panel.background=element_rect(fill="white", colour="black"),
+          legend.key=element_rect(fill="white", colour="white"),
           panel.grid.minor=element_blank(),
-          strip.background=element_rect(fill='gray95'),
+          strip.background=element_rect(fill="gray95"),
           strip.text.x=element_text(colour=c("#00B0F6"), size=14),
           axis.text.x=element_text(size=x.axis.size,colour="black"),
           axis.text.y=element_text(size=y.axis.size,colour="black"),
@@ -758,7 +760,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
     ## each protein
 		## choose Proteins or not
-    if (which.Protein != 'allonly') {
+    if (which.Protein != "allonly") {
       if (which.Protein != "all") {
         ## check which.Protein is name of Protein
         if (is.character(which.Protein)) {
@@ -795,26 +797,26 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
         ## if all measurements are NA,
         if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
-          message(paste("Can't the Quality Control plot for ",unique(sub$PROTEIN), "(",i," of ",
+          message(paste("Cannot plot Quality Control for ",unique(sub$PROTEIN), "(",i," of ",
                         length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))
           next()
         }
 
-        ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE'), data=sub) +
+        ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE"), data=sub) +
           facet_grid(~LABEL) +
-          geom_boxplot(aes_string(fill='LABEL'), outlier.shape=1, outlier.size=1.5) +
+          geom_boxplot(aes_string(fill="LABEL"), outlier.shape=1, outlier.size=1.5) +
           scale_fill_manual(values=label.color, guide="none") +
-          scale_x_discrete('MS runs', breaks=cumGroupAxis) +
+          scale_x_discrete("MS runs", breaks=cumGroupAxis) +
           scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
           geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
           labs(title=unique(sub$PROTEIN)) +
           geom_text(data=groupName, aes(x=RUN, y=ABUNDANCE, label=Name),
                     size=text.size, angle=text.angle, color="black") +
           theme(
-            panel.background=element_rect(fill='white', colour="black"),
-            legend.key=element_rect(fill='white', colour='white'),
+            panel.background=element_rect(fill="white", colour="black"),
+            legend.key=element_rect(fill="white", colour="white"),
             panel.grid.minor=element_blank(),
-            strip.background=element_rect(fill='gray95'),
+            strip.background=element_rect(fill="gray95"),
             strip.text.x=element_text(colour=c("#00B0F6"), size=14),
             axis.text.x=element_text(size=x.axis.size, colour="black"),
             axis.text.y=element_text(size=y.axis.size, colour="black"),
@@ -847,7 +849,8 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
         temp.name <- which.Protein
         ## message if name of Protein is wrong.
         if (length(setdiff(temp.name, unique(datarun$PROTEIN))) > 0) {
-          stop(paste("Please check protein name. Dataset does not have this protein. -", paste(temp.name, collapse=", "),sep=" "))
+          stop(paste("Please check protein name. Dataset does not have this protein. -",
+                     paste(temp.name, collapse=", "),sep=" "))
         }
       }
 
@@ -884,12 +887,13 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     ## y-axis labeling, find log 2 or log 10
     temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]),]
     temp <- temp[1,]
-    temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"]) < abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+    temptest <- abs(log2(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) <
+      abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"])
 
     if (temptest) {
-      yaxis.name <- 'Log2-intensities'
+      yaxis.name <- "Log2-intensities"
     } else {
-      yaxis.name <- 'Log10-intensities'
+      yaxis.name <- "Log10-intensities"
     }
 
     for (i in 1:nlevels(datarun$PROTEIN)) {
@@ -901,7 +905,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
       ## if all measurements are NA,
       if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
-        message(paste("Can't the Condition plot for ", unique(sub$PROTEIN), "(", i, " of ",
+        message(paste("Cannot plot the Conditions ", unique(sub$PROTEIN), "(", i, " of ",
                       length(unique(datarun$PROTEIN)), ") because all measurements are NAs."))
         next()
       }
@@ -943,19 +947,20 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       resultall <- rbind(resultall, suball)
       if (!scale) { ## scale: false
         ## reformat as data.frame
-        ##tempsummary <- data.frame(Label=unique(sub$GROUP_ORIGINAL), mean=as.vector(sub.mean), ciw=as.vector(ciw))
+        ##tempsummary <- data.frame(Label=unique(sub$GROUP_ORIGINAL),
+        ##                          mean=as.vector(sub.mean), ciw=as.vector(ciw))
         tempsummary <- suball
         colnames(tempsummary)[colnames(tempsummary) == "GROUP_ORIGINAL"] <- "Label"
-        ptemp <- ggplot(aes_string(x='Label', y='Mean'), data=tempsummary) +
+        ptemp <- ggplot(aes_string(x="Label", y="Mean"), data=tempsummary) +
           geom_errorbar(aes(ymax=Mean + ciw, ymin=Mean - ciw),
                         data=tempsummary, width=0.1, colour="red") +
           geom_point(size = dot.size.condition, colour = "darkred") +
-          scale_x_discrete('Condition') +
+          scale_x_discrete("Condition") +
           scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
           geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6) +
           labs(title=unique(sub$PROTEIN)) +
           theme(
-            panel.background=element_rect(fill='white', colour="black"),
+            panel.background=element_rect(fill="white", colour="black"),
             panel.grid.major.y=element_line(colour="grey95"),
             panel.grid.minor.y=element_blank(),
             axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
@@ -966,22 +971,22 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
             title=element_text(size=x.axis.size+8, vjust=1.5))
       } else {
         ## scale : true
-        ## extract numeric value, don't use levels (because T1,T10,T3,...)
+        ## extract numeric value, don"t use levels (because T1,T10,T3,...)
         ## reformat as data.frame
         tempsummary <- suball
         colnames(tempsummary)[colnames(tempsummary) == "GROUP_ORIGINAL"] <- "Label"
         tempsummary$Label <- as.numeric(gsub("\\D", "", unique(tempsummary$Label)))
 
-        ptemp <- ggplot(aes_string(x='Label', y='Mean'), data=tempsummary) +
+        ptemp <- ggplot(aes_string(x="Label", y="Mean"), data=tempsummary) +
           geom_errorbar(aes(ymax = Mean + ciw, ymin = Mean - ciw),
                         data=tempsummary, width=0.1, colour="red") +
           geom_point(size=dot.size.condition, colour="darkred") +
-          scale_x_continuous('Condition', breaks=tempsummary$Label, labels=tempsummary$Label) +
+          scale_x_continuous("Condition", breaks=tempsummary$Label, labels=tempsummary$Label) +
           scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
           geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6) +
           labs(title=unique(sub$PROTEIN)) +
           theme(
-            panel.background=element_rect(fill='white', colour="black"),
+            panel.background=element_rect(fill="white", colour="black"),
             panel.grid.major.y = element_line(colour="grey95"),
             panel.grid.minor.y = element_blank(),
             axis.text.x=element_text(size=x.axis.size, colour="black", angle=text.angle),
@@ -1001,12 +1006,12 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     }
     ## save the table for condition plot
     if (save_condition_plot_result) {
-      colnames(resultall)[colnames(resultall) == "GROUP_ORIGINAL"] <- 'Condition'
+      colnames(resultall)[colnames(resultall) == "GROUP_ORIGINAL"] <- "Condition"
       if (interval == "CI") {
-        colnames(resultall)[colnames(resultall) == "ciw"] <- '95% CI'
+        colnames(resultall)[colnames(resultall) == "ciw"] <- "95% CI"
       }
       if (interval == "SD") {
-        colnames(resultall)[colnames(resultall) == "ciw"] <- 'SD'
+        colnames(resultall)[colnames(resultall) == "ciw"] <- "SD"
       }
 
       if (address != FALSE) {

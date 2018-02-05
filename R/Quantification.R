@@ -39,12 +39,12 @@ quantification <- function(data, type="Sample", format="matrix") {
   if (!(toupper(type) == "SAMPLE" | toupper(type) == "GROUP")) {
     processout <- rbind(processout, c(paste("The required input - type : 'type' value is wrong. - stop")))
     write.table(processout, file=finalfile, row.names=FALSE)
-    stop("'type' must be one of \"Sample\" or \"Group\". ")
+    stop("'type' must be one of 'Sample or 'Group'. ")
   }
   if (!(toupper(format) == "MATRIX" | toupper(format) == "LONG")) {
     processout <- rbind(processout, c(paste("The required input - format : 'format' value is wrong. - stop")))
     write.table(processout, file=finalfile, row.names=FALSE)
-    stop("'format' must be one of \"matrix\" or \"long\". ")
+    stop("'format' must be one of 'matrix' or 'long'. ")
   }
 
   ## all input
@@ -61,12 +61,12 @@ quantification <- function(data, type="Sample", format="matrix") {
     datarun <- datarun[!is.na(datarun$LogIntensities), ]
     datam <- dcast(Protein ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL,
                    data=datarun,
-                   value.var='LogIntensities',
+                   value.var="LogIntensities",
                    fun.aggregate=median)
     if (format=="long") {
-      data_l <- melt(datam, id.vars=c('Protein'))
+      data_l <- melt(datam, id.vars=c("Protein"))
 			colnames(data_l)[colnames(data_l) %in%
-                       c("variable", "value")] <- c('Group_Subject', 'LogIntensity')
+                       c("variable", "value")] <- c("Group_Subject", "LogIntensity")
     }
 
     processout <- rbind(processout,c("Finish sample quantificiation - okay."))
@@ -88,20 +88,20 @@ quantification <- function(data, type="Sample", format="matrix") {
     datarun <- datarun[!is.na(datarun$LogIntensities), ]
     datam <- dcast(Protein + GROUP_ORIGINAL ~ SUBJECT_ORIGINAL,
                    data=datarun,
-                   value.var='LogIntensities',
+                   value.var="LogIntensities",
                    fun.aggregate=median)
-		datam2 <- melt(datam, id.vars=c('Protein', "GROUP_ORIGINAL"))
-		colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c('Subject', 'LogIntensity')
+		datam2 <- melt(datam, id.vars=c("Protein", "GROUP_ORIGINAL"))
+		colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c("Subject", "LogIntensity")
 		datam3 <- dcast(Protein ~ GROUP_ORIGINAL ,
                     data=datam2,
-                    value.var='LogIntensity',
+                    value.var="LogIntensity",
                     fun.aggregate=function(x) median(x, na.rm=T))
 		rm(datam)
 		rm(datam2)
 
     if (format == "long") {
-      data_l <- melt(datam3, id.vars=c('Protein'))
-			colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c('Group', 'LogIntensity')
+      data_l <- melt(datam3, id.vars=c("Protein"))
+			colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c("Group", "LogIntensity")
     }
 
     processout <- rbind(processout,c("Finish group quantificiation - okay."))

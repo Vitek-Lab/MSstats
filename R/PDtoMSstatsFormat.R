@@ -5,9 +5,9 @@
 PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, useUniquePeptide=TRUE,
                               summaryforMultipleRows=max, fewMeasurements="remove",
                               removeOxidationMpeptides=FALSE, removeProtein_with1Peptide=FALSE,
-                              which.quantification='Precursor.Area',
-                              which.proteinid='Protein.Group.Accessions',
-                              which.sequence='Sequence') {
+                              which.quantification="Precursor.Area",
+                              which.proteinid="Protein.Group.Accessions",
+                              which.sequence="Sequence") {
 
 ################################################
 ### 0.1. which intensity : Precursor.Area vs. Intensity vs Area
@@ -16,35 +16,35 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   ## default : Precursor.Area
   which.quant <- NULL
 
-  if (which.quantification == 'Intensity') {
-    which.quant <- 'Intensity'
-  } else if (which.quantification == 'Area') {
-    which.quant <- 'Area'
-  } else if (which.quantification == 'Precursor.Area') {
-    which.quant <- 'Precursor.Area'
+  if (which.quantification == "Intensity") {
+    which.quant <- "Intensity"
+  } else if (which.quantification == "Area") {
+    which.quant <- "Area"
+  } else if (which.quantification == "Precursor.Area") {
+    which.quant <- "Precursor.Area"
   }
 
   if (is.null(which.quant)) {
-    stop('** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).')
+    stop("** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).")
   }
 
-  if (which.quant == 'Intensity' & !is.element('Intensity', colnames(input))) {
+  if (which.quant == "Intensity" & !is.element("Intensity", colnames(input))) {
     ## then that is because, input came from different version
-    which.quant <- 'Precursor.Area'
-    message('** Use Precursor.Area instead of Intensity.')
+    which.quant <- "Precursor.Area"
+    message("** Use Precursor.Area instead of Intensity.")
   }
-  if (which.quant == 'Area' & !is.element('Area', colnames(input))) {
+  if (which.quant == "Area" & !is.element("Area", colnames(input))) {
     ## then that is because, input come from different version
-    which.quant <- 'Precursor.Area'
-    message('** Use Precursor.Area instead of Intensity.')
+    which.quant <- "Precursor.Area"
+    message("** Use Precursor.Area instead of Intensity.")
   }
-  if (which.quant == 'Precursor.Area' & !is.element('Precursor.Area', colnames(input))) {
+  if (which.quant == "Precursor.Area" & !is.element("Precursor.Area", colnames(input))) {
     ## then that is because, input come from different version
-    stop('** Please select which columns should be used for quantified intensities, among two options (Intensity or Area).')
+    stop("** Please select which columns should be used for quantified intensities, among two options (Intensity or Area).")
   }
 
   if (!is.element(which.quant, colnames(input))) {
-    stop('** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).')
+    stop("** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).")
   }
 
 ################################################
@@ -53,34 +53,34 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   ## default : Protein Accessions
   which.pro <- NULL
 
-  if (which.proteinid == 'Protein.Accessions') {
-    which.pro <- 'Protein.Accessions'
-  } else if (which.proteinid == 'Master.Protein.Accessions') {
-    which.pro <- 'Master.Protein.Accessions'
-  } else if (which.proteinid == 'Protein.Group.Accessions') {
-    which.pro <- 'Protein.Group.Accessions'
+  if (which.proteinid == "Protein.Accessions") {
+    which.pro <- "Protein.Accessions"
+  } else if (which.proteinid == "Master.Protein.Accessions") {
+    which.pro <- "Master.Protein.Accessions"
+  } else if (which.proteinid == "Protein.Group.Accessions") {
+    which.pro <- "Protein.Group.Accessions"
   }
 
   if (is.null(which.pro)) {
-    stop('** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).')
+    stop("** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).")
   }
 
-  if (which.pro == 'Protein.Accessions' & !is.element('Protein.Accessions', colnames(input))) {
-    which.pro <- 'Protein.Group.Accessions'
-    message('** Use Protein.Group.Accessions instead of Protein.Accessions.')
+  if (which.pro == "Protein.Accessions" & !is.element("Protein.Accessions", colnames(input))) {
+    which.pro <- "Protein.Group.Accessions"
+    message("** Use Protein.Group.Accessions instead of Protein.Accessions.")
   }
-  if (which.pro == 'Master.Protein.Accessions' &
-      !is.element('Master.Protein.Accessions', colnames(input))) {
-    which.pro <- 'Protein.Group.Accessions'
-    message('** Use Protein.Group.Accessions instead of Master.Protein.Accessions.')
+  if (which.pro == "Master.Protein.Accessions" &
+      !is.element("Master.Protein.Accessions", colnames(input))) {
+    which.pro <- "Protein.Group.Accessions"
+    message("** Use Protein.Group.Accessions instead of Master.Protein.Accessions.")
   }
-  if (which.pro == 'Protein.Group.Accessions' &
-      !is.element('Protein.Group.Accessions', colnames(input))) {
+  if (which.pro == "Protein.Group.Accessions" &
+      !is.element("Protein.Group.Accessions", colnames(input))) {
     ## then that is because, input come from different version
-    stop('** Please select which columns should be used for protein ids, among two options (Protein.Accessions or Master.Protein.Accessions).')
+    stop("** Please select which columns should be used for protein ids, among two options (Protein.Accessions or Master.Protein.Accessions).")
   }
   if (!is.element(which.pro, colnames(input))) {
-    stop('** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).')
+    stop("** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).")
   }
 
 ################################################
@@ -89,20 +89,20 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   ## default : Sequence
   which.seq <- NULL
 
-  if (which.sequence == 'Annotated.Sequence') {
-    which.seq <- 'Annotated.Sequence'
-  } else if (which.sequence == 'Sequence') {
-    which.seq <- 'Sequence'
+  if (which.sequence == "Annotated.Sequence") {
+    which.seq <- "Annotated.Sequence"
+  } else if (which.sequence == "Sequence") {
+    which.seq <- "Sequence"
   }
   if (is.null(which.sequence)) {
-    stop('** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).')
+    stop("** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).")
   }
-  if (which.seq == 'Annotated.Sequence' & !is.element('Annotated.Sequence', colnames(input))) {
-    which.seq <- 'Sequence'
-    message('** Use Sequence instead of Annotated.Sequence.')
+  if (which.seq == "Annotated.Sequence" & !is.element("Annotated.Sequence", colnames(input))) {
+    which.seq <- "Sequence"
+    message("** Use Sequence instead of Annotated.Sequence.")
   }
   if (!is.element(which.seq, colnames(input))) {
-    stop('** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).')
+    stop("** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).")
   }
 
 ################################################
@@ -112,15 +112,15 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
                                                 "Sequence", "Modifications", "Charge",
                                                 "Spectrum.File", which.quant))]
 
-  colnames(input)[colnames(input) == 'Protein.Group.Accessions'] <- 'ProteinName'
-  colnames(input)[colnames(input) == 'Protein.Accessions'] <- 'ProteinName'
-  colnames(input)[colnames(input) == 'Master.Protein.Accessions'] <- 'ProteinName'
-  colnames(input)[colnames(input) == 'X..Proteins'] <- 'numProtein'
-  colnames(input)[colnames(input) == 'Sequence'] <- 'PeptideSequence'
-  colnames(input)[colnames(input) == 'Annotated.Sequence'] <- 'PeptideSequence'
-  colnames(input)[colnames(input) == 'Spectrum.File'] <- 'Run'
-  colnames(input)[colnames(input) == 'Precursor.Area'] <- 'Intensity'
-  colnames(input)[colnames(input) == 'Area'] <- 'Intensity'
+  colnames(input)[colnames(input) == "Protein.Group.Accessions"] <- "ProteinName"
+  colnames(input)[colnames(input) == "Protein.Accessions"] <- "ProteinName"
+  colnames(input)[colnames(input) == "Master.Protein.Accessions"] <- "ProteinName"
+  colnames(input)[colnames(input) == "X..Proteins"] <- "numProtein"
+  colnames(input)[colnames(input) == "Sequence"] <- "PeptideSequence"
+  colnames(input)[colnames(input) == "Annotated.Sequence"] <- "PeptideSequence"
+  colnames(input)[colnames(input) == "Spectrum.File"] <- "Run"
+  colnames(input)[colnames(input) == "Precursor.Area"] <- "Intensity"
+  colnames(input)[colnames(input) == "Area"] <- "Intensity"
 
 ################################################
 ### 2. remove peptides which are used in more than one protein
@@ -128,8 +128,8 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
 ################################################
   if (useNumProteinsColumn) {
     ## remove rows with #proteins is not 1
-    input <- input[input$numProtein == '1', ]
-    message('** Rows with #Proteins, which are not equal to 1, are removed.')
+    input <- input[input$numProtein == "1", ]
+    message("** Rows with #Proteins, which are not equal to 1, are removed.")
   }
 
   if (useUniquePeptide) {
@@ -142,7 +142,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
     ## remove the peptides which are used in more than one protein
     if (length(remove_peptide$Proteins != 1) != 0) {
       input <- input[-which(input$Sequence %in% remove_peptide$Sequence), ]
-      message('** Peptides, that are used in more than one proteins, are removed.')
+      message("** Peptides, that are used in more than one proteins, are removed.")
     }
   }
 
@@ -154,7 +154,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
     if (length(remove_m_sequence) > 0) {
       input <- input[-which(input$Modifications %in% remove_m_sequence), ]
     }
-    message('Peptides including oxidation(M) in the Modifications are removed.')
+    message("Peptides including oxidation(M) in the Modifications are removed.")
   }
 
 ##############################
@@ -162,14 +162,14 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
 ##############################
   ## maximum or sum up abundances among intensities for identical features within one run
   input_sub <- dcast(ProteinName + PeptideSequence + Modifications + Charge ~ Run, data=input,
-                     value.var='Intensity',
+                     value.var="Intensity",
                      fun.aggregate=summaryforMultipleRows,
                      fill=NA_real_)
   ## reformat for long format
-  input_sub <- melt(input_sub, id=c('ProteinName', 'PeptideSequence', 'Modifications', 'Charge'))
+  input_sub <- melt(input_sub, id=c("ProteinName", "PeptideSequence", "Modifications", "Charge"))
   colnames(input_sub)[which(colnames(input_sub) %in%
-                            c('variable','value'))] <- c("Run", "Intensity")
-  message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
+                            c("variable", "value"))] <- c("Run", "Intensity")
+  message("** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.")
   input <- input_sub
 
 ##############################
@@ -177,9 +177,9 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
 ##############################
   noruninfo <- setdiff(unique(input$Run), unique(annotation$Run))
   if (length(noruninfo) > 0) {
-    stop(paste('** Annotation for Run :',
-               paste(noruninfo, collapse = ', '),
-               ' are needed. Please update them in annotation file.'))
+    stop(paste("** Annotation for Run :",
+               paste(noruninfo, collapse = ", "),
+               " are needed. Please update them in annotation file."))
   }
 
   input <- merge(input, annotation, by="Run", all=TRUE)
@@ -200,7 +200,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
     "Run" = input$Run,
     "Intensity" = input$Intensity)
 
-  if (any(is.element(colnames(input), 'Fraction'))) {
+  if (any(is.element(colnames(input), "Fraction"))) {
     input.final <- data.frame(input.final,
                               "Fraction" = input$Fraction)
   }
@@ -221,7 +221,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
     if (length(remove_feature_name) > 0) {
       input <- input[-which(input$feature %in% names(remove_feature_name)), ]
     }
-    input <- input[, -which(colnames(input) %in% c('feature'))]
+    input <- input[, -which(colnames(input) %in% c("feature"))]
   }
 
 ##############################
@@ -242,11 +242,11 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
     removepro <- names(count[count <= 1])
     if (length(removepro) > 0) {
       input <- input[-which(input$ProteinName %in% removepro), ]
-      message(paste("** ", length(removepro),
-                    ' proteins, which have only one feature in a protein, are removed among ',
-                    lengthtotalprotein, ' proteins.', sep=""))
+      message(paste0("** ", length(removepro),
+                    " proteins, which have only one feature in a protein, are removed among ",
+                    lengthtotalprotein, " proteins."))
     }
-    input <- input[, -which(colnames(input) %in% c('feature'))]
+    input <- input[, -which(colnames(input) %in% c("feature"))]
 	}
   input$ProteinName <- input$ProteinName
 	return(input)

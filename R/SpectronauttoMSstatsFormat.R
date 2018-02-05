@@ -5,112 +5,112 @@
 ##   F.ExcludedFromQuantification
 
 #' @export
-SpectronauttoMSstatsFormat <- function(input, intensity='PeakArea', filter_with_Qvalue=TRUE,
+SpectronauttoMSstatsFormat <- function(input, intensity="PeakArea", filter_with_Qvalue=TRUE,
                                        qvalue_cutoff=0.01, useUniquePeptide=TRUE,
                                        fewMeasurements="remove", removeProtein_with1Feature=FALSE,
                                        summaryforMultipleRows=max) {
 
   ## Check correct option or input
-  requiredinput.general <- c('F.FrgLossType', 'F.ExcludedFromQuantification',
-                             'PG.ProteinGroups', 'EG.ModifiedSequence', 'FG.Charge',
-                             'F.FrgIon', 'R.Condition',
-                             'R.FileName', 'R.Replicate', 'EG.Qvalue')
+  requiredinput.general <- c("F.FrgLossType", "F.ExcludedFromQuantification",
+                             "PG.ProteinGroups", "EG.ModifiedSequence", "FG.Charge",
+                             "F.FrgIon", "R.Condition",
+                             "R.FileName", "R.Replicate", "EG.Qvalue")
 
-  requiredinput.int <- c('F.PeakArea', 'F.NormalizedPeakArea')
-  requiredinput.charge <- c('F.Charge', 'F.FrgZ')
+  requiredinput.int <- c("F.PeakArea", "F.NormalizedPeakArea")
+  requiredinput.charge <- c("F.Charge", "F.FrgZ")
 
 ################################
 ### general input
 ################################
   if (!all(requiredinput.general %in% colnames(input))){
     misssing.col <- requiredinput.general[!requiredinput.general %in% colnames(input)]
-    stop(paste("** Please check the required input. The required input needs '",
-               paste(missing.col, collapse = ", "), "'", sep=""))
+    stop(paste0("** Please check the required input. The required input needs '",
+               paste(missing.col, collapse = ", "), "'"))
   }
   ## intensity columns
   if (sum(requiredinput.int %in% colnames(input)) == 0) {
-    stop(paste("** Please check the required input. The required input needs at least one of '",
-               paste(requiredinput.int, collapse = "' or '"), "'", sep=""))
+    stop(paste0("** Please check the required input. The required input needs at least one of '",
+               toString(requiredinput.int), "'"))
   }
   ## general input
   if (sum(requiredinput.charge %in% colnames(input)) == 0) {
-    stop(paste("** Please check the required input. The required input needs at least one of '",
-               paste(requiredinput.charge, collapse = "' or '"), "'", sep=""))
+    stop(paste0("** Please check the required input. The required input needs at least one of '",
+                toString(requiredinput.charge), "'"))
   }
 
 ##############################
-### 1. loss type : use only 'no loss'
+### 1. loss type : use only "no loss"
 ##############################
-  input <- input[input$F.FrgLossType == 'noloss', ]
+  input <- input[input$F.FrgLossType == "noloss", ]
 
 ##############################
-### 2. use only 'F.ExcludedFromQuantification == False' : XIC quality
+### 2. use only "F.ExcludedFromQuantification == False" : XIC quality
 ##############################
-  input <- input[input$F.ExcludedFromQuantification == 'False', ]
+  input <- input[input$F.ExcludedFromQuantification == "False", ]
 
 ##############################
 ### 3. get useful subset of column
 ##############################
-  if (is.element('F.Charge', colnames(input))) {
-    f.charge <- 'F.Charge'
-  } else if (is.element('F.FrgZ', colnames(input))) {
-    f.charge <- 'F.FrgZ'
+  if (is.element("F.Charge", colnames(input))) {
+    f.charge <- "F.Charge"
+  } else if (is.element("F.FrgZ", colnames(input))) {
+    f.charge <- "F.FrgZ"
   } else {
     f.charge <- NULL
   }
 
-  if (is.element('PG.Qvalue', colnames(input))) {
-    pg.qvalue <- 'PG.Qvalue'
-  } else if (is.element('PG.Qvalue', colnames(input))) {
-    pg.qvalue <- 'PG.Qvalue'
+  if (is.element("PG.Qvalue", colnames(input))) {
+    pg.qvalue <- "PG.Qvalue"
+  } else if (is.element("PG.Qvalue", colnames(input))) {
+    pg.qvalue <- "PG.Qvalue"
   } else {
     pg.qvalue <- NULL
   }
 
-  subsetcolumn <- c('PG.ProteinGroups', 'EG.ModifiedSequence', 'FG.Charge',
-                    'F.FrgIon', f.charge,
-                    'R.Condition', 'R.FileName', 'R.Replicate',
-                    'EG.Qvalue', pg.qvalue)
+  subsetcolumn <- c("PG.ProteinGroups", "EG.ModifiedSequence", "FG.Charge",
+                    "F.FrgIon", f.charge,
+                    "R.Condition", "R.FileName", "R.Replicate",
+                    "EG.Qvalue", pg.qvalue)
 
-  if (intensity == 'NormalizedPeakArea'){
+  if (intensity == "NormalizedPeakArea"){
     ## use normalized peak area by SN
-    input <- input[, c(subsetcolumn, 'F.NormalizedPeakArea')]
+    input <- input[, c(subsetcolumn, "F.NormalizedPeakArea")]
   } else {
     ## use original peak area without any normalization
-    input <- input[, c(subsetcolumn, 'F.PeakArea')]
+    input <- input[, c(subsetcolumn, "F.PeakArea")]
   }
 
-  colnames(input)[colnames(input) == 'PG.ProteinGroups'] <- 'ProteinName'
-  colnames(input)[colnames(input) == 'EG.ModifiedSequence'] <- 'PeptideSequence'
-  colnames(input)[colnames(input) == 'FG.Charge'] <- 'PrecursorCharge'
-  colnames(input)[colnames(input) == 'F.FrgIon'] <- 'FragmentIon'
-  colnames(input)[colnames(input) == f.charge] <- 'ProductCharge'
-  colnames(input)[colnames(input) == 'R.Condition'] <- 'Condition'
-  colnames(input)[colnames(input) == 'R.FileName'] <- 'Run'
-  colnames(input)[colnames(input) == 'R.Replicate'] <- 'BioReplicate'
-  colnames(input)[colnames(input) == 'F.PeakArea'] <- 'Intensity'
-  colnames(input)[colnames(input) == 'F.NormalizedPeakArea'] <- 'Intensity'
-  colnames(input)[colnames(input) == 'EG.Qvalue'] <- 'Qvalue'
+  colnames(input)[colnames(input) == "PG.ProteinGroups"] <- "ProteinName"
+  colnames(input)[colnames(input) == "EG.ModifiedSequence"] <- "PeptideSequence"
+  colnames(input)[colnames(input) == "FG.Charge"] <- "PrecursorCharge"
+  colnames(input)[colnames(input) == "F.FrgIon"] <- "FragmentIon"
+  colnames(input)[colnames(input) == f.charge] <- "ProductCharge"
+  colnames(input)[colnames(input) == "R.Condition"] <- "Condition"
+  colnames(input)[colnames(input) == "R.FileName"] <- "Run"
+  colnames(input)[colnames(input) == "R.Replicate"] <- "BioReplicate"
+  colnames(input)[colnames(input) == "F.PeakArea"] <- "Intensity"
+  colnames(input)[colnames(input) == "F.NormalizedPeakArea"] <- "Intensity"
+  colnames(input)[colnames(input) == "EG.Qvalue"] <- "Qvalue"
 
 ##############################
 ### 4. filter by Qvalue
 ##############################
 ### protein FDR
-  if (is.element('PG.Qvalue', colnames(input))) {
+  if (is.element("PG.Qvalue", colnames(input))) {
     input[!is.na(input$PG.Qvalue) & input$PG.Qvalue > 0.01, "Intensity"] <- NA
-    message(paste('** Intensities with great than 0.01 in PG.Qvalue are replaced with NA.', sep=''))
-    input <- input[, -which(colnames(input) %in% 'PG.Qvalue')]
+    message(paste0("** Intensities with great than 0.01 in PG.Qvalue are replaced with NA."))
+    input <- input[, -which(colnames(input) %in% "PG.Qvalue")]
   }
 
   ## precursor qvalue
   if (filter_with_Qvalue) {
-    if (!is.element(c('Qvalue'), colnames(input))) {
-      stop('** EG.Qvalue column is needed in order to filter out by Qvalue. Please add EG.Qvalue column in the input.')
+    if (!is.element(c("Qvalue"), colnames(input))) {
+      stop("** EG.Qvalue column is needed in order to filter out by Qvalue. Please add EG.Qvalue column in the input.")
     } else {
       ## when qvalue > qvalue_cutoff, replace with zero for intensity
       input[!is.na(input$Qvalue) & input$Qvalue > qvalue_cutoff, "Intensity"] <- 0
-      message(paste('** Intensities with great than ', qvalue_cutoff,
-                    ' in EG.Qvalue are replaced with zero.', sep=''))
+      message(paste0("** Intensities with great than ", qvalue_cutoff,
+                    " in EG.Qvalue are replaced with zero."))
     }
   }
 
@@ -129,7 +129,7 @@ SpectronauttoMSstatsFormat <- function(input, intensity='PeakArea', filter_with_
   count <- aggregate(Intensity ~ fea, data=inputtmp, FUN=length)
 
   ## get feature with all NA or zeros
-  getfea <- count[count$Intensity == length(unique(input$Run)), 'fea']
+  getfea <- count[count$Intensity == length(unique(input$Run)), "fea"]
   if (length(getfea) > 0) {
     input <- input[-which(input$fea %in% getfea), ]
   }
@@ -147,9 +147,9 @@ SpectronauttoMSstatsFormat <- function(input, intensity='PeakArea', filter_with_
     ## remove the peptides which are used in more than one protein
     if (length(remove_peptide$ProteinName != 1 ) != 0) {
       input <- input[-which(input$PeptideSequence %in% remove_peptide$PeptideSequence), ]
-      message('** Peptides, that are used in more than one proteins, are removed.')
+      message("** Peptides, that are used in more than one proteins, are removed.")
     } else {
-      message('** All peptides are unique peptides in proteins.')
+      message("** All peptides are unique peptides in proteins.")
     }
     rm(structure)
     rm(remove_peptide)
@@ -173,16 +173,16 @@ SpectronauttoMSstatsFormat <- function(input, intensity='PeakArea', filter_with_
 ##############################
   if (removeProtein_with1Feature) {
 ######## remove protein which has only one peptide
-    tmp <- unique(input[, c("ProteinName", 'fea')])
+    tmp <- unique(input[, c("ProteinName", "fea")])
     tmp$ProteinName <- factor(tmp$ProteinName)
     count <- xtabs(~ ProteinName, data=tmp)
     lengthtotalprotein <- length(count)
     removepro <- names(count[count <= 1])
     if (length(removepro) > 0) {
       input <- input[-which(input$ProteinName %in% removepro), ]
-      message(paste("*** ", length(removepro),
-                    ' proteins, which have only one feature in a protein, are removed among ',
-                    lengthtotalprotein, ' proteins.', sep=""))
+      message(paste0("*** ", length(removepro),
+                    " proteins, which have only one feature in a protein, are removed among ",
+                    lengthtotalprotein, " proteins."))
     }
   }
 
@@ -196,24 +196,24 @@ SpectronauttoMSstatsFormat <- function(input, intensity='PeakArea', filter_with_
     ## maximum or sum up abundances among intensities for identical features within one run
     input_w <- dcast(
       ProteinName + PeptideSequence + PrecursorCharge + FragmentIon + ProductCharge ~ Run,
-      data=input, value.var='Intensity', fun.aggregate=summaryforMultipleRows, fill=NA_real_)
+      data=input, value.var="Intensity", fun.aggregate=summaryforMultipleRows, fill=NA_real_)
     ## reformat for long format
-    input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge',
-                                'FragmentIon', 'ProductCharge'))
-    colnames(input)[which(colnames(input) %in% c('variable','value'))] <- c("Run","Intensity")
+    input <- melt(input_w, id=c("ProteinName", "PeptideSequence", "PrecursorCharge",
+                                "FragmentIon", "ProductCharge"))
+    colnames(input)[which(colnames(input) %in% c("variable","value"))] <- c("Run","Intensity")
 
     ## add annotation
     input <- merge(input, annotation, by="Run")
     ## reorder columns
     input <- input[, c(2, 3, 4, 5, 6, 8, 1, 9, 7)]
-    message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
+    message("** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.")
   } else {
-    ## remove column, named as 'fea'
-    input <- input[, -which(colnames(input) %in% c('fea', 'Qvalue'))]
-    message('** No multiple measurements in a feature and a run.')
+    ## remove column, named as "fea"
+    input <- input[, -which(colnames(input) %in% c("fea", "Qvalue"))]
+    message("** No multiple measurements in a feature and a run.")
   }
 
-  input$IsotopeLabelType <- 'L'
+  input$IsotopeLabelType <- "L"
   input$ProteinName <- input$ProteinName
 	return(input)
 }

@@ -4,7 +4,7 @@
 #' @export
 #' @import minpack.lm
 nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500) {
-  switch(Sys.info()[['sysname']],
+  switch(Sys.info()[["sysname"]],
          Windows = {
            null_output <- "NUL" },
          Linux = {
@@ -12,8 +12,8 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
          Darwin = {
            null_output <- "/dev/null" })
   ##Need to rename variables as needed:
-  names(datain)[names(datain) == 'CONCENTRATION'] <- 'C'
-  names(datain)[names(datain) == 'INTENSITY'] <- 'I'
+  names(datain)[names(datain) == "CONCENTRATION"] <- "C"
+  names(datain)[names(datain) == "INTENSITY"] <- "I"
 
   ##percentile of the prediction interval considered
   if (missing(alpha)) {
@@ -398,7 +398,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
     y_LOQ_pred <- up_noise
   }
   if(length(LOD_pred) > 1) {
-    print('multiple intersection between fit and upper bound of noise, picking first')
+    message("multiple intersection between fit and upper bound of noise, picking first")
     LOQ_pred <- LOQ_pred[1]
   }
 

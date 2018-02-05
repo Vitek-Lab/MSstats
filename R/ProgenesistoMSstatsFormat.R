@@ -11,18 +11,18 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
 ### 0. check input
 ##############################
   ## there are space in column name
-  if (!is.element('Modifications', input[2, ])) {
-    input[2,][grep('modifications', input[2, ])] <- 'Modifications'
+  if (!is.element("Modifications", input[2, ])) {
+    input[2,][grep("modifications", input[2, ])] <- "Modifications"
   }
-  if (!is.element('Protein', input[2,]) & is.element('Accession', input[2, ])) {
-    ## use 'Accession' for Protein ID
-    input[2, ][input[2, ] == 'Accession'] <- 'Protein'
+  if (!is.element("Protein", input[2,]) & is.element("Accession", input[2, ])) {
+    ## use "Accession" for Protein ID
+    input[2, ][input[2, ] == "Accession"] <- "Protein"
   }
 
-  required.column <- c('Protein', 'Sequence', 'Charge', 'Modifications')
-  if (length(grep('quantitation', input[2, ])) > 0) {
-    input[2, ][grep('quantitation', input[2, ])] <- 'Use.in.quantitation'
-    required.column <- c(required.column, 'Use.in.quantitation')
+  required.column <- c("Protein", "Sequence", "Charge", "Modifications")
+  if (length(grep("quantitation", input[2, ])) > 0) {
+    input[2, ][grep("quantitation", input[2, ])] <- "Use.in.quantitation"
+    required.column <- c(required.column, "Use.in.quantitation")
   }
 
   if (!all(required.column %in% input[2, ])) {
@@ -33,7 +33,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   }
 
   ## check annotation
-  required.annotation <- c('Run', 'BioReplicate', 'Condition')
+  required.annotation <- c("Run", "BioReplicate", "Condition")
   if (!all(required.annotation %in% colnames(annotation))) {
     missedAnnotation <- which(!(required.annotation %in% colnames(annotation)))
     stop(paste("**",
@@ -41,12 +41,12 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
                "is not provided in Annotation. Please check the annotation."))
   }
 
-  if (is.element('Raw.abundance', colnames(input)) &
-      is.element('Normalized.abundance', colnames(input))) {
-    start.column <- which(colnames(input) == 'Raw.abundance')
-    check.numRun <- which(colnames(input) == 'Normalized.abundance')
+  if (is.element("Raw.abundance", colnames(input)) &
+      is.element("Normalized.abundance", colnames(input))) {
+    start.column <- which(colnames(input) == "Raw.abundance")
+    check.numRun <- which(colnames(input) == "Normalized.abundance")
     if (start.column-check.numRun != nrow(annotation)) {
-      stop(message('** Please check annotation file. The numbers of MS runs in annotation and output are not matched.'))
+      stop(message("** Please check annotation file. The numbers of MS runs in annotation and output are not matched."))
     }
 
     raw.abundance.column <- c(start.column:(start.column + nrow(annotation) - 1))
@@ -54,8 +54,8 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
                    c(which(input[2, ] %in% required.column),
                      raw.abundance.column)]
 
-  } else if (is.element('Raw.abundance', colnames(input))) {
-    start.column <- which(colnames(input) == 'Raw.abundance')
+  } else if (is.element("Raw.abundance", colnames(input))) {
+    start.column <- which(colnames(input) == "Raw.abundance")
     raw.abundance.column <- c(start.column:(start.column + nrow(annotation) - 1))
     input <- input[,
                    c(which(input[2, ] %in% required.column),
@@ -67,28 +67,28 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   input <- input[-1, ]
 
 ##############################
-### 1. use only 'use in quantitation = true'
+### 1. use only "use in quantitation = true"
 ##############################
-  if (is.element('Use.in.quantitation', colnames(input))) {
+  if (is.element("Use.in.quantitation", colnames(input))) {
     ## value for use in quantitation is True vs False
-    if(length(grep('True', unique(input$Use.in.quantitation))) > 0) {
-      input <- input[input$Use.in.quantitation == 'True', ]
-    } else if (length(grep('TRUE', unique(input$Use.in.quantitation))) > 0) {
+    if(length(grep("True", unique(input$Use.in.quantitation))) > 0) {
+      input <- input[input$Use.in.quantitation == "True", ]
+    } else if (length(grep("TRUE", unique(input$Use.in.quantitation))) > 0) {
       input <- input[input$Use.in.quantitation == TRUE, ]
     }
-    input <- input[, -which(colnames(input) %in% c('Use.in.quantitation'))]
+    input <- input[, -which(colnames(input) %in% c("Use.in.quantitation"))]
   }
 
 ##############################
 ### 2. modify column names and remove some columnts
 ##############################
-  input <- input[!is.na(input$Protein) & input$Protein != '', ]
-  input <- input[!is.na(input$Sequence) & input$Sequence != '', ]
+  input <- input[!is.na(input$Protein) & input$Protein != "", ]
+  input <- input[!is.na(input$Sequence) & input$Sequence != "", ]
 
   ## get modified sequence
   input$ModifiedSequence <- paste(input$Sequence, input$Modifications, sep="")
   ## get subset of datasets
-  ## input <- input[, which(colnames(input) %in% c('Protein', 'Sequence', 'Charge', 'ModifiedSequence',
+  ## input <- input[, which(colnames(input) %in% c("Protein", "Sequence", "Charge", "ModifiedSequence",
   ##                       as.character(annotation$Run)))]
   ## remove completely duplicated rows
   input <- input[!duplicated(input), ]
@@ -100,7 +100,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
     if (length(remove_m_sequence) > 0) {
       input <- input[-which(input$ModifiedSequence %in% remove_m_sequence), ]
     }
-    message('Peptides including oxidation(M) in the sequence are removed.')
+    message("Peptides including oxidation(M) in the sequence are removed.")
   }
 
 ################################################
@@ -117,27 +117,27 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
     if (length(remove_peptide$Protein != 1) != 0) {
       input <- input[-which(input$Sequence %in% remove_peptide$Sequence), ]
     }
-    message('** Peptides, that are used in more than one proteins, are removed.')
+    message("** Peptides, that are used in more than one proteins, are removed.")
   }
 
 ##############################
 ### 4. remove multiple measurements per feature and run
 ##############################
-  input <- input[, -which(colnames(input) %in% c('Sequence', 'Modifications'))]
-  input_remove <- melt(input, id=c('Protein', 'ModifiedSequence', 'Charge'))
+  input <- input[, -which(colnames(input) %in% c("Sequence", "Modifications"))]
+  input_remove <- melt(input, id=c("Protein", "ModifiedSequence", "Charge"))
   colnames(input_remove) <- c("ProteinName", "PeptideModifiedSequence",
                               "PrecursorCharge", "Run", "Intensity")
   input_remove$Intensity <- as.double(input_remove$Intensity)
   ## maximum or sum up abundances among intensities for identical features within one run
   input <- dcast(ProteinName + PeptideModifiedSequence + PrecursorCharge ~ Run,
                  data=input_remove,
-                 value.var='Intensity',
+                 value.var="Intensity",
                  fun.aggregate=summaryforMultipleRows,
                  fill=NA_real_)
   ## reformat for long format
-  input <- melt(input, id=c('ProteinName', 'PeptideModifiedSequence', 'PrecursorCharge'))
-  colnames(input)[which(colnames(input) %in% c('variable','value'))] <- c("Run","Intensity")
-  message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
+  input <- melt(input, id=c("ProteinName", "PeptideModifiedSequence", "PrecursorCharge"))
+  colnames(input)[which(colnames(input) %in% c("variable","value"))] <- c("Run","Intensity")
+  message("** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.")
 
 ##############################
 ### 5. add annotation
@@ -160,7 +160,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
     "Run" = input$Run,
     "Intensity" = input$Intensity)
 
-  if (any(is.element(colnames(input), 'Fraction'))) {
+  if (any(is.element(colnames(input), "Fraction"))) {
     input.final <- data.frame(
       input.final,
       "Fraction" = input$Fraction)
@@ -187,7 +187,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
                            input$ProductCharge,
                            sep="_")
 
-    tmp <- unique(input[, c("ProteinName", 'feature')])
+    tmp <- unique(input[, c("ProteinName", "feature")])
     tmp$ProteinName <- factor(tmp$ProteinName)
     count <- xtabs(~ ProteinName, data=tmp)
     lengthtotalprotein <- length(count)
@@ -196,10 +196,10 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
     if (length(removepro) > 0) {
       input <- input[-which(input$ProteinName %in% removepro), ]
       message(paste0("** ", length(removepro),
-                     ' proteins, which have only one feature in a protein, are removed among ',
-                     lengthtotalprotein, ' proteins.'))
+                     " proteins, which have only one feature in a protein, are removed among ",
+                     lengthtotalprotein, " proteins."))
     }
-    input <- input[, -which(colnames(input) %in% c('feature'))]
+    input <- input[, -which(colnames(input) %in% c("feature"))]
 	}
   input$ProteinName <- input$ProteinName
 	return(input)
@@ -214,6 +214,6 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   if (length(remove_feature_name) > 0) {
     x <- x[-which(x$feature %in% names(remove_feature_name)), ]
   }
-  x <- x[, -which(colnames(x) %in% c('feature'))]
+  x <- x[, -which(colnames(x) %in% c("feature"))]
   return(x)
 }

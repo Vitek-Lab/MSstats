@@ -11,7 +11,7 @@
 groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   scopeOfBioReplication <- "expanded"
  	scopeOfTechReplication <- "restricted"
-  message.show <- FALSE ## whether show the 'testing xx protein' or not. It consume large memory and file size.
+  message.show <- FALSE ## whether show the "testing xx protein" or not. It consume large memory and file size.
   ## save process output in each step
  	allfiles <- list.files()
   filenaming <- "msstats"
@@ -41,25 +41,25 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   if (length(setdiff(toupper(rawinput),toupper(colnames(data$ProcessedData)))) == 0) {
     processout <- rbind(
       processout,
-      "The required input - data : did not process from dataProcess function. - stop")
+      "The required input - data: did not process from dataProcess(). - stop")
     write.table(processout, file=finalfile, row.names=FALSE)
-    stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
+    stop("Please use 'dataProcess()' first. Then groupComparison().")
   }
 
   ## contrast. matrix
   if (ncol(contrast.matrix) != length(unique(data$ProcessedData$GROUP_ORIGINAL))) {
     processout <- rbind(
       processout,
-      "The required input - contrast.matrix: the number of column and the number of group are not the same. - stop")
+      "contrast.matrix: the number of columns and groups are not the same.")
     write.table(processout, file=finalfile, row.names=FALSE)
-    stop("Please check contrast matrix. The number of group in data set is different with columns of contrast.matrix.")
+    stop("Check the contrast matrix. The groups are different than the columns of the contrast matrix.")
   }
 
   ## check whether row.names of contrast.matrix.sub exists or not
   if (sum(is.null(row.names(contrast.matrix))) > 0) {
     processout <- rbind(
       processout,
-      "The required input - contrast.matrix: need row names of contrast.matrix . - stop")
+      "The required input - contrast.matrix: need row names of contrast.matrix.")
     write.table(processout, file=finalfile, row.names=FALSE)
     stop("No row.names of comparison exist.\n")
   }
@@ -67,9 +67,9 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   if (!(scopeOfBioReplication == "restricted" | scopeOfBioReplication == "expanded")) {
     processout <- rbind(
       processout,
-      "The required input - scopeOfBioReplication : 'scopeOfBioReplication' value is wrong. - stop")
+      "The required input - scopeOfBioReplication: 'scopeOfBioReplication' value is wrong.")
     write.table(processout, file=finalfile, row.names=FALSE)
-    stop("'scopeOfBioReplication' must be one of \"restricted\" or \"expanded\".")
+    stop("'scopeOfBioReplication' must be one of 'restricted' or 'expanded'.")
   }
 
   labeled <- ifelse(length(unique(data$ProcessedData$LABEL)) == 1, FALSE, TRUE)
@@ -290,10 +290,10 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
 modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, legend.size=7,
                               width=10, height=10, featureName=TRUE, feature.QQPlot="all",
                               which.Protein="all", address="") {
-
-  if (length(setdiff(toupper(type),c("QQPLOTS","RESIDUALPLOTS"))) != 0) {
+  if (length(setdiff(toupper(type),
+                     c("QQPLOTS", "RESIDUALPLOTS"))) != 0) {
     stop(paste0("Input for type=", type,
-                ". However,'type' should be one of \"QQPlots\", \"ResidualPlots\" ."))
+                ". However,'type' should be one of 'QQplots', 'ResidualPlots' ."))
   }
   data <- data[!is.na(data$fitted), ]
   data <- data[!is.na(data$residuals), ]
@@ -353,15 +353,15 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         slope <- diff(y) / diff(x)
         int <- y[1L] - slope * x[1L]
 
-        ptemp <- ggplot(sub, aes_string(sample='residuals')) +
+        ptemp <- ggplot(sub, aes_string(sample="residuals")) +
           geom_point(stat="qq", alpha=0.8, shape=1, size=dot.size) +
           scale_shape(solid=FALSE) +
           geom_abline(slope = slope, intercept = int, colour="red") +
-          scale_y_continuous('Sample Quantiles') +
-          scale_x_continuous('Theoretical Quantiles') +
+          scale_y_continuous("Sample Quantiles") +
+          scale_x_continuous("Theoretical Quantiles") +
           labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")")) +
           theme(
-            panel.background=element_rect(fill='white', colour="black"),
+            panel.background=element_rect(fill="white", colour="black"),
             panel.grid.major=element_line(colour="grey95"),
             panel.grid.minor=element_blank(),
             axis.text.x=element_text(size=axis.size,colour="black"),
@@ -404,14 +404,14 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         ## label-free
         if (length(unique(sub$LABEL)) == 1) {
           ## need to update for qline per feature
-          ptemp <- ggplot(sub, aes_string(sample='residuals', color='FEATURE')) +
+          ptemp <- ggplot(sub, aes_string(sample="residuals", color="FEATURE")) +
             geom_point(stat="qq", alpha=0.8, size=dot.size) +
             facet_wrap(~ FEATURE) +
-            scale_y_continuous('Sample Quantiles') +
-            scale_x_continuous('Theoretical Quantiles') +
+            scale_y_continuous("Sample Quantiles") +
+            scale_x_continuous("Theoretical Quantiles") +
             labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")")) +
             theme(
-              panel.background=element_rect(fill='white', colour="black"),
+              panel.background=element_rect(fill="white", colour="black"),
               panel.grid.major=element_line(colour="grey95"),
               panel.grid.minor=element_blank(),
               axis.text.x=element_text(size=axis.size,colour="black"),
@@ -433,15 +433,15 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
           ## need to update for qline per feature
           ## endogenous intensities
           sub.l <- sub[sub$LABEL=="L", ]
-          ptemp <- ggplot(sub.l, aes_string(sample='residuals', color='FEATURE')) +
+          ptemp <- ggplot(sub.l, aes_string(sample="residuals", color="FEATURE")) +
             geom_point(stat="qq", alpha=0.8, size=dot.size) +
             facet_wrap(~ FEATURE) +
-            scale_y_continuous('Sample Quantiles') +
-            scale_x_continuous('Theoretical Quantiles') +
+            scale_y_continuous("Sample Quantiles") +
+            scale_x_continuous("Theoretical Quantiles") +
             labs(title=paste("Normal Q-Q Plot (",
                              unique(sub$PROTEIN),") - Endogenous Intensities")) +
             theme(
-              panel.background=element_rect(fill='white', colour="black"),
+              panel.background=element_rect(fill="white", colour="black"),
               panel.grid.major=element_line(colour="grey95"),
               panel.grid.minor=element_blank(),
               axis.text.x=element_text(size=axis.size,colour="black"),
@@ -456,14 +456,14 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 
           ## reference intensities
           sub.h <- sub[sub$LABEL=="H",]
-          ptemp <- ggplot(sub.h, aes_string(sample='residuals', color='FEATURE')) +
+          ptemp <- ggplot(sub.h, aes_string(sample="residuals", color="FEATURE")) +
             geom_point(stat="qq", alpha=0.8, size=dot.size) +
             facet_wrap(~ FEATURE) +
-            scale_y_continuous('Sample Quantiles') +
-            scale_x_continuous('Theoretical Quantiles') +
+            scale_y_continuous("Sample Quantiles") +
+            scale_x_continuous("Theoretical Quantiles") +
             labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Reference Intensities")) +
             theme(
-              panel.background=element_rect(fill='white', colour="black"),
+              panel.background=element_rect(fill="white", colour="black"),
               panel.grid.major=element_line(colour="grey95"),
               panel.grid.minor=element_blank(),
               axis.text.x=element_text(size=axis.size,colour="black"),
@@ -514,12 +514,12 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
       sub <- data[data$PROTEIN==levels(data$PROTEIN)[i], ]
       sub$PEPTIDE <- factor(sub$PEPTIDE)
       sub$FEATURE <- factor(sub$FEATURE)
-      ptemp <- ggplot(aes_string(x='fitted', y='residuals', color='FEATURE', shape='LABEL'),
+      ptemp <- ggplot(aes_string(x="fitted", y="residuals", color="FEATURE", shape="LABEL"),
                       data=sub) +
         geom_point(size=dot.size, alpha=0.5) +
         geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6) +
-        scale_y_continuous('Residuals',limits=c(y.limdown, y.limup)) +
-        scale_x_continuous('Predicted Abundance', limits=c(x.limdown, x.limup)) +
+        scale_y_continuous("Residuals",limits=c(y.limdown, y.limup)) +
+        scale_x_continuous("Predicted Abundance", limits=c(x.limdown, x.limup)) +
         labs(title=levels(data$PROTEIN)[i])
       if (length(unique(sub$LABEL))==2) {
         ptemp <- ptemp +
@@ -536,8 +536,8 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
       if (featureName) {
         ptemp <- ptemp +
           theme(
-            panel.background=element_rect(fill='white', colour="black"),
-            legend.key=element_rect(fill='white',colour='white'),
+            panel.background=element_rect(fill="white", colour="black"),
+            legend.key=element_rect(fill="white",colour="white"),
             legend.text=element_text(size=legend.size),
             panel.grid.major=element_line(colour="grey95"),
             panel.grid.minor=element_blank(),
@@ -552,7 +552,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
       } else {
         ptemp <- ptemp +
           theme(
-            panel.background=element_rect(fill='white', colour="black"),
+            panel.background=element_rect(fill="white", colour="black"),
             panel.grid.major=element_line(colour="grey95"),
             panel.grid.minor=element_blank(),
             axis.text.x=element_text(size=axis.size, colour="black"),
@@ -579,7 +579,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 #############################################
 #############################################
 ## check if measurements are missing for entire group
-## if yes, length of group and length of contrast won't agree
+## if yes, length of group and length of contrast won"t agree
 #############################################
 .chechGroupComparisonAgreement <- function(sub1, contrast.matrix) {
   tempSub <- as.numeric(as.character(unique(sub1[, c("GROUP")])))
@@ -719,7 +719,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
             "Tvalue" = NA,
             "DF" = NA,
             "pvalue" = NA,
-            "issue" = 'oneConditionMissing')
+            "issue" = "oneConditionMissing")
         } else {
           out <- data.frame(
             "Protein" = unique(data2$PROTEIN),
@@ -729,7 +729,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
             "Tvalue" = NA,
             "DF" = NA,
             "pvalue" = NA,
-            "issue" = 'oneConditionMissing')
+            "issue" = "oneConditionMissing")
         }
       } else {
         processout <- rbind(processout,
@@ -744,7 +744,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
           "Tvalue" = NA,
           "DF" = NA,
           "pvalue" = NA,
-          "issue" = 'completeMissing')
+          "issue" = "completeMissing")
       }
       allout <- rbind(allout, out)
     } ## end loop for comparion
@@ -833,7 +833,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
             "Tvalue" = NA,
             "DF" = NA,
             "pvalue" = NA,
-            "issue" = 'completeMissing')
+            "issue" = "completeMissing")
         } else if (flag.issue.pos | flag.issue.neg) {
           if (flag.issue.pos) {
             issue.side <- count.diff.pos
@@ -851,7 +851,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
               "Tvalue" = NA,
               "DF" = NA,
               "pvalue" = NA,
-              "issue" = 'oneConditionMissing')
+              "issue" = "oneConditionMissing")
           }
 
           if (flag.issue.neg) {
@@ -870,7 +870,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
               "Tvalue" = NA,
               "DF" = NA,
               "pvalue" = NA,
-              "issue" = 'oneConditionMissing')
+              "issue" = "oneConditionMissing")
           }
         } else { # then same as regulat calculation
           contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)

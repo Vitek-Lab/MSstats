@@ -36,7 +36,9 @@ transformMSnSetToMSstats <- function(ProteinName, PeptideSequence, PrecursorChar
   long.abundances.2 <- merge(long.abundances, featureData, by="fData_rownames")
   final.data <- merge(long.abundances.2, sampleData, by="pData_rownames")
   ## extract required information
-  ## default : Protein="ProteinAccession",PeptideSequence="PeptideSequence", PrecursorCharge="charge", FragmentIon, ProductCharge ,IsotopeLabelType="mz", Bioreplicate=NA,Run=NA,
+  ## default : Protein="ProteinAccession",PeptideSequence="PeptideSequence",
+  ## PrecursorCharge="charge", FragmentIon, ProductCharge, IsotopeLabelType="mz",
+  ## Bioreplicate=NA, Run=NA,
   if (missing(ProteinName)) {
     ProteinName <- "ProteinAccession"
   }

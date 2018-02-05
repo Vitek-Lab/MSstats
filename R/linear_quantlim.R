@@ -3,13 +3,13 @@
 #' @export
 #' @import minpack.lm
 linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500) {
-  switch(Sys.info()[['sysname']],
+  switch(Sys.info()[["sysname"]],
          Windows = {null_output <- "NUL"},
          Linux = {null_output <- "/dev/null"},
          Darwin = {null_output <- "/dev/null"})
   ##Need to rename variables as needed:
-  names(datain)[names(datain) == 'CONCENTRATION'] <- 'C'
-  names(datain)[names(datain) == 'INTENSITY'] <- 'I'
+  names(datain)[names(datain) == "CONCENTRATION"] <- "C"
+  names(datain)[names(datain) == "INTENSITY"] <- "I"
 
   ##percentile of the prediction interval considered
   if (missing(alpha)) {

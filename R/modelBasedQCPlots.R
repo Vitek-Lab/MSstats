@@ -1,17 +1,16 @@
 #' @export
 modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7, legend.size=7,
-                              width=10, height=10, which.Protein='all', address="") {
-
-  if (length(setdiff(toupper(type), c("QQPLOTS","RESIDUALPLOTS"))) !=0) {
+                              width=10, height=10, which.Protein="all", address="") {
+  if (length(setdiff(toupper(type), c("QQPLOTS", "RESIDUALPLOTS"))) != 0) {
     stop(paste0("Input for type=",
-                type,". However,'type' should be one of \"QQPlots\", \"ResidualPlots\" ."))
+                type,". However,'type' should be one of 'QQPlots', 'ResidualPlots' ."))
   }
 
   datafit <- data$fittedmodel
   proid <- levels(data$ComparisonResult$Protein)
   if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
-    if (which.Protein == 'all') {
-      stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
+    if (which.Protein == "all") {
+      stop("** Cannnot generate all plots in a screen. Please set one protein at a time.")
     } else if (length(which.Protein) > 1) {
       stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
     }
@@ -94,11 +93,11 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
         geom_point(stat="qq",alpha=0.8, shape=20, size=dot.size) +
         scale_shape(solid=FALSE) +
         geom_abline(slope = slope, intercept = int,colour="red") +
-        scale_y_continuous('Sample Quantiles') +
-        scale_x_continuous('Theoretical Quantiles') +
+        scale_y_continuous("Sample Quantiles") +
+        scale_x_continuous("Theoretical Quantiles") +
         labs(title=paste("Normal Q-Q Plot (", proid[i], ")")) +
         theme(
-          panel.background=element_rect(fill='white', colour="black"),
+          panel.background=element_rect(fill="white", colour="black"),
           panel.grid.major=element_line(colour="grey95"),
           panel.grid.minor=element_blank(),
           axis.text.x=element_text(size=axis.size,colour="black"),
@@ -157,14 +156,14 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
       }
 
       sub.residuals.table <- data.frame(residual=sub.residuals, fitted=sub.fitted)
-      ptemp <- ggplot(aes_string(x='fitted', y='residual'), data=sub.residuals.table) +
+      ptemp <- ggplot(aes_string(x="fitted", y="residual"), data=sub.residuals.table) +
         geom_point(size=dot.size, alpha=0.5) +
         geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6) +
-        scale_y_continuous('Residuals') +
-        scale_x_continuous('Predicted Abundance') +
+        scale_y_continuous("Residuals") +
+        scale_x_continuous("Predicted Abundance") +
         labs(title=proid[i]) +
         theme(
-          panel.background=element_rect(fill='white', colour="black"),
+          panel.background=element_rect(fill="white", colour="black"),
           panel.grid.major=element_line(colour="grey95"),
           panel.grid.minor=element_blank(),
           axis.text.x=element_text(size=axis.size,colour="black"),
