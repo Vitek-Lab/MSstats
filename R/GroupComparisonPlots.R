@@ -13,16 +13,16 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
                                  width=10, height=10, which.Comparison="all", which.Protein="all",
                                  address="") {
 
-	## save process output in each step
+    ## save process output in each step
   allfiles <- list.files()
   filenaming <- "msstats"
-  if (length(grep(filenaming,allfiles)) == 0) {
+  if (length(grep(filenaming, allfiles)) == 0) {
     finalfile <- "msstats.log"
     processout <- NULL
   } else {
     num <- 0
     finalfile <- "msstats.log"
-    while(is.element(finalfile, allfiles)) {
+    while (is.element(finalfile, allfiles)) {
       num <- num + 1
       lastfilename <- finalfile ## in order to rea
       finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
@@ -65,7 +65,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
         processout <- rbind(
           processout,
           paste0("Please check labels of comparions. Result does not have this comparison. - ",
-                 toString(temp.name,)))
+                 toString(temp.name)))
         write.table(processout, file=finalfile, row.names=FALSE)
         stop(paste0("Please check labels of comparions. Result does not have this comparison. - ", toString(temp.name)))
       }
@@ -180,15 +180,15 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
     ## color scale is fixed with log 10 based. then change break for log 2 based
     up <- 10
     temp <- 10 ^ (-sort(ceiling(seq(2, up, length=10)[c(1, 2, 3, 5, 10)]), decreasing=TRUE))
-    breaks <- c(temp,sig)
+    breaks <- c(temp, sig)
 
     if (logBase.pvalue == 10) {
       neg.breaks <- log(breaks, 10)
       my.breaks <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
-		} else if(logBase.pvalue == 2) {
-			neg.breaks <- log(breaks, 2)
+        } else if(logBase.pvalue == 2) {
+            neg.breaks <- log(breaks, 2)
       my.breaks <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
-		}
+        }
 
     ## draw color key
     blocks <- c(-breaks, 1, breaks[6:1])
@@ -211,7 +211,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
     }
 
     if (colorkey) {
-      par(mar=c(3, 3, 3, 3), mfrow=c(3, 1),oma=c(3, 0, 3, 0))
+      par(mar=c(3, 3, 3, 3), mfrow=c(3, 1), oma=c(3, 0, 3, 0))
       plot.new()
       image(z=matrix(seq(1:(length(my.colors) - 1)), ncol=1),
             col=my.colors[-length(my.colors)],
@@ -224,7 +224,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
 
     ## draw heatmap
     ## loop for numProtein
-    for(j in 1:numheatmap) {
+    for (j in 1:numheatmap) {
       ## get the number proteins needed
       if (j != numheatmap) {
         tempobj <- obj[((j - 1) * numProtein + 1):(j * numProtein), ]
@@ -251,7 +251,8 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
 #######################
   if (type == "VOLCANOPLOT") {
     ## choose comparison to draw plots
-    if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+    if (address == FALSE) {
+      ## here I used != FALSE, instead of !address. Because address can be logical or characters.
       if (which.Comparison == "all") {
         if (length(unique(data$Label)) > 1) {
           stop("** Cannnot generate all volcano plots in a screen. Please set one comparison at a time.")
@@ -267,7 +268,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
       num <- 0
       filenaming <- paste0(address, "VolcanoPlot")
       finalfile <- paste0(address, "VolcanoPlot.pdf")
-      while(is.element(finalfile, allfiles)) {
+      while (is.element(finalfile, allfiles)) {
         num <- num + 1
         finalfile <- paste0(paste(filenaming, num, sep="-"), ".pdf")
       }
@@ -359,7 +360,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
               subtemp$logFC == Inf, "newlogFC"] <- (x.lim - 0.2)
       subtemp[!is.na(subtemp$issue) &
               subtemp$issue == "oneConditionMissing" &
-              subtemp$logFC == (-Inf), "newlogFC"] <- (x.lim - 0.2) *(-1)
+              subtemp$logFC == (-Inf), "newlogFC"] <- (x.lim - 0.2) * (-1)
 
       ## add (*) in Protein name for Inf or -Inf
       subtemp$Protein <- as.character(subtemp$Protein)
@@ -452,7 +453,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
                                   labels=c(paste0("Adj p-value cutoff (", sig, ")"))) +
             guides(colour=guide_legend(override.aes=list(linetype=0)),
                    linetype=guide_legend())
-				}
+                }
       }
 
       ## cutoff lines, FDR and Fold change cutoff
@@ -485,8 +486,8 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
               geom_line(data=FCcutneg, aes_string(x="logFC", y="log2adjp", linetype="line"),
                         colour="darkgrey", size=0.6) +
               scale_linetype_manual(values=c("dotted"=3, "twodash"=6),
-                                    labels=c(paste0("Fold change cutoff (", FCcutoff, ")",),
-                                             paste0("Adj p-value cutoff (", sig, ")")))+
+                                    labels=c(paste0("Fold change cutoff (", FCcutoff, ")"),
+                                             paste0("Adj p-value cutoff (", sig, ")"))) +
               guides(colour=guide_legend(override.aes=list(linetype=0)),
                      linetype=guide_legend())
           }
@@ -611,7 +612,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
     if (address!=FALSE) {
       dev.off()
     }
-	}
+    }
 
 #######################
 ### Comparison Plot
@@ -620,7 +621,8 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
     datatemp <- data[!is.na(data$adj.pvalue), ]
     datatemp$Protein <- factor(datatemp$Protein)
     ## choose comparison to draw plots
-    if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+    if (address == FALSE) {
+      ## here I used != FALSE, instead of !address. Because address can be logical or characters.
       if (which.Protein == "all") {
         stop("** Cannnot generate all comparison plots in a screen. Please set one protein at a time.")
       } else if (length(which.Protein) > 1) {
@@ -634,7 +636,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
       if (is.character(which.Protein)) {
         temp.name <- which.Protein
         ## message if name of Protein is wrong.
-        if (length(setdiff(temp.name,unique(datatemp$Protein))) > 0) {
+        if (length(setdiff(temp.name, unique(datatemp$Protein))) > 0) {
           stop(paste0("Please check protein name. Data set does not have this protein. - ",
                       toString(temp.name)))
         }
@@ -718,7 +720,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
       message(paste("Drew compasison plot for ",
                     unique(sub$PROTEIN), "(", i, " of ",
                     length(unique(datatemp$Protein)), ")"))
-		} ## end-loop
+        } ## end-loop
     if (address!=FALSE) {
       dev.off()
     }

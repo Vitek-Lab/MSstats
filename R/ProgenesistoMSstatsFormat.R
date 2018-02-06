@@ -12,9 +12,9 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
 ##############################
   ## there are space in column name
   if (!is.element("Modifications", input[2, ])) {
-    input[2,][grep("modifications", input[2, ])] <- "Modifications"
+    input[2, ][grep("modifications", input[2, ])] <- "Modifications"
   }
-  if (!is.element("Protein", input[2,]) & is.element("Accession", input[2, ])) {
+  if (!is.element("Protein", input[2, ]) & is.element("Accession", input[2, ])) {
     ## use "Accession" for Protein ID
     input[2, ][input[2, ] == "Accession"] <- "Protein"
   }
@@ -71,7 +71,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
 ##############################
   if (is.element("Use.in.quantitation", colnames(input))) {
     ## value for use in quantitation is True vs False
-    if(length(grep("True", unique(input$Use.in.quantitation))) > 0) {
+    if (length(grep("True", unique(input$Use.in.quantitation))) > 0) {
       input <- input[input$Use.in.quantitation == "True", ]
     } else if (length(grep("TRUE", unique(input$Use.in.quantitation))) > 0) {
       input <- input[input$Use.in.quantitation == TRUE, ]
@@ -107,8 +107,8 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
   ## 4. remove peptides which are used in more than one protein
   ## we assume to use unique peptide
 ################################################
-  if(useUniquePeptide) { 
-    pepcount <- unique(input[, c("Protein","Sequence")])
+  if (useUniquePeptide) {
+    pepcount <- unique(input[, c("Protein", "Sequence")])
     pepcount$Sequence <- factor(pepcount$Sequence)
     ## count how many proteins are assigned for each peptide
     structure <- aggregate(Protein ~., data=pepcount, length)
@@ -136,7 +136,7 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
                  fill=NA_real_)
   ## reformat for long format
   input <- melt(input, id=c("ProteinName", "PeptideModifiedSequence", "PrecursorCharge"))
-  colnames(input)[which(colnames(input) %in% c("variable","value"))] <- c("Run","Intensity")
+  colnames(input)[which(colnames(input) %in% c("variable", "value"))] <- c("Run", "Intensity")
   message("** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.")
 
 ##############################
@@ -173,13 +173,13 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
 ##############################
   if (fewMeasurements=="remove") {
     ## it is the same across experiments. # measurement per feature.
-    input <- .remove_feature_with_few_progenesis(input)
+    input <- remove_feature_with_few_progenesis(input)
   }
 
 ##############################
 ### 7. remove proteins with only one peptide and charge per protein
 ##############################
-	if (removeProtein_with1Peptide) {
+    if (removeProtein_with1Peptide) {
 ######## remove protein which has only one peptide
     input$feature <- paste(input$PeptideModifiedSequence,
                            input$PrecursorCharge,
@@ -200,12 +200,12 @@ ProgenesistoMSstatsFormat <- function(input, annotation, useUniquePeptide=TRUE,
                      lengthtotalprotein, " proteins."))
     }
     input <- input[, -which(colnames(input) %in% c("feature"))]
-	}
+    }
   input$ProteinName <- input$ProteinName
-	return(input)
+    return(input)
 }
 
-.remove_feature_with_few_progenesis <- function(x) {
+remove_feature_with_few_progenesis <- function(x) {
   xtmp <- x[!is.na(x$Intensity) & x$Intensity > 0, ]
   xtmp$feature <- paste(xtmp$PeptideModifiedSequence, xtmp$PrecursorCharge, sep="_")
   count_measure <- xtabs(~feature, xtmp)

@@ -3,16 +3,17 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
                               width=10, height=10, which.Protein="all", address="") {
   if (length(setdiff(toupper(type), c("QQPLOTS", "RESIDUALPLOTS"))) != 0) {
     stop(paste0("Input for type=",
-                type,". However,'type' should be one of 'QQPlots', 'ResidualPlots' ."))
+                type, ". However,'type' should be one of 'QQPlots', 'ResidualPlots' ."))
   }
 
   datafit <- data$fittedmodel
   proid <- levels(data$ComparisonResult$Protein)
-  if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+  if (address == FALSE) {
+    ## here I used != FALSE, instead of !address. Because address can be logical or characters.
     if (which.Protein == "all") {
       stop("** Cannnot generate all plots in a screen. Please set one protein at a time.")
     } else if (length(which.Protein) > 1) {
-      stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
+      stop("** Cannnot generate multiple plots in a screen. Please set one protein at a time.")
     }
   }
 
@@ -34,12 +35,12 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
       ## message if name of Protein is wrong.
       if (length(proid) < max(which.Protein)) {
         stop(paste0("Please check your selection of proteins. There are ",
-                    length(proid)," proteins in this dataset."))
+                    length(proid), " proteins in this dataset."))
       }
     }
 
     ## use only assigned proteins
-    datafit <- datafit[proid %in% temp.name ]
+    datafit <- datafit[proid %in% temp.name]
     proid <- proid[proid %in% temp.name]
   }
 
@@ -55,7 +56,7 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
       filenaming <- paste0(address, "QQPlot")
       finalfile <- paste0(address, "QQPlot.pdf")
 
-      while (is.element(finalfile,allfiles)) {
+      while (is.element(finalfile, allfiles)) {
         num <- num + 1
         finalfile <- paste0(paste(filenaming, num, sep="-"), ".pdf")
       }
@@ -64,20 +65,22 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
 
     for (i in 1:length(datafit)) {
       sub <- datafit[[i]]
-      if(is.null(sub)) {
+      if (is.null(sub)) {
         message(
           paste0(
             proid[i],
             "could not be fitted by linear mixed effect model. Can not draw QQ plot for", "(",
-            i," of ",
+            i, " of ",
             length(proid),
             ")"))
-        next()
+        next
       }
 
-      if (class(sub)=="lm") { ### lm model
+      if (class(sub)=="lm") {
+        ## lm model
         sub.residuals <- sub$residuals
-      } else {  ### lmer model
+      } else {
+        ## lmer model
         sub.residuals <- resid(sub)
       }
       sub.residuals.table <- data.frame(residual=sub.residuals)
@@ -90,9 +93,9 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
       int <- y[1L] - slope * x[1L]
 
       ptemp <- ggplot(sub.residuals.table, aes(sample=residual)) +
-        geom_point(stat="qq",alpha=0.8, shape=20, size=dot.size) +
+        geom_point(stat="qq", alpha=0.8, shape=20, size=dot.size) +
         scale_shape(solid=FALSE) +
-        geom_abline(slope = slope, intercept = int,colour="red") +
+        geom_abline(slope = slope, intercept = int, colour="red") +
         scale_y_continuous("Sample Quantiles") +
         scale_x_continuous("Theoretical Quantiles") +
         labs(title=paste("Normal Q-Q Plot (", proid[i], ")")) +
@@ -100,16 +103,16 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
           panel.background=element_rect(fill="white", colour="black"),
           panel.grid.major=element_line(colour="grey95"),
           panel.grid.minor=element_blank(),
-          axis.text.x=element_text(size=axis.size,colour="black"),
-          axis.text.y=element_text(size=axis.size,colour="black"),
+          axis.text.x=element_text(size=axis.size, colour="black"),
+          axis.text.y=element_text(size=axis.size, colour="black"),
           axis.ticks=element_line(colour="black"),
-          axis.title.x=element_text(size=axis.size+5,vjust=-0.4),
-          axis.title.y=element_text(size=axis.size+5,vjust=0.3),
-          title=element_text(size=axis.size+8,vjust=1.5),
+          axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+          axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+          title=element_text(size=axis.size + 8, vjust=1.5),
           legend.position="none"
         )
       print(ptemp)
-      message(paste("Drew the QQ plot for ", proid[i], "(",i," of ",length(proid),")"))
+      message(paste("Drew the QQ plot for ", proid[i], "(", i, " of ", length(proid), ")"))
     } ## end loop
 
     if (address!=FALSE) {
@@ -120,18 +123,18 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
 #############################################
 #### Residual plot
 #############################################
-  if (toupper(type)=="RESIDUALPLOTS") {
+  if (toupper(type) == "RESIDUALPLOTS") {
     ## save the plots as pdf or not
     ## If there are the file with the same name, add next numbering at the end of file name
-    if (address!=FALSE) {
+    if (address != FALSE) {
       allfiles <- list.files()
       num <- 0
-      filenaming <- paste(address,"ResidualPlot",sep="")
-      finalfile <- paste(address,"ResidualPlot.pdf",sep="")
+      filenaming <- paste0(address, "ResidualPlot")
+      finalfile <- paste0(address, "ResidualPlot.pdf")
 
-      while (is.element(finalfile,allfiles)) {
-        num <- num+1
-        finalfile <- paste(paste(filenaming,num,sep="-"),".pdf",sep="")
+      while (is.element(finalfile, allfiles)) {
+        num <- num + 1
+        finalfile <- paste0(paste(filenaming, num, sep="-"), ".pdf")
       }
       pdf(finalfile, width=width, height=height)
     }
@@ -144,13 +147,15 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
             proid[i],
             "could not be fitted by linear mixed effect model. Can not draw residual plot for", "(",
             i, " of ", length(proid), ")"))
-        next()
+        next
       }
 
-      if (class(sub)=="lm") { ### lm model
+      if (class(sub)=="lm") {
+        ## lm model
         sub.residuals <- sub$residuals
         sub.fitted <- sub$fitted.values
-      } else {  ### lmer model
+      } else {
+        ## lmer model
         sub.residuals <- resid(sub)
         sub.fitted <- fitted(sub)
       }
@@ -166,12 +171,12 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
           panel.background=element_rect(fill="white", colour="black"),
           panel.grid.major=element_line(colour="grey95"),
           panel.grid.minor=element_blank(),
-          axis.text.x=element_text(size=axis.size,colour="black"),
-          axis.text.y=element_text(size=axis.size,colour="black"),
+          axis.text.x=element_text(size=axis.size, colour="black"),
+          axis.text.y=element_text(size=axis.size, colour="black"),
           axis.ticks=element_line(colour="black"),
-          axis.title.x=element_text(size=axis.size + 5,vjust=-0.4),
-          axis.title.y=element_text(size=axis.size + 5,vjust=0.3),
-          title=element_text(size=axis.size + 8,vjust=1.5),
+          axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+          axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+          title=element_text(size=axis.size + 8, vjust=1.5),
           legend.position="none")
       print(ptemp)
       message(paste("Drew the residual plot for ", proid[i],

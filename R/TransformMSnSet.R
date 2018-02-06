@@ -14,9 +14,9 @@ transformMSnSetToMSstats <- function(ProteinName, PeptideSequence, PrecursorChar
   ## if the data is an expression set, extract the different data components and reshape to "long" format
 
   ## extract the three data components
-  sampleData <- pData(data)
-  featureData <- fData(data)
-  expressionMatrix <- as.data.frame(exprs(data))
+  sampleData <- Biobase::pData(data)
+  featureData <- Biobase::fData(data)
+  expressionMatrix <- as.data.frame(Biobase::exprs(data))
   ## extract the variable names
   sample.variables <- dimnames(sampleData)[[2]]
   feature.variables <- dimnames(featureData)[[2]] ## ProteinAccession, PeptideSequence, charge
@@ -81,7 +81,7 @@ transformMSnSetToMSstats <- function(ProteinName, PeptideSequence, PrecursorChar
   ## define the group column
   if (length(Condition) > 1) {
     group.variable <- final.data[, which(colnames(final.data) == Condition[1])]
-    for(i in 2:length(Condition)) {
+    for (i in 2:length(Condition)) {
       var <- final.data[, which(colnames(final.data) == Condition[i])]
       group.variable <- paste(group.variable, var, sep = ".")
     }
@@ -109,7 +109,7 @@ transformMSstatsToMSnSet <- function(data) {
   data <- droplevels(data)
   colnames(data) <- toupper(colnames(data))
   ## the expression matrix
-  xx <- with(data, by(INTENSITY, list(ISOTOPELABELTYPE, BIOREPLICATE, CONDITION,RUN), c))
+  xx <- with(data, by(INTENSITY, list(ISOTOPELABELTYPE, BIOREPLICATE, CONDITION, RUN), c))
   xx <- do.call(cbind, xx)
   ## sample annotation
   pd <- data[!duplicated(data[, c("ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE", "RUN")]),

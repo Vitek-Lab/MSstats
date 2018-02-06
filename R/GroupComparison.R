@@ -10,10 +10,10 @@
 #' @importFrom data.table rbindlist
 groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   scopeOfBioReplication <- "expanded"
- 	scopeOfTechReplication <- "restricted"
+    scopeOfTechReplication <- "restricted"
   message.show <- FALSE ## whether show the "testing xx protein" or not. It consume large memory and file size.
   ## save process output in each step
- 	allfiles <- list.files()
+    allfiles <- list.files()
   filenaming <- "msstats"
   if (length(grep(filenaming, allfiles)) == 0) {
     finalfile <- "msstats.log"
@@ -31,14 +31,14 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   }
 
   processout <- rbind(processout,
-                      as.matrix(c(" ", " ", "MSstats - groupComparison function"," "), ncol=1))
+                      as.matrix(c(" ", " ", "MSstats - groupComparison function", " "), ncol=1))
   ## check input is correct
   ## data format
   rawinput <- c("ProteinName", "PeptideSequence", "PrecursorCharge", "FragmentIon",
                 "ProductCharge", "IsotopeLabelType", "Condition",
                 "BioReplicate", "Run", "Intensity")
 
-  if (length(setdiff(toupper(rawinput),toupper(colnames(data$ProcessedData)))) == 0) {
+  if (length(setdiff(toupper(rawinput), toupper(colnames(data$ProcessedData)))) == 0) {
     processout <- rbind(
       processout,
       "The required input - data: did not process from dataProcess(). - stop")
@@ -76,13 +76,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   ## all input
   processout <- rbind(
     processout,
-    paste0("labeled = ",labeled))
+    paste0("labeled = ", labeled))
   processout <- rbind(
     processout,
-    paste0("scopeOfBioReplication = ",scopeOfBioReplication))
+    paste0("scopeOfBioReplication = ", scopeOfBioReplication))
   write.table(processout, file=finalfile, row.names=FALSE)
   ## check whether case-control(FALSE) or time-course(TRUE)
-  repeated <- .checkRepeated(data$ProcessedData)
+  repeated <- checkRepeated(data$ProcessedData)
 
   if (repeated) {
     processout <- rbind(processout, c(paste("Time course design of experiment - okay")))
@@ -98,24 +98,24 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   dataafterfit <- NULL
   ## check input for labeled
   ## start to analyze by protein ID
- 	message("\n Start to test and get inference in whole plot...")
- 	if (data$SummaryMethod == "logOfSum") {
- 		message("\n * Use t-test for log sum summarization per subject.")
- 		processout <- rbind(processout, c(paste("Use t-test for log sum summarization per subject.")))
- 		write.table(processout, file=finalfile, row.names=FALSE)
- 		if (repeated) {
- 			processout <- rbind(
+    message("\n Start to test and get inference in whole plot...")
+    if (data$SummaryMethod == "logOfSum") {
+        message("\n * Use t-test for log sum summarization per subject.")
+        processout <- rbind(processout, c(paste("Use t-test for log sum summarization per subject.")))
+        write.table(processout, file=finalfile, row.names=FALSE)
+        if (repeated) {
+            processout <- rbind(
         processout,
         c(paste("Only group comparsion is available for t-test.- stop")))
- 			write.table(processout, file=finalfile, row.names=FALSE)
- 			stop("\n * Only group comparsion is available for t-test.")
- 		}
- 	}
+            write.table(processout, file=finalfile, row.names=FALSE)
+            stop("\n * Only group comparsion is available for t-test.")
+        }
+    }
 
   ## need original group information
   rqall <- data$RunlevelData
   rqall$Protein <- factor(rqall$Protein)
-	processall <- data$ProcessedData
+    processall <- data$ProcessedData
   origGroup <- unique(rqall$GROUP_ORIGINAL)
   groupinfo <- levels(data$ProcessedData$GROUP_ORIGINAL)
   pb <- txtProgressBar(max = nlevels(rqall$Protein), style = 3)
@@ -139,7 +139,8 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
                       length(unique(rqall$Protein)), ")"))
       }
       temp <- try(.ttest.logsum(contrast.matrix, sub, origGroup), silent=TRUE)
-    } else { ## linear model
+    } else {
+      ## linear model
       sub$GROUP <- factor(sub$GROUP)
       sub$SUBJECT <- factor(sub$SUBJECT)
       sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL, levels=groupinfo)
@@ -147,13 +148,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
       sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
       sub$RUN <- factor(sub$RUN)
 
-      ## singleFeature <- .checkSingleFeature(sub)
-      singleSubject <- .checkSingleSubject(sub)
-      TechReplicate <- .checkTechReplicate(sub) ## use for label-free model
-      ## MissGroupByFeature <- .checkMissGroupByFeature(sub)
-      ## MissRunByFeature <- .checkMissRunByFeature(sub)
-      MissSubjectByGroup <- .checkRunbyFeature(sub)
-      UnequalSubject <- .checkUnequalSubject(sub)
+      ## singleFeature <- checkSingleFeature(sub)
+      singleSubject <- checkSingleSubject(sub)
+      TechReplicate <- checkTechReplicate(sub) ## use for label-free model
+      ## MissGroupByFeature <- checkMissGroupByFeature(sub)
+      ## MissRunByFeature <- checkMissRunByFeature(sub)
+      MissSubjectByGroup <- checkRunbyFeature(sub)
+      UnequalSubject <- checkUnequalSubject(sub)
       ## testing and inference in whole plot
       if (message.show) {
         message(paste("Testing a comparison for protein ",
@@ -174,7 +175,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
       write.table(processout, file=finalfile, row.names=FALSE)
       tempresult <- list(result=NULL, valueresid=NULL, valuefitted=NULL, fittedmodel=NULL)
 
-      for(k in 1:nrow(contrast.matrix)) {
+      for (k in 1:nrow(contrast.matrix)) {
         tempresult$result <- rbind(tempresult$result,
                                    data.frame(
                                      "Protein" = levels(rqall$Protein)[i],
@@ -193,9 +194,9 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
 
     temptempresult <- tempresult$result
     ## need to add information about % missingness and %imputation
-    if ( is.element("NumImputedFeature", colnames(data$RunlevelData)) ) {
+    if (is.element("NumImputedFeature", colnames(data$RunlevelData))) {
       subprocess <- processall[processall$PROTEIN == as.character(unique(sub$PROTEIN)), ]
-      temptempresult <- .count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
+      temptempresult <- count.missing.percentage(contrast.matrix, temptempresult, sub, subprocess)
     }
     ## comparison result table
     temptempresult$Label <- as.character(temptempresult$Label)
@@ -209,7 +210,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
         sub$fitted <- NA
       }
     } else if (data$SummaryMethod != "logOfSum" & any(is.na(tempresult$result$pvalue))) {
-      ## even though there is no error for .fit.model function, still output can have empty fitted and residuals.
+      ## even though there is no error for fit.model function, still output can have empty fitted and residuals.
       sub$residuals <- NA
       sub$fitted <- NA
     } else if (data$SummaryMethod != "logOfSum") {
@@ -217,7 +218,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
       sub$fitted <- tempresult$valuefitted
     }
 
-    dataafterfit <- rbindlist(list(dataafterfit,sub), fill=TRUE)
+    dataafterfit <- rbindlist(list(dataafterfit, sub), fill=TRUE)
     ## save fitted model
     outfitted <- c(outfitted, list(tempresult$fittedmodel))
     ## progress
@@ -233,7 +234,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
   out.all <- NULL
   out$Label <- as.character(out$Label)
 
-  for(i in 1:length(unique(out$Label))) {
+  for (i in 1:length(unique(out$Label))) {
     outsub <- out[out$Label == unique(out$Label)[i], ]
     outsub <- data.frame(outsub, adj.pvalue=p.adjust(outsub$pvalue, method="BH"))
     out.all <- rbindlist(list(out.all, outsub))
@@ -287,7 +288,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix, data=data) {
 #############################################
 ### Model-based quality control plot
 #############################################
-modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, legend.size=7,
+modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7, legend.size=7,
                               width=10, height=10, featureName=TRUE, feature.QQPlot="all",
                               which.Protein="all", address="") {
   if (length(setdiff(toupper(type),
@@ -305,9 +306,9 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
     if (is.character(which.Protein)) {
       temp.name <- which.Protein
       ## message if name of Protein is wrong.
-      if (length(setdiff(temp.name,unique(data$PROTEIN))) > 0) {
+      if (length(setdiff(temp.name, unique(data$PROTEIN))) > 0) {
         stop(paste0("Please check protein name. Dataset does not have this protein. -",
-                    toString(temp.name,)))
+                    toString(temp.name)))
       }
     }
 
@@ -338,7 +339,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         num <- 0
         filenaming <- paste0(address, "QQPlot_allFeatures")
         finalfile <- paste0(address, "QQPlot_allFeatures.pdf")
-        while(is.element(finalfile, allfiles)) {
+        while (is.element(finalfile, allfiles)) {
           num <- num + 1
           finalfile <- paste0(paste(filenaming, num, sep="-"), ".pdf")
         }
@@ -359,13 +360,13 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
           geom_abline(slope = slope, intercept = int, colour="red") +
           scale_y_continuous("Sample Quantiles") +
           scale_x_continuous("Theoretical Quantiles") +
-          labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")")) +
+          labs(title=paste("Normal Q-Q Plot (", unique(sub$PROTEIN), ")")) +
           theme(
             panel.background=element_rect(fill="white", colour="black"),
             panel.grid.major=element_line(colour="grey95"),
             panel.grid.minor=element_blank(),
-            axis.text.x=element_text(size=axis.size,colour="black"),
-            axis.text.y=element_text(size=axis.size,colour="black"),
+            axis.text.x=element_text(size=axis.size, colour="black"),
+            axis.text.y=element_text(size=axis.size, colour="black"),
             axis.ticks=element_line(colour="black"),
             axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
             axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
@@ -374,7 +375,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         print(ptemp)
         message(paste("Drew the QQ plot for ",
                       unique(sub$PROTEIN), "(",
-                      i," of ",length(unique(data$PROTEIN)),")"))
+                      i, " of ", length(unique(data$PROTEIN)), ")"))
       } ## end loop
 
       if (address!=FALSE) {
@@ -392,7 +393,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         num <- 0
         filenaming <- paste0(address, "QQPlot_byFeatures")
         finalfile <- paste0(address, "QQPlot_byFeatures.pdf")
-        while(is.element(finalfile, allfiles)) {
+        while (is.element(finalfile, allfiles)) {
           num <- num + 1
           finalfile <- paste0(paste(filenaming, num, sep="-"), ".pdf")
         }
@@ -409,23 +410,23 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
             facet_wrap(~ FEATURE) +
             scale_y_continuous("Sample Quantiles") +
             scale_x_continuous("Theoretical Quantiles") +
-            labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),")")) +
+            labs(title=paste("Normal Q-Q Plot (", unique(sub$PROTEIN), ")")) +
             theme(
               panel.background=element_rect(fill="white", colour="black"),
               panel.grid.major=element_line(colour="grey95"),
               panel.grid.minor=element_blank(),
-              axis.text.x=element_text(size=axis.size,colour="black"),
-              axis.text.y=element_text(size=axis.size,colour="black"),
+              axis.text.x=element_text(size=axis.size, colour="black"),
+              axis.text.y=element_text(size=axis.size, colour="black"),
               axis.ticks=element_line(colour="black"),
-              axis.title.x=element_text(size=axis.size + 5,vjust=-0.4),
-              axis.title.y=element_text(size=axis.size + 5,vjust=0.3),
-              title=element_text(size=axis.size + 8,vjust=1.5),
+              axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+              axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+              title=element_text(size=axis.size + 8, vjust=1.5),
               strip.text.x=element_text(size=text.size),
               legend.position="none")
           print(ptemp)
           message(paste("Drew the QQ plot for ",
-                        unique(sub$PROTEIN), "(",i," of ",
-                        length(unique(data$PROTEIN)),")"))
+                        unique(sub$PROTEIN), "(", i, " of ",
+                        length(unique(data$PROTEIN)), ")"))
         }
 
         ## label-based : seperate endogenous and reference
@@ -439,45 +440,45 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
             scale_y_continuous("Sample Quantiles") +
             scale_x_continuous("Theoretical Quantiles") +
             labs(title=paste("Normal Q-Q Plot (",
-                             unique(sub$PROTEIN),") - Endogenous Intensities")) +
+                             unique(sub$PROTEIN), ") - Endogenous Intensities")) +
             theme(
               panel.background=element_rect(fill="white", colour="black"),
               panel.grid.major=element_line(colour="grey95"),
               panel.grid.minor=element_blank(),
-              axis.text.x=element_text(size=axis.size,colour="black"),
-              axis.text.y=element_text(size=axis.size,colour="black"),
+              axis.text.x=element_text(size=axis.size, colour="black"),
+              axis.text.y=element_text(size=axis.size, colour="black"),
               axis.ticks=element_line(colour="black"),
-              axis.title.x=element_text(size=axis.size + 5,vjust=-0.4),
-              axis.title.y=element_text(size=axis.size + 5,vjust=0.3),
-              title=element_text(size=axis.size + 8,vjust=1.5),
+              axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+              axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+              title=element_text(size=axis.size + 8, vjust=1.5),
               strip.text.x=element_text(size=text.size),
               legend.position="none")
           print(ptemp)
 
           ## reference intensities
-          sub.h <- sub[sub$LABEL=="H",]
+          sub.h <- sub[sub$LABEL=="H", ]
           ptemp <- ggplot(sub.h, aes_string(sample="residuals", color="FEATURE")) +
             geom_point(stat="qq", alpha=0.8, size=dot.size) +
             facet_wrap(~ FEATURE) +
             scale_y_continuous("Sample Quantiles") +
             scale_x_continuous("Theoretical Quantiles") +
-            labs(title=paste("Normal Q-Q Plot (",unique(sub$PROTEIN),") - Reference Intensities")) +
+            labs(title=paste("Normal Q-Q Plot (", unique(sub$PROTEIN), ") - Reference Intensities")) +
             theme(
               panel.background=element_rect(fill="white", colour="black"),
               panel.grid.major=element_line(colour="grey95"),
               panel.grid.minor=element_blank(),
-              axis.text.x=element_text(size=axis.size,colour="black"),
-              axis.text.y=element_text(size=axis.size,colour="black"),
+              axis.text.x=element_text(size=axis.size, colour="black"),
+              axis.text.y=element_text(size=axis.size, colour="black"),
               axis.ticks=element_line(colour="black"),
-              axis.title.x=element_text(size=axis.size + 5,vjust=-0.4),
-              axis.title.y=element_text(size=axis.size + 5,vjust=0.3),
-              title=element_text(size=axis.size + 8,vjust=1.5),
+              axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+              axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+              title=element_text(size=axis.size + 8, vjust=1.5),
               strip.text.x=element_text(size=text.size),
               legend.position="none")
           print(ptemp)
           message(paste("Drew the QQ plot for ",
-                        unique(sub$PROTEIN), "(",i," of ",
-                        length(unique(data$PROTEIN)),")"))
+                        unique(sub$PROTEIN), "(", i, " of ",
+                        length(unique(data$PROTEIN)), ")"))
         }
       } ## end loop
 
@@ -503,7 +504,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
       num <- 0
       filenaming <- paste0(address, "ResidualPlot")
       finalfile <- paste0(address, "ResidualPlot.pdf")
-      while(is.element(finalfile, allfiles)) {
+      while (is.element(finalfile, allfiles)) {
         num <- num + 1
         finalfile <- paste0(paste(filenaming, num, sep="-"), ".pdf")
       }
@@ -518,14 +519,14 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
                       data=sub) +
         geom_point(size=dot.size, alpha=0.5) +
         geom_hline(yintercept=0, linetype="twodash", colour="darkgrey", size=0.6) +
-        scale_y_continuous("Residuals",limits=c(y.limdown, y.limup)) +
+        scale_y_continuous("Residuals", limits=c(y.limdown, y.limup)) +
         scale_x_continuous("Predicted Abundance", limits=c(x.limdown, x.limup)) +
         labs(title=levels(data$PROTEIN)[i])
       if (length(unique(sub$LABEL))==2) {
         ptemp <- ptemp +
-          scale_shape_manual(values=c(2,19),
+          scale_shape_manual(values=c(2, 19),
                              name="",
-                             labels=c("Reference","Endogenous"))
+                             labels=c("Reference", "Endogenous"))
       } else{
         ptemp <- ptemp +
           scale_shape_manual(values=c(19),
@@ -537,16 +538,16 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         ptemp <- ptemp +
           theme(
             panel.background=element_rect(fill="white", colour="black"),
-            legend.key=element_rect(fill="white",colour="white"),
+            legend.key=element_rect(fill="white", xocolour="white"),
             legend.text=element_text(size=legend.size),
             panel.grid.major=element_line(colour="grey95"),
             panel.grid.minor=element_blank(),
-            axis.text.x=element_text(size=axis.size,colour="black"),
-            axis.text.y=element_text(size=axis.size,colour="black"),
+            axis.text.x=element_text(size=axis.size, colour="black"),
+            axis.text.y=element_text(size=axis.size, colour="black"),
             axis.ticks=element_line(colour="black"),
-            axis.title.x=element_text(size=axis.size + 5,vjust=-0.4),
-            axis.title.y=element_text(size=axis.size + 5,vjust=0.3),
-            title=element_text(size=axis.size + 8,vjust=1.5),
+            axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+            axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+            title=element_text(size=axis.size + 8, vjust=1.5),
             legend.position=c("top")) +
           guides(color=guide_legend(ncol=2))
       } else {
@@ -558,15 +559,15 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
             axis.text.x=element_text(size=axis.size, colour="black"),
             axis.text.y=element_text(size=axis.size, colour="black"),
             axis.ticks=element_line(colour="black"),
-            axis.title.x=element_text(size=axis.size + 5,vjust=-0.4),
-            axis.title.y=element_text(size=axis.size + 5,vjust=0.3),
-            title=element_text(size=axis.size + 8,vjust=1.5),
+            axis.title.x=element_text(size=axis.size + 5, vjust=-0.4),
+            axis.title.y=element_text(size=axis.size + 5, vjust=0.3),
+            title=element_text(size=axis.size + 8, vjust=1.5),
             legend.position="none")
       }
       print(ptemp)
       message(paste("Drew the residual plot for ",
-                    unique(sub$PROTEIN), "(", i," of ",
-                    length(unique(data$PROTEIN)),")"))
+                    unique(sub$PROTEIN), "(", i, " of ",
+                    length(unique(data$PROTEIN)), ")"))
     }
     if (address!=FALSE) {
       dev.off()
@@ -581,7 +582,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 ## check if measurements are missing for entire group
 ## if yes, length of group and length of contrast won"t agree
 #############################################
-.chechGroupComparisonAgreement <- function(sub1, contrast.matrix) {
+checkGroupComparisonAgreement <- function(sub1, contrast.matrix) {
   tempSub <- as.numeric(as.character(unique(sub1[, c("GROUP")])))
   positionMiss <- setdiff(seq(1, length(contrast.matrix)), tempSub)
   contrast.matrix.sub1 <- contrast.matrix[tempSub]
@@ -594,7 +595,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 #############################################
 ## check repeated (case-control? or time-course?)
 #############################################
-.checkRepeated <- function(data) {
+checkRepeated <- function(data) {
   data.light <- data[data$LABEL=="L", ]
   subjectByGroup <- table(data.light$SUBJECT_ORIGINAL, data.light$GROUP_ORIGINAL)
   subjectAppearances <- apply(subjectByGroup, 1, function(x) sum(x > 0))
@@ -605,7 +606,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 #############################################
 ## check single subject for both case-control and time-course?
 #############################################
-.checkSingleSubject <- function(data) {
+checkSingleSubject <- function(data) {
   temp <- unique(data[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
   temp$GROUP_ORIGINAL <- factor(temp$GROUP_ORIGINAL)
   temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
@@ -614,17 +615,17 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 #############################################
-## check .checkSingleFeature
+## check checkSingleFeature
 #############################################
-.checkSingleFeature <- function(data) {
+checkSingleFeature <- function(data) {
   sigleFeature <- length(unique(data$FEATURE)) < 2
   return(sigleFeature)
 }
 
 #############################################
-## check .checkTechReplicate
+## check checkTechReplicate
 #############################################
-.checkTechReplicate <- function(data) {
+checkTechReplicate <- function(data) {
   temp <- unique(data[, c("SUBJECT_NESTED", "RUN")])
   temp$SUBJECT_NESTED <- factor(temp$SUBJECT_NESTED)
   temp1 <- xtabs(~ SUBJECT_NESTED, data=temp)
@@ -633,10 +634,10 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 #############################################
-## check .checkRunByFeature
+## check checkRunByFeature
 #############################################
 ## it might not be right
-.checkRunbyFeature <- function(data) {
+checkRunbyFeature <- function(data) {
   data.light <- data[data$LABEL=="L", ]
   RunByFeature <- table(data.light$RUN, data.light$FEATURE)
   emptyRow <- apply(RunByFeature, 1, sum)
@@ -645,18 +646,18 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 #############################################
-## check .checkMissGroupByFeature
+## check checkMissGroupByFeature
 #############################################
-.checkMissGroupByFeature <- function(data) {
+checkMissGroupByFeature <- function(data) {
   temp <- unique(data[, c("GROUP", "FEATURE")])
   temp1 <- xtabs(~ GROUP, data=temp)
   return(any(temp1 != temp1[1]))
 }
 
 #############################################
-## check .checkMissRunByFeature
+## check checkMissRunByFeature
 #############################################
-.checkMissRunByFeature <- function(data) {
+checkMissRunByFeature <- function(data) {
   ## temp <- unique(data[,c("RUN","FEATURE")])
   temp <- unique(data[data$LABEL == "L", c("RUN", "FEATURE")])
   temp1 <- xtabs(~ RUN, data=temp)
@@ -665,9 +666,9 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 #############################################
-## check .checkMissFeature for label-free missingness
+## check checkMissFeature for label-free missingness
 #############################################
-.checkMissFeature <- function(data) {
+checkMissFeature <- function(data) {
   dataByPeptide <- tapply(as.numeric(data$ABUNDANCE),
                           list(data$FEATURE, data$GROUP_ORIGINAL),
                           function(x) sum(x > 0, na.rm = TRUE))
@@ -677,9 +678,9 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 #############################################
-## check .checkUnequalSubject
+## check checkUnequalSubject
 #############################################
-.checkUnequalSubject <- function(data) {
+checkUnequalSubject <- function(data) {
   ##temp <- unique(data[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])
   temp <- unique(data[data$LABEL == "L", c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
   temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
@@ -687,10 +688,10 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 ########################################################
-.fit.model.single <- function(contrast.matrix, data, TechReplicate, singleSubject,
+fit.model.single <- function(contrast.matrix, data, TechReplicate, singleSubject,
                               repeated, origGroup, processout) {
   ## input : output of run quantification
-	data2 <- data
+    data2 <- data
   data2$GROUP <- factor(data2$GROUP)
   data2$SUBJECT <- factor(data2$SUBJECT)
   ## if there is only one condition between two conditions, make error message and next
@@ -762,13 +763,15 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data=data2)
         df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=data2)$df.residual
       }
-    } else { ## time-course
+    } else {
+      ## time-course
       if (singleSubject) {
-        fit.full <- lm(ABUNDANCE ~ GROUP , data=data2)
-      } else { ## no single subject
+        fit.full <- lm(ABUNDANCE ~ GROUP, data=data2)
+      } else {
+        ## no single subject
         if (!TechReplicate) {
-          fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) , data=data2)
-          df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT , data=data2)$df.residual
+          fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data=data2)
+          df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT, data=data2)$df.residual
         } else {
           fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
                            data=data2) ## SUBJECT==SUBJECT_NESTED here
@@ -778,22 +781,23 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
       }
     } ## time-course
 
-		## get parameter from model
+        ## get parameter from model
     if (class(fit.full) == "lm") {
-			Para <- .getParameterFixed(fit.full)
-		} else {
-			Para <- .getParameterRandom(fit.full, df.full)
-		}
+            Para <- getParameterFixed(fit.full)
+        } else {
+            Para <- getParameterRandom(fit.full, df.full)
+        }
 
     ## each comparison
     allout <- NULL
     ## get condition IDs which are completely missing.
     emptycondition <- setdiff(levels(origGroup), unique(data2$GROUP_ORIGINAL))
-    for(k in 1:nrow(contrast.matrix)) {
+    for (k in 1:nrow(contrast.matrix)) {
       ## choose each comparison
       contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
       row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
-      if (length(emptycondition) != 0) { # if there are any completely missing in any condition,
+      if (length(emptycondition) != 0) {
+        ## if there are any completely missing in any condition,
         ## one by one comparison is simple. However, for linear combination of condition can be complicated
         ## get + and - condition separately
         count.pos <- levels(origGroup)[contrast.matrix.sub != 0 & contrast.matrix.sub > 0]
@@ -820,7 +824,8 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
         }
 
         ## message and output
-        if (flag.issue.pos & flag.issue.neg) { ## both sides are completely missing
+        if (flag.issue.pos & flag.issue.neg) {
+          ## both sides are completely missing
           processout <- rbind(processout,
                               "*** error : results of Protein ", unique(data2$PROTEIN),
                               " for comparison ", row.names(contrast.matrix.sub),
@@ -873,8 +878,8 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
               "issue" = "oneConditionMissing")
           }
         } else { # then same as regulat calculation
-          contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
-          out <- .estimableFixedRandom(Para, contrast)
+          contrast <- make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
+          out <- estimableFixedRandom(Para, contrast)
           ## any error for out, just NA
           if (is.null(out)) {
             out <- data.frame(
@@ -895,8 +900,8 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
           }
         }
       } else {
-        contrast <- .make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
-        out <- .estimableFixedRandom(Para, contrast)
+        contrast <- make.contrast.free.single(fit.full, contrast.matrix.sub, data2)
+        out <- estimableFixedRandom(Para, contrast)
         ## any error for out, just NA
         if (is.null(out)) {
           out <- data.frame(
@@ -934,17 +939,17 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
     "fittedmodel" = fit.full,
     "processout" = processout)
   return(finalout)
-} ## .fit.model.single
+} ## fit.model.single
 
 #############################################
-.ttest.logsum <- function(contrast.matrix, data, origGroup) {
+ttest.logsum <- function(contrast.matrix, data, origGroup) {
   ## each comparison
   allout <- NULL
   for (k in 1:nrow(contrast.matrix)) {
     ## choose each comparison
     contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
     row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
-    ##GroupComparisonAgreement <- .chechGroupComparisonAgreement(data,contrast.matrix.sub)
+    ##GroupComparisonAgreement <- checkGroupComparisonAgreement(data,contrast.matrix.sub)
     ##    if (GroupComparisonAgreement$sign==TRUE) {
     ##     message("*** error : results of Protein ", unique(data$PROTEIN), " for comparison ",row.names(contrast.matrix.sub), " are NA because measurements in Group ", origGroup[GroupComparisonAgreement$positionMiss], " are missing completely.")
     ##     out <- data.frame(Protein=unique(data$PROTEIN),Label=row.names(contrast.matrix.sub), logFC=NA,SE=NA,Tvalue=NA,DF=NA,pvalue=NA)
@@ -990,7 +995,7 @@ modelBasedQCPlots <- function(data,type, axis.size=10, dot.size=3, text.size=7, 
 }
 
 #############################################
-.count.missing.percentage <- function(contrast.matrix, temptempresult, sub, subprocess) {
+count.missing.percentage <- function(contrast.matrix, temptempresult, sub, subprocess) {
   totaln.cell <- aggregate(PROTEIN ~ GROUP_ORIGINAL,
                            data=subprocess[subprocess$LABEL == "L", ], length)
   ## just for count total measurement, use PROTEIN instead of ABUNDANCE in order to prevent to remove NA in ABUNDANCE

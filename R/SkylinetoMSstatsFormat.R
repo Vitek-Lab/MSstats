@@ -12,7 +12,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
   if (is.element(c("Protein.Name"), colnames(input))) {
     colnames(input)[colnames(input) == "Protein.Name"] <- "ProteinName"
   }
-  if(is.element(c("Peptide.Modified.Sequence"), colnames(input))) {
+  if (is.element(c("Peptide.Modified.Sequence"), colnames(input))) {
     colnames(input)[colnames(input) == "Peptide.Modified.Sequence"] <- "PeptideModifiedSequence"
   }
   if (is.element(c("Precursor.Charge"), colnames(input))) {
@@ -52,7 +52,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
   decoy1 <- proname[grep("DECOY", proname)]
   decoy2 <- proname[grep("Decoys", proname)]
   decoy <- c(as.character(decoy1), decoy2)
-  if(length(decoy) > 0) {
+  if (length(decoy) > 0) {
     input <- input[-which(input$ProteinName %in% decoy), ]
     message("** Proteins, which names include DECOY, are removed.")
   }
@@ -84,7 +84,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
 ### we assume to use unique peptide
 ################################################
   if (useUniquePeptide) {
-    pepcount <- unique(input[, c("ProteinName","PeptideSequence")])
+    pepcount <- unique(input[, c("ProteinName", "PeptideSequence")])
     ## Protein.group.IDs or Sequence
     pepcount$PeptideSequence <- factor(pepcount$PeptideSequence)
     ## count how many proteins are assigned for each peptide
@@ -135,7 +135,9 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
 
   ## if there are fragment ion and also have any "precursor", it is the issue.
   if (length(any.fragment) > 0 & length(any.precursor3) > 0) {
-    stop("Please check precursors information. If your experiment is DIA, please remove the precursors. If your experiments is DDA, please check the precursor information.")
+    stop(strwrap(prefix=" ", initial="",
+                 "Please check precursors information. If your experiment is DIA, please remove
+ the precursors. If your experiments is DDA, please check the precursor information."))
   }
 
   if (length(checkDDA) < 3) {
@@ -154,7 +156,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
                     fun.aggregate=function(x) sum(x, na.rm=TRUE), fill=NA_real_)
     ## make long format
     newdata <- melt(data_w, id.vars=c("pepprecursor"))
-    colnames(newdata)[colnames(newdata) %in% c("variable","value")] <- c("Run","Intensity")
+    colnames(newdata)[colnames(newdata) %in% c("variable", "value")] <- c("Run", "Intensity")
     ## assignn protein name
     uniinfo <- unique(input[, c("ProteinName", "PeptideSequence",
                                 "PrecursorCharge", "pepprecursor")])
@@ -236,7 +238,7 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
 ##############################
 ### 10. remove proteins with only one peptide and charge per protein
 ##############################
-	if (removeProtein_with1Peptide) {
+    if (removeProtein_with1Peptide) {
 ######## remove protein which has only one peptide
     input$feature <- paste(input$PeptideSequence,
                            input$PrecursorCharge,
@@ -255,14 +257,16 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
                      lengthtotalprotein, " proteins."))
     }
     input <- input[, -which(colnames(input) %in% c("feature"))]
-	}
+    }
 
 ##############################
 ### 11. filter by Qvalue
 ##############################
   if (!DDA & filter_with_Qvalue) {
-    if(!is.element(c("DetectionQValue"), colnames(input))) {
-      stop("** DetectionQValue column is needed in order to filter out by Qvalue. Please add DectionQValue column in the input.")
+    if (!is.element(c("DetectionQValue"), colnames(input))) {
+      stop(strwrap(prefix=" ", initial="",
+                   "** DetectionQValue column is needed in order to filter out by Qvalue.
+ Please add DectionQValue column in the input."))
     } else {
       ## make Q value as numeric
       input$DetectionQValue <- as.numeric(as.character(input$DetectionQValue))
@@ -274,5 +278,5 @@ SkylinetoMSstatsFormat <- function(input, annotation=NULL, removeiRT=TRUE, useUn
     }
   }
   input$ProteinName <- factor(input$ProteinName)
-	return(input)
+    return(input)
 }

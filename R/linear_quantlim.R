@@ -2,11 +2,17 @@
 ### The function returns a new data frame containing the value of the LoD/LoQ
 #' @export
 #' @import minpack.lm
-linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500) {
+linear_quantlim <- function(datain, alpha=0.05, Npoints=100, Nbootstrap=500) {
   switch(Sys.info()[["sysname"]],
-         Windows = {null_output <- "NUL"},
-         Linux = {null_output <- "/dev/null"},
-         Darwin = {null_output <- "/dev/null"})
+         Windows = {
+           null_output <- "NUL"
+         },
+         Linux = {
+           null_output <- "/dev/null"
+         },
+         Darwin = {
+           null_output <- "/dev/null"
+         })
   ##Need to rename variables as needed:
   names(datain)[names(datain) == "CONCENTRATION"] <- "C"
   names(datain)[names(datain) == "INTENSITY"] <- "I"
@@ -78,7 +84,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
     var_v[ii] <- var(data_f$I) ##/mean(data_f$log2Int)**2
     ii <- ii + 1
   }
-  
+
   ##Log scale discretization:
   xaxis_orig_2 <- exp(c(seq(from=log(10 + 0),
                             to=log(1 + max(unique_c)),
@@ -96,7 +102,8 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
   var_v_s_log <- var_v_s
   var_v_s_log_unique <- var_v_s_unique
 
-  if (1) { ## Full bootstrap
+  if (1) {
+    ## Full bootstrap
     outB <- matrix(NA_real_,
                    nrow=B,
                    ncol=length(xaxis_orig_2))
@@ -104,7 +111,8 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
                          nrow=B*BB,
                          ncol=length(xaxis_orig_2))
     change_B <- rep(NA, B)
-    for (j in 1:B) { #Number of first boostrap samples j
+    for (j in 1:B) {
+      ##Number of first boostrap samples j
       setTxtProgressBar(pb, j / B, title = NULL, label = NULL)
       ##if(j %% 10 == 0) print(paste("Boot=",j))
       lin.blank_B <- NULL
@@ -112,26 +120,28 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
       ##Pick ** observations with replacement among all that are available.
       ##Blank samples are included
 
-      weights <- rep(0,length(tmpB$C))
+      weights <- rep(0, length(tmpB$C))
       for (kk in 1:length(tmpB$C)) {
         weights[kk] <- 1 / var_v_s_unique[which(unique_c == tmpB$C[kk])]
       }
       noise_B <- mean(sample(tmp_blank$I, length(tmp_blank$I), replace=TRUE))
       ll <- 0
-      while(ll < NMAX) {
+      while (ll < NMAX) {
         ll <- ll + 1
         slope <- median(tmpB$I) / median(tmpB$C) * runif(1)
         intercept <- noise * runif(1)
         sink(null_output)
         tryCatch(lin.blank_B <- {
-          nlsLM(I ~ .linear(C , intercept, slope),
+          nlsLM(I ~ linear(C, intercept, slope),
                 data=tmpB,
                 trace=TRUE,
                 start=c(intercept=intercept, slope=slope),
                 weights=weights,
                 control=nls.lm.control(nprint=1, ftol=sqrt(.Machine$double.eps) / 2,
                                        maxiter=50))
-        }, error=function(e) {NULL})
+        }, error=function(e) {
+          NULL
+        })
         sink()
         if (!is.null(lin.blank_B)) {
           break
@@ -139,8 +149,9 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
       }
 
       ##Store the curve fits obtained via bootstrap with bilinear and linear:
-      if (!is.null(lin.blank_B)) { ##If linear fit, change = 0 anyway
-        outB[j, ] <- .linear(xaxis_orig_2, summary(lin.blank_B)$coefficient[1],
+      if (!is.null(lin.blank_B)) {
+        ##If linear fit, change = 0 anyway
+        outB[j, ] <- linear(xaxis_orig_2, summary(lin.blank_B)$coefficient[1],
                              summary(lin.blank_B)$coefficient[2])
         change_B[j] <- 0
       } else{
@@ -148,12 +159,14 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
         change_B[j] <- NA
       }
       if (!is.null(lin.blank_B)) {
-        for (jj in 1:BB) { ##Calculate predictions
+        for (jj in 1:BB) {
+          ##Calculate predictions
           outBB_pred[(j - 1) * BB + jj, ] <- outB[j, ] +
             rnorm(length(xaxis_orig_2), 0, sqrt(var_v_s_log))
         }
       } else {
-        for (jj in 1:BB) { ##Calculate predictions
+        for (jj in 1:BB) {
+          ##Calculate predictions
           outBB_pred[(j - 1) * BB + jj, ] <- NA
         }
       }
@@ -173,7 +186,7 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
   } ##Full bootstrap method
 
   ##Calculate the LOD/LOQ from the prediction interval:
-  i_before <- which(diff(sign(up_noise - mean_bilinear)) !=0 ) #before sign change
+  i_before <- which(diff(sign(up_noise - mean_bilinear)) !=0) #before sign change
   if (length(i_before) > 0) {
     i_after <- i_before + 1
     x1 <- xaxis_orig_2[i_before]
@@ -211,30 +224,28 @@ linear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 50
   intercept_lin <- NA
   data_linear <- datain[datain$C > LOQ_pred, ]
   ii <- 0
-  while(ii < NMAX) { ##Number of ii trials for bilinear fit < NMAX
+  while (ii < NMAX) {
+    ##Number of ii trials for bilinear fit < NMAX
     ii <- ii + 1
-    {
-      intercept <- noise * runif(1)
-      slope <- median(data_linear$I) / median(data_linear$C) * runif(1)
-      weights <- rep(0, length(data_linear$C))
-      for (kk in 1:length(data_linear$C)) {
-        weights[kk] <- 1 / var_v_s[which(unique_c == data_linear$C[kk])]
-      }
-
-      sink(null_output)
-      fit.blank_lin <- NULL
-      fit.blank_lin <- tryCatch({
-        nlsLM(I ~ .linear(C, intercept, slope),
-              data=data_linear,
-              trace=TRUE,
-              start=c(slope=slope, intercept = intercept),
-              weights=weights,
-              control=nls.lm.control(nprint=1, ftol=sqrt(.Machine$double.eps) / 2, maxiter=50))
-      }, error=function(e) { NULL })
-
-      sink()
+    intercept <- noise * runif(1)
+    slope <- median(data_linear$I) / median(data_linear$C) * runif(1)
+    weights <- rep(0, length(data_linear$C))
+    for (kk in 1:length(data_linear$C)) {
+      weights[kk] <- 1 / var_v_s[which(unique_c == data_linear$C[kk])]
     }
-
+    sink(null_output)
+    fit.blank_lin <- NULL
+    fit.blank_lin <- tryCatch({
+      nlsLM(I ~ linear(C, intercept, slope),
+            data=data_linear,
+            trace=TRUE,
+            start=c(slope=slope, intercept = intercept),
+            weights=weights,
+            control=nls.lm.control(nprint=1, ftol=sqrt(.Machine$double.eps) / 2, maxiter=50))
+    }, error=function(e) {
+      NULL
+    })
+    sink()
     if (!is.null(fit.blank_lin)) {
       break
     }

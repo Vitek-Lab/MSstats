@@ -12,38 +12,39 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                              height=10, which.Protein="all", originalPlot=TRUE,
                              summaryPlot=TRUE, save_condition_plot_result=FALSE, address="") {
 
-	datafeature <- data$ProcessedData
-	datarun <- data$RunlevelData
-	datafeature$PROTEIN <- factor(datafeature$PROTEIN)
-	datarun$Protein <- factor(datarun$Protein)
+  datafeature <- data$ProcessedData
+  datarun <- data$RunlevelData
+  datafeature$PROTEIN <- factor(datafeature$PROTEIN)
+  datarun$Protein <- factor(datarun$Protein)
 
-	if (!is.element("SUBJECT_NESTED", colnames(datafeature))) {
-		stop("Input for dataProcessPlots function should be processed by dataProcess().")
-	}
-	if (length(setdiff(toupper(type), c(toupper("ProfilePlot"),
+  if (!is.element("SUBJECT_NESTED", colnames(datafeature))) {
+    stop("Input for dataProcessPlots function should be processed by dataProcess().")
+  }
+  if (length(setdiff(toupper(type), c(toupper("ProfilePlot"),
                                       toupper("QCPlot"),
                                       toupper("ConditionPlot")))) != 0) {
-		stop(paste0("Input for type=", type,
+    stop(paste0("Input for type=", type,
                 ". However, 'type' should be one of 'ProfilePlot', 'QCPlot', 'ConditionPlot'."))
-	}
-	if (address == FALSE) { ## here I used != FALSE, instead of !address. Because address can be logical or characters.
-    if(which.Protein == "all") {
+  }
+  if (address == FALSE) {
+    ## here I used != FALSE, instead of !address. Because address can be logical or characters.
+    if (which.Protein == "all") {
       stop("** Cannnot generate all plots in a screen. Please set one protein at a time.")
     } else if (length(which.Protein) > 1) {
       stop("** Cannnot generate multiple plots in a screen. Please set one protein at a time.")
     }
-	}
+  }
 
-	## Profile plot ##
-	## ---------------
-	if (toupper(type) == "PROFILEPLOT") {
-		## choose Proteins or not
+  ## Profile plot ##
+  ## ---------------
+  if (toupper(type) == "PROFILEPLOT") {
+    ## choose Proteins or not
     if (which.Protein != "all") {
       ## check which.Protein is name of Protein
       if (is.character(which.Protein)) {
         temp.name <- which.Protein
         ## message if name of Protein is wrong.
-        if (length(setdiff(temp.name,unique(datafeature$PROTEIN))) > 0) {
+        if (length(setdiff(temp.name, unique(datafeature$PROTEIN))) > 0) {
           stop(paste("Please check protein name. Data set does not have this protein. -",
                      paste(temp.name, collapse=", "), sep=" "))
         }
@@ -55,7 +56,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
         ## message if name of Protein is wrong.
         if (length(levels(datafeature$PROTEIN)) < max(which.Protein)) {
           stop(paste("Please check your selection of proteins. There are ",
-                     length(levels(datafeature$PROTEIN))," proteins in this dataset.", sep=" "))
+                     length(levels(datafeature$PROTEIN)), " proteins in this dataset.", sep=" "))
         }
       }
 
@@ -107,8 +108,8 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     ## need to fill in incomplete rows for Runlevel data
     haverun <- FALSE
     if (sum(is.element(colnames(datarun), "RUN")) != 0) {
-      datamat = dcast( Protein ~ RUN, data=datarun, value.var="LogIntensities", keep=TRUE)
-      datarun = melt(datamat, id.vars=c("Protein"))
+      datamat <- dcast(Protein ~ RUN, data=datarun, value.var="LogIntensities", keep=TRUE)
+      datarun <- melt(datamat, id.vars=c("Protein"))
       colnames(datarun)[colnames(datarun) %in% c("variable", "value")] <- c("RUN", "ABUNDANCE")
       haverun <- TRUE
     }
@@ -121,7 +122,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       datafeature$Filter.Repro <- NULL
     }
 
-  	## save the plots as pdf or not
+    ## save the plots as pdf or not
     ## If there are the file with the same name, add next numbering at the end of file name
     ## y-axis labeling
     temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]), ]
@@ -165,7 +166,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
           message(paste("Cannot plot the Profile for ",
                         unique(sub$PROTEIN), "(", i, " of ", length(unique(datafeature$PROTEIN)),
                         ") because all measurements are NAs."))
-          next()
+          next
         }
 
         ## seq for peptide and transition
@@ -244,7 +245,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                         default.unit="inch"))
           } else {
             ## 1st plot for original plot
-            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="FEATURE",linetype="FEATURE"),
+            ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="FEATURE", linetype="FEATURE"),
                             data=sub) +
               facet_grid(~LABEL) +
               geom_point(size=dot.size.profile) +
@@ -287,10 +288,10 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                            default.unit="inch",
                                            ncol=3))
           }
-					print(ptemp)
-					message(paste0("Drew the Profile plot for ", unique(sub$PROTEIN),
+          print(ptemp)
+          message(paste0("Drew the Profile plot for ", unique(sub$PROTEIN),
                          "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
-				}
+        }
 
         if (toupper(featureName) == "PEPTIDE") {
           if (any(is.element(colnames(sub), "censored"))) {
@@ -466,7 +467,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       }
     } # end original plot
 
-		## 2st plot for original plot : summary ##
+    ## 2st plot for original plot : summary ##
     ## ---------------------------------------
     if (summaryPlot) {
       if (address!=FALSE) {
@@ -474,7 +475,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
         num <- 0
         filenaming <- paste0(address, "ProfilePlot_wSummarization")
         finalfile <- paste0(address, "ProfilePlot_wSummarization.pdf")
-        while(is.element(finalfile, allfiles)) {
+        while (is.element(finalfile, allfiles)) {
           num <- num + 1
           finalfile <- paste(paste(filenaming, num, sep="-"), ".pdf", sep="")
         }
@@ -494,7 +495,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
           message(paste("Cannot plot the profile for ", unique(sub$PROTEIN), "(", i,
                         " of ", length(unique(datafeature$PROTEIN)),
                         ") because all measurements are NAs."))
-          next()
+          next
         }
 
         ## seq for peptide and transition
@@ -515,47 +516,49 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
         groupNametemp <- data.frame(groupName, FEATURE=unique(sub$FEATURE)[1], analysis="Run summary")
         if (haverun) {
           subrun <- datarun[datarun$Protein == levels(datafeature$PROTEIN)[i], ]
-					if (nrow(subrun) != 0) {
-            quantrun <- sub[1,]
-						quantrun[, 2:ncol(quantrun)] <- NA
-						quantrun <- quantrun[rep(seq_len(nrow(subrun))), ]
-						quantrun$PROTEIN <- subrun$Protein
-						quantrun$PEPTIDE <- "Run summary"
-						quantrun$TRANSITION <- "Run summary"
-						quantrun$FEATURE <- "Run summary"
-						quantrun$LABEL <- "Endogenous"
-						quantrun$RUN <- subrun$RUN
-						quantrun$ABUNDANCE <- subrun$ABUNDANCE
-						quantrun$FRACTION <- 1
-          } else { # if there is only one Run measured across all runs, no Run information for linear with censored
-						quantrun <- datafeature[1,]
-						quantrun[, 2:ncol(quantrun)] <- NA
-						quantrun$PROTEIN <- levels(datafeature$PROTEIN)[i]
-						quantrun$PEPTIDE <- "Run summary"
-						quantrun$TRANSITION <- "Run summary"
-						quantrun$FEATURE <- "Run summary"
-						quantrun$LABEL <- "Endogenous"
-						quantrun$RUN <- unique(datafeature$RUN)[1]
-						quantrun$ABUNDANCE <- NA
-						quantrun$FRACTION <- 1
-					}
+          if (nrow(subrun) != 0) {
+            quantrun <- sub[1, ]
+            quantrun[, 2:ncol(quantrun)] <- NA
+            quantrun <- quantrun[rep(seq_len(nrow(subrun))), ]
+            quantrun$PROTEIN <- subrun$Protein
+            quantrun$PEPTIDE <- "Run summary"
+            quantrun$TRANSITION <- "Run summary"
+            quantrun$FEATURE <- "Run summary"
+            quantrun$LABEL <- "Endogenous"
+            quantrun$RUN <- subrun$RUN
+            quantrun$ABUNDANCE <- subrun$ABUNDANCE
+            quantrun$FRACTION <- 1
+          } else {
+            ## if there is only one Run measured across all runs, no Run information for linear with censored
+            quantrun <- datafeature[1, ]
+            quantrun[, 2:ncol(quantrun)] <- NA
+            quantrun$PROTEIN <- levels(datafeature$PROTEIN)[i]
+            quantrun$PEPTIDE <- "Run summary"
+            quantrun$TRANSITION <- "Run summary"
+            quantrun$FEATURE <- "Run summary"
+            quantrun$LABEL <- "Endogenous"
+            quantrun$RUN <- unique(datafeature$RUN)[1]
+            quantrun$ABUNDANCE <- NA
+            quantrun$FRACTION <- 1
+          }
 
-					if (any(is.element(colnames(sub), "censored"))) {
-						quantrun$censored <- FALSE
-					}
-					quantrun$analysis <- "Run summary"
-					sub$analysis <- "Processed feature-level data"
-					## if "Filter" column after feature selection, remove this column in order to match columns with run quantification
-					filter_column <- is.element(colnames(sub), "Filter")
-					if (any(filter_column)) {
+          if (any(is.element(colnames(sub), "censored"))) {
+            quantrun$censored <- FALSE
+          }
+          quantrun$analysis <- "Run summary"
+          sub$analysis <- "Processed feature-level data"
+          ## if "Filter" column after feature selection, remove this column in order to match
+          ## columns with run quantification
+          filter_column <- is.element(colnames(sub), "Filter")
+          if (any(filter_column)) {
             sub<-sub[, !filter_column]
-					}
+          }
 
-					final <- rbind(sub, quantrun)
-					final$analysis <- factor(final$analysis)
-					final$FEATURE <- factor(final$FEATURE)
-					final$RUN <- as.numeric(final$RUN)
-					if (any(is.element(colnames(sub), "censored"))) {
+          final <- rbind(sub, quantrun)
+          final$analysis <- factor(final$analysis)
+          final$FEATURE <- factor(final$FEATURE)
+          final$RUN <- as.numeric(final$RUN)
+          if (any(is.element(colnames(sub), "censored"))) {
             final$censored <- factor(final$censored, levels=c("FALSE", "TRUE"))
             ptempall <- ggplot(aes_string(x="RUN", y="ABUNDANCE", color="analysis",
                                           linetype="FEATURE", size="analysis"), data=final) +
@@ -568,11 +571,11 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_shape_manual(values=c(16, 1),
                                  labels=c("Detected data", "Censored missing data")) +
               scale_size_manual(values=c(1.7, 2), guide="none") +
-              scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2),
+              scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE)) - 1), 2),
                                     guide="none") +
-              scale_x_continuous("MS runs",breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
-              geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
+              geom_vline(xintercept=lineNameAxis + 0.5, colour="grey", linetype="longdash") +
               labs(title=unique(final$PROTEIN)) +
               geom_text(data=groupNametemp, aes(x=RUN, y=ABUNDANCE, label=Name),
                         size=text.size,
@@ -609,9 +612,9 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
               scale_colour_manual(values=c("lightgray", "darkred")) +
               scale_shape_manual(values=c(16)) +
               scale_size_manual(values=c(1.7, 2), guide="none") +
-              scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE))-1), 2),
+              scale_linetype_manual(values=c(rep(1, times=length(unique(final$FEATURE)) - 1), 2),
                                     guide="none") +
-              scale_x_continuous("MS runs",breaks=cumGroupAxis) +
+              scale_x_continuous("MS runs", breaks=cumGroupAxis) +
               scale_y_continuous(yaxis.name, limits=c(y.limdown, y.limup)) +
               geom_vline(xintercept=lineNameAxis+0.5, colour="grey", linetype="longdash") +
               labs(title=unique(final$PROTEIN)) +
@@ -643,25 +646,26 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
                                             aes(x=RUN, y=ABUNDANCE, size=analysis, color=analysis))
           }
 
-					print(ptempall)
-					message(paste("Drew the Profile plot with summarization for ", unique(sub$PROTEIN),
+          print(ptempall)
+          message(paste("Drew the Profile plot with summarization for ", unique(sub$PROTEIN),
                         "(", i, " of ", length(unique(datafeature$PROTEIN)), ")"))
-				}
+        }
       } # end-loop for each protein
 
       if (address!=FALSE) {
         dev.off()
       }
     }
-	} # end Profile plot
+  } # end Profile plot
 
-	## QC plot (Quality control plot) ##
-	## ---------------------------------
-	if (toupper(type) == "QCPLOT") {
+  ## QC plot (Quality control plot) ##
+  ## ---------------------------------
+  if (toupper(type) == "QCPLOT") {
     ## y-axis labeling
-    temp <- datafeature[!is.na(datafeature[,"ABUNDANCE"]) & !is.na(datafeature[,"INTENSITY"]), ]
+    temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]), ]
     temp <- temp[1, ]
-    temptest <- abs(log2(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])<abs(log10(temp[1,"INTENSITY"])-temp[1,"ABUNDANCE"])
+    temptest <- abs(log2(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) <
+      abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"])
 
     if (temptest) {
       yaxis.name <- "Log2-intensities"
@@ -669,13 +673,13 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       yaxis.name <- "Log10-intensities"
     }
 
-		## save the plots as pdf or not
+    ## save the plots as pdf or not
     ## If there are the file with the same name, add next numbering at the end of file name
     if (address != FALSE) {
       allfiles <- list.files()
       num <- 0
-      filenaming <- paste0(address,"QCPlot")
-      finalfile <- paste0(address,"QCPlot.pdf")
+      filenaming <- paste0(address, "QCPlot")
+      finalfile <- paste0(address, "QCPlot.pdf")
 
       while (is.element(finalfile, allfiles)) {
         num <- num + 1
@@ -687,12 +691,12 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
     ## assign upper or lower limit
     ## MC, 2016/04/21, default upper limit is maximum log2(intensity) after normalization+3, then round-up
-    y.limup <- ceiling (max(datafeature$ABUNDANCE, na.rm=TRUE) + 3)
+    y.limup <- ceiling(max(datafeature$ABUNDANCE, na.rm=TRUE) + 3)
 
     if (is.numeric(ylimUp)) {
       y.limup <- ylimUp
     }
-    y.limdown=-1
+    y.limdown <- -1
     if (is.numeric(ylimDown)) {
       y.limdown <- ylimDown
     }
@@ -717,7 +721,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     }
 
     tempGroupName <- unique(datafeature[, c("GROUP_ORIGINAL", "RUN")])
-    datafeature <- datafeature[with(datafeature, order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL)),]
+    datafeature <- datafeature[with(datafeature, order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL)), ]
 
     groupAxis <- as.numeric(xtabs(~GROUP_ORIGINAL, tempGroupName))
     cumGroupAxis <- cumsum(groupAxis)
@@ -747,8 +751,8 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
           panel.grid.minor=element_blank(),
           strip.background=element_rect(fill="gray95"),
           strip.text.x=element_text(colour=c("#00B0F6"), size=14),
-          axis.text.x=element_text(size=x.axis.size,colour="black"),
-          axis.text.y=element_text(size=y.axis.size,colour="black"),
+          axis.text.x=element_text(size=x.axis.size, colour="black"),
+          axis.text.y=element_text(size=y.axis.size, colour="black"),
           axis.ticks=element_line(colour="black"),
           axis.title.x=element_text(size=x.axis.size+5, vjust=-0.4),
           axis.title.y=element_text(size=y.axis.size+5, vjust=0.3),
@@ -759,7 +763,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     }
 
     ## each protein
-		## choose Proteins or not
+    ## choose Proteins or not
     if (which.Protein != "allonly") {
       if (which.Protein != "all") {
         ## check which.Protein is name of Protein
@@ -781,7 +785,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
           if (length(levels(datafeature$PROTEIN)) < max(which.Protein)) {
             dev.off()
             stop(paste("Please check your selection of proteins. There are ",
-                       length(levels(datafeature$PROTEIN))," proteins in this dataset.",sep=" "))
+                       length(levels(datafeature$PROTEIN)), " proteins in this dataset.", sep=" "))
           }
         }
 
@@ -792,14 +796,14 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
       for (i in 1:nlevels(datafeature$PROTEIN)) {
         sub <- datafeature[datafeature$PROTEIN == levels(datafeature$PROTEIN)[i], ]
-        subTemp <- sub[!is.na(sub$ABUNDANCE),]
-        sub <- sub[with(sub, order(LABEL,RUN)),]
+        subTemp <- sub[!is.na(sub$ABUNDANCE), ]
+        sub <- sub[with(sub, order(LABEL, RUN)), ]
 
         ## if all measurements are NA,
         if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
-          message(paste("Cannot plot Quality Control for ",unique(sub$PROTEIN), "(",i," of ",
-                        length(unique(datafeature$PROTEIN)),") because all measurements are NAs."))
-          next()
+          message(paste("Cannot plot Quality Control for ", unique(sub$PROTEIN), "(", i," of ",
+                        length(unique(datafeature$PROTEIN)), ") because all measurements are NAs."))
+          next
         }
 
         ptemp <- ggplot(aes_string(x="RUN", y="ABUNDANCE"), data=sub) +
@@ -839,7 +843,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
 
   ## Condition plot ##
   ## -----------------
-	if (toupper(type) == "CONDITIONPLOT") {
+  if (toupper(type) == "CONDITIONPLOT") {
     colnames(datarun)[colnames(datarun) == "Protein"] <- "PROTEIN"
     colnames(datarun)[colnames(datarun) == "LogIntensities"] <- "ABUNDANCE"
     ## choose Proteins or not
@@ -850,7 +854,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
         ## message if name of Protein is wrong.
         if (length(setdiff(temp.name, unique(datarun$PROTEIN))) > 0) {
           stop(paste("Please check protein name. Dataset does not have this protein. -",
-                     paste(temp.name, collapse=", "),sep=" "))
+                     paste(temp.name, collapse=", "), sep=" "))
         }
       }
 
@@ -860,7 +864,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
         ## message if name of Protein is wrong.
         if (length(levels(datarun$PROTEIN))<max(which.Protein)) {
           stop(paste("Please check your selection of proteins. There are ",
-                     length(levels(datarun$PROTEIN))," proteins in this dataset.",sep=" "))
+                     length(levels(datarun$PROTEIN)), " proteins in this dataset.", sep=" "))
         }
       }
       ## use only assigned proteins
@@ -885,8 +889,8 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
     ## save all results
     resultall <- NULL
     ## y-axis labeling, find log 2 or log 10
-    temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]),]
-    temp <- temp[1,]
+    temp <- datafeature[!is.na(datafeature[, "ABUNDANCE"]) & !is.na(datafeature[, "INTENSITY"]), ]
+    temp <- temp[1, ]
     temptest <- abs(log2(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"]) <
       abs(log10(temp[1, "INTENSITY"]) - temp[1, "ABUNDANCE"])
 
@@ -907,7 +911,7 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
         message(paste("Cannot plot the Conditions ", unique(sub$PROTEIN), "(", i, " of ",
                       length(unique(datarun$PROTEIN)), ") because all measurements are NAs."))
-        next()
+        next
       }
 
       ## statistics
@@ -918,8 +922,8 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       colnames(sub.mean)[colnames(sub.mean) == "ABUNDANCE"] <- "Mean"
       colnames(sub.sd)[colnames(sub.sd) == "ABUNDANCE"] <- "SD"
       colnames(sub.len)[colnames(sub.len) == "ABUNDANCE"] <- "numMeasurement"
-			suball <- merge(sub.mean, sub.sd, by="GROUP_ORIGINAL")
-			suball <- merge(suball, sub.len, by="GROUP_ORIGINAL")
+      suball <- merge(sub.mean, sub.sd, by="GROUP_ORIGINAL")
+      suball <- merge(suball, sub.len, by="GROUP_ORIGINAL")
 
       if (interval=="CI") {
         suball$ciw <- qt(0.975, suball$numMeasurement) * suball$SD / sqrt(suball$numMeasurement)
@@ -945,10 +949,11 @@ dataProcessPlots <- function(data=data, type=type, featureName="Transition", yli
       suball <- suball[order(suball$GROUP_ORIGINAL), ]
       suball <- data.frame(Protein=unique(sub$PROTEIN), suball)
       resultall <- rbind(resultall, suball)
-      if (!scale) { ## scale: false
+      if (!scale) {
+        ## scale: false
         ## reformat as data.frame
         ##tempsummary <- data.frame(Label=unique(sub$GROUP_ORIGINAL),
-        ##                          mean=as.vector(sub.mean), ciw=as.vector(ciw))
+        ##mean=as.vector(sub.mean), ciw=as.vector(ciw))
         tempsummary <- suball
         colnames(tempsummary)[colnames(tempsummary) == "GROUP_ORIGINAL"] <- "Label"
         ptemp <- ggplot(aes_string(x="Label", y="Mean"), data=tempsummary) +

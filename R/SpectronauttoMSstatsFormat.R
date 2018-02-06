@@ -139,13 +139,13 @@ SpectronauttoMSstatsFormat <- function(input, intensity="PeakArea", filter_with_
 ### we assume to use unique peptide
 ################################################
   if (useUniquePeptide) {
-    pepcount <- unique(input[, c("ProteinName","PeptideSequence")]) ## Protein.group.IDs or Sequence
+    pepcount <- unique(input[, c("ProteinName", "PeptideSequence")]) ## Protein.group.IDs or Sequence
     pepcount$PeptideSequence <- factor(pepcount$PeptideSequence)
     ## count how many proteins are assigned for each peptide
     structure <- aggregate(ProteinName ~., data=pepcount, length)
     remove_peptide <- structure[structure$ProteinName != 1, ]
     ## remove the peptides which are used in more than one protein
-    if (length(remove_peptide$ProteinName != 1 ) != 0) {
+    if (length(remove_peptide$ProteinName != 1) != 0) {
       input <- input[-which(input$PeptideSequence %in% remove_peptide$PeptideSequence), ]
       message("** Peptides, that are used in more than one proteins, are removed.")
     } else {
@@ -192,7 +192,7 @@ SpectronauttoMSstatsFormat <- function(input, intensity="PeakArea", filter_with_
   count <- aggregate(Intensity ~ fea, data=input, FUN=length)
   ## if any feature has more number of total MS runs,
   if (any(unique(count$Intensity) > length(unique(input$Run)))) {
-    annotation <- unique(input[, c("Condition","BioReplicate","Run")])
+    annotation <- unique(input[, c("Condition", "BioReplicate", "Run")])
     ## maximum or sum up abundances among intensities for identical features within one run
     input_w <- dcast(
       ProteinName + PeptideSequence + PrecursorCharge + FragmentIon + ProductCharge ~ Run,
@@ -200,7 +200,7 @@ SpectronauttoMSstatsFormat <- function(input, intensity="PeakArea", filter_with_
     ## reformat for long format
     input <- melt(input_w, id=c("ProteinName", "PeptideSequence", "PrecursorCharge",
                                 "FragmentIon", "ProductCharge"))
-    colnames(input)[which(colnames(input) %in% c("variable","value"))] <- c("Run","Intensity")
+    colnames(input)[which(colnames(input) %in% c("variable", "value"))] <- c("Run", "Intensity")
 
     ## add annotation
     input <- merge(input, annotation, by="Run")
@@ -215,5 +215,5 @@ SpectronauttoMSstatsFormat <- function(input, intensity="PeakArea", filter_with_
 
   input$IsotopeLabelType <- "L"
   input$ProteinName <- input$ProteinName
-	return(input)
+  return(input)
 }

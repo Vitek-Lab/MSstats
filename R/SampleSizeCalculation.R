@@ -68,7 +68,7 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
       }
     }
   } ## end-loop
-  ##		VarComponent[is.na(VarComponent)] <- 0
+  ##        VarComponent[is.na(VarComponent)] <- 0
   ## for label-free DDA, there are lots of missingness and lots of zero SE. So, remove NA SE.
   median.sigma.error <- median(VarComponent[, "Error"], na.rm=TRUE)
   if (sum(!is.na(VarComponent[, "GroupBySubject"])) > 0) {
@@ -94,7 +94,7 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
     powerTemp <- seq(0, 1, 0.01)
 
     power <- NULL
-    for(i in 1:length(t)) {
+    for (i in 1:length(t)) {
       diff <- qnorm(powerTemp) + qnorm(1 - powerTemp * FDR / (1 + (1 - FDR) * m0_m1) / 2) - t[i]
       min(abs(diff), na.rm=TRUE)
       power[i] <- powerTemp[order(abs(diff))][1]
@@ -109,7 +109,7 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
     return(out)
   }
 
-	if (is.numeric(power)) {
+  if (is.numeric(power)) {
     ## Large portion of proteins are not changing
     m0_m1 <- 99 ## it means m0/m1=99, m0/(m0+m1)=0.99
     alpha <- power * FDR / (1 + (1 - FDR) * m0_m1)
@@ -128,10 +128,10 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
 
       processout <- rbind(processout, c("The number of sample is calculated. - okay"))
       write.table(processout, file=finalfile, row.names=FALSE)
-      out <- data.frame(desiredFC,numSample,FDR,power,CV)
+      out <- data.frame(desiredFC, numSample, FDR, power, CV)
       return(out)
     }
-	} # when power is numeric
+  } # when power is numeric
   ##} ## label-free
 }
 

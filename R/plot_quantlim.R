@@ -9,7 +9,7 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
 
   ##percentile of the prediction interval considered
   if (missing(alpha)) {
-    alpha = 5 / 100
+    alpha <- 5 / 100
   }
   if (alpha >= 1 | alpha <= 0) {
     print("incorrect specified value for alpha, 0 < alpha < 1")
@@ -40,7 +40,7 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
   ##Remove NA and infinite numbers from spike in data:
   expdata <- expdata[!is.na(expdata$I) & !is.na(expdata$C), ]
   expdata <- expdata[!is.infinite(expdata$I) & !is.infinite(expdata$C), ]
-  
+
   ##Extract actual data points for plotting:
   Cdata <- expdata$C
   Idata <- expdata$I
@@ -76,7 +76,7 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
 
   filename <- file.path(dir_output, paste0(datain$NAME[1], "_", datain$METHOD[1], "_overall.pdf"))
   pdf(filename)
-  if(LOQ_pred > xaxis_orig_2[3]) {
+  if (LOQ_pred > xaxis_orig_2[3]) {
     C_max <- xaxis_orig_2[min(which(abs(LOQ_pred - xaxis_orig_2) ==
                                     min(abs(LOQ_pred - xaxis_orig_2))) + 1,
                               length(xaxis_orig_2))]
@@ -91,9 +91,9 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
   low_pred <- paste(low_p, "percentile of predictions")
 
   p1 <- ggplot() +
-    .theme_complete_bw() +
-    geom_point(data=data.frame(Cdata,Idata),
-               aes(x=Cdata,y=Idata), size=pw * 1.5) +
+    theme_complete_bw() +
+    geom_point(data=data.frame(Cdata, Idata),
+               aes(x=Cdata, y=Idata), size=pw * 1.5) +
     geom_line(data=data.frame(x=xaxis_orig_2, y=mean_bilinear, col="mean prediction", lt="mean"),
               aes(x=x, y=y, color=col),
               size=lw) + #, color = "black" #as.factor(c("mean bootstrap"))
@@ -103,7 +103,7 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
                 alpha=0.3) +
     geom_line(data=data.frame(x=xaxis_orig_2, ymin=lower_Q_pred, col=low_pred, lt="Int"),
               aes(x=x, y=ymin, color=col), size=lw) +
-    geom_line(data=data.frame(x=xaxis_orig_2, ymax=rep(up_noise,length(xaxis_orig_2)),
+    geom_line(data=data.frame(x=xaxis_orig_2, ymax=rep(up_noise, length(xaxis_orig_2)),
                               col="95% upper bound of noise"),
               aes(x=x, y=ymax, color=col), size=lw) +
     scale_alpha_continuous(guide = "none") +
@@ -117,8 +117,12 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
     scale_color_manual(values=c(orange1, blue1, red1),
                        labels=c(low_pred, upp_noise, "mean prediction"))
 
-  ##p1 <- p1 + scale_colour_manual(values=c("mean prediction"= red1,"upper 95% prediction" = orange1, "5% percentile of predictions" = orange1, "95% upper bound of noise" = blue1)) + theme(legend.title = element_blank())
-  ##colour_scales <- setNames(c("mean prediction", "upper 95% prediction", "5% percentile of predictions"), c("dasssta", "messssan", "rrrr"))
+  ##p1 <- p1 + scale_colour_manual(values=c("mean prediction"= red1,"upper 95%
+  ##prediction" = orange1, "5% percentile of predictions" = orange1, "95% upper
+  ##bound of noise" = blue1)) + theme(legend.title = element_blank())
+  ##colour_scales <- setNames(c("mean prediction", "upper 95% prediction", "5% percentile of
+  ## predictions"), c("dasssta", "messssan", "rrrr"))
+
   ##p1 <- p1 + scale_colour_manual(values = colour_scales)
   p1 <- p1 + theme(legend.title=element_blank()) +
     theme(legend.position=c(0.05, 0.5),
@@ -171,17 +175,17 @@ plot_quantlim <- function(spikeindata, quantlim_out, alpha, dir_output, xlim_plo
   mean_bilinear <- subset(mean_bilinear, xaxis_orig_2 < xlim)
   xaxis_orig_2 <- subset(xaxis_orig_2, xaxis_orig_2 < xlim)
 
-  p1 <- ggplot() + .theme_complete_bw() +
+  p1 <- ggplot() + theme_complete_bw() +
     geom_point(data=data.frame(Cdata, Idata),
                aes(x=Cdata, y=Idata), size=pw * 1.5) +
     geom_line(data=data.frame(x=xaxis_orig_2, y=mean_bilinear, col="mean prediction", lt="mean"),
               aes(x=x, y=y, color=col), size=lw) #, color = "black" #as.factor(c("mean bootstrap"))
   p1 <- p1 + geom_ribbon(data=data.frame(x=xaxis_orig_2, ymin=lower_Q_pred, ymax=upper_Q_pred),
                          aes(x=x, ymin=ymin, ymax=ymax), fill=red1, alpha=0.3) +
-    geom_line(data=data.frame(x=xaxis_orig_2,ymin=lower_Q_pred,
+    geom_line(data=data.frame(x=xaxis_orig_2, ymin=lower_Q_pred,
                               col="lower 95% prediction", lt="Int"),
               aes(x=x, y=ymin, color=col), size=lw) +
-    geom_line(data=data.frame(x=xaxis_orig_2, ymax=rep(up_noise,length(xaxis_orig_2)),
+    geom_line(data=data.frame(x=xaxis_orig_2, ymax=rep(up_noise, length(xaxis_orig_2)),
                               col="95% upper bound of noise"),
               aes(x=x, y=ymax, color=col), size=lw) +
     scale_alpha_continuous(guide = "none") +

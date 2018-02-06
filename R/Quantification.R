@@ -7,14 +7,14 @@ quantification <- function(data, type="Sample", format="matrix") {
   ## save process output in each step
   allfiles <- list.files()
   filenaming <- "msstats"
-  if (length(grep(filenaming,allfiles)) == 0) {
+  if (length(grep(filenaming, allfiles)) == 0) {
     finalfile <- "msstats.log"
     processout <- NULL
   } else {
     num <- 0
     finalfile <- "msstats.log"
 
-    while(is.element(finalfile, allfiles)) {
+    while (is.element(finalfile, allfiles)) {
       num <- num + 1
       lastfilename <- finalfile ## in order to rea
       finalfile <- paste0(paste(filenaming, num, sep="-"), ".log")
@@ -28,12 +28,16 @@ quantification <- function(data, type="Sample", format="matrix") {
                                 ncol=1))
 
   ## data format
-  ##rawinput <- c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
-  ##if (length(setdiff(toupper(rawinput),toupper(colnames(data))))==0) {
-  ##processout <- rbind(processout, c(paste("The required input - data : did not process from dataProcess function. - stop")))
-  ##write.table(processout, file=finalfile, row.names=FALSE)
-  ##stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
-  ##}
+  ## rawinput <-
+  ## c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge",
+                                        # "IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
+  ## if (length(setdiff(toupper(rawinput),toupper(colnames(data))))==0) {
+  ## processout <- rbind(processout, c(paste("The required input - data : did not process
+  ## from dataProcess function. - stop")))
+  ## write.table(processout, file=finalfile, row.names=FALSE)
+  ## stop("Please use 'dataProcess' first. Then use output of dataProcess function as input
+  ## in groupComparison.")
+  ## }
 
   ## check other options
   if (!(toupper(type) == "SAMPLE" | toupper(type) == "GROUP")) {
@@ -65,11 +69,11 @@ quantification <- function(data, type="Sample", format="matrix") {
                    fun.aggregate=median)
     if (format=="long") {
       data_l <- melt(datam, id.vars=c("Protein"))
-			colnames(data_l)[colnames(data_l) %in%
+      colnames(data_l)[colnames(data_l) %in%
                        c("variable", "value")] <- c("Group_Subject", "LogIntensity")
     }
 
-    processout <- rbind(processout,c("Finish sample quantificiation - okay."))
+    processout <- rbind(processout, c("Finish sample quantificiation - okay."))
     write.table(processout, file=finalfile, row.names=FALSE)
     if (format == "long") {
       return(data_l)
@@ -90,21 +94,21 @@ quantification <- function(data, type="Sample", format="matrix") {
                    data=datarun,
                    value.var="LogIntensities",
                    fun.aggregate=median)
-		datam2 <- melt(datam, id.vars=c("Protein", "GROUP_ORIGINAL"))
-		colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c("Subject", "LogIntensity")
-		datam3 <- dcast(Protein ~ GROUP_ORIGINAL ,
+    datam2 <- melt(datam, id.vars=c("Protein", "GROUP_ORIGINAL"))
+    colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c("Subject", "LogIntensity")
+    datam3 <- dcast(Protein ~ GROUP_ORIGINAL,
                     data=datam2,
                     value.var="LogIntensity",
                     fun.aggregate=function(x) median(x, na.rm=T))
-		rm(datam)
-		rm(datam2)
+    rm(datam)
+    rm(datam2)
 
     if (format == "long") {
       data_l <- melt(datam3, id.vars=c("Protein"))
-			colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c("Group", "LogIntensity")
+      colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c("Group", "LogIntensity")
     }
 
-    processout <- rbind(processout,c("Finish group quantificiation - okay."))
+    processout <- rbind(processout, c("Finish group quantificiation - okay."))
     write.table(processout, file=finalfile, row.names=FALSE)
     if (format == "long") {
       return(data_l)

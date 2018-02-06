@@ -25,7 +25,9 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   }
 
   if (is.null(which.quant)) {
-    stop("** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).")
+    stop(strwrap(prefix=" ", initial="",
+    "** Please select which columns should be used for quantified intensities, among three
+options (Intensity, Area, Precursor.Area)."))
   }
 
   if (which.quant == "Intensity" & !is.element("Intensity", colnames(input))) {
@@ -40,11 +42,15 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   }
   if (which.quant == "Precursor.Area" & !is.element("Precursor.Area", colnames(input))) {
     ## then that is because, input come from different version
-    stop("** Please select which columns should be used for quantified intensities, among two options (Intensity or Area).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for quantified intensities,
+ among two options (Intensity or Area)."))
   }
 
   if (!is.element(which.quant, colnames(input))) {
-    stop("** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for quantified intensities,
+among three options (Intensity, Area, Precursor.Area)."))
   }
 
 ################################################
@@ -62,7 +68,9 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   }
 
   if (is.null(which.pro)) {
-    stop("** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for protein ids, among three
+ options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions)."))
   }
 
   if (which.pro == "Protein.Accessions" & !is.element("Protein.Accessions", colnames(input))) {
@@ -77,10 +85,14 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
   if (which.pro == "Protein.Group.Accessions" &
       !is.element("Protein.Group.Accessions", colnames(input))) {
     ## then that is because, input come from different version
-    stop("** Please select which columns should be used for protein ids, among two options (Protein.Accessions or Master.Protein.Accessions).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for protein ids, among two
+ options (Protein.Accessions or Master.Protein.Accessions)."))
   }
   if (!is.element(which.pro, colnames(input))) {
-    stop("** Please select which columns should be used for protein ids, among three options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for protein ids, among three
+ options (Protein.Accessions, Master.Protein.Accessions, Protein.Group.Accessions)."))
   }
 
 ################################################
@@ -95,14 +107,18 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
     which.seq <- "Sequence"
   }
   if (is.null(which.sequence)) {
-    stop("** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for peptide sequence, between
+ two options (Sequence or Annotated.Sequence)."))
   }
   if (which.seq == "Annotated.Sequence" & !is.element("Annotated.Sequence", colnames(input))) {
     which.seq <- "Sequence"
     message("** Use Sequence instead of Annotated.Sequence.")
   }
   if (!is.element(which.seq, colnames(input))) {
-    stop("** Please select which columns should be used for peptide sequence, between twp options (Sequence or Annotated.Sequence).")
+    stop(strwrap(prefix=" ", initial="",
+                 "** Please select which columns should be used for peptide sequence, between
+ two options (Sequence or Annotated.Sequence)."))
   }
 
 ################################################
@@ -227,7 +243,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
 ##############################
 ### 7. remove proteins with only one peptide and charge per protein
 ##############################
-	if (removeProtein_with1Peptide) {
+    if (removeProtein_with1Peptide) {
     ## remove protein which has only one peptide
     input$feature <- paste(input$PeptideModifiedSequence,
                            input$PrecursorCharge,
@@ -247,7 +263,7 @@ PDtoMSstatsFormat <- function(input, annotation, useNumProteinsColumn=FALSE, use
                     lengthtotalprotein, " proteins."))
     }
     input <- input[, -which(colnames(input) %in% c("feature"))]
-	}
+    }
   input$ProteinName <- input$ProteinName
-	return(input)
+    return(input)
 }
