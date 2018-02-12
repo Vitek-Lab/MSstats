@@ -23,7 +23,7 @@ dataProcess  <-  function(raw,
                           address="",
                           fillIncompleteRows=TRUE,
                           featureSubset="all",
-                          remove_proteins_with_interference=FALSE,
+                          remove_noninformative_feature_outlier=FALSE,
                           n_top_feature=3,
                           summaryMethod="TMP",
                           equalFeatureVar=TRUE,
@@ -2188,67 +2188,19 @@ dataProcess  <-  function(raw,
 	if (featureSubset == "all") {
  	 	message("** Use all features that the dataset origianally has.")
  	 
- 	 	processout <- rbind(processout,c("** Use all features that the dataset origianally has."))
+ 	 	processout <- rbind(processout, c("** Use all features that the dataset origianally has."))
      	write.table(processout, file=finalfile, row.names=FALSE)
   	} 
 
-	if (featureSubset == "highQuality") {
-	    message("** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release.")
-    
+    if (featureSubset == "highQuality") {
+	    
+        message("** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release.")
+        
         featureSubset <- 'top3'
-	  
-	    processout <- rbind(processout, c("** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release."))
-
-	    write.table(processout, file=finalfile, row.names=FALSE)
-	  
-	  #message("* Use feature selection algorithm in order to remove features with interference.")
-	  
-	  #processout <- rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
-	  #write.table(processout, file=finalfile, row.names=FALSE)
-	  
-	  ### 2016.04.25. MC
-	  ### there is the possibility to remain features which have completely missing in the certain condition after imputation
-	  ### Therefore, remove the features which are completely missing in the certain condition before imputation
-	  ### !! need to check for zero for skylineReport=TRUE
-	  
-	  #work$remove <- FALSE
-	  
-	  ###Impute the missing valuess before feature selection
-	  ## It should be handle within feature_selection function using .runQuantification function
-	  #AbundanceAfterImpute <- .Imputation(work, cutoffCensored, censoredInt, MBimpute, remove50missing)
-	  
-	  #work <- AbundanceAfterImpute
-	  
-	  ### 
-	  #selection_list <- .feature_selection(work, 
-	  #                                     cutoffCensored, 
-	  #                                     censoredInt,
-	  #                                     remove_proteins_with_interference)
-	  ##SelectionAfterImpute <- work
-	  
-	  ### 20160425-MC : after selecting feature, original ABUNCANCE should be used.
-	  #work$ABUNDANCE <- work$ABUNDANCE.O
-	  #work <- work[, -which(colnames(work) %in% c("ABUNDANCE.O", "feature.label", "run.label", "cen", "pred", "ref", "Protein_Peptide"))]
-	 # if (cutoff_peptidelist == 'distance.perProtein') {
-	    
-	  #  work[which(work$PEPTIDE %in% c(selection_list$PeptideList.remove.perProteinCutoff, selection_list$PeptideList.issue)), 'remove'] <- TRUE
-	 
-	  #}
-	  
-	  #if (cutoff_peptidelist == 'distance.amongAllProteins') {
-	    
-	  #  work[which(work$PEPTIDE %in% c(selection_list$PeptideList.remove.allProteinCutoff, selection_list$PeptideList.issue)), 'remove'] <- TRUE
-	    
-	  #}
-	  
-	  #if (cutoff_peptidelist == 'error.amongAllProteins') {
-	  #  tmp <- selection_list$Model.Based.Error
-	  #  tmp <- tmp[tmp$Model.Based.Error > 0, ]
-	  #  cutoff_error <- quantile(tmp$Model.Based.Error, prob=cutoff_percentile)
-	  #  removePeptide <- tmp[tmp$Model.Based.Error > cutoff_error, 'Peptide']
-	  #  work[which(work$PEPTIDE %in% c(removePeptide)), 'remove'] <- TRUE
-	    
-	  #}
+        
+        processout <- rbind(processout, c("** Selecting high quality features temporarily defaults to featureSubset = top3. Updates for this option will be available in the next release."))
+        
+        write.table(processout, file=finalfile, row.names=FALSE)
 	}
   
 	if (featureSubset == "top3") {

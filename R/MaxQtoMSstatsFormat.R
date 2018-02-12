@@ -22,12 +22,12 @@ MaxQtoMSstatsFormat <- function(evidence,
                                 removeOxidationMpeptides=FALSE,
                                 removeProtein_with1Peptide=FALSE){
 	
-    if( is.null(feaMeasurements) ){
-        stop('** Please select \'remove\' or \'keep\' for \'feaMeasurements\'.')
+    if( is.null(fewMeasurements) ){
+        stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
     }
     
-    if( !is.element(feaMeasurements, c('remove', 'keep')) ){
-        stop('** Please select \'remove\' or \'keep\' for \'feaMeasurements\'.')
+    if( !is.element(fewMeasurements, c('remove', 'keep')) ){
+        stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
     }
     
 	experiment <- "DDA"

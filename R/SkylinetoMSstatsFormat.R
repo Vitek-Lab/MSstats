@@ -8,12 +8,21 @@
 SkylinetoMSstatsFormat <- function(input, 
                                    annotation = NULL,
                                    removeiRT = TRUE, 
-                                   useUniquePeptide = TRUE,
-                                   removeOxidationMpeptides = FALSE,
-                                   removeProtein_with1Peptide = FALSE,
                                    filter_with_Qvalue = TRUE,
-                                   qvalue_cutoff = 0.01){
+                                   qvalue_cutoff = 0.01,
+                                   useUniquePeptide = TRUE,
+                                   fewMeasurements="remove",
+                                   removeOxidationMpeptides = FALSE,
+                                   removeProtein_with1Feature = FALSE){
   
+    if( is.null(fewMeasurements) ){
+        stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
+    }
+    
+    if( !is.element(fewMeasurements, c('remove', 'keep')) ){
+        stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
+    }
+    
     ##############################
     ### 1. Rename column names
     ##############################
@@ -104,7 +113,7 @@ SkylinetoMSstatsFormat <- function(input,
             input <- input[-which(input$PeptideSequence %in% remove_oxim_sequence), ]
         }
     
-        message('Peptides including M[+16] in the sequence are removed.')
+        message('** Peptides including M[+16] in the sequence are removed.')
     
     }
   
@@ -118,11 +127,12 @@ SkylinetoMSstatsFormat <- function(input,
         pepcount$PeptideSequence <- factor(pepcount$PeptideSequence)
     
         ## count how many proteins are assigned for each peptide
-        structure <- aggregate(ProteinName ~., data=pepcount, length)
-        remove_peptide <- structure[structure$ProteinName != 1, ]
+        structure <- pepcount %>% group_by(PeptideSequence) %>% summarise(length=length(ProteinName))
+        
+        remove_peptide <- structure[structure$length != 1, ]
     
         ## remove the peptides which are used in more than one protein
-        if( length(remove_peptide$ProteinName != 1 ) != 0 ){
+        if( nrow(remove_peptide) != 0 ){
             input <- input[-which(input$PeptideSequence %in% remove_peptide$PeptideSequence), ]
         }
     
@@ -159,7 +169,7 @@ SkylinetoMSstatsFormat <- function(input,
     }
   
     ##############################
-    ###  8. Sum for isotopic peaks per peptide and precursor charge for DDA
+    ###  8. DDA : Sum for isotopic peaks per peptide and precursor charge for DDA
     ##############################
 
     DDA <- FALSE
@@ -174,7 +184,7 @@ SkylinetoMSstatsFormat <- function(input,
     
     ## if there are fragment ion and also have any 'precursor', it is the issue.
     if( length(any.fragment) > 0 & length(any.precursor3) > 0){
-        stop("Please check precursors information. If your experiment is DIA, please remove the precursors. If your experiments is DDA, please check the precursor information.")
+        stop("** Please check precursors information. If your experiment is DIA, please remove the precursors. If your experiments is DDA, please check the precursor information.")
     }
     
     if( length(checkDDA) < 3 ){
@@ -247,58 +257,83 @@ SkylinetoMSstatsFormat <- function(input,
   
     
     ##############################
-    ###  9. if annotation is missing,
+    ###  9. DIA : filter by Qvalue
     ##############################
-    missing.annotation <- any( is.na(input$Condition) | is.na(input$BioReplicate) )
     
-    if( missing.annotation & is.null(annotation)  ){
-        stop('** Please check annotation for Condition and BioReplicat column. There is missing information.')	
-    } else if( missing.annotation & !is.null(annotation) ){
-        annotinfo <- annotation
+    if( !DDA & filter_with_Qvalue ){
         
-        input <- input[, -which(colnames(input) %in% c('Condition', 'BioReplicate'))]
+        if( !is.element(c('DetectionQValue'), colnames(input)) ){
+            
+            stop('** DetectionQValue column is needed in order to filter out by Qvalue. Please add DectionQValue column in the input.')
+            
+        } else {
+            
+            ## make Q value as numeric
+            input$DetectionQValue <- as.numeric(as.character(input$DetectionQValue))
+            
+            ## when qvalue > qvalue_cutoff, replace with zero for intensity
+            input[!is.na(input$DetectionQValue) & input$DetectionQValue > qvalue_cutoff, "Intensity"] <- 0
+            
+            message(paste('** Intensities with great than ', qvalue_cutoff, ' in DetectionQValue are replaced with zero.', sep=''))
+        }
+    }
     
-        ## assign the annotation
-        ## merge it by Run
-        input <- merge(input, annotinfo, by="Run")
+    ##############################
+    ### 10. remove featuares with all na or zero
+    ### some rows have all zero values across all MS runs. They should be removed.
+    ##############################
     
-        input.final <- data.frame(ProteinName = input$ProteinName,
-                              PeptideModifiedSequence = input$PeptideSequence,
-                              PrecursorCharge = input$PrecursorCharge,
-                              FragmentIon = input$FragmentIon,
-                              ProductCharge = input$ProductCharge,
-                              IsotopeLabelType = input$IsotopeLabelType,
-                              Condition = input$Condition,
-                              BioReplicate = input$BioReplicate,
-                              Run = input$Run,
-                              Intensity = input$Intensity)
+    input$fea <- paste(input$PeptideSequence,
+                       input$PrecursorCharge,
+                       input$FragmentIon,
+                       input$ProductCharge,
+                       sep="_")
     
-        if( any(is.element(colnames(input), 'Fraction')) ) {
-            input.final <- data.frame(input.final,
-                                  Fraction = input$Fraction)
+    inputtmp <- input[!is.na(input$Intensity) & input$Intensity > 1, ]
+    
+    count <- inputtmp %>% group_by(fea) %>% summarise(length=length(Intensity))
+    
+    ## get feature with all NA or zeros
+    getfea <- count[count$length > 0, 'fea']
+    
+    if( nrow(getfea) > 0 ){
+        
+        nfea.remove <- length(unique(input$fea))-nrow(getfea)
+        input <- input[which(input$fea %in% getfea$fea), ]
+        
+        message(paste('** ', nfea.remove, ' features have all NAs or zero intensity values and are removed.', sep=''))
+    }
+    
+    rm(inputtmp)
+    
+    ##############################
+    ###  11. remove features which has 1 or 2 measurements across runs
+    ##############################
+    if( fewMeasurements=="remove" ){
+        
+        ## it is the same across experiments. # measurement per feature. 
+        xtmp <- input[!is.na(input$Intensity) & input$Intensity > 0, ]
+        count_measure <- xtabs( ~fea, xtmp)
+        
+        remove_feature_name <- count_measure[count_measure < 3]
+        
+        if( length(remove_feature_name) > 0 ){
+            input <- input[-which(input$fea %in% names(remove_feature_name)), ]
+            
+            message(paste('** ', length(remove_feature_name), ' features have 1 or 2 intensities across runs and are removed.', sep=''))
+            
         }
         
-        if( any(is.element(colnames(input), 'DetectionQValue')) ) {
-            input.final <- data.frame(input.final,
-                                      DetectionQValue = input$DetectionQValue)
-        }
-    
-        input <- input.final
-        rm(input.final)
     }
 
     ##############################
-    ###  10. remove proteins with only one peptide and charge per protein
+    ###  12. remove proteins with only one feature per protein
     ##############################
 	
-	if(removeProtein_with1Peptide){
+	if(removeProtein_with1Feature){
+	    
 	    ######## remove protein which has only one peptide
-	    input$feature <- paste(input$PeptideSequence, 
-	                           input$PrecursorCharge, 
-	                           input$FragmentIon, 
-	                           input$ProductCharge, sep="_")
-	  
-	    tmp <- unique(input[, c("ProteinName", 'feature')])
+	    tmp <- unique(input[, c("ProteinName", 'fea')])
 	    tmp$ProteinName <- factor(tmp$ProteinName)
 	    count <- xtabs( ~ ProteinName, data=tmp)
         lengthtotalprotein <- length(count)
@@ -308,32 +343,58 @@ SkylinetoMSstatsFormat <- function(input,
 	    if (length(removepro) > 0) {
 	    
 	        input <- input[-which(input$ProteinName %in% removepro), ]
-	        message(paste("*** ", length(removepro), ' proteins, which have only one feature in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
+	        
+	        message(paste("** ", length(removepro), ' proteins, which have only one feature in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
+	    } else {
+	        
+	        message("** All proteins have at least two features.")
+	        
 	    }
-	  
-	    input <- input[, -which(colnames(input) %in% c('feature'))]
+	    
+	    
 	}
+    
+    input <- input[, -which(colnames(input) %in% c('fea'))]
   
     ##############################
-    ###  11. filter by Qvalue
+    ###  13. if annotation is missing,
     ##############################
-  
-    if( !DDA & filter_with_Qvalue ){
+    missing.annotation <- any( is.na(input$Condition) | is.na(input$BioReplicate) )
     
-        if(! is.element(c('DetectionQValue'), colnames(input)) ){
-      
-            stop('** DetectionQValue column is needed in order to filter out by Qvalue. Please add DectionQValue column in the input.')
-      
-        } else {
-    
-            ## make Q value as numeric
-            input$DetectionQValue <- as.numeric(as.character(input$DetectionQValue))
-    
-            ## when qvalue > qvalue_cutoff, replace with zero for intensity
-            input[!is.na(input$DetectionQValue) & input$DetectionQValue > qvalue_cutoff, "Intensity"] <- 0
-    
-            message(paste('Intensities with great than ', qvalue_cutoff, ' in DetectionQValue are replaced with zero.', sep=''))
+    if( missing.annotation & is.null(annotation)  ){
+        stop('** Please check annotation for Condition and BioReplicat column. There is missing information.')	
+    } else if( missing.annotation & !is.null(annotation) ){
+        annotinfo <- annotation
+        
+        input <- input[, -which(colnames(input) %in% c('Condition', 'BioReplicate'))]
+        
+        ## assign the annotation
+        ## merge it by Run
+        input <- merge(input, annotinfo, by="Run")
+        
+        input.final <- data.frame(ProteinName = input$ProteinName,
+                                  PeptideModifiedSequence = input$PeptideSequence,
+                                  PrecursorCharge = input$PrecursorCharge,
+                                  FragmentIon = input$FragmentIon,
+                                  ProductCharge = input$ProductCharge,
+                                  IsotopeLabelType = input$IsotopeLabelType,
+                                  Condition = input$Condition,
+                                  BioReplicate = input$BioReplicate,
+                                  Run = input$Run,
+                                  Intensity = input$Intensity)
+        
+        if( any(is.element(colnames(input), 'Fraction')) ) {
+            input.final <- data.frame(input.final,
+                                      Fraction = input$Fraction)
         }
+        
+        if( any(is.element(colnames(input), 'DetectionQValue')) ) {
+            input.final <- data.frame(input.final,
+                                      DetectionQValue = input$DetectionQValue)
+        }
+        
+        input <- input.final
+        rm(input.final)
     }
   
     input$ProteinName <- factor(input$ProteinName)

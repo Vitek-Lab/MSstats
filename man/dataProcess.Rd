@@ -12,7 +12,7 @@ dataProcess(raw,
             address="",
             fillIncompleteRows=TRUE,
             featureSubset="all",
-            remove_proteins_with_interference=FALSE,
+            remove_noninformative_feature_outlier=FALSE,
             n_top_feature=3,
             summaryMethod="TMP",
             equalFeatureVar=TRUE,
@@ -31,8 +31,8 @@ dataProcess(raw,
   \item{nameStandards}{vector of global standard peptide names. only for normalization with global standard peptides. }
  \item{betweenRunInterferenceScore}{interference is detected by a between-run-interference score. TRUE means the scores are generated automatically and stored in a .csv file. FALSE(default) means no scores are generated.}
  \item{fillIncompleteRows}{If the input dataset has incomplete rows, TRUE(default) adds the rows with intensity value=NA for missing peaks. FALSE reports error message with list of features which have incomplete rows. }
-  \item{featureSubset}{"all"(default) uses all features that the data set has. "top3" uses top 3 features which have highest average of log2(intensity) across runs. "topN" uses top N features which has highest average of log2(intensity) across runs. It needs the input for n_top_feature option. "highQuality" selects the most informative features which agree the pattern of the average features across the runs.}
-  \item{remove_proteins_with_interference}{TRUE allows the algorithm to remove the proteins if deem interfered. FALSE (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide.}
+  \item{featureSubset}{"all"(default) uses all features that the data set has. "top3" uses top 3 features which have highest average of log2(intensity) across runs. "topN" uses top N features which has highest average of log2(intensity) across runs. It needs the input for n_top_feature option. "highQuality" is under development. Currently it will use top 3 features.}
+  \item{remove_noninformative_feature_outlier}{It only works with featureSubset="highQuality". TRUE allows to remove 1) the features with column : feature_quality="Noninformative" which are featurew with bad quality, 2) outliers that are flagged in the column, is_outlier=TRUE. FALSE (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide.}
   \item{n_top_feature}{The number of top features for featureSubset='topN'. Default is 3, which means to use top 3 features.}
 \item{summaryMethod}{"TMP"(default) means Tukey's median polish, which is robust estimation method. "linear" uses linear mixed model.}
 \item{equalFeatureVar}{only for summaryMethod="linear". default is TRUE. Logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. FALSE means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.}
