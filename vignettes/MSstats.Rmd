@@ -381,6 +381,64 @@ result.power <- designSampleSize(data=testResultMultiComparisons$fittedmodel, nu
 designSampleSizePlots(data=result.power)
 ```
 
+## designSampleSizeClassification
+
+For classification problem (such as disgnosys of disease), simulation is utilized to estimate the optimal sample size of training data under different size of validation data, including Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment. The function fits intensity-based linear model and uses variance components and mean abundance to simulate new data with different sample size. Training data and validation data are simulated independently. Random forest model is fitted on train data and used to predict the validation data. The above procedure is repeated several times. Mean predictive accuracy and variance under different size of training data and validation data are reported. For each size of validation data, the number of training samples with best predictive accuracy is also returned.
+
+
+### Arguments
+
+* `data` : output from function `dataProcess`.
+* `n` : number of steps, which is the number of different sample sizes to simulate. Default is `5`.
+* `step` : number of samples per condition to increase at each step. Default is `20`.
+* `noise` : the fraction of protein variance to change at each step. Positive value indicates increasing noise in the data while negative value means decreasing noise. Default is `0.0`.
+* `iter` : number of times to repeat simulation experiments. Default is `5`.
+
+
+### Example
+```{r, eval=FALSE}
+# Consider quantitative data (i.e. QuantData) from yeast study.
+# A time course study with ten time points of interests and three biological replicates.
+QuantSRM<-dataProcess(SRMRawData)
+# estimate the mean predictive accuray under different sizes of training data and validation data
+# n is the number of biological replicates per condition
+result.srm<-designSampleSizeClassification(data=QuantSRM, n=5, step=10)
+result.srm$optTrainSize
+
+# Consider another training set from a colorectal cancer study
+# Subjects are from control group or colorectal cancer group
+# 72 proteins were targeted with SRM
+require(MSstatsBioData)
+data(SRM_crc_training)
+QuantCRCSRM<-dataProcess(SRM_crc_training)
+# estimate the mean predictive accuray under different sizes of training data and validation data
+# n is the number of biological replicates per condition
+crc.srm<-designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
+crc.srm$optTrainSize
+```
+
+## designSampleSizeClassificationPlots
+
+To illustrate the mean classification accuracy under different size of training data and validation data. The input is the result from function `designSampleSizeClassification`.
+
+### Arguments
+* `data` : output from function `designSampleSizeClassification`. 
+  
+### Example
+
+```{r, eval=FALSE}
+# Consider another training set from a colorectal cancer study
+# Subjects are from control group or colorectal cancer group
+# 72 proteins were targeted with SRM
+require(MSstatsBioData)
+data(SRM_crc_training)
+QuantCRCSRM<-dataProcess(SRM_crc_training)
+# estimate the mean predictive accuray under different sizes of training data and validation data
+# n is the number of biological replicates per condition
+crc.srm<-designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
+designSampleSizeClassificationPlots(data=crc.srm)
+```
+
 ## quantification
 
 Model-based quantification for each condition or for each biological samples per protein in a targeted Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment. Quantification takes the processed data set by `dataProcess` as input and automatically generate the quantification results (data.frame) with long or matrix format. The quantification for endogenous samples is based on run summarization from subplot model, with TMP robust estimation.
