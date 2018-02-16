@@ -19,7 +19,7 @@ designSampleSize(data=data,desiredFC=desiredFC,FDR=0.05,numSample=TRUE,power=0.9
 
 \value{A list of the sample size calculation results including Variable desiredFC, numSample, numPep, numTran, FDR,  and power.}
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\author{Meena Choi, Ching-Yun Chang, Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

@@ -11,11 +11,12 @@ designSampleSizePlots(data=data)
 %%  \item{address}{the name of folder that will store the plots. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "SampleSizePlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
 }
 
-
 \details{Data in the example is based on the results of sample size calculation from function \code{\link{designSampleSize}}.
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\value{Plot for estimated sample size with assigned variable.}
+
+\author{Meena Choi, Ching-Yun Chang, Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

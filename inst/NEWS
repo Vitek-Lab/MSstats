@@ -1,3 +1,16 @@
+
+CHANGES IN VERSION 3.11.3 [2018-02-15]
+-------------------------
+    BUG FIXES
+	 - nonlinear_quantlim : fix the bug for the resampling of the blank sample, increase the default number of bootstrap samples
+	 - designSampleSize : fix the bug
+	
+    NEW FEATURES
+	 - new function : designSampleSizeClassification, designSampleSizeClassificationPlots
+	     - Calculate the optimal size of training data for classification problem by simulation.
+	 - new converter functions : DIAUmpiretoMSstatsFormat, OpenMStoMSstatsFormat
+	 
+
 CHANGES IN VERSION 3.10.5 [2018-01-10]
 -------------------------
    BUG FIXES

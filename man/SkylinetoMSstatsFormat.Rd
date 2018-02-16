@@ -27,6 +27,7 @@ SkylinetoMSstatsFormat(input,
   \item{removeProtein_with1Feature}{TRUE will remove the proteins which have only 1 peptide and charge. FALSE is default.}
 }
 
+\value{data.frame with the required format of MSstats.}
 
 \author{Meena Choi, Olga Vitek. 
 

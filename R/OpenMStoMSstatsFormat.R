@@ -1,16 +1,15 @@
 
-## Converter for openswath output
+## OpenMS output has 10 required format
+## however, still need preprocessing
 
 #' @export
 
-OpenSWATHtoMSstatsFormat <- function(input,
-                                     annotation = NULL,
-                                     filter_with_mscore = TRUE,
-                                     mscore_cutoff = 0.01,
-                                     useUniquePeptide = TRUE,
-                                     fewMeasurements="remove",
-                                     removeProtein_with1Feature = FALSE,
-                                     summaryforMultipleRows=max){
+OpenMStoMSstatsFormat <- function(input,
+                                  annotation=NULL,
+                                  useUniquePeptide=TRUE,
+                                  fewMeasurements="remove",
+                                  removeProtein_with1Feature=FALSE,
+                                  summaryforMultipleRows=max){
     
     if (is.null(fewMeasurements)) {
         stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
@@ -21,16 +20,17 @@ OpenSWATHtoMSstatsFormat <- function(input,
     }
     
     if (is.null(annotation)) {
-        stop('** Please prepare \'annotation\' as one of input.')
+        if (sum(is.na(input$Condition)) > 0){
+            stop('** All or partial annotation is missing. Please prepare \'annotation\' as one of input.')
+        }
     } else {
         annotinfo <- annotation
     }
 
     ## Check correct option or input
-    requiredinput.general <- c('ProteinName', 'FullPeptideName', 'Charge', 'Sequence',
-                               'decoy', 'm_score',
-                               'aggr_Fragment_Annotation', 'aggr_Peak_Area', 
-                               'filename')
+    requiredinput.general <- c("ProteinName", "PeptideSequence", "PrecursorCharge", 
+                               "FragmentIon", "ProductCharge", "IsotopeLabelType",
+                               "Condition", "BioReplicate", "Run", "Intensity")
     
     ################################
     ## 1. check general input and use only required columns.
@@ -46,84 +46,23 @@ OpenSWATHtoMSstatsFormat <- function(input,
         input <- input[, colnames(input) %in% requiredinput.general]
     }
     
-    ##############################
-    ## 2. remove the decoys
-    ##############################
-    if (length(unique(input$decoy)) == 2) {
-        
-        ## decoy=1 means the decoys.
-        input <- input[input$decoy == 0, ]
-        input <- input[, -which(colnames(input) %in% 'decoy')]
-        
-        message("** Remove the decoys.")
-    }
-  
-    ##############################
-    ## 3. filter by mscore
-    ##############################
-    
-    ## mscore
-    if (filter_with_mscore) {
-    
-        if (!is.element(c('m_score'), colnames(input))) {
-      
-            stop('** m_score column is needed in order to filter out by m_scoe. Please add m_score column in the input.')
-      
-        } else {
-      
-            ## when mscore > mscore_cutoff, replace with zero for intensity
-            input <- input[!is.na(input$m_score) & input$m_score <= mscore_cutoff, ] 
-      
-            message(paste0('** Features with great than ', mscore_cutoff, ' in m_score are removed.'))
-        }
-        
-        input <- input[, -which(colnames(input) %in% 'm_score')]
+    ## get annotation
+    if (is.null(annotation)) {
+        annotinfo <- unique(input[, c("Run", "Condition", 'BioReplicate')])	
+    } else {
+        annotinfo <- annotation
     }
     
     ##############################
-    ## 4. Make required long format - disaggregate : one row for each transition
-    ##############################
-    
-    ## The columns "aggr_Fragment_Annotation" : separate by ';' and "aggr_Peak_Area" : separate by ';' 
-    ## are disaggregated into the new columns "FragmentIon" and "Intensity". 
-    input <- input %>%
-        separate_rows(aggr_Fragment_Annotation, aggr_Peak_Area, sep="[;]")
-    
-    colnames(input)[colnames(input) == 'aggr_Fragment_Annotation'] <- 'FragmentIon'
-    colnames(input)[colnames(input) == 'aggr_Peak_Area'] <- 'Intensity'
-    
-    ## use FullPeptideName as peptide sequence
-    ##   Sequence       FullPeptideName
-    ##  TAEICEHLKR  TAEIC(UniMod:4)EHLKR
-    ##     SCTILIK     SC(UniMod:4)TILIK
-    
-    ## FullPeptideName -> PeptideSequence, 
-    ## Charge -> PrecursorCharge, 
-    
-    colnames(input)[colnames(input) == 'FullPeptideName'] <- 'PeptideSequence'
-    colnames(input)[colnames(input) == 'Charge'] <- 'PrecursorCharge'
-    colnames(input)[colnames(input) == 'filename'] <- 'Run'
-    
-    input <- input[, -which(colnames(input) %in% 'Sequence')]
-    
-    ## Unimod Identifier should be replaced from ":" to "_".
-    input$PeptideSequence <- gsub(':', '_', input$PeptideSequence)
-    input$FragmentIon <- gsub(':', '_', input$FragmentIon)
-    
-    ## there are incomplete rows, which potentially NA
-    ## if negative and 0 values should be replaced with NA
-    input[input$Intensity < 1, "Intensity"] <- 0
-    
-    ##############################
-    ## 5. remove featuares with all na or zero
+    ## 2. remove featuares with all na or zero
     ## some rows have all zero values across all MS runs. They should be removed.
     ##############################
   
     input$fea <- paste(input$PeptideSequence,
-                        input$PrecursorCharge,
-                        input$FragmentIon,
-                        #input$ProductCharge,
-                        sep="_")
+                       input$PrecursorCharge,
+                       input$FragmentIon,
+                       input$ProductCharge,
+                       sep="_")
   
     inputtmp <- input[!is.na(input$Intensity) & input$Intensity > 1, ]
     
@@ -138,12 +77,14 @@ OpenSWATHtoMSstatsFormat <- function(input,
         input <- input[which(input$fea %in% getfea$fea), ]
 
         message(paste0('** ', nfea.remove, ' features have all NAs or zero intensity values and are removed.'))
+    } else {
+        stop(message('No intensity is available. Please check the input.'))
     }
     
     rm(inputtmp)
     
     ################################################
-    ## 6. remove peptides which are used in more than one protein
+    ## 3. remove peptides which are used in more than one protein
     ## we assume to use unique peptide
     ################################################
     if (useUniquePeptide) {
@@ -170,9 +111,9 @@ OpenSWATHtoMSstatsFormat <- function(input,
     }
   
     ##############################
-    ##  7. remove features which has 1 or 2 measurements across runs
+    ##  4. remove features which has 1 or 2 measurements across runs
     ##############################
-    if (fewMeasurements=="remove") {
+    if (fewMeasurements == "remove") {
     
         ## it is the same across experiments. # measurement per feature. 
         xtmp <- input[!is.na(input$Intensity) & input$Intensity > 0, ]
@@ -191,7 +132,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
     }
   
     ##############################
-    ## 8. remove proteins with only one peptide and charge per protein
+    ## 5. remove proteins with only one peptide and charge per protein
     ##############################
   
     if (removeProtein_with1Feature) {
@@ -217,7 +158,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
     }
 
     ##############################
-    ## 9. remove multiple measurements per feature and run
+    ## 6. remove multiple measurements per feature and run
     ##############################
   
     count <- aggregate(Intensity ~ fea, data=input, FUN=length)
@@ -228,7 +169,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
                           value.var='Intensity', 
-                          fun.aggregate=summaryforMultipleRows, fill='0') 
+                          fun.aggregate=summaryforMultipleRows, fill='NA') 
     
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))
@@ -239,12 +180,13 @@ OpenSWATHtoMSstatsFormat <- function(input,
     } else {
         
         ## still need to fill incomplete rows
-        input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
+        input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon + ProductCharge ~ Run, data=input, 
                           value.var='Intensity', 
-                          fill='0') 
+                          fill='NA') 
         
         ## reformat for long format
-        input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))
+        input <- melt(input_w, 
+                      id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon', 'ProductCharge'))
         colnames(input)[which(colnames(input) %in% c('variable','value'))] <- c("Run","Intensity")
         
         message('** No multiple measurements in a feature and a run.')
@@ -266,7 +208,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
                               "PeptideSequence" = input$PeptideSequence,
                               "PrecursorCharge" = input$PrecursorCharge,
                               "FragmentIon" = input$FragmentIon,
-                              "ProductCharge" = NA,
+                              "ProductCharge" = input$ProductCharge,
                               "IsotopeLabelType" = "L",
                               "Condition" = input$Condition,
                               "BioReplicate" = input$BioReplicate,

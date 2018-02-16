@@ -5,7 +5,7 @@
 #' @export
 #' @import minpack.lm 
 
-nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500){
+nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 2000){
   
   
     switch(Sys.info()[['sysname']],
@@ -31,7 +31,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
   
     #Number of boostrap samples
     if(missing(Nbootstrap)){
-        B <- 500
+        B <- 2000
     } else B <= Nbootstrap
   
   
@@ -136,7 +136,8 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
                 weights[kk] = 1/var_v_s_unique[which( unique_c == tmpB$C[kk])]
             }   
         
-            noise_B = mean(sample(tmp_blank$I,length(tmp_blank$I),replace=TRUE)) #Mean of resampled noise (= mean of noise)
+            noise_re = sample(tmp_blank$I,length(tmp_blank$I),replace=TRUE)
+            noise_B = mean(noise_re) #Mean of resampled noise (= mean of noise)
         
             ii = 0;
             if(1)     while(ii < NMAX){#Number of ii trials for bilinear fit < NMAX
@@ -187,7 +188,9 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
                 
                             #Need to also bootstrap for the value of the mean:
                             #Pick with replacement blank samples:
-                            noise_BB = noise
+                            noise_re_re = sample(noise_re,length(noise_re),replace=TRUE)
+                            
+                            noise_BB = mean(noise_re_re)
                 
                             sink(null_output);
                 

@@ -15,7 +15,9 @@ If the information of one or more columns is not available for the original raw 
 Variable Intensity is required to be original signal without any log transformation and can be specified as the peak of height or the peak of  area under curve.
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\value{data.frame with the required format of MSstats.}
+
+\author{Meena Choi, Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

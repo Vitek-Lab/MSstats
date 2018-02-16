@@ -5,6 +5,7 @@
 #' @export dataProcess
 #' @import survival 
 #' @import preprocessCore 
+#' @import MASS
 #' @importFrom reshape2 dcast melt
 #' @importFrom stats medpolish aggregate t.test lm summary.lm fitted resid p.adjust
 #' @importFrom stats C approx coef cor dist formula loess median na.omit
@@ -13,7 +14,7 @@
 #' @importFrom methods validObject
 #' @importFrom doSNOW registerDoSNOW
 #' @importFrom snow makeCluster
-#' @import foreach
+#' @importFrom foreach foreach %dopar%
 
 dataProcess  <-  function(raw,
                           logTrans=2,
@@ -3658,7 +3659,7 @@ resultsAsLists <- function(x, ...) {
 				# get feature mean and make order of feature
 				# mean or median?
 				#featureorder <- aggregate(ABUNDANCE~FEATURE,data=subtemp, mean)
-				#featureorder <- featureorder[with(featureorder, order(ABUNDANCE, decreasing=T)),]
+				#featureorder <- featureorder[with(featureorder, order(ABUNDANCE, decreasing=TRUE)),]
 	
 				# runs which has any missing
 				#if (length(completerun)!=0) {

@@ -23,10 +23,11 @@ groupComparison(contrast.matrix=contrast.matrix,
 The underlying model fitting functions are \code{\link[stats]{lm}} and \code{\link[lme4]{lmer}} for the fixed effects model and mixed effects model, respectively.  
 
 The input of this function is the quantitative data from function (\code{\link{dataProcess}}).
-
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\value{A list of data.frame \emph{ComparisonResult} is the data.frame for the result of significance analysis ; \emph{fittedModel} is the the data.frame for run-level summarized data.}
+
+\author{Meena Choi, Ching-Yun Chang, Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
@@ -50,21 +51,20 @@ Timothy Clough, Safia Thaminy, Susanne Ragg, Ruedi Aebersold, Olga Vitek. "Stati
 # In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of 
 # Biological replication.  
 
-QuantData<-dataProcess(SRMRawData)
+QuantData <- dataProcess(SRMRawData)
 head(QuantData$ProcessedData)
 
 levels(QuantData$ProcessedData$GROUP_ORIGINAL)
-comparison<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
-row.names(comparison)<-"T7-T1"
+comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+row.names(comparison) <- "T7-T1"
 
 # Tests for differentially abundant proteins with models:
 # label-based SRM experiment with expanded scope of biological replication.
 
-testResultOneComparison<-groupComparison(contrast.matrix=comparison, data=QuantData)
+testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
 
 # table for result
 testResultOneComparison$ComparisonResult
-
 
 }
 

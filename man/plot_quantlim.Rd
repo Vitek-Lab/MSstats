@@ -14,15 +14,19 @@ plot_quantlim(spikeindata, quantlim_out, alpha, dir_output, xlim_plot)
   \item{spikeindata}{Data frame that contains the experimental spiked in data. This data frame should be identical to that used as input by function functions nonlinear_quantlim() or linear_quantlim().  The data frame has to contain the following columns : CONCENTRATION, INTENSITY (both of which are measurements from the spiked in experiment) and NAME which designates the name of the assay (e.g. the name of the peptide or protein)}
   \item{quantlim_out}{Data frame that was output by functions nonlinear_quantlim() or linear_quantlim(). It has to contain at least the following columns: i) CONCENTRATION: Concentration values at which the value of the fit is calculated ii) MEAN: The value of the curve fit iii) LOW: The value of the lower bound of the 95\% prediction interval iv) UP: The value of the upper bound of the 95\% prediction interval v) LOB: The value of the LOB (one column with identical values) vi) LOD: The value of the LOD (one column with identical values) vii) NAME: The name of the assay (identical to that provided in the input) viii) METHOD which is LINEAR or NONLINEAR}
   \item{alpha}{Probability level to estimate the LOB/LOD}
-\item{dir_output}{String containg the path of the directly where the pdf files of the plots should be output.}
-\item{xlim_plot}{Optional argument containing the maximum xaxis value of the zoom plot. When no value is specified, a suitable value close to LOD is automatically chosen.}
+  \item{dir_output}{String containg the path of the directly where the pdf files of the plots should be output.}
+  \item{xlim_plot}{Optional argument containing the maximum xaxis value of the zoom plot. When no value is specified, a suitable value close to LOD is automatically chosen.}
 }
 
 \details{
 \itemize{
 \item{spikeindata : Each line of the data frame contains one measurement from the spiked-in experiment. Multiple different INTENSITY values for the same CONCENTRATION are assumed to correspond to different replicates. Blank Samples are characterized by CONCENTRATION = 0.}
+}}
 
-\item{output : Each line of the data frame corresponds to a unique concentration value at which the value of the fit and prediction interval are evaluated. More unique concentrations values than in the input data frame are used to increase the accuracy of the LOB/D calculations.}
+
+\value{
+\itemize{
+\item{Data frame where each line corresponds to a unique concentration value at which the value of the fit and prediction interval are evaluated. More unique concentrations values than in the input data frame are used to increase the accuracy of the LOB/D calculations.}
 }
 }
 
@@ -35,10 +39,9 @@ This plotting function should ideally be used every time  nonlinear_quantlim() o
 Maintainer: Cyril Galitzine (\email{cyrildgg@gmail.com}), Meena Choi (\email{mnchoi67@gmail.com})
 }
 \references{
-
-C. Galitzine et al.  TBD  2016
-
+C. Galitzine et al. "Nonlinear regression improves accuracy of characterization of multiplexed mass spectrometric assays" \emph{Mol Cell Proteomics}, doi:10.1074/mcp.RA117.000322, 2018.
 }
+
 
 \examples{
 

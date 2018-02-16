@@ -12,9 +12,11 @@ This dataset is part of the CPTAC 7, study 3 (Addona et al., 2009). It correspon
 \details{The intensity reported is the sum of the intensity of all the different fragments of the peptide. Only the peptide being spiked (light peptide) is contained in the example data set. The intensity was normalized using the corresponding heavy peptide in log space such that intensity of the heavy remains constant for all concentrations and all replicates. The intensity was rescaled following the method described in Addona et al., 2009. The concentration and Intensity are both in units of fmol/uL.
 }
 
+\value{data.frame as described in details.}
+
 \author{Cyril Galitzine, Olga Vitek. 
 
-Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
+Maintainer: Cyril Galitzine (\email{cyrildgg@gmail.com}), Meena Choi (\email{mnchoi67@gmail.com})
 }
 
 \references{

@@ -27,6 +27,7 @@ SpectronauttoMSstatsFormat(input,
   \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.}
 }
 
+\value{data.frame with the required format of MSstats.}
 
 \author{Meena Choi, Olga Vitek. 
 
