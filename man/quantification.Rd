@@ -28,7 +28,9 @@ The input of this function is the quantitative data from function (\code{\link{d
 }
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\value{data.frame as described in details.}
+
+\author{Meena Choi, Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

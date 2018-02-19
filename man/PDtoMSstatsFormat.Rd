@@ -32,6 +32,7 @@ PDtoMSstatsFormat(input,
   \item{which.sequence}{Use 'Sequence'(default) column for peptide sequence. 'Annotated.Sequence' can be used instead.}
 }
 
+\value{data.frame with the required format of MSstats.}
 
 \author{Meena Choi, Olga Vitek. 
 

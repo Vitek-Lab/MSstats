@@ -25,6 +25,7 @@ ProgenesistoMSstatsFormat(input,
 
 }
 
+\value{data.frame with the required format of MSstats.}
 
 \author{Meena Choi, Olga Vitek. 
 

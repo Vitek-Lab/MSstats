@@ -5,8 +5,8 @@
 
 #' @export
 quantification <- function(data,
-							type="Sample",
-							format="matrix") {
+                           type="Sample",
+                           format="matrix") {
   
   	## save process output in each step
   	allfiles <- list.files()
@@ -22,48 +22,41 @@ quantification <- function(data,
     	num <- 0
     	finalfile <- "msstats.log"
     
-    	while(is.element(finalfile, allfiles)) {
+    	while (is.element(finalfile, allfiles)) {
       		num <- num + 1
       		lastfilename <- finalfile ## in order to rea
-      		finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
+      		finalfile <- paste0(paste(filenaming, num, sep="-"), ".log")
     	}
     
     	finalfile <- lastfilename
     	processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
   	}
   
-  	processout <- rbind(processout, as.matrix(c(" ", " ", "MSstats - quantification function", " "), ncol=1))
-  
-  
-  	## data format
-  	#rawinput <- c("ProteinName","PeptideSequence","PrecursorCharge","FragmentIon","ProductCharge","IsotopeLabelType","Condition","BioReplicate","Run","Intensity")
-  
-  	#if (length(setdiff(toupper(rawinput),toupper(colnames(data))))==0) {
-    	#processout <- rbind(processout, c(paste("The required input - data : did not process from dataProcess function. - stop")))
-    
-    	#write.table(processout, file=finalfile, row.names=FALSE)
-    
-    	#stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
-  	#}
+  	processout <- rbind(processout, 
+  	                    as.matrix(c(" ", " ", "MSstats - quantification function", " "), ncol=1))
   
   	## check other options
   	if (!(toupper(type) == "SAMPLE" | toupper(type) == "GROUP")) {
-    	processout <- rbind(processout, c(paste("The required input - type : 'type' value is wrong. - stop")))
+    	processout <- rbind(processout, 
+    	                    "The required input - type : 'type' value is wrong. - stop")
     	write.table(processout, file=finalfile, row.names=FALSE)
     
     	stop("'type' must be one of \"Sample\" or \"Group\". ")
   	} 
   
   	if (!(toupper(format) == "MATRIX" | toupper(format) == "LONG")) {
-    	processout <- rbind(processout, c(paste("The required input - format : 'format' value is wrong. - stop")))
+    	processout <- rbind(processout, 
+    	                    "The required input - format : 'format' value is wrong. - stop")
     	write.table(processout, file=finalfile, row.names=FALSE)
     
     	stop("'format' must be one of \"matrix\" or \"long\". ")
   	} 
   
   	## all input
-  	processout <- rbind(processout, c(paste("type of quantification = ", type, sep="")))
-  	processout <- rbind(processout, c(paste("format of output = ", format, sep="")))
+  	processout <- rbind(processout, 
+  	                    paste0("type of quantification = ", type))
+  	processout <- rbind(processout, 
+  	                    paste0("format of output = ", format))
   
   	write.table(processout, file=finalfile, row.names=FALSE)
   
@@ -78,15 +71,17 @@ quantification <- function(data,
     	
    		datarun <- datarun[!is.na(datarun$LogIntensities), ]
        
-   	 	datam <- dcast(Protein ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=datarun, value.var='LogIntensities', fun.aggregate=median)
+   	 	datam <- dcast(Protein ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=datarun, 
+   	 	               value.var='LogIntensities', 
+   	 	               fun.aggregate=median)
    	 	
-   	 	if (format=="long") {
+   	 	if (format == "long") {
    	 		data_l <- melt(datam, id.vars=c('Protein'))
 			colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c('Group_Subject', 'LogIntensity')
-
    	 	}
   
-    	processout <- rbind(processout,c("Finish sample quantificiation - okay."))
+    	processout <- rbind(processout,
+    	                    "Finish sample quantificiation - okay.")
     	write.table(processout, file=finalfile, row.names=FALSE)    
     
     	if (format == "long") {
@@ -103,7 +98,7 @@ quantification <- function(data,
   	## Group quantification
     #################################
 
-  	if (toupper(type)=="GROUP") {
+  	if (toupper(type) == "GROUP") {
     
     	datarun <- data$RunlevelData
     	datarun$Protein <- factor(datarun$Protein)
@@ -118,10 +113,10 @@ quantification <- function(data,
 		datam2  <- melt(datam, id.vars=c('Protein', "GROUP_ORIGINAL"))
 		colnames(datam2)[colnames(datam2) %in% c("variable", "value")] <- c('Subject', 'LogIntensity')
 
-		datam3 <- dcast(Protein ~ GROUP_ORIGINAL , 
+		datam3 <- dcast(Protein ~ GROUP_ORIGINAL, 
 		                data=datam2, 
 		                value.var='LogIntensity', 
-		                fun.aggregate=function(x) median(x, na.rm=T))
+		                fun.aggregate=function(x) median(x, na.rm=TRUE))
 		
 		rm(datam)
 		rm(datam2)
@@ -129,10 +124,10 @@ quantification <- function(data,
    	 	if (format == "long") {
    	 		data_l <- melt(datam3, id.vars=c('Protein'))
 			colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c('Group', 'LogIntensity')
-
    	 	}
   
-    	processout <- rbind(processout,c("Finish group quantificiation - okay."))
+    	processout <- rbind(processout,
+    	                    "Finish group quantificiation - okay.")
     	write.table(processout, file=finalfile, row.names=FALSE)    
     
     	if (format == "long") {
@@ -143,5 +138,4 @@ quantification <- function(data,
     		return(datam3)
     	}
   	} ## end group quantification	
-	
 }

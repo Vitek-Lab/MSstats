@@ -65,7 +65,9 @@ groupComparisonPlots(data=data,
 The input of this function is "ComparisonResult" in the testing results from function (\code{\link{groupComparison}}). 
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek. 
+\value{pdf file}
+
+\author{Meena Choi, Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

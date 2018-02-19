@@ -31,6 +31,7 @@ MaxQtoMSstatsFormat(evidence,
 
 }
 
+\value{data.frame with the required format of MSstats.}
 
 \section{Warning}{MSstats does not support for metabolic labeling or iTRAQ experiments.
 }

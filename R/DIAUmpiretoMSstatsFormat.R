@@ -8,6 +8,9 @@
 ## fewMeasurements : if 1 or 2 measurements across runs per feature, 'remove' will remove those featuares. It can affected for unequal variance analysis.
 
 #' @export
+#' @importFrom dplyr %>% left_join semi_join group_by summarise
+#' @importFrom tidyr separate_rows
+#' 
 DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro, 
                                 annotation,
                                 useSelectedFrag = TRUE,
@@ -16,15 +19,15 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
                                 removeProtein_with1Feature = FALSE,
                                 summaryforMultipleRows=max){
 	
-    if( is.null(fewMeasurements) ){
+    if (is.null(fewMeasurements)) {
         stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
     }
     
-    if( !is.element(fewMeasurements, c('remove', 'keep')) ){
+    if (!is.element(fewMeasurements, c('remove', 'keep'))) {
         stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
     }
     
-    if( is.null(annotation) ){
+    if (is.null(annotation)) {
         stop('** Please prepare \'annotation\' as one of input.')
     }
     
@@ -32,15 +35,15 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     annot <- annotation
     
     ########################
-    ### 1.  get selected frag from DIA-Umpire
+    ## 1.  get selected frag from DIA-Umpire
     ########################
     
     ## need to check whether 'Selected_fragments' column is available or not.
-    if( !any(is.element(colnames(raw.pep), 'Selected_fragments')) ){
+    if (!any(is.element(colnames(raw.pep), 'Selected_fragments'))) {
         stop('** Selected_fragments column is required. Please check it.')
     }
     
-    # Selected_fragments
+    ## Selected_fragments
     raw.pep2 <- raw.pep[, c('Peptide.Key', 'Proteins', 'Selected_fragments')]
     
     ## remove empty protein name
@@ -54,14 +57,14 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     ## raw.pep3 has selected fragment information
     
     ########################
-    ### 2. get selected peptides from DIA-Umpire
+    ## 2. get selected peptides from DIA-Umpire
     ########################
     
-    if( !any(is.element(colnames(raw.pro), 'Selected_peptides')) ){
+    if (!any(is.element(colnames(raw.pro), 'Selected_peptides'))) {
         stop('** Selected_peptides column is required. Please check it.')
     }
     
-    # Selected_peptide
+    ## Selected_peptide
     raw.pro2 <- raw.pro[, c('Protein.Key', 'Selected_peptides')]
     
     ## remove empty protein name
@@ -75,12 +78,12 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     ## top 6 peptides are selected, raw.pro3 has selected peptide information
     
     ########################
-    ### 3. subtract the rows with selected peptides and fragments
+    ## 3. subtract the rows with selected peptides and fragments
     ########################
     colnames(raw.pro3) <- c('Protein', 'Peptide')
     colnames(raw.pep3) <- c('Peptide', 'Protein', 'Fragment')
     
-    ##### some proteins have no selected peptides
+    ## some proteins have no selected peptides
     ## ex : raw.pro3[raw.pro3$Peptide == '', ]
     ## !! if empty for selected peptide or fragments: 
     ## all zero or NA if there is no peptide information in protein
@@ -93,21 +96,21 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     raw.pep3 <- raw.pep3[raw.pep3$Fragment != '', ]
     raw.pep3$Peptide <- as.character(raw.pep3$Peptide)
     
-    if( useSelectedFrag & useSelectedPep ){
+    if (useSelectedFrag & useSelectedPep) {
         
         raw.pep3$Protein <- gsub(';', '', raw.pep3$Protein)
         
-        #### remove the shared peptides
+        ## remove the shared peptides
         count <- xtabs(~Peptide, raw.pro3)
         notuni.pep <- names(count)[count > 1]
         
-        if( length(notuni.pep) > 0 ){
+        if (length(notuni.pep) > 0){
             ## remove not-unique peptide in proteien quantification
             raw.pro3 <- raw.pro3[-which(raw.pro3$Peptide %in% notuni.pep), ]
             raw.pep3 <- raw.pep3[-which(raw.pep3$Peptide %in% notuni.pep), ]
         } 
         
-        ##### get selected peptides only in raw.pro3
+        ## get selected peptides only in raw.pro3
         raw.pep3 <- raw.pep3[which(raw.pep3$Peptide %in% unique(raw.pro3$Peptide)), ]
         unique(nchar(as.character(unique(raw.pep3$Protein))))
         
@@ -131,7 +134,7 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
         #length(unique(raw.pep3$Peptide))
         #length(unique(raw.pro3$Protein))
         
-    } else if( useSelectedFrag & !useSelectedPep ){ # only use selected fragment, and use all peptides
+    } else if (useSelectedFrag & !useSelectedPep) { # only use selected fragment, and use all peptides
         
         ## can use raw.pep3 only.
         ## but doublecheck protein id : protein id in raw.frag is always one id.
@@ -147,14 +150,14 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
         
         message('** Got the selected fragments.')
         
-    } else if( !useSelectedFrag & !useSelectedPep ){
+    } else if (!useSelectedFrag & !useSelectedPep) {
         
         stop('** MSstats recommends to use at least selected fragments.')
     }
     
 
     ############################
-    ### 4. subtract fragment data with selected peptide and fragment
+    ## 4. subtract fragment data with selected peptide and fragment
     ############################
     
     ## 0.1  check protein id
@@ -173,7 +176,7 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     ## 0.3 update fragment info
     raw$Fragment <- as.character(raw$Fragment)
     
-    if( length(grep('\\+', raw$Fragment[1])) < 1 ){ ## if Fragment column does not have charge
+    if (length(grep('\\+', raw$Fragment[1])) < 1) { ## if Fragment column does not have charge
         
         raw$Fragment.Key <- as.character(raw$Fragment.Key)
         raw$ion <- substr(raw$Fragment.Key, start=nchar(raw$Fragment.Key), stop = nchar(raw$Fragment.Key))
@@ -198,7 +201,7 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     message('** Extract the data from selected fragments and/or peptides.')
     
     ############################
-    ### 5. reformat
+    ## 5. reformat
     ############################
     ## change column names
     colnames(raw.selected)[colnames(raw.selected) == 'Protein'] <- 'ProteinName'
@@ -208,7 +211,6 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     ## make long format
     raw.l <- melt(raw.selected, id.vars=c('ProteinName', 'PeptideSequence', 'FragmentIon'),
                   variable.name='Run', value.name='Intensity')
-    head(raw.l)
     
     ## remove suffix in the Run
     raw.l$Run <- gsub(paste("_", inputlevel, sep=""), '', raw.l$Run)
@@ -225,8 +227,8 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     rm(raw.selected)
     
     ##############################
-    ### 6. remove featuares with all na or zero
-    ### some rows have all zero values across all MS runs. They should be removed.
+    ## 6. remove featuares with all na or zero
+    ## some rows have all zero values across all MS runs. They should be removed.
     ##############################
     
     input$fea <- paste(input$PeptideSequence,
@@ -242,44 +244,45 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     ## get feature with all NA or zeros
     getfea <- count[count$length > 0, 'fea']
     
-    if( nrow(getfea) > 0 ){
+    if (nrow(getfea) > 0) {
         
-        nfea.remove <- length(unique(input$fea))-nrow(getfea)
+        nfea.remove <- length(unique(input$fea)) - nrow(getfea)
         input <- input[which(input$fea %in% getfea$fea), ]
         
-        message(paste('** ', nfea.remove, ' features have all NAs or zero intensity values and are removed.', sep=''))
+        message(paste0('** ', nfea.remove, ' features have all NAs or zero intensity values and are removed.'))
         
     }
     
     rm(inputtmp)
     
     ##############################
-    ### 7. remove features which has 1 or 2 measurements across runs
+    ## 7. remove features which has 1 or 2 measurements across runs
     ##############################
-    if( fewMeasurements=="remove" ){
+    if (fewMeasurements=="remove") {
         
         ## it is the same across experiments. # measurement per feature. 
         xtmp <- input[!is.na(input$Intensity) & input$Intensity > 0, ]
-        count_measure <- xtabs( ~fea, xtmp)
+        count_measure <- xtabs(~ fea, xtmp)
         
         remove_feature_name <- count_measure[count_measure < 3]
         
-        if( length(remove_feature_name) > 0 ){
+        if (length(remove_feature_name) > 0) {
             
             input <- input[-which(input$fea %in% names(remove_feature_name)), ]
             
-            message(paste('** ', length(remove_feature_name), ' features have 1 or 2 intensities across runs and are removed.', sep=''))
+            message(paste0('** ', length(remove_feature_name), 
+                           ' features have 1 or 2 intensities across runs and are removed.'))
             
         }
-        
     }
     
     ##############################
-    ### 8. remove proteins with only one peptide and charge per protein
+    ## 8. remove proteins with only one peptide and charge per protein
     ##############################
     
-    if( removeProtein_with1Feature ){
-        ######## remove protein which has only one peptide
+    if (removeProtein_with1Feature) {
+        
+        ## remove protein which has only one peptide
         tmp <- unique(input[, c("ProteinName", 'fea')])
         tmp$ProteinName <- factor(tmp$ProteinName)
         count <- xtabs( ~ ProteinName, data=tmp)
@@ -291,7 +294,9 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
             
             input <- input[-which(input$ProteinName %in% removepro), ]
             
-            message(paste("** ", length(removepro), ' proteins, which have only one feature in a protein, are removed among ', lengthtotalprotein, ' proteins.', sep=""))
+            message(paste0("** ", length(removepro), 
+                           ' proteins, which have only one feature in a protein, are removed among ', 
+                           lengthtotalprotein, ' proteins.'))
         } else {
             
             message("All proteins have at least two features.")
@@ -299,22 +304,22 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
         }
     }
     
-    
     ##############################
-    ### 9. remove multiple measurements per feature and run
+    ## 9. remove multiple measurements per feature and run
     ##############################
     
     count <- aggregate(Intensity ~ fea, data=input, FUN=length)
     
     ## if any feature has more number of total MS runs, 
-    if( any(unique(count$Intensity) > length(unique(input$Run))) ){
+    if (any(unique(count$Intensity) > length(unique(input$Run)))){
         
-        annotation <- unique(input[, c("Condition","BioReplicate","Run")])
+        annotation <- unique(input[, c("Condition", "BioReplicate", "Run")])
         
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon + ProductCharge ~ Run, data=input, 
                           value.var='Intensity', 
-                          fun.aggregate=summaryforMultipleRows, fill=NA_real_) 
+                          fun.aggregate=summaryforMultipleRows, 
+                          fill=NA_real_) 
         
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon', 'ProductCharge'))

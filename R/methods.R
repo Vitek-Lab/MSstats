@@ -1696,19 +1696,10 @@
 			    fitted <- data.frame(fitted=fitted(fit))
 			}
 			data <- data.frame(data, "abs.resids"=abs.resids, "fitted"=fitted)
-			
-			# data<-merge(data,abs.resids,by="row.names",all=T)
-			# rownames(data)<-data$Row.names
-			# data<-merge(data, fitted, by="row.names",all=T)
-			# rownames(data)<-data$Row.names
 		}
 		fit.loess <- loess(abs.resids ~ fitted, data=data)
 		loess.fitted <- data.frame(loess.fitted=fitted(fit.loess))
 		data <- data.frame(data, "loess.fitted"=loess.fitted)
-		
-		# rownames(loess.fitted)<-names(resid(fit.loess))
-		# data<-merge(data, loess.fitted, by="row.names",all=T)
-		# rownames(data)<-data$Row.names
 		
 		## loess fitted valuaes are predicted sd
 		data$weight <- 1 / (data$loess.fitted ^ 2)
@@ -1720,15 +1711,6 @@
 		} else {
 		    wls.fit <- lmer(formula(fit), data=data, weights=weight)
 		}
-
-		## lm or lmer
-#		if(class(fit)=="lm"){
-#			residuals<-data.frame(residuals=wls.fit$residuals)
-#		}else{
-#			residuals<-data.frame(residuals=resid(wls.fit))
-#		}
-#		data<-merge(data,residuals,by="row.names",all=T)
-#		rownames(data)<-data$Row.names
 		
 		## lm or lmer
 		if (class(wls.fit) == "lm") {
@@ -1737,9 +1719,6 @@
 		    abs.resids <- data.frame(abs.resids=abs(resid(wls.fit)))
 		}
 		data <- data.frame(data, "abs.resids"=abs.resids)
-
-#		data<-merge(data,abs.resids,by="row.names",all=T)
-#		rownames(data)<-data$Row.names
 		
 		data <- data[, -which(colnames(data) %in% c("loess.fitted", "weight"))]
     }
@@ -1758,8 +1737,8 @@
 # then plot 1 will go in the upper left, 2 will go in the upper right, and
 # 3 will go all the way across the bottom.
 #
-#' @importFrom grid viewport 
-
+#' @importFrom grid viewport grid.newpage pushViewport grid.layout
+#' 
 .multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     
     ## Make a list from the ... arguments and plotlist

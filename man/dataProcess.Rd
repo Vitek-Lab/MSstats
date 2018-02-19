@@ -56,12 +56,14 @@ dataProcess(raw,
 }
 }
 
+\value{A list of data.frame \emph{ProcessedData} is the data.frame of reformatted input of dataProcess including extra columns, such as log2-transformed and normalized intensities (abundance column); \emph{RunlevelData} is the the data.frame for run-level summarized data.}
+
 \section{Warning}{When a transition is missing completely in a condition or a MS run, a warning message is sent to the console notifying the user of the missing transitions.
 
 	The types of experiment that MSstats can analyze are LC-MS, SRM, DIA(SWATH) with label-free or labeled synthetic peptides. MSstats does not support for metabolic labeling or iTRAQ experiments.
 }
 
-\author{Ching-Yun Chang, Meena Choi, Olga Vitek.
+\author{Meena Choi, Olga Vitek.
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }

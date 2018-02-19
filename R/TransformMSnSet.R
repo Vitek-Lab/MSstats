@@ -5,18 +5,18 @@
 
 #' @export
 #' @import Rcpp
-#' @importFrom MSnbase pData fData MSnSet
+#' @importFrom MSnbase pData fData MSnSet exprs sampleNames featureNames
 #' 
-transformMSnSetToMSstats  <-  function(ProteinName,
-										PeptideSequence, 
-										PrecursorCharge, 
-										FragmentIon, 
-										ProductCharge, 
-										IsotopeLabelType, 
-										Bioreplicate,
-										Run, 
-										Condition, 
-										data) {
+transformMSnSetToMSstats <- function(ProteinName,
+                                     PeptideSequence,
+                                     PrecursorCharge,
+                                     FragmentIon,
+                                     ProductCharge,
+                                     IsotopeLabelType,
+                                     Bioreplicate,
+                                     Run,
+                                     Condition,
+                                     data) {
   
   	if (!inherits(data, "MSnSet")) {
     	stop("Only MSnSet class can be converted to input format for MSstats.")
@@ -39,16 +39,24 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   	featureData$fData_rownames  <-  rownames(featureData)
   
   	## transform the matrix of intensities so that each row is a sample and feature combination
-  	long.abundances  <-  reshape(expressionMatrix, idvar = "fData_rownames", ids = rownames(expressionMatrix), times = colnames(expressionMatrix), timevar = "pData_rownames", varying = list(dimnames(sampleData)[[1]]), v.names = "ABUNDANCE", direction = "long")
+  	long.abundances  <-  reshape(expressionMatrix, 
+  	                             idvar = "fData_rownames", 
+  	                             ids = rownames(expressionMatrix), 
+  	                             times = colnames(expressionMatrix), 
+  	                             timevar = "pData_rownames", 
+  	                             varying = list(dimnames(sampleData)[[1]]), 
+  	                             v.names = "ABUNDANCE", 
+  	                             direction = "long")
   	rownames(long.abundances)  <-  NULL
   
   	## merge with featureData and patientData to get the feature -> protein and the bio.rep -> group mappings
-  	long.abundances$ABUNDANCE  <-  as.numeric(as.character(long.abundances$ABUNDANCE))
-  	long.abundances.2  <-  merge(long.abundances, featureData, by = "fData_rownames")
-  	final.data  <-  merge(long.abundances.2, sampleData, by = "pData_rownames")
+  	long.abundances$ABUNDANCE <- as.numeric(as.character(long.abundances$ABUNDANCE))
+  	long.abundances.2 <- merge(long.abundances, featureData, by = "fData_rownames")
+  	final.data <- merge(long.abundances.2, sampleData, by = "pData_rownames")
   
   	## extract required information
-  	## default : Protein="ProteinAccession",PeptideSequence="PeptideSequence", PrecursorCharge="charge", FragmentIon, ProductCharge ,IsotopeLabelType="mz", Bioreplicate=NA,Run=NA,
+  	## default : Protein="ProteinAccession",PeptideSequence="PeptideSequence", 
+  	## PrecursorCharge="charge", FragmentIon, ProductCharge ,IsotopeLabelType="mz", Bioreplicate=NA,Run=NA,
   	if (missing(ProteinName)) {
   		ProteinName <- "ProteinAccession"
   	}
@@ -87,13 +95,16 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   		stop("The condition arguments must be specified.")
   	}
   
-  
   	## if there are any missing variable name, warn it and stop
-  	check.name <- c(ProteinName, PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge, IsotopeLabelType, Bioreplicate, Run, Condition)
+  	check.name <- c(ProteinName, PeptideSequence, 
+  	                PrecursorCharge, FragmentIon, 
+  	                ProductCharge, IsotopeLabelType, 
+  	                Bioreplicate, Run, Condition)
   
   	diff.name <- setdiff(check.name, colnames(final.data))
-  	if (length(diff.name) > 0){
-    	stop(paste("Please check the variable name. The provided variable name", paste(diff.name, collapse=","), "is not present in the data set.", sep=" "))
+  	if (length(diff.name) > 0) { 
+    	stop(paste0("Please check the variable name. The provided variable name ", 
+    	            toString(diff.name), " is not present in the data set."))
   	}
   
   	## define the group column 
@@ -101,7 +112,7 @@ transformMSnSetToMSstats  <-  function(ProteinName,
   	if (length(Condition) > 1) {
     	group.variable  <-  final.data[, which(colnames(final.data) == Condition[1])]
     
-    	for(i in 2:length(Condition)) {
+    	for (i in 2:length(Condition)) {
       		var  <-  final.data[, which(colnames(final.data) == Condition[i])]
       		group.variable  <-  paste(group.variable, var, sep = ".")
     	}
@@ -147,12 +158,12 @@ transformMSstatsToMSnSet <- function(data) {
   	           c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE", "FRAGMENTION", "PRODUCTCHARGE")]
   
   	## need to make as MSnSet class
-  	e  <-  MSnSet(xx, fd, pd)
+  	e <- MSnSet(xx, fd, pd)
   
   	sampleNames(e) <- paste(e$ISOTOPELABELTYPE, e$CONDITION, e$BIOREPLICATE, e$RUN, sep = ".")
   	featureNames(e) <- paste(fData(e)$PEPTIDESEQUENCE, fData(e)$PRECURSORCHARGE, fData(e)$FRAGMENTION, fData(e)$PRODUCTCHARGE, sep = ".")
   
-  	if (validObject(e)){
+  	if (validObject(e)) {
   		return(e)
   	}
     
