@@ -1,11 +1,37 @@
-#' For classification problem, estimate the optimal number of training samples under different size of validation data
+#' Calculate the optimal size of training data for classification problem
 #'
-#' param data Dataframe of the run level data reported by MSStats dataProcess() function or dataframe with columns "RUN", "Protein", "LogIntensities", "GROUP", "SUBJECT". Protein intensities must be log2 transformed.
-#' param n number of steps, which is the number of different sample sizes to simulate. 
-#' param step number of samples per condition to increase at each step. 
-#' param noise the fraction of protein variance to change at each step. Positive values indicates increasing noise in the data while negative value means decreasing noise.
-#' param iter number of times to repeat simulation experiments
+#' @param data output from function \code{\link{dataProcess}}
+#' @param n number of steps, which is the number of different sample sizes to simulate. Default is 5 
+#' @param step number of samples per condition to increase at each step. Default is 20 
+#' @param noise the fraction of protein variance to change at each step. Positive value indicates increasing noise in the data while negative value means decreasing noise. Default is 0.0
+#' @param iter number of times to repeat simulation experiments. Default is 5
+#' @description For classification problem (such as disgnosys of disease), calculate sample size of training data under different size of validation data for future experiments of a Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment based on simulation.
+#' @details The function fits intensity-based linear model and uses variance components and mean abundance to simulate new data with different sample size. Training data and validation data are simulated independently. Random forest model is fitted on train data and used to predict the validation data. The above procedure is repeated \emph{iter} times. Mean predictive accuracy and variance under different size of training data and validation data are reported. For each size of validation data, the number of training samples with best predictive accuracy is also returned.
+#' @return \emph{optTrainSize} is the number of training samples with best predictive accuracy under each size of validation data. 
+#' @return \emph{meanPA} is the mean predictive accuracy matrix under different size of training data and validation data.
+#' @return \emph{varPA} is variance of predictive accuracy under different size of training data and validation data.
+#' @author Ting Huang, Meena Choi, Olga Vitek.
 #'
+#' Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
+#' @references T. Huang et al.  TBD  2018
+#' @examples # Consider quantitative data (i.e. QuantData) from yeast study.
+#' # A time course study with ten time points of interests and three biological replicates.
+#' set.seed(1234)
+#' QuantSRM <- dataProcess(SRMRawData)
+#' # estimate the mean predictive accuray under different sizes of training data and validation data
+#' # n is the number of biological replicates per condition
+#' result.srm <- designSampleSizeClassification(data=QuantSRM, n=5, step=10)
+#' result.srm$meanPA # mean predictive accuracy
+#' 
+#' # Consider another training set from a colorectal cancer study
+#' # Subjects are from control group or colorectal cancer group
+#' # 72 proteins were targeted with SRM
+#' require(MSstatsBioData)
+#' set.seed(1235)
+#' data(SRM_crc_training)
+#' QuantCRCSRM <- dataProcess(SRM_crc_training)
+#' crc.srm <- designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
+#' crc.srm$meanPA # mean predictive accuracy
 #' @import doMC
 #' @importFrom randomForest randomForest combine
 #' 
@@ -32,7 +58,6 @@ designSampleSizeClassification <- function(data,
             lastfilename <- finalfile ## in order to rea
             finalfile <- paste0(paste(filenaming, num, sep="-"), ".log")
         }
-    
         finalfile <- lastfilename
         processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
     }
@@ -131,13 +156,13 @@ designSampleSizeClassification <- function(data,
             #rf <- randomForest::randomForest(x=x, y=y, ntree = 100) 
             # parallel computing for random forest
             doMC::registerDoMC()
-      
+
+            mcoptions <- list(set.seed=FALSE)
             rf <- foreach(ntree=rep(10, 10), .combine=randomForest::combine, .multicombine=TRUE,
-                          .packages='randomForest') %dopar% {
+                          .packages='randomForest', .options.multicore=mcoptions) %dopar% {
                               randomForest(x=x,
                                            y=y,
-                                           ntree=ntree)
-                              }
+                                           ntree=ntree)}
             new_sigma_1 <- new_sigma_1 * (noise + 1.0)
             new_sigma_2 <- sigma
             
@@ -190,9 +215,9 @@ designSampleSizeClassification <- function(data,
 
 #' Estimate the mean abundance and variance of each protein in each phenotype group
 #'
-#' param data The run level data reported by dataProcess function.
-#' return mu is the mean abundance matrix of each protein in each phenotype group; sigma is the sd matrix of each protein in each phenotype group.
-#' keywords internal
+#' @param data The run level data reported by dataProcess function.
+#' @return mu is the mean abundance matrix of each protein in each phenotype group; sigma is the sd matrix of each protein in each phenotype group.
+#' @keywords internal
 .estimateVar <- function(data) {
     
     ## generate a fake contrast matrix
@@ -260,12 +285,11 @@ designSampleSizeClassification <- function(data,
 
 #' Simulate extended datasets for sample size estimation
 #'
-#' param m number of samples to simulate
-#' param mu a matrix of mean abundance in each phenotype group and each protein
-#' param sigma a matrix of variance in each phenotype group and each protein
-#' 
-#' return A simulated matrix with required sample size
-#' keywords internal
+#' @param m number of samples to simulate
+#' @param mu a matrix of mean abundance in each phenotype group and each protein
+#' @param sigma a matrix of variance in each phenotype group and each protein
+#' @return A simulated matrix with required sample size
+#' @keywords internal
 .sampleSimulation <- function(m, mu, sigma) {
     
     nproteins <- nrow(mu)
@@ -297,11 +321,10 @@ designSampleSizeClassification <- function(data,
     
 #' Determine the size of each phenotype group
 #'
-#' param m sample size
-#' param ngroup number of phenotype groups
-#'
-#' return vector of sample size in each group
-#' keywords internal
+#' @param m sample size
+#' @param ngroup number of phenotype groups
+#' @return vector of sample size in each group
+#' @keywords internal
 .determineSampleSizeinEachGroup <- function(m, ngroup) {
     samplesize <- vector(mode="numeric", length=ngroup)
     counter <- 0
@@ -321,6 +344,33 @@ designSampleSizeClassification <- function(data,
 #############################################
 ## designSampleSizeClassificationPlots
 #############################################
+#' Visualization for sample size calculation in classification problem
+#' @param data output from function \code{\link{designSampleSizeClassification}}
+#' @description To illustrate the mean classification accuracy under different size of training data and validation data. The input is the result from function \code{\link{designSampleSizeClassification}}.
+#' @return Plot for sample size estimation. x-axis : size of training set, y-axis: mean predictive accuracy on validation set. Color: size of validation set.
+#' @details Data in the example is based on the results of sample size calculation in classification problem from function \code{\link{designSampleSizeClassification}}
+#' @author Ting Huang, Meena Choi, Olga Vitek. 
+#'
+#' Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
+#' @references T. Huang et al.  TBD  2018
+#' @examples # Consider quantitative data (i.e. QuantData) from yeast study.
+#' # A time course study with ten time points of interests and three biological replicates.
+#' set.seed(1234)
+#' QuantSRM <- dataProcess(SRMRawData)
+#' # estimate the mean predictive accuray under different sizes of training data and validation data
+#' # n is the number of biological replicates per condition
+#' result.srm <- designSampleSizeClassification(data=QuantSRM, n=5, step=10)
+#' designSampleSizeClassificationPlots(data=result.srm)
+#' 
+#' # Consider another training set from a colorectal cancer study
+#' # Subjects are from control group or colorectal cancer group
+#' # 72 proteins were targeted with SRM
+#' require(MSstatsBioData)
+#' set.seed(1235)
+#' data(SRM_crc_training)
+#' QuantCRCSRM <- dataProcess(SRM_crc_training)
+#' crc.srm <- designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
+#' designSampleSizeClassificationPlots(data=crc.srm)
 #' @importFrom reshape2 melt
 #' @export
 designSampleSizeClassificationPlots <- function(data) {
