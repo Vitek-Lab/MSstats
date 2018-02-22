@@ -1,4 +1,14 @@
-
+CHANGES IN VERSION 3.11.5 [2018-02-22]
+-------------------------
+    BUG FIXES
+	 - add the package, stringr, for DIAUmpiretoMSstatsFormat function
+	 
+CHANGES IN VERSION 3.11.4 [2018-02-19]
+-------------------------
+    BUG FIXES
+	 - add set.seed for sample size calculation of classification
+	
+	 
 CHANGES IN VERSION 3.11.3 [2018-02-15]
 -------------------------
     BUG FIXES

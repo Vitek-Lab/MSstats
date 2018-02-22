@@ -10,7 +10,7 @@
 #' @export
 #' @importFrom dplyr %>% left_join semi_join group_by summarise
 #' @importFrom tidyr separate_rows
-#' 
+#' @import stringr
 DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro, 
                                 annotation,
                                 useSelectedFrag = TRUE,
