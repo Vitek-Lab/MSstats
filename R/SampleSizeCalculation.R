@@ -1,47 +1,38 @@
-#############################################
-## designSampleSize
-#############################################
+#' Perform a statistical power calculation given a dataset, experimental design,
+#' and some parameters defining the desired parameters for analysis.
+#'
+#' @param data The dataset to examine, presumably after dataProcess()
+#' @param desiredFC  The fold-change used to define 'significant'
+#' @param FDR  The false discovery rate used to define 'significant'
+#' @param numSample  Use the number of samples in the data to inform the power
+#'   calculation?
+#' @param power  Floating point number to describe the desired power in the
+#'   data.  This is strange, as I only see it used in a if(isTRUE()), but it is
+#'   defined here as 0.9... hmmm I need to read this code.
+#' @param scopeofBioReplication The following parameters were just defined right
+#'   after the function definition, so I put them into it, I dunno what they do
+#'   yet.
+#' @param interference  Personally, I hate it when people interfere with me, but
+#'   in this case, TRUE!
+#' @param equalFeatureVar  This is a parameter from dataProcess, I know that much.
+#' @return Dataframe describing the power in the data.
 #' @export
-designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample=TRUE, power=0.9) {
-  labeled <- FALSE
-  scopeOfBioReplication <- "expanded"
-  interference <- TRUE
-  equalFeatureVar <- TRUE
+designSampleSize <- function(data, desiredFC=2.0, FDR=0.05, numSample=TRUE,
+                             power=0.9, labeled=FALSE,
+                             scopeofBioReplication="expanded",
+                             interference=TRUE, equalFeatureVar=TRUE) {
 
-  ## save process output in each step
-  allfiles <- list.files()
-  filenaming <- "msstats"
-
-  if (length(grep(filenaming, allfiles)) == 0) {
-    finalfile <- "msstats.log"
-    processout <- NULL
-  } else {
-    num <- 0
-    finalfile <- "msstats.log"
-    while (is.element(finalfile, allfiles)) {
-      num <- num + 1
-      lastfilename <- finalfile ## in order to rea
-      finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
-    }
-    finalfile <- lastfilename
-    processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
-  }
-
-  processout <- rbind(processout,
-                      as.matrix(c(" ", " ", "MSstats - designSampleSize function", " "),
-                                ncol=1))
-  processout <- rbind(processout,
-                      c(paste0("Desired fold change = ", paste(desiredFC, collapse=" - "))))
-  processout <- rbind(processout, c(paste0("FDR = ", FDR)))
-  processout <- rbind(processout, c(paste0("Power = ", power)))
-  write.table(processout, file=finalfile, row.names=FALSE)
+  print_string <- paste0("MSstats - designSampleSize: desired fold change = ",
+                         desiredFC, ", FDR = ", FDR, ", Power = ", power, ".")
+  logging::loginfo(print_string)
 
   ## for label-free experiment
   ##if (!labeled) {
   sigma.error <- NULL
   VarComponent <- data.frame(Protein=seq(1, length(data)), Error=NA, Subject=NA, GroupBySubject=NA)
   for (i in 1:length(data)) {
-    ## note: when run is fixed, we can obtain the same variance of error for both case-control and time course studies.
+    ## note: when run is fixed, we can obtain the same variance of error for
+    ## both case-control and time course studies.
     fit.full <- data[[i]]
     ## if fit.full==NA (class(fit.full)=="try-error)
     if (is.null(fit.full)) {
@@ -81,8 +72,8 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
     }
   }
   ##
-  processout <- rbind(processout, c("Calculated variance component. - okay"))
-  write.table(processout, file=finalfile, row.names=FALSE)
+  print_string <- "designSampleSize(): Calculated variance component."
+  logging::loginfo(print_string)
 
   ## power calculation
   if (isTRUE(power)) {
@@ -103,8 +94,8 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
     CV <- round((2 * (median.sigma.error / numSample +
                       median.sigma.subject / numSample)) / desiredFC, 3)
 
-    processout <- rbind(processout, c("Power is calculated. - okay"))
-    write.table(processout, file=finalfile, row.names=FALSE)
+    print_string <- "designSampleSize(): Power has been calculated."
+    logging::loginfo(print_string)
     out <- data.frame(desiredFC, numSample, FDR, power=power, CV)
     return(out)
   }
@@ -126,8 +117,8 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
                   (median.sigma.error / numSample +
                    median.sigma.subject / numSample) / desiredFC, 3)
 
-      processout <- rbind(processout, c("The number of sample is calculated. - okay"))
-      write.table(processout, file=finalfile, row.names=FALSE)
+      print_string <- "designSampleSize(): The number of samples has been calculated."
+      logging::loginfo(print_string)
       out <- data.frame(desiredFC, numSample, FDR, power, CV)
       return(out)
     }
@@ -135,53 +126,72 @@ designSampleSize <- function(data=data, desiredFC=desiredFC, FDR=0.05, numSample
   ##} ## label-free
 }
 
-#############################################
-## designSampleSizePlots
-#############################################
+#' A couple plots generated when looking at sample sizes of a msstats dataset.
+#'
+#' @param data  The dataProcess()'d data structure.
+#' @param ...  Extra arguments for ggplot2.
+#' @return plots!
 #' @export
-designSampleSizePlots <- function(data=data) {
-  if (length(unique(data$numSample)) > 1) {
+designSampleSizePlots <- function(data, ...) {
+  arglist <- list(...)
+  if (length(unique(data[["numSample"]])) > 1) {
     index <- "numSample"
   }
-  if (length(unique(data$power)) > 1) {
+  if (length(unique(data[["power"]])) > 1) {
     index <- "power"
   }
-  if (length(unique(data$numSample)) == 1 &
-      length(unique(data$power)) == 1) {
+  if (length(unique(data[["numSample"]])) == 1 &
+      length(unique(data[["power"]])) == 1) {
     index <- "numSample"
   }
 
   text.size <- 1.2
+  if (!is.null(arglist[["text.size"]])) {
+    text.size <- arglist[["text.size"]]
+  }
   axis.size <- 1.3
+  if (!is.null(arglist[["axis.size"]])) {
+    axis.size <- arglist[["axis.size"]]
+  }
   lab.size <- 1.7
+  if (!is.null(arglist[["lab.size"]])) {
+    lab.size <- arglist[["lab.size"]]
+  }
+
+  retlist <- list()
   if (index == "numSample") {
     with(data, {
       plot(desiredFC, numSample, lwd=2, xlab="", ylab="", cex.axis=axis.size, type="l", xaxt="n")})
-    axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
-         labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
+    axis(1, at=seq(min(data[["desiredFC"]]), max(data[["desiredFC"]]), 0.05),
+         labels=seq(min(data[["desiredFC"]]), max(data[["desiredFC"]]), 0.05),
          cex.axis=axis.size)
-    axis(3, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
-         labels=data$CV[which(data$desiredFC %in%
-                              seq(min(data$desiredFC), max(data$desiredFC), 0.05))],
+    axis(3, at=seq(min(data[["desiredFC"]]), max(data[["desiredFC"]]), 0.05),
+         labels=data[["CV"]][which(data[["desiredFC"]] %in%
+                              seq(min(data[["desiredFC"]]), max(data[["desiredFC"]]), 0.05))],
          cex.axis=axis.size)
     mtext("Coefficient of variation, CV", 3, line=2.5, cex=lab.size)
     mtext("Desired fold change", 1, line=3.5, cex=lab.size)
     mtext("Minimal number of biological replicates", 2, line=2.5, cex=lab.size)
     legend("topright", c(paste("FDR is", unique(data$FDR), sep=" "),
-                         paste("Statistical power is", unique(data$power), sep=" ")),
+                         paste("Statistical power is", unique(data[["power"]]), sep=" ")),
            bty="n", cex=text.size)
+    retlist[["num_samples"]] <- grDevices::recordPlot()
   }
 
   if (index == "power") {
     with(data, {
       plot(desiredFC, power, lwd=2, xlab="", ylab="", cex.axis=axis.size, type="l", xaxt="n")})
-    axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
-         labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
+    axis(1, at=seq(min(data[["desiredFC"]]), max(data[["desiredFC"]]), 0.05),
+         labels=seq(min(data[["desiredFC"]]), max(data[["desiredFC"]]), 0.05),
          cex.axis=axis.size)
     mtext("Desired fold change", 1, line=3.5, cex=lab.size)
     mtext("Power", 2, line=2.5, cex=lab.size)
-    legend("bottomright", c(paste("Number of replicates is", unique(data$numSample), sep=" "),
-                            paste("FDR is", unique(data$FDR), sep=" ")), bty="n",
+    legend("bottomright", c(paste("Number of replicates is", unique(data[["numSample"]]), sep=" "),
+                            paste("FDR is", unique(data[["FDR"]]), sep=" ")), bty="n",
            cex=text.size)
+    retlist[["power"]] <- grDevices::recordPlot()
   }
+
+  ## Return a list of the plots created so that one may save/print/whatever them later.
+  return(retlist)
 }

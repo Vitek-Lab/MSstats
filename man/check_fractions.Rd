@@ -4,10 +4,12 @@
 \alias{check_fractions}
 \title{Examine the work data structure for viable fractions.}
 \usage{
-check_fractions(work)
+check_fractions(work, multi_run)
 }
 \arguments{
 \item{work}{The work data structure from dataProcess()}
+
+\item{multi_run}{The result from checkmultirun()}
 }
 \value{
 Send the work data back to dataProcess()

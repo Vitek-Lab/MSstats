@@ -4,10 +4,15 @@
 \alias{summarize_tmp_mbimpute}
 \title{Examine the work data structure and summarize it by mbimpute.}
 \usage{
-summarize_tmp_mbimpute(work)
+summarize_tmp_mbimpute(work, maxQuantileforCensored = 0.999,
+  censoredInt = "NA")
 }
 \arguments{
 \item{work}{The work data structure from dataProcess()}
+
+\item{maxQuantileforCensored}{What is the censoring cutoff by quantile?}
+
+\item{censoredInt}{"NA!" not NA?}
 }
 \value{
 Send the work data back to dataProcess()

@@ -4,10 +4,12 @@
 \alias{extract_singlefrac_labelfree_data}
 \title{Examine the work data structure single fraction unlabeled data.}
 \usage{
-extract_singlefrac_labelfree_data(work)
+extract_singlefrac_labelfree_data(work, fillIncompleteRows = TRUE)
 }
 \arguments{
 \item{work}{The work data structure from dataProcess()}
+
+\item{fillIncompleteRows}{Fill those rows!!}
 }
 \value{
 Send the work data back to dataProcess()

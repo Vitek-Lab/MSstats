@@ -24,44 +24,18 @@
 #' @param censoredInt  What value for censored rows?
 #' @param cutoffCensored  How to decide a censored row
 #' @param MBimpute  Impute Impute damned spot!
+#' @param original_scale  Return the results on the same scale as the input data (I assume)?
 #' @param remove50missing  wtf?
 #' @param maxQuantileforCensored  yeah, whatever
 #' @param clusters The size of a SNOW cluster to speak up the calculations.
-#' @import survival
-#' @import preprocessCore
-#' @importFrom reshape2 dcast melt
-#' @importFrom stats medpolish aggregate t.test lm summary.lm fitted resid p.adjust
-#' @importFrom stats C approx coef cor dist formula loess median na.omit
-#' @importFrom stats predict pt qnorm qt quantile reshape rnorm runif sd var vcov xtabs
-#' @importFrom utils head read.table sessionInfo setTxtProgressBar txtProgressBar write.csv write.table
-#' @importFrom methods validObject
-#' @importFrom doSNOW registerDoSNOW
-#' @importFrom snow makeCluster
-#' @import foreach
 #' @export
 dataProcess <- function(raw, logTrans=2, normalization="equalizeMedians", nameStandards=NULL,
                         betweenRunInterferenceScore=FALSE, address="", fillIncompleteRows=TRUE,
                         featureSubset="all", remove_proteins_with_interference=FALSE,
                         n_top_feature=3, summaryMethod="TMP", equalFeatureVar=TRUE,
                         censoredInt="NA", cutoffCensored="minFeature", MBimpute=TRUE,
-                        remove50missing=FALSE, maxQuantileforCensored=0.999, clusters=1) {
-  ## Set up a log.
-  log_start <- try(suppressWarnings(file.remove("msstats.log")), silent=TRUE)
-  log_start <- logging::logReset()
-  log_start <- logging::basicConfig()
-  log_start <- logging::addHandler(logging::writeToFile,
-                                   file="msstats.log",
-                                   level="WARN")
-  log_start <- logging::addHandler(logging::writeToFile,
-                                   file="msstats.log",
-                                   level="INFO")
-  log_start <- logging::addHandler(logging::writeToFile,
-                                   file="msstats.log",
-                                   level="ERROR")
-  logging::writeToFile("Writing sessionInfo, this should be at the end I think.", log_start)
-  logging::writeToFile(as.matrix(sessionInfo(), header=TRUE, sep="\t"), log_start)
-  logging::writeToFile("Finished writing sessionInfo.", log_start)
-
+                        original_scale=FALSE, remove50missing=FALSE,
+                        maxQuantileforCensored=0.999, clusters=1) {
   ## Standardize the column names.
   colnames(raw) <- toupper(colnames(raw))
   requiredInput <- c("PROTEINNAME", "PEPTIDESEQUENCE", "PRECURSORCHARGE",
@@ -82,7 +56,7 @@ dataProcess <- function(raw, logTrans=2, normalization="equalizeMedians", nameSt
   } else {
     missedInput <- which(!(requiredInput %in% providedInput))
     logstring <- paste0(
-      "The required inputs: ", toString(requiredinput[missedInput]),
+      "The required inputs: ", toString(requiredInput[missedInput]),
       " were not provided. the required inputs are: \n",
       "Proteinname, PeptideSequence/PeptideModifiedSequence, PrecursorCharge, FragmentIon,
 ProductCharge, IsotopeLabelType, Condition, BioReplicate, Run, Intensity")
@@ -165,15 +139,9 @@ Sleeping for 5 seconds to give you a chance to stop and reconsider your life cho
   ## check whether the intensity has 0 value or negative value
   ##    if (length(which(raw$Intensity<=0))>0 & !skylineReport) {
   ##    if (is.null(censoredInt)) {
-  ##        processout <- rbind(processout,c("ERROR : There are some intensities which are zero
-  ##or negative values. need to change them. - stop"))
-  ##        write.table(processout, file=finalfile,row.names=FALSE)
   ##        stop("Intensity has 0 or negative values. Please check these intensities
   ##and change them. \n")
   ##    } else if (censoredInt=="NA") {
-  ##        processout <- rbind(processout,c("ERROR : There are some intensities which are
-  ##zero or negative values. need to change them. - stop"))
-  ##        write.table(processout, file=finalfile,row.names=FALSE)
   ##        stop("Intensity has 0 or negative values. Please check these intensities and
   ##change them. \n")
   ##        }
@@ -350,7 +318,7 @@ Sleeping for 5 seconds to give you a chance to stop and reconsider your life cho
 technical replicates too. Please add Fraction column in the input.")
   }
   ## Check the various fraction information and set it appropriately.
-  work <- check_fractions(work)
+  work <- check_fractions(work, checkMultirun)
 
   ## check missingness for multirun
   ## check no value for some feature: balanced structure or not
@@ -364,9 +332,9 @@ technical replicates too. Please add Fraction column in the input.")
   if (!checkMultirun$out | length(unique(work$FRACTION)) == 1) {
     ## label-free experiments
     if (nlevels(work$LABEL) == 1) {
-      work <- extract_singlefrac_labelfree_data(work)
+      work <- extract_singlefrac_labelfree_data(work, fillIncompleteRows=fillIncompleteRows)
     } else {
-      work <- extract_singlefrac_labeled_data(work)
+      work <- extract_singlefrac_labeled_data(work, fillIncompleteRows=fillIncompleteRows)
     } # end 1 method
   } else { # multiple fractionations
     work <- extract_multifrac_data(work)
@@ -497,7 +465,8 @@ group, subject, group_original, subject_original, subject_original_nested, featu
   work[!is.na(work[["INTENSITY"]]) & work[["INTENSITY"]] == 1, "ABUNDANCE"] <- 0
   ## If imputation=TRUE and there is any value for maxQuantileforCensored, apply cutoff for censored missing
   if (summaryMethod == "TMP" & MBimpute) {
-    work <- summarize_tmp_mbimpute(work)
+    work <- summarize_tmp_mbimpute(work, maxQuantileforCensored=maxQuantileforCensored,
+                                   censoredInt=censoredInt)
   }
 
   ## ------------- ##
@@ -516,8 +485,6 @@ group, subject, group_original, subject_original, subject_original_nested, featu
     featureSubset <- "top3"
 
     ##message("* Use feature selection algorithm in order to remove features with interference.")
-    ##processout <- rbind(processout,c("* Use feature selection algorithm in order to get high quality features."))
-    ##write.table(processout, file=finalfile, row.names=FALSE)
     ## 2016.04.25. MC
     ## there is the possibility to remain features which have completely missing in the certain condition after imputation
     ## Therefore, remove the features which are completely missing in the certain condition before imputation
@@ -924,39 +891,18 @@ runQuantification <- function(data, summaryMethod="TMP", equalFeatureVar=TRUE,
     data[["PROTEIN"]] <- factor(data[["PROTEIN"]])
     data[["RUN"]] <- factor(data[["RUN"]])
 
-    ## create cluster for paralleled workflow
-    ## Bizarrely, the default cluster size is 1, so there is exactly
-    ## 0 utility in using SNOW.  Thus for debugging I will just do a for loop, as I suspect
-    ## I will probably smash the lower level function shortly.
+    result_list <- perform_tukey_polish_median(
+      data,
+      label=label,
+      pct_adjust=0.99,
+      clusters=clusters,
+      MBimpute=MBimpute,
+      censoredInt=censoredInt,
+      message.show=message.show,
+      cutoffCensored=cutoffCensored,
+      original_scale=original_scale,
+      remove50missing=remove50missing)
 
-    ## FIXME: I am breaking the parallelization of this function!
-    ## message(paste0("Cluster Size: ", clusters, "\n"))
-    ## doSNOW::registerDoSNOW(parallel::makeCluster(clusters, type="SOCK"))
-    ##
-    ##pb <- txtProgressBar(max=nlevels(data$PROTEIN), style=3)
-    ##progress <- function(n) setTxtProgressBar(pb, n)
-    ##opts <- list(progress=progress)
-    ## Emacs does not handle indenting well for lines with foreach(stuff) %dopar% {
-    ##MS_results <- foreach(i=1: nlevels(data[["PROTEIN"]]), .combine="resultsAsLists", .options.snow=opts, .multicombine=TRUE, .init=list(list(), list())) %dopar% {
-
-    result_list <- perform_tukey_polish_median(data, summaryMethod=summaryMethod,
-                                               equalFeatureVar=equalFeatureVar,
-                                               cutoffCensored=cutoffCensored,
-                                               censoredInt=censoredInt,
-                                               remove50missing=remove50missing, MBimpute=MBimpute,
-                                               logsum=logsum, featureSubset=featureSubset,
-                                               message.show=message.show, clusters=clusters,
-                                               original_scale=original_scale, pct_adjust=0.99)
-    ## FIXME: when I put the clustering code back together, don't forget this.
-    ##stopCluster(cl) # foreach autocloses
-    ## Clean up the parallelized results
-    ##results.list <- list()
-    ##predAbundance.list <- list()
-    ##for (j in 1:length(MS_results[[1]])) {
-    ##  ## deal with the "results" first
-    ##  results.list[[j]] <- MS_results[[1]][[j]]
-    ##  predAbundance.list[[j]] <- MS_results[[2]][[j]]
-    ##}
     result <- data.frame()
     for (i in 1:length(result_list)) {
       result_class <- class(result_list[[i]])
@@ -1027,9 +973,10 @@ fit.quantification.run <- function(sub, singleFeature, singleSubject,
 #' anything there.
 #'
 #' @param work  The work data structure from dataProcess()
+#' @param multi_run  The result from checkmultirun()
 #' @return Send the work data back to dataProcess()
-check_fractions <- function(work) {
-  if (checkMultirun$out) {
+check_fractions <- function(work, multi_run) {
+  if (multi_run[["out"]]) {
     if (any(is.element(colnames(work), "FRACTION"))) {
       logging::loginfo(paste0("Multiple fractions were found; ",
                               length(unique(work[["FRACTION"]])), " fractions per MS replicate."))
@@ -1246,8 +1193,9 @@ countMultiRun <- function(data) {
 #' anything there.
 #'
 #' @param work  The work data structure from dataProcess()
+#' @param fillIncompleteRows  Fill those rows if they are not finished.
 #' @return Send the work data back to dataProcess()
-extract_singlefrac_labeled_data <- function(work) {
+extract_singlefrac_labeled_data <- function(work, fillIncompleteRows=TRUE) {
   ## label-based experiment
   ## count the reference and endobenous separately
   work.l <- work[work$LABEL == "L", ]
@@ -1546,7 +1494,7 @@ strwrap(prefix=" ", initial="",
  rows for missing peaks with intensity=NA.")
     logging::loginfo(print_string)
   }
-  
+
   ## if there are duplicates measurements
   if (flagduplicate.h) {
     ## first, which run has duplicates
@@ -1621,8 +1569,9 @@ strwrap(prefix=" ", initial="",
 #' anything there.
 #'
 #' @param work  The work data structure from dataProcess()
+#' @param fillIncompleteRows  Fill those rows!!
 #' @return Send the work data back to dataProcess()
-extract_singlefrac_labelfree_data <- function(work) {
+extract_singlefrac_labelfree_data <- function(work, fillIncompleteRows=TRUE) {
   ## get feature by Run count of data
   structure = tapply(work$ABUNDANCE, list(work$FEATURE, work$RUN),
                      function(x) {
@@ -2546,8 +2495,10 @@ normalize_singlefrac_by_heavy_standard <- function(work) {
 #' anything there.
 #'
 #' @param work  The work data structure from dataProcess()
+#' @param maxQuantileforCensored  What is the censoring cutoff by quantile?
+#' @param censoredInt "NA!" not NA?
 #' @return Send the work data back to dataProcess()
-summarize_tmp_mbimpute <- function(work) {
+summarize_tmp_mbimpute <- function(work, maxQuantileforCensored=0.999, censoredInt="NA") {
   work$LABEL <- factor(work$LABEL)
   label <- nlevels(work$LABEL) == 2
   work$censored <- FALSE
@@ -2761,13 +2712,51 @@ decide_missingness <- function(work) {
   return(final.decision)
 }
 
+#' I need to read up on this
+#'
+#' I am familiar with some statistics tests from Tukey, but not the polish median.
+#' I know for a fact that not all of these options are required, but I am not
+#' ready to remove them yet.
+#'
+#' @param modified_data  The data provided to msstats after some sanitization.
+#' @param label  Is this data labeled?
+#' @param pct_adjust  This is a peculiar feature of this code, this adjustment
+#'   is applied liberally throughout, and I am not sure yet which it is not done
+#'   just once at the beginning.  But until I figure that out I will not mess
+#'   with it.
+#' @param clusters  Currently not used until I clean it up enough that I feel
+#'   confident re-invoking parallel
+#' @param MBimpute  Perform imputation?
+#' @param censoredInt  "NA", not NA!
+#' @param message.show  Only print the peptides which fail when false.
+#' @param cutoffCensored  Where is the cutoff for censoring?
+#' @param original_scale  Keep the data on its original scale?
+#' @param remove50missing  If coverage is < 50%, drop the protein?
+#' @param ...  I might add more stuff, so drop it into arglist.
+#' @return a list of tukeys!
+perform_tukey_polish_median <- function(modified_data, label=1,
+                                        pct_adjust=0.99, clusters=1,
+                                        MBimpute=TRUE, censoredInt="NA",
+                                        message.show=FALSE,
+                                        cutoffCensored="minFeature",
+                                        original_scale=FALSE,
+                                        remove50missing=FALSE, ...) {
+  arglist <- list(...)
+  ## create cluster for paralleled workflow
+  ## Bizarrely, the default cluster size is 1, so there is exactly
+  ## 0 utility in using SNOW.  Thus for debugging I will just do a for loop, as I suspect
+  ## I will probably smash the lower level function shortly.
 
-  perform_tukey_polish_median <- function(modified_data, summaryMethod="TMP",
-                                        equalFeatureVar=TRUE, cutoffCensored="minFeature",
-                                        censoredInt="NA", remove50missing=FALSE,
-                                        MBimpute=TRUE, logsum=FALSE,
-                                        featureSubset="all", message.show=FALSE, clusters=1,
-                                        original_scale=FALSE, pct_adjust=0.99) {
+  ## FIXME: I am breaking the parallelization of this function!
+  ## message(paste0("Cluster Size: ", clusters, "\n"))
+  ## doSNOW::registerDoSNOW(parallel::makeCluster(clusters, type="SOCK"))
+  ##
+  ##pb <- txtProgressBar(max=nlevels(data$PROTEIN), style=3)
+  ##progress <- function(n) setTxtProgressBar(pb, n)
+  ##opts <- list(progress=progress)
+  ## Emacs does not handle indenting well for lines with foreach(stuff) %dopar% {
+  ##MS_results <- foreach(i=1: nlevels(data[["PROTEIN"]]), .combine="resultsAsLists", .options.snow=opts, .multicombine=TRUE, .init=list(list(), list())) %dopar% {
+
   tukey_result <- list()
   end <- nlevels(modified_data[["PROTEIN"]])
   bar <- utils::txtProgressBar(max=end, style=3)
@@ -2785,7 +2774,7 @@ decide_missingness <- function(work) {
     sub[["run.label"]] <- paste(sub[["RUN"]], sub[["LABEL"]], sep="_")
 
     ## how to decide censored or not
-    if (MBimpute) {
+    if (isTRUE(MBimpute)) {
       if (!is.null(censoredInt)) {
         ## 1. censored
         if (censoredInt == "0") {
@@ -3204,7 +3193,12 @@ decide_missingness <- function(work) {
         rownames(modified_data_w) <- modified_data_w[["RUN"]]
         modified_data_w <- modified_data_w[, -1]
         modified_data_w[modified_data_w == 1] <- NA
-        if (!original_scale) {
+        if (isTRUE(original_scale)) {
+          modified_data_w <- 2 ^ modified_data_w
+          medmodified_data <- medpolish(modified_data_w, na.rm=TRUE, trace.iter=FALSE)
+          tmpresult <- medmodified_data[["overall"]] + medmodified_data[["row"]]
+          tmpresult <- log2(tmpresult)
+        } else {
           medmodified_data <- medpolish(modified_data_w, na.rm=TRUE, trace.iter=FALSE)
           tmpresult <- medmodified_data[["overall"]] + medmodified_data[["row"]]
           ## if fractionated sample, need to get per sample run
@@ -3213,13 +3207,7 @@ decide_missingness <- function(work) {
           ## runinfo <- unique(sub[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "METHOD")])
           ## runinfo$uniquesub <- paste(runinfo$GROUP_ORIGINAL, runinfo$SUBJECT_ORIGINAL, sep="_")
           ##}
-        } else { # original_scale
-          modified_data_w <- 2 ^ modified_data_w
-          medmodified_data <- medpolish(modified_data_w, na.rm=TRUE, trace.iter=FALSE)
-          tmpresult <- medmodified_data[["overall"]] + medmodified_data[["row"]]
-          tmpresult <- log2(tmpresult)
         }
-
         ## count # feature per run
         if (!is.null(censoredInt)) {
           if (censoredInt=="NA") {
@@ -3400,35 +3388,66 @@ decide_missingness <- function(work) {
     tukey_result[[i]] <- sub.result
   } ## loop for proteins
   close(bar)
+
+  ## FIXME: when I put the clustering code back together, don't forget this.
+  ##stopCluster(cl) # foreach autocloses
+  ## Clean up the parallelized results
+  ##results.list <- list()
+  ##predAbundance.list <- list()
+  ##for (j in 1:length(MS_results[[1]])) {
+  ##  ## deal with the "results" first
+  ##  results.list[[j]] <- MS_results[[1]][[j]]
+  ##  predAbundance.list[[j]] <- MS_results[[2]][[j]]
+  ##}
+
   return(tukey_result)
 }
-  
 
-perform_survival_censored <- function(modified_data, summaryMethod="linear",
+#' Use Rs Survival package to quantify the censored data.
+#'
+#' I have not yet carefully read this code yet, so I dunno what it does properly.
+#'
+#' @param modified_data the MS dataset after filtering and such.
+#' @param equalFeatureVar  I think this variable is not used, it is top of my
+#'   list to remove.
+#' @param cutoffCensored  What criterion for censoring?
+#' @param censoredInt "NA" not NA!
+#' @param remove50missing  Drop proteins for which we have < 50% coverage (I
+#'   think?)
+#' @param MBimpute  Impute Impute damn spot!
+#' @param logsum  I am not sure.
+#' @param featureSubset  Keep them all!  I think this parameter is not used.
+#' @param message.show  Print only the duds which this is false.
+#' @param clusters  I think this is not used for this function.
+#' @param original_scale  Put the data back on the original scale?
+#' @param pct_adjust  Adjust the data by this factor?
+#' @param ...  Extra arguments dropped into arglist for future reference.
+#' @return a dataframe of quantified proteins/peptides.
+perform_survival_censored <- function(modified_data,
                                       equalFeatureVar=TRUE, cutoffCensored="minFeature",
                                       censoredInt="NA", remove50missing=FALSE,
                                       MBimpute=TRUE, logsum=FALSE,
                                       featureSubset="all", message.show=FALSE, clusters=1,
-                                      original_scale=FALSE, pct_adjust=0.99) {
+                                      original_scale=FALSE, pct_adjust=0.99, ...) {
   ##data <- data[!is.na(data$ABUNDANCE),]
-  data$PROTEIN <- factor(data$PROTEIN)
-  data$RUN <- factor(data$RUN)
+  data[["PROTEIN"]] <- factor(data[["PROTEIN"]])
+  data[["RUN"]] <- factor(data[["RUN"]])
   if (label) {
     result <- NULL
-    for(i in 1:length(unique(data$PROTEIN))) {
-      sub <- data[data$PROTEIN==unique(data$PROTEIN)[i], ]
+    for(i in 1:length(unique(data[["PROTEIN"]]))) {
+      sub <- data[data$PROTEIN==unique(data[["PROTEIN"]])[i], ]
       if (message.show) {
         message(paste0("Getting the summarization for censored missing values per subplot for protein ",
-                       unique(sub$PROTEIN), "(",i," of ",length(unique(data$PROTEIN)),")"))
+                       unique(sub[["PROTEIN"]]), "(",i," of ",length(unique(data[["PROTEIN"]])),")"))
       }
-      sub$FEATURE <- factor(sub$FEATURE)
-      sub$feature.label <- paste(sub$FEATURE, sub$LABEL, sep="_")
-      sub$run.label <- paste(sub$RUN, sub$LABEL, sep="_")
+      sub[["FEATURE"]] <- factor(sub[["FEATURE"]])
+      sub[["feature.label"]] <- paste(sub[["FEATURE"]], sub[["LABEL"]], sep="_")
+      sub[["run.label"]] <- paste(sub[["RUN"]], sub[["LABEL"]], sep="_")
       ## if all measurements are NA,
-      if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
+      if (nrow(sub)==sum(is.na(sub[["ABUNDANCE"]]))) {
         message(paste0("Can't summarize for ",
-                       unique(sub$PROTEIN), "(",
-                       i," of ", length(unique(datafeature$PROTEIN)),
+                       unique(sub[["PROTEIN"]]), "(",
+                       i," of ", length(unique(datafeature[["PROTEIN"]])),
                        ") because all measurements are NAs."))
         next()
       }
@@ -3436,7 +3455,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY), ]
       count <- aggregate(ABUNDANCE ~ RUN, data=subtemp, length)
       norun <- setdiff(unique(data$RUN), count$RUN)
-      
+
       if (length(norun) != 0 & length(intersect(norun, as.character(unique(sub$RUN))))) {
         ## removed NA rows already, if there is no overlapped run, error
         sub <- sub[-which(sub$RUN %in% norun), ]
@@ -3448,7 +3467,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
                        " has measurement. Can't summarize with censored intensities."))
         next
       }
-      
+
       ## remove features which are completely NAs or zero
       subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
       countfeature <- xtabs(~ FEATURE, subtemp)
@@ -3457,7 +3476,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
         sub <- sub[-which(sub$FEATURE %in% namefeature), ]
         sub$FEATURE <- factor(sub$FEATURE)
       }
-      
+
       ## how to decide censored or not
       ## 1. censored
       if (censoredInt == "0") {
@@ -3467,7 +3486,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       if (censoredInt == "NA") {
         sub$cen <- ifelse(is.na(sub$INTENSITY), 0, 1)
       }
-      
+
       ## cutoffCensored
       ## 1. put minimum in protein level to NA
       ##if (cutoffCensored=="minEachProtein") {
@@ -3480,7 +3499,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       ##      sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,"ABUNDANCE"] <- cut
       ##  }
       ##}
-      
+
       ## 2. put minimum in feature level to NA
       if (cutoffCensored == "minFeature") {
         if (censoredInt == "NA") {
@@ -3528,7 +3547,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
           }
         }
       }
-      
+
       ## 20150829 : 4. put minimum RUN and FEATURE
       if (cutoffCensored == "minFeatureNRun") {
         if (censoredInt == "NA") {
@@ -3540,7 +3559,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
           cut.run <- aggregate(ABUNDANCE ~ run.label,
                                data=sub, function(x) min(x, na.rm=TRUE))
           cut.run$ABUNDANCE <- pct_adjust * cut.run$ABUNDANCE
-          
+
           if (length(unique(sub$feature.label)) > 1) {
             for (j in 1:length(unique(sub$feature.label))) {
               for (k in 1:length(unique(sub$run.label))) {
@@ -3555,7 +3574,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
           }
           ## if single feature, not impute
         }
-        
+
         if (censoredInt == "0") {
           subtemptemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
           cut.fea <- aggregate(ABUNDANCE ~ feature.label,
@@ -3569,7 +3588,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
               sub$RUN <- factor(sub$RUN)
             }
           }
-          
+
           cut.run <- aggregate(ABUNDANCE ~ run.label,
                                data=subtemptemp, FUN=min)
           cut.run$ABUNDANCE <- pct_adjust * cut.run$ABUNDANCE
@@ -3590,7 +3609,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
           }
         }
       }
-      
+
       ## when number of measurement is less than df, error for fitting
       subtemp <- sub[!is.na(sub$ABUNDANCE), ]
       countdf <- nrow(subtemp) < (length(unique(subtemp$FEATURE)) +
@@ -3622,7 +3641,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
                                  data=sub, dist="gaussian")
         }
       }
-      
+
       sub.result <- data.frame(
         "Protein" = unique(sub$PROTEIN),
         "RUN" = rep(c(levels(sub$RUN)), 1),
@@ -3631,19 +3650,19 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       cf <- summary(fittest)$coefficients
       ## calculate sample quantification for all levels of sample
       a <- 1
-      
+
       for (j in 1:nlevels(sub$RUN)) {
         contrast.matrix <- rep(0,nlevels(sub$RUN))
         contrast.matrix[j] <- 1
         contrast <- make.contrast.run.quantification.Survival(
           fittest, contrast.matrix, sub, labeled=TRUE)
-        
+
         sub.result[a, 3] <- estimableFixedQuantificationSurvival(cf, contrast)
         a <- a + 1
       }
       result <- rbind(result, sub.result)
     }
-    
+
     datamat <- reshape2::dcast(Protein ~ RUN, data=result, value.var="LogIntensities", keep=TRUE)
     datamat <- melt(datamat, id.vars=c("Protein"))
     colnames(datamat) <- c("Protein", "RUN", "LogIntensities")
@@ -3657,7 +3676,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
                        unique(sub$PROTEIN), "(",
                        i," of ", length(unique(data$PROTEIN)),")"))
       }
-      
+
       sub$FEATURE <- factor(sub$FEATURE)
       ## if all measurements are NA,
       if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
@@ -3677,14 +3696,14 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
         sub <- sub[-which(sub$RUN %in% norun), ]
         sub$RUN <- factor(sub$RUN)
       }
-      
+
       if (length(unique(sub$RUN)) == 1) {
         message(paste0("* Only 1 MS run in ",
                        levels(data$PROTEIN)[i],
                        " has measurement. Can't summarize with censored intensities."))
         next
       }
-      
+
       ## remove features which are (completely NAs or zero)
       subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
       countfeature <- xtabs(~ FEATURE, subtemp)
@@ -3699,7 +3718,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
                        ". Can't summarize with censored intensities."))
         next
       }
-      
+
       ## how to decide censored or not
       ## 1. censored
       if (censoredInt == "0") {
@@ -3723,14 +3742,14 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       ## mean or median?
       ##featureorder <- aggregate(ABUNDANCE~FEATURE,data=subtemp, mean)
       ##featureorder <- featureorder[with(featureorder, order(ABUNDANCE, decreasing=T)),]
-      
+
       ## runs which has any missing
       ##if (length(completerun)!=0) {
       ##  incompleterun <- count[count$ABUNDANCE!=length(unique(sub$FEATURE)),"RUN"]
       ##}else{
       ##  incompleterun <- count[-which.max(count$ABUNDANCE),"RUN"]
       ##}
-      
+
       ##if (length(incompleterun)!=0) {
       ##  for(j in 1:length(incompleterun)) {
       ##      temp <- sub[sub$RUN==incompleterun[j],]
@@ -3741,7 +3760,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       ##      sub[which(sub$RUN==incompleterun[j] & sub$FEATURE %in% abovefeature & is.na(sub$INTENSITY)),"cen"] <- 1
       ##  }
       ##}
-      
+
       ## cutoffCensored
       ## 1. put minimum in protein level to NA
       ##if (cutoffCensored=="minEachProtein") {
@@ -3749,13 +3768,13 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       ##      cut <- min(sub$ABUNDANCE, na.rm=TRUE)
       ##      sub[is.na(sub$INTENSITY),"ABUNDANCE"] <- cut
       ##  }
-      
+
       ##  if (censoredInt=="0") {
       ##      cut <- min(sub[!is.na(sub$INTENSITY) & sub$INTENSITY!=0,"ABUNDANCE"])
       ##      sub[!is.na(sub$INTENSITY) & sub$INTENSITY==0,"ABUNDANCE"] <- cut
       ##  }
       ##}
-      
+
       ## 2. put minimum in feature level to NA
       if (cutoffCensored == "minFeature") {
         if (censoredInt == "NA") {
@@ -3856,7 +3875,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
           }
         }
       }
-      
+
       ## when number of measurement is less than df, error for fitting
       subtemp <- sub[!is.na(sub$ABUNDANCE), ]
       countdf <- nrow(subtemp) < (length(unique(subtemp$FEATURE)) +
@@ -3874,7 +3893,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
                                        data=sub, dist="gaussian")
         }
       }
-      
+
       sub.result <- data.frame(
         "Protein" = unique(sub$PROTEIN),
         "RUN" = rep(c(levels(sub$RUN)), 1),
@@ -3893,7 +3912,7 @@ perform_survival_censored <- function(modified_data, summaryMethod="linear",
       }
       result <- rbind(result, sub.result)
     }
-    
+
     datamat <- reshape2::dcast(Protein ~ RUN,
                                data=result, value.var="LogIntensities", keep=TRUE)
     datamat <- melt(datamat, id.vars=c("Protein"))

@@ -1,59 +1,71 @@
 ##The goal of this function is to calculate the LoD/LoQ of the data provided in the data frame.
 ##The function returns a new data frame containing the value of the LoD/LoQ
 
+#' I have read not one word of this function yet, I will figure out what it does now.
+#'
+#' @param datain  Well, I would guess the input data, presumably from dataProcess()
+#' @param alpha Ah the first sign of code written by a smart person, a variable
+#'   named after a greek letter...
+#' @param Npoints  I am going to guess the number of points, points of what I
+#'   have no clue.
+#' @param Nbootstrap  The number bootstrap replicates I presume.
+#' @param do_bootstrap Yes!
 #' @export
-#' @import minpack.lm
-nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap = 500) {
+nonlinear_quantlim <- function(datain, alpha=0.05, Npoints=100,
+                               do_bootstrap=TRUE, Nbootstrap=500) {
   switch(Sys.info()[["sysname"]],
          Windows = {
-           null_output <- "NUL" },
+           null_output <- "NUL"
+         },
          Linux = {
-           null_output <- "/dev/null" },
+           null_output <- "/dev/null"
+         },
          Darwin = {
-           null_output <- "/dev/null" })
-  ##Need to rename variables as needed:
+           null_output <- "/dev/null"
+         },
+         {
+           null_output <- "/dev/null"
+         })
+  ## Need to rename variables as needed:
   names(datain)[names(datain) == "CONCENTRATION"] <- "C"
   names(datain)[names(datain) == "INTENSITY"] <- "I"
 
-  ##percentile of the prediction interval considered
+  ## percentile of the prediction interval considered
   if (missing(alpha)) {
     alpha <- 5 / 100;
   }
-
   if (alpha >= 1 | alpha <= 0) {
     print("incorrect specified value for alpha, 0 < alpha < 1")
     return(NULL)
   }
-
-  ##Number of boostrap samples
+  ## Number of boostrap samples
   if (missing(Nbootstrap)) {
     B <- 500
   } else {
     B <- Nbootstrap
   }
-
-  ##Number of points for the discretization interval
+  ## Number of points for the discretization interval
   if (missing(Npoints)) {
     Npoints <- 100
   }
 
-  ##Number of bootstrap samples for the prediction inteval for the changepoint
-  ##Large values can make calculations very expensive
+  ## Number of bootstrap samples for the prediction inteval for the changepoint
+  ## Large values can make calculations very expensive
   B1 <- 30
-  ##Number of prediction samples to generate
+  ## Number of prediction samples to generate
   BB <- 200
-  ##Number of trials for convergence of every curvefit algorithm
+  ## Number of trials for convergence of every curvefit algorithm
   NMAX <- 30
 
-  datain <- datain[!is.na(datain$I) & !is.na(datain$C), ]
-  datain <- datain[!is.infinite(datain$I) & !is.infinite(datain$C), ]
-  datain <- datain[order(datain$C), ]
-  tmp_nob <- subset(datain, datain$C >0)
+  datain <- datain[!is.na(datain[["I"]]) & !is.na(datain[["C"]]), ]
+  datain <- datain[!is.infinite(datain[["I"]]) & !is.infinite(datain[["C"]]), ]
+  datain <- datain[order(datain[["C"]]), ]
+  tmp_nob <- subset(datain, datain[["C"]] >0)
   tmp_all <- datain
-  tmp_blank <-subset(datain, datain$C == 0)
+  tmp_blank <-subset(datain, datain[["C"]] == 0)
 
-  ##Calculate the value of the noise:
-  ##Use the zero concentration to calculate the LOD:
+  ## Calculate the value of the noise:
+  ## Use the zero concentration to calculate the LOD:
   noise <- mean(tmp_blank$I)
   var_noise <- var(tmp_blank$I)
   pb <- txtProgressBar(min=0, max=1, initial=0, char="%",
@@ -88,8 +100,8 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
   xaxis_orig_2 <- unique(sort(c(xaxis_orig_2, unique_c)))
 
   ##Instead simply create a piecewise linear approximation:
-  var_v_lin <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=xaxis_orig_2)$y
-  var_v_lin_unique <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=unique_c)$y
+  var_v_lin <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=xaxis_orig_2)[["y"]]
+  var_v_lin_unique <- approx(unique_c[!is.na(var_v)], var_v[!is.na(var_v)], xout=unique_c)[["y"]]
 
   ##
   ##In the following, consider that the smoothed variance is that from the log:
@@ -99,13 +111,11 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
   var_v_s_log_unique <- var_v_s_unique
   ##
 
-  do_bootstrap <- TRUE
   if (isTRUE(do_bootstrap)) {
     ## Full bootstrap
     outB <- matrix(NA_real_, nrow=B, ncol=length(xaxis_orig_2))
-    outBB_pred <- matrix(NA_real_, nrow=B*BB, ncol=length(xaxis_orig_2))
+    outBB_pred <- matrix(NA_real_, nrow=B * BB, ncol=length(xaxis_orig_2))
     change_B <- rep(NA, B)
-    set.seed(123)
     for (j in 1:B) {
       ## Number of first boostrap samples j
       setTxtProgressBar(pb, j / B, title=NULL, label=NULL)
@@ -116,34 +126,41 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
 
       weights <- rep(0, length(tmpB$C))
       for (kk in 1:length(tmpB$C)) {
-        weights[kk] <- 1 / var_v_s_unique[which(unique_c == tmpB$C[kk])]
+        weights[kk] <- 1 / var_v_s_unique[which(unique_c == tmpB[["C"]][kk])]
       }
 
       noise_B <- mean(sample(tmp_blank$I, length(tmp_blank$I), replace=TRUE))
       ##Mean of resampled noise (= mean of noise)
-
       ii <- 0;
       while (ii < NMAX) {
         ## Number of ii trials for bilinear fit < NMAX
         ii <- ii + 1
         {
-          change <- median(tmpB$C) * runif(1) * 0.25
-          slope <- median(tmpB$I) / median(tmpB$C) * runif(1)
+          change <- median(tmpB[["C"]]) * runif(1) * 0.25
+          slope <- median(tmpB[["I"]]) / median(tmpB[["C"]]) * runif(1)
 
           sink(null_output)
           ##Set intercept at noise and solve for the slope and change
           fit.blank_B <- NULL
           fit.blank_B <- tryCatch({
-            nlsLM(I ~ bilinear_LOD(C, noise_B, slope, change), data=tmpB,
-                  trace=TRUE, start=c(slope=slope, change=change), weights=weights,
-                  control=nls.lm.control(nprint=1, ftol=sqrt(.Machine$double.eps) / 2, maxiter=50))
-          }, error=function(e) { NULL })
+            minpack.lm::nlsLM(I ~ bilinear_LOD(C, noise_B, slope, change),
+                              data=tmpB,
+                              trace=TRUE,
+                              start=c(slope=slope, change=change),
+                              weights=weights,
+                              control=minpack.lm::nls.lm.control(
+                                                    nprint=1,
+                                                    ftol=sqrt(.Machine$double.eps) / 2,
+                                                    maxiter=50))
+          }, error=function(e) {
+            NULL
+          })
           sink()
         }
 
         out_loop <- 0
         if (!is.null(fit.blank_B)) { #Converges but cannot have a real threshold here anyway
-          if (summary(fit.blank_B)$coefficient[2] < min(tmpB$C)) {
+          if (summary(fit.blank_B)[["coefficient"]][2] < min(tmpB[["C"]])) {
             fit.blank_B <- NULL
             out_loop <- 1
           }
@@ -161,42 +178,46 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
               ##Number of iii trials for convergence of bilinear
               iii <- iii + 1
               tmpBB <- tmpB[sample(1:nrow(tmpB), replace=TRUE), ]
-              change <- median(tmpBB$C) * runif(1) * 0.25
-              slope <- median(tmpBB$I) / median(tmpBB$C) * runif(1)
-              weightsB <- rep(0, length(tmpB$C))
-              for (kk in 1:length(tmpBB$C)) {
-                weightsB[kk] <- 1 / var_v_s_unique[which(unique_c == tmpBB$C[kk])]
+              change <- median(tmpBB[["C"]]) * runif(1) * 0.25
+              slope <- median(tmpBB[["I"]]) / median(tmpBB[["C"]]) * runif(1)
+              weightsB <- rep(0, length(tmpB[["C"]]))
+              for (kk in 1:length(tmpBB[["C"]])) {
+                weightsB[kk] <- 1 / var_v_s_unique[which(unique_c == tmpBB[["C"]][kk])]
               }
-              ##Need to also bootstrap for the value of the mean:
-              ##Pick with replacement blank samples:
+
+              ## Need to also bootstrap for the value of the mean:
+              ## Pick with replacement blank samples:
               noise_BB <- noise
               sink(null_output)
 
               fit.blank_BB <- NULL
               fit.blank_BB <- tryCatch({
-                nlsLM(I ~ bilinear_LOD(C, noise_BB, slope, change),
-                      data=tmpBB, trace=TRUE, start=c(slope=slope, change=change),
-                      weights=weightsB,
-                      control=nls.lm.control(nprint=1, ftol=sqrt(.Machine$double.eps) /2,
-                                             maxiter = 50))},
-                error=function(e) {
-                  NULL
-                })
-
+                minpack.lm::nlsLM(I ~ bilinear_LOD(C, noise_BB, slope, change),
+                                  data=tmpBB,
+                                  trace=TRUE,
+                                  start=c(slope=slope, change=change),
+                                  weights=weightsB,
+                                  control=minpack.lm::nls.lm.control(nprint=1,
+                                                                     ftol=sqrt(.Machine$double.eps) /2,
+                                                                     maxiter =
+                                                                       50))
+              },
+              error=function(e) {
+                NULL
+              })
               sink()
 
               if (!is.null(fit.blank_BB)) {
-                change_BB[bb] <- summary(fit.blank_BB)$coefficient[2]
+                change_BB[bb] <- summary(fit.blank_BB)[["coefficient"]][2]
               } else {
                 change_BB[bb] <- NA
               }
-
               if (!is.null(fit.blank_BB)) {
                 break
               }
-            } #Number of iii trials for convergence of bilinear
-            ##if(sum(is.na(change_BB))>10 && mean(change_BB, na.rm = TRUE) < 0){ out_loop = 1; break; }
-          } #Number of second boostrap samples bb < B1
+            } ## Number of iii trials for convergence of bilinear
+            ## if(sum(is.na(change_BB))>10 && mean(change_BB, na.rm = TRUE) < 0){ out_loop = 1; break; }
+          } ## Number of second boostrap samples bb < B1
 
           ## #print(change_BB[order(change_BB)])
           ## CI_change <- quantile(change_BB,probs=c(0.1),na.rm= TRUE)
@@ -206,7 +227,6 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
           ##  fit.blank_B <- NULL
           ##  out_loop =1
           ## }
-          ##
           ##
           ## if(!is.na(CI_change[1]) && out_loop == 0) if(CI_change[1] < min(tmp_all$C)){
           ##  fit.blank_B <- NULL
@@ -223,7 +243,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
             out_loop <- 1
           }
           if (!is.na(CI_change[1]) && !is.na(CI_change[2])) {
-            if (CI_change[1] < min(tmp_all$C) | CI_change[2] > max(tmp_all$C)) {
+            if (CI_change[1] < min(tmp_all[["C"]]) | CI_change[2] > max(tmp_all[["C"]])) {
               fit.blank_B <- NULL
               out_loop <- 1
             } else {
@@ -240,7 +260,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
           break
           ##Could never find a converged bilinear fit
         }
-      ## Number of ii trials for bilinear fit < NMAX
+        ## Number of ii trials for bilinear fit < NMAX
       }
 
       ##fit.blank_B <- NULL
@@ -248,40 +268,44 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
         ll <- 0
         while(ll < NMAX) {
           ll <- ll + 1
-          slope <- median(tmpB$I) / median(tmpB$C) * runif(1)
+          slope <- median(tmpB[["I"]]) / median(tmpB[["C"]]) * runif(1)
           intercept <- noise * runif(1)
           sink(null_output)
           lin.blank_B <- tryCatch({
-            nlsLM(I ~ linear(C, intercept, slope),
-                  data=tmpB,
-                  trace=TRUE,
-                  start=c(intercept=intercept, slope=slope),
-                  weights=weights,
-                  control=nls.lm.control(nprint=1,
-                                         ftol=sqrt(.Machine$double.eps) / 2,
-                                         maxiter=50))
-          }, error=function(e) { NULL })
-
+            minpack.lm::nlsLM(I ~ linear(C, intercept, slope),
+                              data=tmpB,
+                              trace=TRUE,
+                              start=c(intercept=intercept, slope=slope),
+                              weights=weights,
+                              control=minpack.lm::nls.lm.control(nprint=1,
+                                                                 ftol=sqrt(.Machine$double.eps) / 2,
+                                                                 maxiter=50))
+          },
+          error=function(e) {
+            NULL
+          })
           sink()
+
           if(!is.null(lin.blank_B)) {
             break
           }
         }
       } #Do linear fit if is.null(fit.blank_B)
+
       ##Store the curve fits obtained via bootstrap with bilinear and linear:
       if (!is.null(fit.blank_B)) {
         outB[j, ] <- bilinear_LOD(xaxis_orig_2, noise_B,
-                                   summary(fit.blank_B)$coefficient[1],
-                                   summary(fit.blank_B)$coefficient[2])
-        change_B[j] <- summary(fit.blank_B)$coefficient[2]
+                                  summary(fit.blank_B)[["coefficient"]][1],
+                                  summary(fit.blank_B)[["coefficient"]][2])
+        change_B[j] <- summary(fit.blank_B)[["coefficient"]][2]
       } else {
         if (!is.null(lin.blank_B)) {
           ## If linear fit, change = 0 anyway
           outB[j, ] <- linear(xaxis_orig_2,
-                               summary(lin.blank_B)$coefficient[1],
-                               summary(lin.blank_B)$coefficient[2])
+                              summary(lin.blank_B)[["coefficient"]][1],
+                              summary(lin.blank_B)[["coefficient"]][2])
           change_B[j] <- 0
-        } else{
+        } else {
           outB[j, ] <- rep(NA, length(xaxis_orig_2))
           change_B[j] <- NA
         }
@@ -292,8 +316,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
         outBB_pred[(j - 1) * BB + jj, ] <- outB[j, ] +
           rnorm(length(xaxis_orig_2), 0, sqrt(var_v_s_log))
       }
-    } # Number of first bootstrap samples j <=B
-
+    } ## Number of first bootstrap samples j <=B
 
     ##Calculate the variance of the fits:
     var_bilinear <- apply(outB, 2, var, na.rm=TRUE)
@@ -326,7 +349,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
 
   ## Calculate the LOD with the upper-upper and upper-lower limits of the noise
   ## (Calculated to make sure that we have a large enough resolution)
-  i_before <- which(diff(sign(up_noise - mean_bilinear)) != 0) #before sign change
+  i_before <- which(diff(sign(up_noise - mean_bilinear)) != 0) ## before sign change
   if (length(i_before) > 0) {
     i_after <- i_before + 1
     x1 <- xaxis_orig_2[i_before]
@@ -489,15 +512,17 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
       sink(null_output)
       fit.blank_lin <- NULL
       fit.blank_lin <- tryCatch({
-        nlsLM(I ~ linear(C, intercept, slope),
-              data=data_linear,
-              trace=TRUE,
-              start=c(slope=slope, intercept = intercept),
-              weights=weights,
-              control=nls.lm.control(nprint=1, ftol=sqrt(.Machine$double.eps) / 2, maxiter=50))},
-        error = function(e) {
-          NULL
-        })
+        minpack.lm::nlsLM(I ~ linear(C, intercept, slope),
+                          data=data_linear,
+                          trace=TRUE,
+                          start=c(slope=slope, intercept = intercept),
+                          weights=weights,
+                          control=minpack.lm::nls.lm.control(nprint=1,
+                                                             ftol=sqrt(.Machine$double.eps) / 2, maxiter=50))
+      },
+      error = function(e) {
+        NULL
+      })
       sink()
     }
 
@@ -524,7 +549,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
       "LOD" = rep(LOQ_pred, length(upper_Q_pred)),
       "SLOPE" = slope_lin,
       "INTERCEPT" = intercept_lin,
-      "NAME" = rep(datain$NAME[1], length(upper_Q_pred)),
+      "NAME" = rep(datain[["NAME"]][1], length(upper_Q_pred)),
       "METHOD" = rep("NONLINEAR", length(upper_Q_pred)))))
   )
 }

@@ -1,59 +1,57 @@
-#############################################
-## groupComparisonPlots
-#############################################
+#' Make plots comparing the experimental groups.
+#'
+#' I haven't read this function yet, so I dunno what it does.
+#'
+#' @param data Input data frame.
+#' @param type Type of plot(s) to generate.
+#' @param sig Maximum significance score (presumably FDR).
+#' @param FCcutoff Do a cutoff plot (maybe)?
+#' @param logBase.pvalue wow, it managed to be both camelCase and a dot variable at the same time.
+#' @param ylimUp Add a y axis limit on the up side?
+#' @param ylimDown  Add a y axis limit on the down side?
+#' @param xlimUp Add a x axis limit on the up side?
+#' @param x.axis.size Text size for the x axis.
+#' @param y.axis.size Text size for the y axis (damnit put all this crap into an arglist)
+#' @param dot.size Plot size of the dots.
+#' @param text.size Text size on the plot.
+#' @param legend.size Size of the legend.
+#' @param ProteinName I'm guessing put the protein names on the plot?
+#' @param colorkey Why the hell was the previous arg CamelCase and this one not?
+#' @param numProtein How many proteins to plot?
+#' @param clustering Cluster the samples?
+#' @param width Plot width.
+#' @param height Plot height.
+#' @param which.Comparison I think the name.Says.IT.aLL
+#' @param which.Protein Plot a protein subset?
+#' @param address file name location for the pdf output (this argument will go away soon
+#'    if I keep hacking on this stuff.)
+#' @return Currently a pdf with a bunch of plots I am guessing.
 #' @export
 #' @importFrom gplots heatmap.2
 #' @importFrom stats hclust
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom marray maPalette
-groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE, logBase.pvalue=10,
+groupComparisonPlots <- function(data, type, sig=0.05, FCcutoff=FALSE, logBase.pvalue=10,
                                  ylimUp=FALSE, ylimDown=FALSE, xlimUp=FALSE, x.axis.size=10,
                                  y.axis.size=10, dot.size=3, text.size=4, legend.size=13,
                                  ProteinName=TRUE, colorkey=TRUE, numProtein=100, clustering="both",
                                  width=10, height=10, which.Comparison="all", which.Protein="all",
                                  address="") {
 
-    ## save process output in each step
+  ## save process output in each step
   allfiles <- list.files()
-  filenaming <- "msstats"
-  if (length(grep(filenaming, allfiles)) == 0) {
-    finalfile <- "msstats.log"
-    processout <- NULL
-  } else {
-    num <- 0
-    finalfile <- "msstats.log"
-    while (is.element(finalfile, allfiles)) {
-      num <- num + 1
-      lastfilename <- finalfile ## in order to rea
-      finalfile <- paste(paste(filenaming, num, sep="-"), ".log", sep="")
-    }
-    finalfile <- lastfilename
-    processout <- as.matrix(read.table(finalfile, header=TRUE, sep="\t"))
-  }
-
-  processout <- rbind(processout,
-                      as.matrix(c(" ", " ", "MSstats - groupComparisonPlots function", " "),
-                                ncol=1))
+  logging::loginfo("MSstats - groupComparisonPlots() starting.")
   ## make upper letter
   type <- toupper(type)
 
   if (length(setdiff(type, c("HEATMAP", "VOLCANOPLOT", "COMPARISONPLOT"))) != 0) {
-    processout <- rbind(
-      processout,
-      c(paste0("Input for type=", type,
-               ". However,'type' should be one of 'Heatmap', 'VolcanoPlot', 'ComparisonPlot'.")))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    stop(
-      paste0("Input for type=", type,
-             ". However,'type' should be one of 'Heatmap', 'VolcanoPlot', 'ComparisonPlot'."))
+    logging::logwarn(paste0("Input for type=", type,
+                            ".  But type must be one of heatmap, volcanoplot, or comparisonplot."))
+    stop()
   }
   ## check logBase.pvalue is 2,10 or not
   if (logBase.pvalue != 2 & logBase.pvalue != 10) {
-    processout <- rbind(
-      processout,
-      c("ERROR : (-) Logarithm transformation for adjusted p-values : log2 or log10 only"))
-    write.table(processout, file=finalfile, row.names=FALSE)
-    stop("Only -log2 or -log10 for logarithm transformation for adjusted p-values are posssible.\n")
+    logging::logwarn("Logarithm transformation for adjusted p-values : log2 or log10 only")
   }
 
   if (which.Comparison != "all") {
@@ -62,12 +60,9 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
       temp.name <- which.Comparison
       ## message if name of comparison is wrong.
       if (length(setdiff(temp.name, unique(data$Label))) > 0) {
-        processout <- rbind(
-          processout,
-          paste0("Please check labels of comparions. Result does not have this comparison. - ",
-                 toString(temp.name)))
-        write.table(processout, file=finalfile, row.names=FALSE)
-        stop(paste0("Please check labels of comparions. Result does not have this comparison. - ", toString(temp.name)))
+        logging::logwarn(paste0("The result does not have labels, which are required: ",
+                                toString(temp.name)))
+        stop()
       }
     }
 
@@ -185,10 +180,10 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
     if (logBase.pvalue == 10) {
       neg.breaks <- log(breaks, 10)
       my.breaks <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
-        } else if(logBase.pvalue == 2) {
-            neg.breaks <- log(breaks, 2)
+    } else if(logBase.pvalue == 2) {
+      neg.breaks <- log(breaks, 2)
       my.breaks <- c(neg.breaks, 0, -neg.breaks[6:1], 101)
-        }
+    }
 
     ## draw color key
     blocks <- c(-breaks, 1, breaks[6:1])
@@ -453,7 +448,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
                                   labels=c(paste0("Adj p-value cutoff (", sig, ")"))) +
             guides(colour=guide_legend(override.aes=list(linetype=0)),
                    linetype=guide_legend())
-                }
+        }
       }
 
       ## cutoff lines, FDR and Fold change cutoff
@@ -612,7 +607,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
     if (address!=FALSE) {
       dev.off()
     }
-    }
+  }
 
 #######################
 ### Comparison Plot
@@ -720,7 +715,7 @@ groupComparisonPlots <- function(data=data, type=type, sig=0.05, FCcutoff=FALSE,
       message(paste("Drew compasison plot for ",
                     unique(sub$PROTEIN), "(", i, " of ",
                     length(unique(datatemp$Protein)), ")"))
-        } ## end-loop
+    } ## end-loop
     if (address!=FALSE) {
       dev.off()
     }
