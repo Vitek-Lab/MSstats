@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.11.6 [2018-04-23]
+-------------------------
+    BUG FIXES
+	 - SkylinetoMSstatsFormat : fix the inconsistency of column name from Skyline output
+	 
+	 
 CHANGES IN VERSION 3.11.5 [2018-02-22]
 -------------------------
     BUG FIXES

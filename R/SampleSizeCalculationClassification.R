@@ -32,7 +32,6 @@
 #' QuantCRCSRM <- dataProcess(SRM_crc_training)
 #' crc.srm <- designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
 #' crc.srm$meanPA # mean predictive accuracy
-#' @import doMC
 #' @importFrom randomForest randomForest combine
 #' 
 #' @export
@@ -155,7 +154,7 @@ designSampleSizeClassification <- function(data,
             #Train random forest on training data
             #rf <- randomForest::randomForest(x=x, y=y, ntree = 100) 
             # parallel computing for random forest
-            doMC::registerDoMC()
+            registerDoSNOW()
 
             mcoptions <- list(set.seed=FALSE)
             rf <- foreach(ntree=rep(10, 10), .combine=randomForest::combine, .multicombine=TRUE,
