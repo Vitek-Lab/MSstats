@@ -8,7 +8,6 @@ dataProcess(raw,
             logTrans=2,
             normalization="equalizeMedians",
             nameStandards=NULL,
-            betweenRunInterferenceScore=FALSE,
             address="",
             fillIncompleteRows=TRUE,
             featureSubset="all",
@@ -21,7 +20,7 @@ dataProcess(raw,
             MBimpute=TRUE,
             remove50missing=FALSE,
             maxQuantileforCensored=0.999,
-            clusters=1)
+            clusters=NULL)
 }
 
 \arguments{
@@ -29,7 +28,6 @@ dataProcess(raw,
   \item{logTrans}{logarithm transformation with base 2(default) or 10.}
   \item{normalization}{normalization to remove systematic bias between MS runs. There are three different normalizations supported. 'equalizeMedians'(default) represents constant normalization (equalizing the medians) based on reference signals is performed. 'quantile' represents quantile normalization based on reference signals is performed. 'globalStandards' represents normalization with global standards proteins. FALSE represents no normalization is performed.}
   \item{nameStandards}{vector of global standard peptide names. only for normalization with global standard peptides. }
- \item{betweenRunInterferenceScore}{interference is detected by a between-run-interference score. TRUE means the scores are generated automatically and stored in a .csv file. FALSE(default) means no scores are generated.}
  \item{fillIncompleteRows}{If the input dataset has incomplete rows, TRUE(default) adds the rows with intensity value=NA for missing peaks. FALSE reports error message with list of features which have incomplete rows. }
   \item{featureSubset}{"all"(default) uses all features that the data set has. "top3" uses top 3 features which have highest average of log2(intensity) across runs. "topN" uses top N features which has highest average of log2(intensity) across runs. It needs the input for n_top_feature option. "highQuality" is under development. Currently it will use top 3 features.}
   \item{remove_noninformative_feature_outlier}{It only works with featureSubset="highQuality". TRUE allows to remove 1) the features with column : feature_quality="Noninformative" which are featurew with bad quality, 2) outliers that are flagged in the column, is_outlier=TRUE. FALSE (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide.}
@@ -42,7 +40,7 @@ dataProcess(raw,
 \item{remove50missing}{only for summaryMethod="TMP". TRUE removes the runs which have more than 50\% missing values. FALSE is default.}
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.}
 \item{maxQuantileforCensored}{Maximum quantile for deciding censored missing values. default is 0.999}
-\item{clusters}{a user specified number of clusters. default is 1}
+\item{clusters}{a user specified number of clusters. default is NULL, which does not use cluster.}
 
 }
 

@@ -1,3 +1,13 @@
+CHANGES IN VERSION 3.13.1 [2018-05-21]
+-------------------------
+    BUG FIXES
+	 - dataProcess : report summary of proteins with single feature.
+	 - dataProcess : cluster=NULL is default. There is the issue for makecluster.
+	 - dataProcess : fix the bug for fraction case.
+	 
+    RETIRED FEATURES
+     - transformMSnSetToMSstats, transformMSstatsToMSnSet are retired
+
 CHANGES IN VERSION 3.11.6 [2018-04-23]
 -------------------------
     BUG FIXES
