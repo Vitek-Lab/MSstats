@@ -15,7 +15,7 @@
 #' @importFrom doSNOW registerDoSNOW
 #' @importFrom snow makeCluster
 #' @importFrom foreach foreach %dopar%
-#' @importFrom dplyr filter
+#' @importFrom dplyr filter n
 #' @importFrom tidyr gather
 
 dataProcess  <-  function(raw,
@@ -360,15 +360,16 @@ dataProcess  <-  function(raw,
 	## 2016. 08.29 : replace <1 with zero for log2(intensity)
 	if ( length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)) > 0 ) {
 	  
-	  processout <- rbind(processout, c(paste("** There are",  length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)), " intensities which are zero. These intensities are replaced with 1.", sep="")))
-	  write.table(processout, file=finalfile,row.names=FALSE)
+	  processout <- rbind(processout, c(paste0("** There are ",  
+	                                          length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)), 
+	                                          " intensities which are zero. These intensities are replaced with 1.")))
+	  write.table(processout, file=finalfile, row.names=FALSE)
 	  
-	  message(paste("** There are ", length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)), 
-	                " intensities which are zero or less than 1. These intensities are replaced with 1.", sep=""))
+	  message(paste0("** There are ", length(which(!is.na(work$INTENSITY) & work$INTENSITY < 1)), 
+	                " intensities which are zero or less than 1. These intensities are replaced with 1."))
 	  
 	  work[!is.na(work$INTENSITY) & work$INTENSITY < 1, 'INTENSITY'] <- 1
 	}
-	
 	
 	## log transformation
 	work$ABUNDANCE <- work$INTENSITY
@@ -476,7 +477,7 @@ dataProcess  <-  function(raw,
 	        ## extra info for feature and fraction
 	        work$tmp <- paste(work$FEATURE, work$FRACTION, sep="_")
 	        
-	        tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 1, ]
+	        tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 0, ]
 	        count.feature <- reshape2::dcast(FEATURE ~ FRACTION, 
 	                                         data=tmp, 
 	                                         fun.aggregate=length, 
@@ -487,7 +488,7 @@ dataProcess  <-  function(raw,
 	        count.fraction <- apply(count.feature[, -which(colnames(count.feature) %in% c('FEATURE'))], 
 	                                1, 
 	                                function(x) sum(x>0))
-	        keep.feature <- count.feature[count.fraction == 1, 'FEATURE']
+	        # keep.feature <- count.feature[count.fraction == 1, 'FEATURE']
 	    
 	        ## 2. second, if features are measured in multiple fractionations, 
 	        ## use the fractionation with maximum number of measurements.
@@ -533,7 +534,9 @@ dataProcess  <-  function(raw,
 	            if( nrow(count.feature3) > 0 ){
 	                
 	                ## 2.2.1 : maximum number of measurement / fraction == 1, remove that feature
-	                max.feature <- apply(count.feature3[, -which(colnames(count.feature3) %in% c('FEATURE'))], 1, function(x) max(x))
+	                max.feature <- apply(count.feature3[, -which(colnames(count.feature3) %in% c('FEATURE'))], 
+	                                     1, 
+	                                     function(x) max(x))
 	                max.feature.1 <- count.feature3[max.feature == 1, 'FEATURE'] 
 	                
 	                work <- work[-which(work$FEATURE %in% max.feature.1), ]
@@ -584,7 +587,7 @@ dataProcess  <-  function(raw,
 	## check no value for some feature : balanced structure or not
 	## need to separate label-free or label-based
   
-	processout <- rbind(processout, c(paste("fillIncompleteRows = ",fillIncompleteRows,sep="")))
+	processout <- rbind(processout, c(paste("fillIncompleteRows = ", fillIncompleteRows,sep="")))
 	write.table(processout, file=finalfile, row.names=FALSE)
   
 	## [THT: better to write a function for single method, and call that function
@@ -1714,8 +1717,12 @@ dataProcess  <-  function(raw,
       		} # end loop method		
     	} # for labe-based 
     
-    
-		processout <- rbind(processout, c("Normalization : Constant normalization (equalize medians) - okay"))
+	    if(length(nmethod) == 1) {
+		    processout <- rbind(processout, c("Normalization : Constant normalization (equalize medians) - okay"))
+	    } else if (length(nmethod) >1) {
+	        ## if there are fractions, report addition information.
+	        processout <- rbind(processout, c("Normalization : Constant normalization (equalize medians) per fraction - okay"))
+	    }
     	write.table(processout, file=finalfile, row.names=FALSE)
   	} ## end equaliemedian normalization	
   
@@ -1873,7 +1880,12 @@ dataProcess  <-  function(raw,
       
     	}
     
-    	processout <- rbind(processout, c("Normalization : Quantile normalization - okay"))
+    	if(length(nmethod) == 1) {
+    	    processout <- rbind(processout, c("Normalization : Quantile normalization - okay"))
+    	} else if (length(nmethod) >1) {
+    	    ## if there are fractions, report addition information.
+    	    processout <- rbind(processout, c("Normalization : Quantile normalization per fraction - okay"))
+    	}
     	write.table(processout, file=finalfile, row.names=FALSE)
   	}
   
@@ -1949,18 +1961,34 @@ dataProcess  <-  function(raw,
       		}
    		} # end loop method
     
-    
-   	 	processout <- rbind(processout, c("Normalization : normalization with global standards protein - okay"))
+   	 	if(length(nmethod) == 1) {
+   	 	    processout <- rbind(processout, c("Normalization : normalization with global standards protein - okay"))
+   	 	} else if (length(nmethod) >1) {
+   	 	    ## if there are fractions, report addition information.
+   	 	    processout <- rbind(processout, c("Normalization : normalization with global standards protein - okay"))
+   	 	}
     	write.table(processout, file=finalfile, row.names=FALSE)
     
 	}
+	
+	## ----------------------------------------------------------- ##
+	## after normalization, zero intensity could be negative
+	
+	## if abundance became less than zero, after normalization
+	work[!is.na(work$ABUNDANCE) & work$ABUNDANCE < 0, "ABUNDANCE"] <- 0
+	
+	## if abundance become greater than zero, after normalization. 
+	## hard to know how much higher, so, use intensity value, which is not used for noramlization
+	work[!is.na(work$INTENSITY) & work$INTENSITY == 1, "ABUNDANCE"] <- 0
 	
 	## ----------------------------------------------------------- ##
 	## if there are multiple method, need to merge after normalization + before feature selection ##
 	if ( length(unique(work$FRACTION)) > 1 ){
 	    ## check any features measured across all runs.
 	    
-	    tmp <- work[!is.na(work$ABUNDANCE), ]
+	    ## use the subset of data without missing values
+	    ## here 'INTENSITY' is used, instead of 'ABUNDANCE'
+	    tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 0, ]
 	    
 	    check.multiple.run <- xtabs(~ FEATURE + FRACTION, tmp)
 	    check.multiple.run.TF <- check.multiple.run != 0
@@ -1968,6 +1996,10 @@ dataProcess  <-  function(raw,
     
         ## each feature should be measured only in one method
         overlap.feature <- names(check.multiple.run.feature[check.multiple.run.feature > 1 ])
+        
+        ## It should be zero overlap.feature.
+        ## however, this is for double-check. 
+        ## If there are overlapped feature, it means something not works well above filtering.
 	  
         if( length(overlap.feature) > 0 ){
       
@@ -1984,7 +2016,8 @@ dataProcess  <-  function(raw,
       
             stop("Please keep only one intensity of listed features among fractinations from one sample. \n")
         }
-    
+        
+        ## ----------------------------------------------------------- ##
 	    ## merge ##
         ## get which Run id should be merged
         ## decide which two runs should be merged
@@ -2021,7 +2054,7 @@ dataProcess  <-  function(raw,
                 }
                 
                 ## remove extra run NAs
-                tmp <- work[is.na(work$ABUNDANCE), ]
+                tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 0, ]
                 
                 na.count <- reshape2::dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
                 na.count.long <- melt(na.count, id.vars=c('FEATURE'))
@@ -2074,19 +2107,26 @@ dataProcess  <-  function(raw,
                                                                                               collapse = "_"), 'merged', sep="_")
                 }
                 
-                ###### remove extra run NAs
-                tmp <- work[is.na(work$ABUNDANCE), ]
+                ## remove extra run NAs or less than zero 
+                ## because the goal is to find the one fraction should be used for each feature.
+                tmp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE > 0, ]
                 
-                na.count <- reshape2::dcast(FEATURE ~ FRACTION, data=tmp, fun.aggregate=length, value.var='ABUNDANCE')
-                na.count.long <- melt(na.count, id.vars=c('FEATURE'))
-                na.count.long <- na.count.long[na.count.long$value == length(unique(work$newRun)), ]
-                na.count.long$tmp <- paste(na.count.long$FEATURE, na.count.long$variable, sep="_")
+                ## find which fraction should be used for each feature
+                select.fraction <- tmp %>% group_by(FEATURE, FRACTION) %>% summarise(ncount = n())
+                ## check : test <- select.fraction %>% group_by(FEATURE) %>% summarise(nfeature = n())
+                ## it can be less than # of runs, if there are any missing
+                ## just in case that there are zero runs, let's check and remove.
+                select.fraction <- select.fraction %>% filter(ncount != 0)
+                select.fraction$tmp <- paste(select.fraction$FEATURE, select.fraction$FRACTION, sep="_")
                 
+                ## then keep one fraction for each feature
                 work$tmp <- paste(work$FEATURE, work$FRACTION, sep="_")
                 
-                work <- work[-which(work$tmp %in% na.count.long$tmp), ]
-                ##
+                work <- work[which(work$tmp %in% select.fraction$tmp), ]
                 
+                ## new run has merged run id
+                ## original run id can be different by fraction
+                ## now fraction information from run will be removed.
                 work$originalRUN <- work$newRun
                 
                 ## update RUN based on new originalRUN
@@ -2107,12 +2147,6 @@ dataProcess  <-  function(raw,
 	## ------------- ##	
 	## how to decide censored or not
 	## ------------- ##
-	
-	## after normalization, zero intensity could be negative
-	work[!is.na(work$ABUNDANCE) & work$ABUNDANCE < 0, "ABUNDANCE"] <- 0
-	
-	work[!is.na(work$INTENSITY) & work$INTENSITY == 1, "ABUNDANCE"] <- 0
-	
 	
 	### If imputation=TRUE and there is any value for maxQuantileforCensored, apply cutoff for censored missing
 	if ( summaryMethod == "TMP" & MBimpute ) {
@@ -2452,10 +2486,19 @@ dataProcess  <-  function(raw,
 	temp <- unique(work[, c("PROTEIN", "FEATURE")])
 	temp1 <- xtabs(~PROTEIN, data=temp)
 	temp2 <- as.data.frame(temp1[temp1 == 1])
+
 	if (nrow(temp2) > 0) {
-	    npro <- min(c(nrow(temp2), 10)) 
-		message("\n","** " , nrow(temp2), " Proteins have only single transition : Consider excluding this protein from the dataset. (", 
-		        paste(temp2$PROTEIN[1:npro], collapse = ", "), " ...) \n")
+	    if(nrow(temp2) > 1){
+	        npro <- min(c(nrow(temp2), 10)) 
+	        message("\n","** " , nrow(temp2), 
+	                " Proteins have only single transition : Consider excluding this protein from the dataset. (", 
+	                paste(temp2$PROTEIN[1:npro], collapse = ", "), " ...) \n")  
+	    } else {
+	        message("\n","** " , nrow(temp2), 
+	                " Proteins have only single transition : Consider excluding this protein from the dataset. (", 
+	                rownames(temp2), ") \n")  
+	    }
+	   
 	}
   
 	temp <- data.frame("Summary of Samples :")
