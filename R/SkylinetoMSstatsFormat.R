@@ -31,7 +31,16 @@ SkylinetoMSstatsFormat <- function(input,
     colnames(input) <- gsub('\\.', '', colnames(input))
 
     ## use PeptideModifiedSequence for PeptideSequence,
-    colnames(input)[colnames(input) == 'PeptideModifiedSequence'] <- 'PeptideSequence'
+    ## if there are both peptidesequence and peptidemodifiedsequence,
+    ## use peptidemodifiedsequence.
+    if (any(is.element(colnames(input), 'PeptideSequence')) & any(is.element(colnames(input), 'PeptideModifiedSequence'))){
+        input <- input[, -which(colnames(input) %in% 'PeptideSequence')]
+    }
+    
+    if (any(is.element(colnames(input), 'PeptideModifiedSequence'))){
+        colnames(input)[colnames(input) == 'PeptideModifiedSequence'] <- 'PeptideSequence'
+    }
+    
     ## replace 'FileName' with Run
     colnames(input)[colnames(input) == 'FileName'] <- 'Run'
     ## replace 'Area' with Intensity

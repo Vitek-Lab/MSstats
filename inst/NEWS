@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.13.2 [2018-05-29]
+-------------------------
+    BUG FIXES
+	 - dataProcess : fix some reports.
+	 
+
 CHANGES IN VERSION 3.13.1 [2018-05-21]
 -------------------------
     BUG FIXES
