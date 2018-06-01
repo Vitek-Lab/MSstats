@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.13.3 [2018-06-01]
+-------------------------
+    BUG FIXES
+	 - PDtoMSstatsFormat : adjust for different column ids from PD
+
+
 CHANGES IN VERSION 3.13.2 [2018-05-29]
 -------------------------
     BUG FIXES
