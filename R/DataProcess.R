@@ -59,7 +59,8 @@ dataProcess <- function(raw, logTrans=2, normalization="equalizeMedians", nameSt
       "The required inputs: ", toString(requiredInput[missedInput]),
       " were not provided. the required inputs are: \n",
       "Proteinname, PeptideSequence/PeptideModifiedSequence, PrecursorCharge, FragmentIon,
-ProductCharge, IsotopeLabelType, Condition, BioReplicate, Run, Intensity")
+ProductCharge, IsotopeLabelType, Condition, BioReplicate, Run, Intensity.
+The provided inputs are: ", toString(colnames(raw)))
     logging::logwarn(logstring)
   }
 
@@ -442,10 +443,10 @@ group, subject, group_original, subject_original, subject_original_nested, featu
       })
     names <- unique(temp2[, c("PROTEIN", "PEPTIDE", "FEATURE", "ProtFeature")])
     names <- names[with(names, order(ProtFeature)), ]
-    BetweenRunInterferenceFile <- data.frame(names[, c("PROTEIN","PEPTIDE","FEATURE")],
+    BetweenRunInterferenceFile <- data.frame(names[, c("PROTEIN", "PEPTIDE", "FEATURE")],
                                              "BetweenRunInterferenceScore" = temp4)
     BetweenRunInterferenceFile <- BetweenRunInterferenceFile[with(BetweenRunInterferenceFile,
-                                                                  order(PROTEIN,PEPTIDE,FEATURE)), ]
+                                                                  order(PROTEIN, PEPTIDE, FEATURE)), ]
     logging::loginfo("Between run interference score was calculated and saved to a csv file.")
   } else {
     logging::loginfo("Between run interference score was not calculated.")
@@ -907,6 +908,10 @@ runQuantification <- function(data, summaryMethod="TMP", equalFeatureVar=TRUE,
     for (i in 1:length(result_list)) {
       result_class <- class(result_list[[i]])
       if (result_class == "data.frame") {
+        ## FIXME: This was added due to a typeo by atb 201805, it should be removed
+        if (i > 1) {
+          colnames(result_list[[i]]) <- colnames(result)
+        }
         result <- rbind(result, result_list[[i]])
       }
     }
@@ -2760,15 +2765,11 @@ perform_tukey_polish_median <- function(modified_data, label=1,
   tukey_result <- list()
   end <- nlevels(modified_data[["PROTEIN"]])
   bar <- utils::txtProgressBar(max=end, style=3)
+  ## BEGIN OF A STUPIDLY LONG FOR LOOP!
   for (i in 1:end) {
     pct_done <- i / end
     setTxtProgressBar(bar, pct_done)
     sub <- modified_data[modified_data[["PROTEIN"]] == levels(modified_data[["PROTEIN"]])[i], ]
-    if (message.show) {
-      message(paste0("Getting the summary by Tukey's median polish per subplot for protein ",
-                     unique(sub$PROTEIN), "(",
-                     i, " of ", length(unique(modified_data$PROTEIN)), ")"))
-    }
     sub[["FEATURE"]] <- factor(sub[["FEATURE"]])
     sub[["feature.label"]] <- paste(sub[["FEATURE"]], sub[["LABEL"]], sep="_")
     sub[["run.label"]] <- paste(sub[["RUN"]], sub[["LABEL"]], sep="_")
@@ -3252,11 +3253,11 @@ perform_tukey_polish_median <- function(modified_data, label=1,
         }
         ## result <- rbind(result, sub.result)
       } else { ## labeled
-        modified_data_w = reshape2::dcast(run.label ~ FEATURE,
-                                          data=sub,
-                                          value.var="ABUNDANCE",
-                                          keep=TRUE,
-                                          fun.aggregate=sum)
+        modified_data_w <- reshape2::dcast(run.label ~ FEATURE,
+                                           data=sub,
+                                           value.var="ABUNDANCE",
+                                           keep=TRUE,
+                                           fun.aggregate=sum)
         ### SAME QUESTION HERE FIXME FIXME FIXME
         rownames(modified_data_w) <- modified_data_w[["run.label"]]
         modified_data_w <- modified_data_w[, -1]
@@ -3365,11 +3366,15 @@ perform_tukey_polish_median <- function(modified_data, label=1,
         sub.result <- data.frame(
           "Protein" = subtemp[["PROTEIN"]],
           "LogIntensities" = subtemp[["ABUNDANCE"]],
-          "RUN" = subtemp[["RUN"]],
-          "NumMeasuredFeature" = as.vector(numFea),
-          "MissingPercentage" = as.vector(numFeaPercentage),
-          "more50missing" = numFeaTF,
-          "NumImputedFeature" = as.vector(numimpute))
+          "RUN" = subtemp[["RUN"]])
+        sub.result[["NumMeasuredFeature"]] <- as.vector(numFea)
+        sub.result[["MissingPercentage"]] <- as.vector(numFeaPercentage)
+        sub.result[["more50missing"]] <- numFeaTF
+        sub.result[["NumImputedFeature"]] <- as.vector(numimpute)
+        ##"NumMeasuredFeature" = as.vector(numFea),
+        ##"MissingPercentage" = as.vector(numFeaPercentage),
+        ##"more50missing" = numFeaTF,
+        ##"NumImputedFeature" = as.vector(numimpute))
       } else {
         subtempcount <- subtemp
         numFea <- xtabs(~ RUN, subtempcount)
@@ -3387,6 +3392,7 @@ perform_tukey_polish_median <- function(modified_data, label=1,
     }
     tukey_result[[i]] <- sub.result
   } ## loop for proteins
+  ## END OF A STUPIDLY LONG FOR LOOP!
   close(bar)
 
   ## FIXME: when I put the clustering code back together, don't forget this.

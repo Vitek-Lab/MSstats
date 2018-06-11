@@ -1,11 +1,16 @@
 #' Perform group comparisons using lm/lme4
 #'
+#' This function handles the comparison of intensities of each protein using a
+#' linear model of the log2(intensities).  Conceptually it seems very similar to
+#' what one does when using limma.
+#'
 #' @param contrast.matrix  A contrast matrix for comparing
 #' @param data the result from processedData()
+#' @param verbose Print the logging data?
+#' @param scopeOfBioReplication Define the model with respect to biological replicates.
+#' @param scopeOfTechReplication Define the model with respect to technical replicates.
 #' @return a comparison
 #'
-#' Looking at this, I find myself wondering what is to stop me from using limma,
-#'   this is doing much the same thing.
 #' @export
 groupComparison <- function(contrast.matrix=NULL, data=NULL, verbose=TRUE,
                             scopeOfBioReplication="expanded",
@@ -81,7 +86,7 @@ groupComparison <- function(contrast.matrix=NULL, data=NULL, verbose=TRUE,
   ##  group_by(Protein) %>%
   ##  dplyr::do(gather_protein_fc(., contrast.matrix, origGroup, groupinfo)
 
-  pb <- txtProgressBar(max = nlevels(rqall[["Protein"]]), style = 3)
+  pb <- txtProgressBar(max=nlevels(rqall[["Protein"]]), style = 3)
   for (i in 1:nlevels(rqall[["Protein"]])) {
     subset_idx <- rqall[["Protein"]] == levels(rqall[["Protein"]])[i]
     subset <- rqall[subset_idx, ]
@@ -130,14 +135,17 @@ groupComparison <- function(contrast.matrix=NULL, data=NULL, verbose=TRUE,
                                 length(unique(rqall[["Protein"]])), ")"))
       }
       ## fit the model
-      fitted <- try(fit.model.single(contrast.matrix, sub, TechReplicate,
-                                     singleSubject, repeated, origGroup))
+      fitted <- try(fit.model.single(contrast.matrix, sub, origGroup,
+                                     TechReplicate=TechReplicate,
+                                     singleSubject=singleSubject,
+                                     repeated=repeated))
     }
 
     ##
     null_result <- NULL
     if (class(fitted) == "try-error") {
       logging::logwarn(paste0("Cannot analyze ", levels(rqall[["Protein"]])[i], " for comparison."))
+      tmpresult <- data.frame()
       for (k in 1:nrow(contrast.matrix)) {
         fitted[["result"]] <- rbind(tempresult[["result"]],
                                    data.frame(
@@ -180,7 +188,7 @@ groupComparison <- function(contrast.matrix=NULL, data=NULL, verbose=TRUE,
       sub[["fitted"]] <- fitted_data[["valuefitted"]]
     }
 
-    dataafterfit <- rbindlist(list(dataafterfit, sub), fill=TRUE)
+    dataafterfit <- data.table::rbindlist(list(dataafterfit, sub), fill=TRUE)
     ## save fitted model
     outfitted <- c(outfitted, list(fitted[["fittedmodel"]]))
   } ## End of this absurdist for loop.
@@ -196,7 +204,7 @@ groupComparison <- function(contrast.matrix=NULL, data=NULL, verbose=TRUE,
   for (i in 1:length(unique(out[["Label"]]))) {
     outsub <- out[out[["Label"]] == unique(out[["Label"]])[i], ]
     outsub <- data.frame(outsub, adj.pvalue=p.adjust(outsub[["pvalue"]], method="BH"))
-    out.all <- rbindlist(list(out.all, outsub))
+    out.all <- data.table::rbindlist(list(out.all, outsub))
   }
   out.all[["Label"]] <- factor(out.all[["Label"]])
   logging::loginfo("Adjusted p-values are calculated.")
@@ -248,7 +256,7 @@ groupComparison <- function(contrast.matrix=NULL, data=NULL, verbose=TRUE,
 #' Plot some QC metrics given a statistical model
 #'
 #' The first thing I am going to do is rip out the pdf calls, if I want to put
-#' my plots into a file, I can damn well do it myself.
+#' my plots into a file, I can do it myself.
 #'
 #' @param data processedData()
 #' @param type the type of plot
@@ -269,12 +277,12 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
                               which.Protein="all", address="") {
   if (length(setdiff(toupper(type),
                      c("QQPLOTS", "RESIDUALPLOTS"))) != 0) {
-    stop(paste0("Input for type=", type,
-                ". However,'type' should be one of 'QQplots', 'ResidualPlots' ."))
+    stop("Input for type=", type,
+         ". However,'type' should be one of 'QQplots', 'ResidualPlots' .")
   }
-  data <- data[!is.na(data$fitted), ]
-  data <- data[!is.na(data$residuals), ]
-  data$PROTEIN <- factor(data$PROTEIN)
+  data <- data[!is.na(data[["fitted"]]), ]
+  data <- data[!is.na(data[["residuals"]]), ]
+  data$PROTEIN <- factor(data[["PROTEIN"]])
 
   ## choose Proteins or not
   if (which.Protein != "all") {
@@ -282,19 +290,19 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
     if (is.character(which.Protein)) {
       temp.name <- which.Protein
       ## message if name of Protein is wrong.
-      if (length(setdiff(temp.name, unique(data$PROTEIN))) > 0) {
-        stop(paste0("Please check protein name. Dataset does not have this protein. -",
-                    toString(temp.name)))
+      if (length(setdiff(temp.name, unique(data[["PROTEIN"]]))) > 0) {
+        stop("Please check protein name. Dataset does not have this protein. -",
+             toString(temp.name))
       }
     }
 
     ## check which.Protein is order number of Protein
     if (is.numeric(which.Protein)) {
-      temp.name <- levels(data$PROTEIN)[which.Protein]
+      temp.name <- levels(data[["PROTEIN"]])[which.Protein]
       ## message if name of Protein is wrong.
-      if (length(levels(data$PROTEIN)) < max(which.Protein))
-        stop(paste0("Please check your selection of proteins. There are ",
-                    length(levels(data$PROTEIN)), " proteins in this dataset."))
+      if (length(levels(data[["PROTEIN"]])) < max(which.Protein))
+        stop("Please check your selection of proteins. There are ",
+             length(levels(data[["PROTEIN"]])), " proteins in this dataset.")
     }
     ## use only assigned proteins
     data <- data[which(data$PROTEIN %in% temp.name), ]
@@ -349,9 +357,9 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
             title=element_text(size=axis.size + 8, vjust=1.5),
             legend.position="none")
         print(ptemp)
-        message(paste("Drew the QQ plot for ",
-                      unique(sub$PROTEIN), "(",
-                      i, " of ", length(unique(data$PROTEIN)), ")"))
+        message("Drew the QQ plot for ",
+                unique(sub$PROTEIN), "(",
+                i, " of ", length(unique(data$PROTEIN)), ")")
       } ## end loop
 
       if (address!=FALSE) {
@@ -400,9 +408,9 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
               strip.text.x=element_text(size=text.size),
               legend.position="none")
           print(ptemp)
-          message(paste("Drew the QQ plot for ",
-                        unique(sub$PROTEIN), "(", i, " of ",
-                        length(unique(data$PROTEIN)), ")"))
+          message("Drew the QQ plot for ",
+                  unique(sub$PROTEIN), "(", i, " of ",
+                  length(unique(data$PROTEIN)), ")")
         }
 
         ## label-based : seperate endogenous and reference
@@ -452,9 +460,9 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
               strip.text.x=element_text(size=text.size),
               legend.position="none")
           print(ptemp)
-          message(paste("Drew the QQ plot for ",
-                        unique(sub$PROTEIN), "(", i, " of ",
-                        length(unique(data$PROTEIN)), ")"))
+          message("Drew the QQ plot for ",
+                  unique(sub$PROTEIN), "(", i, " of ",
+                  length(unique(data$PROTEIN)), ")")
         }
       } ## end loop
 
@@ -541,9 +549,9 @@ modelBasedQCPlots <- function(data, type, axis.size=10, dot.size=3, text.size=7,
             legend.position="none")
       }
       print(ptemp)
-      message(paste("Drew the residual plot for ",
-                    unique(sub$PROTEIN), "(", i, " of ",
-                    length(unique(data$PROTEIN)), ")"))
+      message("Drew the residual plot for ",
+              unique(sub$PROTEIN), "(", i, " of ",
+              length(unique(data[["PROTEIN"]])), ")")
     }
     if (address!=FALSE) {
       dev.off()
@@ -577,8 +585,8 @@ checkGroupComparisonAgreement <- function(sub1, contrast.matrix) {
 ## check repeated (case-control? or time-course?)
 #############################################
 checkRepeated <- function(data) {
-  data.light <- data[data$LABEL=="L", ]
-  subjectByGroup <- table(data.light$SUBJECT_ORIGINAL, data.light$GROUP_ORIGINAL)
+  data.light <- data[data[["LABEL"]] == "L", ]
+  subjectByGroup <- table(data.light[["SUBJECT_ORIGINAL"]], data.light[["GROUP_ORIGINAL"]])
   subjectAppearances <- apply(subjectByGroup, 1, function(x) sum(x > 0))
   crossedIndicator <- any(subjectAppearances > 1)
   return(crossedIndicator)
@@ -589,7 +597,7 @@ checkRepeated <- function(data) {
 #############################################
 checkSingleSubject <- function(data) {
   temp <- unique(data[, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
-  temp$GROUP_ORIGINAL <- factor(temp$GROUP_ORIGINAL)
+  temp[["GROUP_ORIGINAL"]] <- factor(temp[["GROUP_ORIGINAL"]])
   temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
   singleSubject <- all(temp1 == "1")
   return(singleSubject)
@@ -599,7 +607,7 @@ checkSingleSubject <- function(data) {
 ## check checkSingleFeature
 #############################################
 checkSingleFeature <- function(data) {
-  sigleFeature <- length(unique(data$FEATURE)) < 2
+  sigleFeature <- length(unique(data[["FEATURE"]])) < 2
   return(sigleFeature)
 }
 
@@ -608,7 +616,7 @@ checkSingleFeature <- function(data) {
 #############################################
 checkTechReplicate <- function(data) {
   temp <- unique(data[, c("SUBJECT_NESTED", "RUN")])
-  temp$SUBJECT_NESTED <- factor(temp$SUBJECT_NESTED)
+  temp[["SUBJECT_NESTED"]] <- factor(temp[["SUBJECT_NESTED"]])
   temp1 <- xtabs(~ SUBJECT_NESTED, data=temp)
   TechReplicate <- all(temp1 != "1")
   return(TechReplicate)
@@ -619,8 +627,8 @@ checkTechReplicate <- function(data) {
 #############################################
 ## it might not be right
 checkRunbyFeature <- function(data) {
-  data.light <- data[data$LABEL=="L", ]
-  RunByFeature <- table(data.light$RUN, data.light$FEATURE)
+  data.light <- data[data[["LABEL"]] == "L", ]
+  RunByFeature <- table(data.light[["RUN"]], data.light[["FEATURE"]])
   emptyRow <- apply(RunByFeature, 1, sum)
   noRunFeature <- any(emptyRow == 0)
   return(noRunFeature)
@@ -640,18 +648,18 @@ checkMissGroupByFeature <- function(data) {
 #############################################
 checkMissRunByFeature <- function(data) {
   ## temp <- unique(data[,c("RUN","FEATURE")])
-  temp <- unique(data[data$LABEL == "L", c("RUN", "FEATURE")])
+  temp <- unique(data[data[["LABEL"]] == "L", c("RUN", "FEATURE")])
   temp1 <- xtabs(~ RUN, data=temp)
   ##return(any(temp1!=temp1[1]))
-  return(any(temp1 != length(unique(data$FEATURE))))
+  return(any(temp1 != length(unique(data[["FEATURE"]]))))
 }
 
 #############################################
 ## check checkMissFeature for label-free missingness
 #############################################
 checkMissFeature <- function(data) {
-  dataByPeptide <- tapply(as.numeric(data$ABUNDANCE),
-                          list(data$FEATURE, data$GROUP_ORIGINAL),
+  dataByPeptide <- tapply(as.numeric(data[["ABUNDANCE"]]),
+                          list(data[["FEATURE"]], data[["GROUP_ORIGINAL"]]),
                           function(x) sum(x > 0, na.rm = TRUE))
   missPeptideInd <- apply(dataByPeptide, 1, function(x) any(x == 0 | is.na(x)))
   missingPeptides <- names(missPeptideInd)[missPeptideInd == TRUE]
@@ -663,7 +671,7 @@ checkMissFeature <- function(data) {
 #############################################
 checkUnequalSubject <- function(data) {
   ##temp <- unique(data[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])
-  temp <- unique(data[data$LABEL == "L", c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
+  temp <- unique(data[data[["LABEL"]] == "L", c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL")])
   temp1 <- xtabs(~ GROUP_ORIGINAL, data=temp)
   return(any(temp1 != temp1[1]))
 }
@@ -788,6 +796,7 @@ fit.model.single <- function(contrast.matrix, sub, origGroup, TechReplicate=TRUE
       ## choose each comparison
       contrast.matrix.sub <- matrix(contrast.matrix[k, ], nrow=1)
       row.names(contrast.matrix.sub) <- row.names(contrast.matrix)[k]
+      colnames(contrast.matrix.sub) <- colnames(contrast.matrix)
       if (length(emptycondition) != 0) {
         ## if there are any completely missing in any condition,
         ## one by one comparison is simple. However, for linear combination of condition can be complicated
