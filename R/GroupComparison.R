@@ -24,7 +24,13 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
     if (length(grep(filenaming, allfiles)) == 0) {
     
         finalfile <- "msstats.log"
-        processout <- NULL
+        
+        session <- sessionInfo()
+        sink("sessionInfo.txt")
+        print(session)
+        sink()
+        
+        processout <- as.matrix(read.table("sessionInfo.txt", header=TRUE, sep="\t"))
     
     } else {
     

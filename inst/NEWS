@@ -1,4 +1,42 @@
+CHANGES IN VERSION 3.13.3 [2018-06-01]
+-------------------------
+    BUG FIXES
+	 - PDtoMSstatsFormat : adjust for different column ids from PD
 
+
+CHANGES IN VERSION 3.13.2 [2018-05-29]
+-------------------------
+    BUG FIXES
+	 - dataProcess : fix some reports.
+	 
+
+CHANGES IN VERSION 3.13.1 [2018-05-21]
+-------------------------
+    BUG FIXES
+	 - dataProcess : report summary of proteins with single feature.
+	 - dataProcess : cluster=NULL is default. There is the issue for makecluster.
+	 - dataProcess : fix the bug for fraction case.
+	 
+    RETIRED FEATURES
+     - transformMSnSetToMSstats, transformMSstatsToMSnSet are retired
+
+CHANGES IN VERSION 3.11.6 [2018-04-23]
+-------------------------
+    BUG FIXES
+	 - SkylinetoMSstatsFormat : fix the inconsistency of column name from Skyline output
+	 
+	 
+CHANGES IN VERSION 3.11.5 [2018-02-22]
+-------------------------
+    BUG FIXES
+	 - add the package, stringr, for DIAUmpiretoMSstatsFormat function
+	 
+CHANGES IN VERSION 3.11.4 [2018-02-19]
+-------------------------
+    BUG FIXES
+	 - add set.seed for sample size calculation of classification
+	
+	 
 CHANGES IN VERSION 3.11.3 [2018-02-15]
 -------------------------
     BUG FIXES

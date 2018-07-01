@@ -27,45 +27,20 @@ SkylinetoMSstatsFormat <- function(input,
     ## 1. Rename column names
     ##############################
   
-    if (is.element(c('Protein.Name'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Protein.Name'] <- 'ProteinName'
-    }
-  
-    if (is.element(c('Peptide.Modified.Sequence'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Peptide.Modified.Sequence'] <- 'PeptideModifiedSequence'
-    }
-  
-    if (is.element(c('Precursor.Charge'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Precursor.Charge'] <- 'PrecursorCharge'
-    }
-  
-    if (is.element(c('Fragment.Ion'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Fragment.Ion'] <- 'FragmentIon'
-    }
-  
-    if (is.element(c('Product.Charge'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Product.Charge'] <- 'ProductCharge'
-    }
-  
-    if (is.element(c('Isotope.Label.Type'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Isotope.Label.Type'] <- 'IsotopeLabelType'
-    }
-  
-    if (is.element(c('File.Name'), colnames(input))) {
-        colnames(input)[colnames(input) == 'File.Name'] <- 'FileName'
-    }
-  
-    if (is.element(c('Standard.Type'), colnames(input))) {
-        colnames(input)[colnames(input) == 'Standard.Type'] <- 'StandardType'
-    }
-  
-    ## remove PeptideSequence,
-    if (sum(is.element(c('PeptideSequence', 'PeptideModifiedSequence'), colnames(input))) == 2) {
-        input <- input[, -which(colnames(input) %in% 'PeptideSequence'), ]    
-    }
+    ## replace '.' between words with no spzce
+    colnames(input) <- gsub('\\.', '', colnames(input))
 
     ## use PeptideModifiedSequence for PeptideSequence,
-    colnames(input)[colnames(input) == 'PeptideModifiedSequence'] <- 'PeptideSequence'
+    ## if there are both peptidesequence and peptidemodifiedsequence,
+    ## use peptidemodifiedsequence.
+    if (any(is.element(colnames(input), 'PeptideSequence')) & any(is.element(colnames(input), 'PeptideModifiedSequence'))){
+        input <- input[, -which(colnames(input) %in% 'PeptideSequence')]
+    }
+    
+    if (any(is.element(colnames(input), 'PeptideModifiedSequence'))){
+        colnames(input)[colnames(input) == 'PeptideModifiedSequence'] <- 'PeptideSequence'
+    }
+    
     ## replace 'FileName' with Run
     colnames(input)[colnames(input) == 'FileName'] <- 'Run'
     ## replace 'Area' with Intensity
