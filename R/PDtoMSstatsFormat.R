@@ -29,10 +29,13 @@ PDtoMSstatsFormat <- function(input,
         which.quant <- 'Area'
     } else if (which.quantification == 'Precursor.Area') {
         which.quant <- 'Precursor.Area'
+    } else if (which.quantification == 'Precursor.Abundance') {
+        which.quant <- 'Precursor.Abundance'
     }
     
     if (is.null(which.quant)) {
-        stop('** Please select which columns should be used for quantified intensities, among three options (Intensity, Area, Precursor.Area).')
+        stop('** Please select which columns should be used for quantified intensities, 
+             among three options (Intensity, Area, Precursor.Area, Precursor.Abundance).')
     }
     
     if (which.quant == 'Intensity' & !is.element('Intensity', colnames(input))) {
@@ -126,22 +129,18 @@ PDtoMSstatsFormat <- function(input,
     ################################################
   
     input <- input[, which(colnames(input) %in% c(which.pro, "X..Proteins",
-                                                "Sequence", "Modifications", "Charge",
+                                                which.seq, "Modifications", "Charge",
                                                 "Spectrum.File", which.quant))]
     
-    colnames(input)[colnames(input) == 'Protein.Group.Accessions'] <- 'ProteinName'
-    colnames(input)[colnames(input) == 'Protein.Accessions'] <- 'ProteinName'
-    colnames(input)[colnames(input) == 'Master.Protein.Accessions'] <- 'ProteinName'
+    colnames(input)[colnames(input) == which.pro] <- 'ProteinName'
     
     colnames(input)[colnames(input) == 'X..Proteins'] <- 'numProtein'
-    colnames(input)[colnames(input) == 'Sequence'] <- 'PeptideSequence'
-    colnames(input)[colnames(input) == 'Annotated.Sequence'] <- 'PeptideSequence'
-    
+    colnames(input)[colnames(input) == which.seq] <- 'PeptideSequence'
+
     colnames(input)[colnames(input) == 'Spectrum.File'] <- 'Run'
     
-    colnames(input)[colnames(input) == 'Precursor.Area'] <- 'Intensity'
-    colnames(input)[colnames(input) == 'Area'] <- 'Intensity'
-    
+    colnames(input)[colnames(input) == which.quant] <- 'Intensity'
+
   
     ################################################
     ## 2. remove peptides which are used in more than one protein

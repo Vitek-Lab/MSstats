@@ -14,7 +14,7 @@ The package includes four main sections: I. explanatory data analysis (data pre-
 
 Examples of data in MSstats are (1) example of required input data format from label-based SRM experiment \code{\link{SRMRawData}}; (2) example of required input data format from DDA experiment \code{\link{DDARawData}}; (3) example of required input data format from label-free SWATH experiment \code{\link{DIARawData}}.
 
-The functions for converting the output from spectral processing tools, (1) Skyline, \code{\link{SkylinetoMSstatsFormat}}, (2) MaxQuant, \code{\link{MaxQtoMSstatsFormat}}, (3) Progenesis, \code{\link{ProgenesistoMSstatsFormat}}, (4) Spectronaut, \code{\link{SpectronauttoMSstatsFormat}}, and (5) Proteome discovere, \code{\link{PDtoMSstatsFormat}} are available.
+The functions for converting the output from spectral processing tools, (1) Skyline, \code{\link{SkylinetoMSstatsFormat}}, (2) MaxQuant, \code{\link{MaxQtoMSstatsFormat}}, (3) Progenesis, \code{\link{ProgenesistoMSstatsFormat}}, (4) Spectronaut, \code{\link{SpectronauttoMSstatsFormat}}, (5) Proteome discovere, \code{\link{PDtoMSstatsFormat}}, (6) OpenMS, \code{\link{OpenMStoMSstatsFormat}}, (7) OpenSWATH, \code{\link{OpenSWATHtoMSstatsFormat}}, and (8) DIAUmpire, \code{\link{DIAUmpiretoMSstatsFormat}}are available.
 }
 
 \author{Meena Choi, Cyril Galitzine, Tsung-Heng Tsai, Olga Vitek. 
