@@ -29,10 +29,21 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
     
     if (is.null(annotation)) {
         stop('** Please prepare \'annotation\' as one of input.')
+    } else {
+        ## check annotation
+        required.annotation <- c('Condition', 'BioReplicate', 'Run')
+        
+        if (!all(required.annotation %in% colnames(annotation))) {
+            
+            missedAnnotation <- which(!(required.annotation %in% colnames(annotation)))
+            
+            stop(paste("**", toString(required.annotation[missedAnnotation]), 
+                       "is not provided in Annotation. Please check the annotation file."))
+        } else {
+            ### annotation.txt : Condition, BioReplicate, Run, 
+            annot <- annotation
+        }
     }
-    
-    ### annotation.txt : Raw.file, Condition, BioReplicate, Run, (IsotopeLabelType)
-    annot <- annotation
     
     ########################
     ## 1.  get selected frag from DIA-Umpire

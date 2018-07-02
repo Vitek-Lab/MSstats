@@ -38,6 +38,17 @@ MaxQtoMSstatsFormat <- function(evidence,
 	## annotation.txt : Raw.file, Condition, BioReplicate, Run, (IsotopeLabelType)
 	annot <- annotation
 	
+	## check annotation
+	required.annotation <- c('Raw.file', 'Condition', 'BioReplicate', 'Run', 'IsotopeLabelType')
+	
+	if (!all(required.annotation %in% colnames(annot))) {
+	    
+	    missedAnnotation <- which(!(required.annotation %in% colnames(annot)))
+	    
+	    stop(paste("**", toString(required.annotation[missedAnnotation]), 
+	               "is not provided in Annotation. Please check the annotation file."))
+	}
+	
 	################################################
 	## 1.1 remove contaminant, reverse proteinID 
 	## Contaminant, Reverse column in evidence
