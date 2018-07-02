@@ -1,3 +1,10 @@
+CHANGES IN VERSION 3.13.4 [2018-07-02]
+-------------------------
+    UPDATED FEATURES
+	 - designSampleSizeClassification and designSampleSizeClassificationPlots 
+	 - Converter functions check the required column of annootation file.
+
+
 CHANGES IN VERSION 3.13.3 [2018-06-01]
 -------------------------
     BUG FIXES

@@ -50,7 +50,19 @@ OpenMStoMSstatsFormat <- function(input,
     if (is.null(annotation)) {
         annotinfo <- unique(input[, c("Run", "Condition", 'BioReplicate')])	
     } else {
-        annotinfo <- annotation
+        
+        ## check annotation
+        required.annotation <- c('Condition', 'BioReplicate', 'Run')
+        
+        if (!all(required.annotation %in% colnames(annotation))) {
+            
+            missedAnnotation <- which(!(required.annotation %in% colnames(annotation)))
+            
+            stop(paste("**", toString(required.annotation[missedAnnotation]), 
+                       "is not provided in Annotation. Please check the annotation file."))
+        } else {
+            annotinfo <- annotation
+        }
     }
     
     ##############################

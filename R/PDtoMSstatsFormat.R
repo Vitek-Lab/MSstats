@@ -16,6 +16,18 @@ PDtoMSstatsFormat <- function(input,
                               which.proteinid = 'Protein.Group.Accessions',
                               which.sequence = 'Sequence'){
 
+    ## check annotation
+    required.annotation <- c('Condition', 'BioReplicate', 'Run')
+    
+    if (!all(required.annotation %in% colnames(annotation))) {
+        
+        missedAnnotation <- which(!(required.annotation %in% colnames(annotation)))
+        
+        stop(paste("**", toString(required.annotation[missedAnnotation]), 
+                   "is not provided in Annotation. Please check the annotation file.",
+                   "'Run' will be matched with 'Spectrum.File' "))
+    }
+    
     ################################################
     ## 0.1. which intensity : Precursor.Area vs. Intensity vs Area
     ################################################
@@ -244,7 +256,38 @@ PDtoMSstatsFormat <- function(input,
     rm(input.final)
     
     ##############################
-    ##  6. remove features which has 1 or 2 measurements across runs
+    ## 6. remove featuares with all na or zero
+    ## some rows have all zero values across all MS runs. They should be removed.
+    ##############################
+    
+    input$fea <- paste(input$PeptideModifiedSequence,
+                       input$PrecursorCharge,
+                       input$FragmentIon,
+                       input$ProductCharge,
+                       sep="_")
+    
+    inputtmp <- input[!is.na(input$Intensity) & input$Intensity > 1, ]
+    
+    count <- inputtmp %>% group_by(fea) %>% summarise(length=length(Intensity))
+    
+    ## get feature with all NA or zeros
+    getfea <- count[count$length > 0, 'fea']
+    
+    if (nrow(getfea) > 0) {
+        
+        nfea.remove <- length(unique(input$fea))-nrow(getfea)
+        input <- input[which(input$fea %in% getfea$fea), ]
+        
+        message(paste0('** ', nfea.remove, ' features have all NAs or zero intensity values and are removed.'))
+        
+    }
+    
+    rm(inputtmp)
+    input <- input[, -which(colnames(input) %in% c('fea'))]
+    
+    
+    ##############################
+    ##  7. remove features which has 1 or 2 measurements across runs
     ##############################
     if (fewMeasurements=="remove") {
         
@@ -265,7 +308,7 @@ PDtoMSstatsFormat <- function(input,
     }
   
     ##############################
-    ##  7. remove proteins with only one peptide and charge per protein
+    ##  8. remove proteins with only one peptide and charge per protein
     ##############################
 	
 	if (removeProtein_with1Peptide) {

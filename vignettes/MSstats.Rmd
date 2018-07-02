@@ -383,44 +383,42 @@ designSampleSizePlots(data=result.power)
 
 ## designSampleSizeClassification
 
-For classification problem (such as disgnosys of disease), simulation is utilized to estimate the optimal sample size of training data under different size of validation data, including Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment. The function fits intensity-based linear model and uses variance components and mean abundance to simulate new data with different sample size. Training data and validation data are simulated independently. Random forest model is fitted on train data and used to predict the validation data. The above procedure is repeated several times. Mean predictive accuracy and variance under different size of training data and validation data are reported. For each size of validation data, the number of training samples with best predictive accuracy is also returned.
-
+For classification problem (such as disgnosys of disease), simulation is utilized to estimate the optimal size of training data, including Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment. The function fits intensity-based linear model based on the input preliminary data and uses the estimated variance components to simulate new training data with different protein number and sample size. Random forest model is fitted on train data and used to predict the input preliminary data. The above procedure is repeated several times. Mean predictive accuracy and variance under different size of training data are reported. 
 
 ### Arguments
 
 * `data` : output from function `dataProcess`.
-* `n` : number of steps, which is the number of different sample sizes to simulate. Default is `5`.
-* `step` : number of samples per condition to increase at each step. Default is `20`.
-* `noise` : the fraction of protein variance to change at each step. Positive value indicates increasing noise in the data while negative value means decreasing noise. Default is `0.0`.
-* `iter` : number of times to repeat simulation experiments. Default is `5`.
+* `n_sample` : number of datasets to simulate. Default is `5`.
+* `sample_incr` : number of samples per condition to increase at each step. Default is `20`.
+* `protein_desc` : the fraction of protein to decrease at each step. Proteins are ranked based on their mean abundance across all the samples. Default is `0.2`, which means $0.2*$total number of proteins are reduced each time.
+* `iter` : number of times to repeat simulation experiments. Default is `10`.
 
 
 ### Example
 ```{r, eval=FALSE}
-# Consider quantitative data (i.e. QuantData) from yeast study.
-# A time course study with ten time points of interests and three biological replicates.
-QuantSRM <- dataProcess(SRMRawData)
-# estimate the mean predictive accuray under different sizes of training data and validation data
-# n is the number of biological replicates per condition
-result.srm <- designSampleSizeClassification(data=QuantSRM, n=5, step=10)
-result.srm$meanPA # mean predictive accuracy
-
 # Consider another training set from a colorectal cancer study
 # Subjects are from control group or colorectal cancer group
 # 72 proteins were targeted with SRM
 require(MSstatsBioData)
 set.seed(1235)
 data(SRM_crc_training)
-QuantCRCSRM <- dataProcess(SRM_crc_training)
-# estimate the mean predictive accuray under different sizes of training data and validation data
-# n is the number of biological replicates per condition
-crc.srm <- designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
-crc.srm$meanPA # mean predictive accuracy
+QuantCRCSRM <- dataProcess(SRM_crc_training, normalization = FALSE)
+# estimate the mean predictive accuray under different sizes of training data
+# n_sample is the number of different sample size to simulate
+# Datasets with 10 different sample size and 3 different protein numbers are simulated 
+# Each time 10 samples per condition are increased and 72*0.33 = 24 proteins are descreased.
+# Simulation procedure is repeated 100 times
+result.crc.srm <- designSampleSizeClassification(data=QuantCRCSRM, 
+                                                 n_sample = 10, 
+                                                 sample_incr = 10, 
+                                                 protein_desc = 0.33, 
+                                                 iter = 50)
+result.crc.srm$meanPA # mean predictive accuracy
 ```
 
 ## designSampleSizeClassificationPlots
 
-To illustrate the mean classification accuracy under different size of training data and validation data. The input is the result from function `designSampleSizeClassification`.
+To illustrate the mean classification accuracy under different size of training data. The input is the result from function `designSampleSizeClassification`.
 
 ### Arguments
 * `data` : output from function `designSampleSizeClassification`. 
@@ -428,15 +426,7 @@ To illustrate the mean classification accuracy under different size of training 
 ### Example
 
 ```{r, eval=FALSE}
-# Consider another training set from a colorectal cancer study
-# Subjects are from control group or colorectal cancer group
-# 72 proteins were targeted with SRM
-require(MSstatsBioData)
-set.seed(1235)
-data(SRM_crc_training)
-QuantCRCSRM <- dataProcess(SRM_crc_training)
-crc.srm <- designSampleSizeClassification(data=QuantCRCSRM, n=10, step=10)
-designSampleSizeClassificationPlots(data=crc.srm)
+designSampleSizeClassificationPlots(data=result.crc.srm)
 ```
 
 ## quantification
