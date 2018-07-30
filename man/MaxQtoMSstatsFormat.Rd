@@ -20,7 +20,7 @@ MaxQtoMSstatsFormat(evidence,
   \item{evidence}{name of 'evidence.txt' data, which includes feature-level data.}
   \item{annotation}{name of 'annotation.txt' data which includes Raw.file, Condition, BioReplicate, Run, IsotopeLabelType information.}
   \item{proteinGroups}{name of 'proteinGroups.txt' data. It needs to matching protein group ID. If proteinGroups=NULL, use 'Proteins' column in 'evidence.txt'.}
-  \item{proteinID}{'Proteins'(default) or 'proteinGroups' in 'proteinGroup.txt' for Protein ID.}
+  \item{proteinID}{'Proteins'(default) or 'Leading.razor.protein' for Protein ID.}
   \item{useUniquePeptide}{TRUE(default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.}
   \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of all.
 }

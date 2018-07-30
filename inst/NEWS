@@ -1,3 +1,9 @@
+CHANGES IN VERSION 3.13.5 [2018-07-30]
+-------------------------
+    BUG FIXES
+	 - MaxQtoMSstatsFormat : 'Leading.razor.protein' in evidence can be used for protein IDs.
+	 - MaxQtoMSstatsFormat : 'Run' column is not required in annotation.
+	 
 CHANGES IN VERSION 3.13.4 [2018-07-02]
 -------------------------
     UPDATED FEATURES

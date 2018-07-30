@@ -3,7 +3,7 @@
 ## annotation : annotation.txt - Raw.file, Condition, BioReplicate, Run, (IsotopeLabelType)
 ## proteinGroups : proteinGroups.txt . if proteinGroups=NULL, use 'Proteins'. if not, use proteinGroups information for matching Protein group ID
 
-## proteinID : Proteins or proteinGroupID
+## proteinID : Proteins or Leading.razor.protein
 ## useUniquePeptide : remove peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
 ## summaryforMultipleRows : max or sum - when there are multiple measurements for certain feature and certain fun, use highest or sum of all.
 ## fewMeasurements : if 1 or 2 measurements across runs per feature, 'remove' will remove those featuares. It can affected for unequal variance analysis.
@@ -30,16 +30,20 @@ MaxQtoMSstatsFormat <- function(evidence,
         stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
     }
     
+    if (!is.element(proteinID, c('Proteins', 'Leading.razor.protein'))) {
+        stop('** Please select \'Proteins\' or \'Leading.razor.proteins\' for \'proteinID\'.')
+    }
+    
 	experiment <- "DDA"
 	
 	## evidence.txt file
 	infile <- evidence
 	
-	## annotation.txt : Raw.file, Condition, BioReplicate, Run, (IsotopeLabelType)
+	## annotation.txt : Raw.file, Condition, BioReplicate, (IsotopeLabelType)
 	annot <- annotation
 	
 	## check annotation
-	required.annotation <- c('Raw.file', 'Condition', 'BioReplicate', 'Run', 'IsotopeLabelType')
+	required.annotation <- c('Raw.file', 'Condition', 'BioReplicate', 'IsotopeLabelType')
 	
 	if (!all(required.annotation %in% colnames(annot))) {
 	    
@@ -140,12 +144,24 @@ MaxQtoMSstatsFormat <- function(evidence,
 		
 	} else {
 		
-		infile <- infile[c("uniqueProteins", "Protein.group.IDs", 
-                         "Sequence", "Modified.sequence", "Modifications", "Charge", 
-                         "Raw.file", "Intensity", "Retention.time", "id")]
+	    get.column <- c("Protein.group.IDs", 
+	                    "Sequence", "Modified.sequence", "Modifications", "Charge", 
+	                    "Raw.file", "Intensity", "Retention.time", "id")
+	    
+	    if (proteinID == 'Proteins') {
+	        get.column <- c(get.column, 'uniqueProteins')
+	    } else {
+	        get.column <- c(get.column, 'Leading.razor.protein')
+	    }
+	    
+		infile <- infile[, get.column]
 	}
 	
-	colnames(infile)[colnames(infile) == "uniqueProteins"] <- "Proteins"
+	if (proteinID == 'Proteins') {
+	    colnames(infile)[colnames(infile) == "uniqueProteins"] <- "Proteins"
+	} else {
+	    colnames(infile)[colnames(infile) == "Leading.razor.protein"] <- "Proteins"
+	}
 	
 	## remove "_" at the beginning and end
 	infile$Modified.sequence <- gsub("_", "", infile$Modified.sequence)
