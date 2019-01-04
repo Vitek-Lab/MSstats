@@ -1,7 +1,7 @@
 Package: MSstats
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
-Version: 3.15.0
+Version: 3.15.1
 Date: 2018-07-30
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
 Authors@R: c(
@@ -19,7 +19,7 @@ Imports: lme4, marray, limma, gplots, ggplot2, methods, grid,
         foreach, data.table, MASS, dplyr, tidyr, stringr, randomForest
 Suggests: BiocStyle, knitr, rmarkdown, MSstatsBioData
 VignetteBuilder: knitr
-biocViews: MassSpectrometry, Proteomics, Software, Normalization,
+biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
 LazyData: true
 URL: http://msstats.org
