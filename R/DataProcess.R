@@ -6,6 +6,7 @@
 #' @import survival 
 #' @import preprocessCore 
 #' @import MASS
+#' @import statmod
 #' @importFrom reshape2 dcast melt
 #' @importFrom stats medpolish aggregate t.test lm summary.lm fitted resid p.adjust
 #' @importFrom stats C approx coef cor dist formula loess median na.omit
@@ -25,7 +26,7 @@ dataProcess  <-  function(raw,
                           address="",
                           fillIncompleteRows=TRUE,
                           featureSubset="all",
-                          remove_noninformative_feature_outlier=FALSE,
+                          remove_uninformative_feature_outlier=FALSE,
                           n_top_feature=3,
                           summaryMethod="TMP",
                           equalFeatureVar=TRUE,
@@ -2311,15 +2312,52 @@ dataProcess  <-  function(raw,
 
     if (featureSubset == "highQuality") {
 	    
-        message("** Selecting high quality features temporarily defaults to featureSubset = top3. 
-                Updates for this option will be available in the next release.")
-        
-        featureSubset <- 'top3'
-        
-        processout <- rbind(processout, c("** Selecting high quality features temporarily defaults to featureSubset = top3. 
-                                          Updates for this option will be available in the next release."))
-        
+        ### v3.15.2 (2019/04/28) : by Tsung-Heng
+        message("** Flag uninformative feature and outliers by feature selection algorithm.")
+        processout <- rbind(processout, c("** Flag uninformative feature and outliers by feature selection algorithm."))
         write.table(processout, file=finalfile, row.names=FALSE)
+        
+        work <- flag_noninf_data_nbftr(work)
+        # work <- flag_noninf_data(work)
+        
+        #if(remove_uninformative_feature_outlier){
+            
+            ### for heavy outlier, always need to replace with NA
+            # work[work$feature_quality == 'Noninformative' & work$LABEL == 'H', 'ABUNDANCE'] <- NA
+            # work[work$is_outlier & work$LABEL == 'H', 'ABUNDANCE'] <- NA
+            
+            ### replace with censored missing
+            #if (!is.null(censoredInt) & censoredInt == "0") {
+                
+                ### [TEST] ###
+                # work[work$feature_quality == 'Noninformative' & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                # work[work$is_outlier & work$LABEL == 'L', 'ABUNDANCE'] <- 0
+                # work[work$is_outlier & work$LABEL == 'L', 'censored'] <- TRUE
+                # work[work$is_outlier & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                
+                # work[work$feature_quality == 'Noninformative' & work$LABEL == 'L', 'ABUNDANCE'] <- 0
+                # work[work$is_outlier & work$LABEL == 'L', 'ABUNDANCE'] <- 0
+                ### [TEST] ###
+                
+            #} else { ## if censoredInt= NA or null, replace with NA
+                
+                ### [TEST] ###
+                # work[work$feature_quality == 'Noninformative' & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                # work[work$is_outlier & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                # work[work$is_outlier & work$LABEL == 'L', 'censored'] <- TRUE
+                # work[work$is_outlier & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                
+                # work[work$feature_quality == 'Noninformative' & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                # work[work$is_outlier & work$LABEL == 'L', 'ABUNDANCE'] <- NA
+                ### [TEST] ###
+            #}
+            
+            # message("** Filtered out noninformative feature and outliers.")
+            # processout <- rbind(processout, c("** Filtered out noninformative feature and outliers."))
+            # write.table(processout, file=finalfile, row.names=FALSE)
+        #}
+        
+        ### end : v3.15.2 (2019/04/28) : by Tsung-Heng
 	}
   
 	if (featureSubset == "top3") {
@@ -2566,7 +2604,7 @@ dataProcess  <-  function(raw,
 	} 
   
 	processout <- rbind(processout, c(paste0("  # run with 75% missing observations: ", sum(run.missing < 0.25))))
-	if (sum(run.missing<0.25)!=0) {
+	if (sum(run.missing < 0.25) != 0) {
 		processout <- rbind(processout, "    -> ", paste("RUN", names(without[run.missing < 0.25]), sep=" "))
   	}
   	write.table(processout, file=finalfile, row.names=FALSE)
@@ -2607,6 +2645,7 @@ dataProcess  <-  function(raw,
 	rqresult <- try(.runQuantification(work, summaryMethod, equalFeatureVar, 
 	                                   cutoffCensored, censoredInt, remove50missing, MBimpute, 
 	                                   original_scale=FALSE, logsum=FALSE, featureSubset,
+	                                   remove_uninformative_feature_outlier,
 	                                   message.show=FALSE, clusters=clusters), silent=TRUE)
 
 	if (class(rqresult) == "try-error") {
@@ -2695,6 +2734,7 @@ resultsAsLists <- function(x, ...) {
                                remove50missing, MBimpute, 
                                original_scale, logsum, 
                                featureSubset,
+                               remove_uninformative_feature_outlier,
                                message.show, clusters) {
 	
   ##Since the imputation has been done before feature selection, delete the columns of censoring indicator to avoid imputing the same intensity again	
@@ -2706,12 +2746,6 @@ resultsAsLists <- function(x, ...) {
   #if(featureSubset == "highQuality" & ImputeAgain==TRUE) {
   #	data$ABUNDANCE <- data$ABUNDANCE.O	
   #}
-   
-    ## if there is 'remove' column, remove TRUE
-    ## 2016. 08.29 should change column name for this remove variable. from feature selection??
-    if( any(is.element(colnames(data), 'remove')) ) {
-        data <- data[!data$remove, ]
-    }
 
     data$LABEL <- factor(data$LABEL)
     label <- nlevels(data$LABEL) == 2
@@ -2726,6 +2760,18 @@ resultsAsLists <- function(x, ...) {
 	      
 #   finalresult <- data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$RUN)),RUN=rep(c(levels(data$RUN)),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA,LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
 
+    ### v3.15.2 (2019/04/29) by Meena 
+    if( remove_uninformative_feature_outlier & any(is.element(colnames(data), 'feature_quality')) ) {
+        ### v3.15.2 (2019/04/28) by Tsung-Heng
+        data[data$feature_quality == 'Uninformative', 'ABUNDANCE'] <- NA
+        data[data$is_outlier, 'ABUNDANCE'] <- NA
+        #data <- data[!(data$is_outlier | data$feature_quality == 'Noninformative'), ]
+        ### end : v3.15.2 (2019/04/28) by Tsung-Heng
+    
+        message("** Filtered out uninformative feature and outliers.")
+    }
+    ### end : v3.15.2 (2019/04/29) by Meena 
+    
 	# for saving predicting value for impute option
 	predAbundance <- NULL
 	

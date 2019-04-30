@@ -29,7 +29,7 @@
 #' protein_desc = 0.33, 
 #' iter = 50)
 #' result.crc.srm$meanPA # mean predictive accuracy
-#' @importFrom randomForest randomForest combine
+#' @importFrom randomForest randomForest
 #' 
 #' @export
 designSampleSizeClassification <- function(data, 
@@ -231,15 +231,17 @@ designSampleSizeClassification <- function(data,
     
     
 
-#' (1) Estimate the mean abundance and variance of each protein in each phenotype group. (2) Estimate the protein abundance of the input data
-#'
-#' @param data The run level data reported by dataProcess function.
-#' @return \emph{mu} is the mean abundance matrix of each protein in each phenotype group; 
-#' @return \emph{sigma} is the sd matrix of each protein in each phenotype group;
-#' @return \emph{promean} is the mean abundance of each protein across all the samples.
-#' @return \emph{X} is the protein abundance matrix for \emph{data}
-#' @return \emph{Y} is group information vector for \emph{data}
+#(1) Estimate the mean abundance and variance of each protein in each phenotype group. (2) Estimate the protein abundance of the input data
+#
+# param data The run level data reported by dataProcess function.
+# return \emph{mu} is the mean abundance matrix of each protein in each phenotype group; 
+# return \emph{sigma} is the sd matrix of each protein in each phenotype group;
+# return \emph{promean} is the mean abundance of each protein across all the samples.
+# return \emph{X} is the protein abundance matrix for \emph{data}
+# return \emph{Y} is group information vector for \emph{data}
+
 #' @keywords internal
+#' 
 .estimateVar <- function(data) {
     
     ## get the list of proteins in the data
@@ -303,9 +305,9 @@ designSampleSizeClassification <- function(data,
                 GroupMean[count, ] <- abun # group mean
                 GroupVar[count, ] <- rep(sqrt(sum(VarComponent[i, ], na.rm = TRUE)), times=length(abun)) # group variance
                 if (class(fit.full) == "lm") {
-                    SampleMean <- c(SampleMean, mean(fit.full$model$ABUNDANCE, na.rm = T))
+                    SampleMean <- c(SampleMean, mean(fit.full$model$ABUNDANCE, na.rm = TRUE))
                 } else{ # class(fit.full) == "lmerMod"
-                    SampleMean <- c(SampleMean, mean(fit.full@frame$ABUNDANCE, na.rm = T))
+                    SampleMean <- c(SampleMean, mean(fit.full@frame$ABUNDANCE, na.rm = TRUE))
                 }
             } else{
                 message("Protein ", proteins[i], " is missing from at least one group and not considered in the simulation.")
@@ -337,14 +339,16 @@ designSampleSizeClassification <- function(data,
                 ))
 }
     
-#' Simulate extended datasets for sample size estimation
-#'
-#' @param m number of samples to simulate
-#' @param mu a matrix of mean abundance in each phenotype group and each protein
-#' @param sigma a matrix of variance in each phenotype group and each protein
-#' @return \emph{X} A simulated matrix with required sample size
-#' @return \emph{Y} Group information corresponding with \emph{X}
+# Simulate extended datasets for sample size estimation
+#
+# param m number of samples to simulate
+# param mu a matrix of mean abundance in each phenotype group and each protein
+# param sigma a matrix of variance in each phenotype group and each protein
+# return \emph{X} A simulated matrix with required sample size
+# return \emph{Y} Group information corresponding with \emph{X}
+#' 
 #' @keywords internal
+#' 
 .sampleSimulation <- function(m, mu, sigma) {
     
     nproteins <- nrow(mu)
@@ -374,12 +378,14 @@ designSampleSizeClassification <- function(data,
                 Y=as.factor(group)))
 }
     
-#' Determine the size of each phenotype group
-#'
-#' @param m sample size
-#' @param ngroup number of phenotype groups
-#' @return vector of sample size in each group
+# Determine the size of each phenotype group
+#
+# @param m sample size
+# @param ngroup number of phenotype groups
+# @return vector of sample size in each group
+# 
 #' @keywords internal
+#' 
 .determineSampleSizeinEachGroup <- function(m, ngroup) {
     samplesize <- vector(mode="numeric", length=ngroup)
     counter <- 0
@@ -395,11 +401,13 @@ designSampleSizeClassification <- function(data,
     return(samplesize)
 }
     
-#' For each protein, impute the missing values based on the observed values
-#'
-#' @param data protein abundance data for one protein.
-#' @return Imputed protein abundance data
+# For each protein, impute the missing values based on the observed values
+#
+# #param data protein abundance data for one protein.
+# #return Imputed protein abundance data
+# 
 #' @keywords internal
+#' 
 .random.imp <- function (data){
     missing <- is.na(data) # count missing values
     n.missing <- sum(missing)

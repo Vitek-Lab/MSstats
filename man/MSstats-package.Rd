@@ -17,7 +17,7 @@ Examples of data in MSstats are (1) example of required input data format from l
 The functions for converting the output from spectral processing tools, (1) Skyline, \code{\link{SkylinetoMSstatsFormat}}, (2) MaxQuant, \code{\link{MaxQtoMSstatsFormat}}, (3) Progenesis, \code{\link{ProgenesistoMSstatsFormat}}, (4) Spectronaut, \code{\link{SpectronauttoMSstatsFormat}}, (5) Proteome discovere, \code{\link{PDtoMSstatsFormat}}, (6) OpenMS, \code{\link{OpenMStoMSstatsFormat}}, (7) OpenSWATH, \code{\link{OpenSWATHtoMSstatsFormat}}, and (8) DIAUmpire, \code{\link{DIAUmpiretoMSstatsFormat}}are available.
 }
 
-\author{Meena Choi, Cyril Galitzine, Tsung-Heng Tsai, Olga Vitek. 
+\author{Meena Choi, Tsung-Heng Tsai, Ting Huang, Cyril Galitzine,  Olga Vitek. 
 
 Maintainer: Meena Choi (\email{mnchoi67@gmail.com})
 }
