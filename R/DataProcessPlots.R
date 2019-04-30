@@ -27,6 +27,7 @@ dataProcessPlots <- function(data=data,
 							originalPlot=TRUE, 
 							summaryPlot=TRUE,
 							save_condition_plot_result=FALSE, 
+							remove_uninformative_feature_outlier=FALSE,
 							address="") {
 	
 	datafeature <- data$ProcessedData
@@ -55,6 +56,22 @@ dataProcessPlots <- function(data=data,
 	## Profile plot ##
 	## --------------- 
 	if (toupper(type) == "PROFILEPLOT") {
+	    
+	    if(remove_uninformative_feature_outlier){
+	        
+	        ### v3.15.2 (2019/04/29) by Meena 
+	        if( any(is.element(colnames(datafeature), 'feature_quality')) ) {
+
+	            datafeature[datafeature$feature_quality == 'Noninformative', 'ABUNDANCE'] <- NA
+	            datafeature[datafeature$is_outlier, 'ABUNDANCE'] <- NA
+
+	            message("** Filtered out uninformative feature and outliers in the profile plots.")
+	            
+	        } else {
+	            message("** To remove uninformative features or outliers, please use \"featureSubset == \"highQuality\" option in \"dataProcess\" function.")
+	        }
+	        ### end : v3.15.2 (2019/04/29) by Meena 
+	    }
     
 		## choose Proteins or not
         if (which.Protein != "all") {
@@ -145,6 +162,18 @@ dataProcessPlots <- function(data=data,
         if (any(is.element(colnames(datafeature), "Filter.Repro"))) {
         	datafeature$Filter.Repro <- NULL
         }
+    	
+    	## v3.15.2 updated by Meena
+    	## remove the column called 'feature_quality' if there.
+    	if (any(is.element(colnames(datafeature), "feature_quality"))) {
+    	    datafeature$feature_quality <- NULL
+    	}
+    	
+    	## remove the column called 'is_outlier' if there.
+    	if (any(is.element(colnames(datafeature), "is_outlier"))) {
+    	    datafeature$is_outlier <- NULL
+    	}
+    	## end : v3.15.2 updated by Meena
         
        	## save the plots as pdf or not
         ## If there are the file with the same name, add next numbering at the end of file name

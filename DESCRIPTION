@@ -1,30 +1,31 @@
 Package: MSstats
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
-Version: 3.13.5
-Date: 2018-07-30
+Version: 3.15.2
+Date: 2019-04-28
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
 Authors@R: c(
   person("Meena","Choi", , "mnchoi67@gmail.com", c("aut", "cre")),
+  person("Tsung-Heng","Tsai", , "tsai.tsungheng@gmail.com", role="aut"), 
   person("Cyril","Galitzine", , "cyrildgg@gmail.com", role="aut"), 
   person("Ting","Huang", , "thuang0703@gmail.com", role="aut"), 
-  person("Tsung-Heng","Tsai", , "tsai.tsungheng@gmail.com", role="aut"), 
   person("Olga","Vitek", , "o.vitek@northeastern.edu", role="aut")) 
 Maintainer: Meena Choi <mnchoi67@gmail.com>
 License: Artistic-2.0
-Depends: R (>= 3.4)
+Depends: R (>= 3.6)
 Imports: lme4, marray, limma, gplots, ggplot2, methods, grid,
-        ggrepel, preprocessCore, reshape2, survival,
+        ggrepel, preprocessCore, reshape2, survival, statmod,
         minpack.lm, utils, grDevices, graphics, stats, doSNOW, snow,
-        foreach, data.table, MASS, dplyr, tidyr, stringr, randomForest
+        foreach, data.table, MASS, dplyr, tidyr, broom, purrr, stringr, randomForest
 Suggests: BiocStyle, knitr, rmarkdown, MSstatsBioData
 VignetteBuilder: knitr
-biocViews: MassSpectrometry, Proteomics, Software, Normalization,
+biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
+Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
 Author: Meena Choi [aut, cre],
