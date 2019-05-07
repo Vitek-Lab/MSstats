@@ -72,7 +72,8 @@ MaxQtoMSstatsFormat <- function(evidence,
 	}
 
 	## ? Only.identified.by.site column in proteinGroupID? : sometimes, it is not in evidence.txt
-	if (is.element("Only.identified.by.site", colnames(infile))) {
+	if (is.element("Only.identified.by.site", colnames(infile)) &
+	    is.element("+", unique(infile$Only.identified.by.site))) {
 		infile <- infile[-which(infile$Only.identified.by.site %in% "+"), ]
 	}
 	
@@ -89,20 +90,24 @@ MaxQtoMSstatsFormat <- function(evidence,
 	## 2015/02/03
 	
 	## first, remove contaminants
-	if (is.element("Contaminant", colnames(proteinGroups)) & is.element("+",unique(proteinGroups$Contaminant))) {
+	if (is.element("Contaminant", colnames(proteinGroups)) & 
+	    is.element("+",unique(proteinGroups$Contaminant))) {
 		proteinGroups <- proteinGroups[-which(proteinGroups$Contaminant %in% "+"), ]
 	}
 	
-	if (is.element("Potential.contaminant", colnames(proteinGroups)) & is.element("+",unique(proteinGroups$Potential.contaminant))) {
+	if (is.element("Potential.contaminant", colnames(proteinGroups)) & 
+	    is.element("+",unique(proteinGroups$Potential.contaminant))) {
 		proteinGroups <- proteinGroups[-which(proteinGroups$Potential.contaminant %in% "+"), ]
 	}
 
-	if (is.element("Reverse", colnames(proteinGroups)) & is.element("+",unique(proteinGroups$Reverse))) {
+	if (is.element("Reverse", colnames(proteinGroups)) & 
+	    is.element("+",unique(proteinGroups$Reverse))) {
 		proteinGroups <- proteinGroups[-which(proteinGroups$Reverse %in% "+"), ]
 	}
 
 	## ? Only.identified.by.site column in proteinGroupID? : sometimes, it is not in evidence.txt
-	if (is.element("Only.identified.by.site", colnames(proteinGroups))) {
+	if (is.element("Only.identified.by.site", colnames(proteinGroups)) & 
+	    is.element("+", unique(proteinGroups$Only.identified.by.site))) {
 		proteinGroups <- proteinGroups[-which(proteinGroups$Only.identified.by.site %in% "+"), ]
 	}
 	

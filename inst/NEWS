@@ -1,3 +1,14 @@
+CHANGES IN VERSION 3.16.1 [2019-05-07]
+-------------------------
+    BUG FIXES
+	 - MaxQtoMSstatsFormat : fix the bug when no + in Only.identified.by.site column in proteinGroups input.
+     
+CHANGES IN VERSION 3.16.0 [2019-05-03]
+-------------------------
+    UPDATED FEATURES
+     - featureSubset="highquality", remove_uninformative_feature_outlier=TRUE available
+	 
+	 
 CHANGES IN VERSION 3.13.5 [2018-07-30]
 -------------------------
     BUG FIXES
