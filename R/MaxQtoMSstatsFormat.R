@@ -53,6 +53,16 @@ MaxQtoMSstatsFormat <- function(evidence,
 	               "is not provided in Annotation. Please check the annotation file."))
 	}
 	
+	## check annotation information
+	## get annotation
+    annotinfo <- unique(annot[, c("Raw.file", "Condition", 'BioReplicate')])	
+	
+	## Each Run should has unique information about condition and bioreplicate
+	check.annot <- xtabs(~Run, annotinfo)
+	if ( any(check.annot > 1) ) {
+	    stop('** Please check annotation. Each MS run (Raw.file) can\'t have multiple conditions or BioReplicates.' )
+	}
+	
 	################################################
 	## 1.1 remove contaminant, reverse proteinID 
 	## Contaminant, Reverse column in evidence

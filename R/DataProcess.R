@@ -2751,15 +2751,19 @@ resultsAsLists <- function(x, ...) {
     label <- nlevels(data$LABEL) == 2
     
     # set ref which is distinguish reference and endogenous. any reference=0. endogenous is the same as RUN
-	if (label) {
+	if ( label ) {
 		data$ref <- 0
 		data$ref[data$LABEL != "H"] <- data$RUN[data$LABEL != "H"]
 		data$ref <- factor(data$ref)
-#		unique(data[,c("RUN","LABEL","GROUP","ref")])
 	}
+    
+    ## if there is 'remove' column (for topN or top3), remove TRUE
+    ## v3.16.1 had error : no remove for remove column
+    ## v3.16.2 fixes this but
+    if( any(is.element(colnames(data), 'remove')) ) {
+        data <- data[!data$remove, ]
+    }
 	      
-#   finalresult <- data.frame(Protein=rep(levels(data$PROTEIN),each=nlevels(data$RUN)),RUN=rep(c(levels(data$RUN)),nlevels(data$PROTEIN)),Condition=NA, BioReplicate=NA,LogIntensities=NA,NumFeature=NA,NumPeaks=NA)
-
     ### v3.15.2 (2019/04/29) by Meena 
     if( remove_uninformative_feature_outlier & any(is.element(colnames(data), 'feature_quality')) ) {
         ### v3.15.2 (2019/04/28) by Tsung-Heng
@@ -2918,10 +2922,11 @@ resultsAsLists <- function(x, ...) {
     		                      .init=list(list(), list())) %dopar% {
     		  
          		sub <- data[data$PROTEIN==levels(data$PROTEIN)[i], ]
+         		sub.pro.id <- levels(data$PROTEIN)[i]
          		
          		if (message.show) {
          		    message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",
-         		                  unique(sub$PROTEIN), "(", i," of ", length(unique(data$PROTEIN)), ")"))
+         		                  sub.pro.id, "(", i," of ", length(unique(data$PROTEIN)), ")"))
          		}
          		
           	    sub$FEATURE <- factor(sub$FEATURE)	
@@ -2951,7 +2956,7 @@ resultsAsLists <- function(x, ...) {
           		
           	    ## if all measurements are NA,
           	    if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE == 0)) ) {
-           		    message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+           		    message(paste("Can't summarize for ", sub.pro.id, 
            		                  "(", i, " of ", length(unique(data$PROTEIN)),
            		                  ") because all measurements are NAs."))
             	    # next()
@@ -2986,7 +2991,7 @@ resultsAsLists <- function(x, ...) {
     			    sub <- sub[-which(sub$FEATURE %in% namefeature), ]
     				
     			  	if (nrow(sub) == 0) {
-    				    message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+    				    message(paste("Can't summarize for ", sub.pro.id, 
     				                  "(", i, " of ", length(unique(data$PROTEIN)), 
     				                  ") because all measurements are NAs."))
             		    # next()
@@ -3004,7 +3009,7 @@ resultsAsLists <- function(x, ...) {
     				sub <- sub[-which(sub$FEATURE %in% namefeature1), ]
     				 
     				if (nrow(sub) == 0) {
-    					message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+    					message(paste("Can't summarize for ", sub.pro.id, 
     					              "(", i, " of ", length(unique(data$PROTEIN)), 
     					              ") because features have only one measurement across MS runs."))
             			# next()
@@ -3019,7 +3024,7 @@ resultsAsLists <- function(x, ...) {
     			## if all measurements are NA,
     			if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE ==0)) ) {
     			    message(paste("After removing features which has only 1 measurement, Can't summarize for ",
-    			                  unique(sub$PROTEIN), "(", i," of ", length(unique(data$PROTEIN)), 
+    			                  sub.pro.id, "(", i," of ", length(unique(data$PROTEIN)), 
     			                  ") because all measurements are NAs."))
     			    # next()
     			    return(NULL)
@@ -3076,7 +3081,7 @@ resultsAsLists <- function(x, ...) {
     					
     					## if all measurements are NA,
           				if (length(removerunid)==length(numFea)) {
-           					message(paste("Can't summarize for ",unique(sub$PROTEIN), 
+           					message(paste("Can't summarize for ", sub.pro.id, 
            					              "(", i, " of ", length(unique(data$PROTEIN)),
            					              ") because all runs have more than 50% NAs and are removed with the option, remove50missing=TRUE."))
             				# next()
@@ -3573,10 +3578,11 @@ resultsAsLists <- function(x, ...) {
 		    for(i in 1: nlevels(data$PROTEIN)) {
 		        
 		        sub <- data[data$PROTEIN == levels(data$PROTEIN)[i], ]
-		                              
+		        sub.pro.id <- levels(data$PROTEIN)[i]
+		        
                 if (message.show) {
                     message(paste("Getting the summarization by Tukey's median polish per subplot for protein ",
-                                  unique(sub$PROTEIN), "(", i," of ", length(unique(data$PROTEIN)), ")"))
+                                  sub.pro.id, "(", i," of ", length(unique(data$PROTEIN)), ")"))
                 }
                   
                 sub$FEATURE <- factor(sub$FEATURE)	
@@ -3606,7 +3612,7 @@ resultsAsLists <- function(x, ...) {
                   
                 ## if all measurements are NA,
                 if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE == 0)) ) {
-                    message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+                    message(paste("Can't summarize for ", sub.pro.id, 
                                   "(", i, " of ", length(unique(data$PROTEIN)),
                                   ") because all measurements are NAs."))
                     next()
@@ -3640,7 +3646,7 @@ resultsAsLists <- function(x, ...) {
                     sub <- sub[-which(sub$FEATURE %in% namefeature), ]
                       
                     if (nrow(sub) == 0) {
-                        message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+                        message(paste("Can't summarize for ", sub.pro.id, 
                                 "(", i, " of ", length(unique(data$PROTEIN)), 
                                 ") because all measurements are NAs."))
                         next()
@@ -3657,7 +3663,7 @@ resultsAsLists <- function(x, ...) {
                     sub <- sub[-which(sub$FEATURE %in% namefeature1), ]
                       
                     if (nrow(sub) == 0) {
-                        message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+                        message(paste("Can't summarize for ", sub.pro.id, 
                                 "(", i, " of ", length(unique(data$PROTEIN)), 
                                 ") because features have only one measurement across MS runs."))
                         next()
@@ -3671,7 +3677,7 @@ resultsAsLists <- function(x, ...) {
                 ## if all measurements are NA,
                 if ( nrow(sub) == (sum(is.na(sub$ABUNDANCE)) + sum(!is.na(sub$ABUNDANCE) & sub$ABUNDANCE == 0)) ) {
                     message(paste("After removing features which has only 1 measurement, Can't summarize for ",
-                            unique(sub$PROTEIN), "(", i," of ", length(unique(data$PROTEIN)), 
+                                  sub.pro.id, "(", i," of ", length(unique(data$PROTEIN)), 
                             ") because all measurements are NAs."))
                     next()
                 }
@@ -3722,7 +3728,7 @@ resultsAsLists <- function(x, ...) {
                       
                     ## if all measurements are NA,
                     if (length(removerunid)==length(numFea)) {
-                        message(paste("Can't summarize for ",unique(sub$PROTEIN), 
+                        message(paste("Can't summarize for ", sub.pro.id, 
                                 "(", i, " of ", length(unique(data$PROTEIN)),
                                 ") because all runs have more than 50% NAs and are removed with the option, remove50missing=TRUE."))
                         next()
@@ -4047,7 +4053,7 @@ resultsAsLists <- function(x, ...) {
                           
                     } else { ## labeled
                           
-                        data_w = reshape2::dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
+                        data_w <- reshape2::dcast(run.label ~ FEATURE, data=sub, value.var='ABUNDANCE', keep=TRUE)
                         rownames(data_w) <- data_w$run.label
                         data_w <- data_w[, -1]
                         #data_w[data_w==1] <- NA
@@ -4219,10 +4225,11 @@ resultsAsLists <- function(x, ...) {
 			for(i in 1:length(unique(data$PROTEIN))) {
 	
 				sub <- data[data$PROTEIN==unique(data$PROTEIN)[i],]
+				sub.pro.id <- unique(data$PROTEIN)[i]
 				
 				if (message.show) {
 				    message(paste("Getting the summarization for censored missing values per subplot for protein ",
-				                  unique(sub$PROTEIN), "(", i, " of ", length(unique(data$PROTEIN)), ")"))
+				                  sub.pro.id, "(", i, " of ", length(unique(data$PROTEIN)), ")"))
 				}
 				
 				sub$FEATURE <- factor(sub$FEATURE)
@@ -4231,7 +4238,7 @@ resultsAsLists <- function(x, ...) {
 
 				## if all measurements are NA,
       			if (nrow(sub)==sum(is.na(sub$ABUNDANCE))) {
-       				message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+       				message(paste("Can't summarize for ", sub.pro.id, 
        				              "(", i, " of ", length(unique(datafeature$PROTEIN)),
        				              ") because all measurements are NAs."))
         			next()
@@ -4464,17 +4471,18 @@ resultsAsLists <- function(x, ...) {
 			for(i in 1:length(unique(data$PROTEIN))) {
 	
 				sub <- data[data$PROTEIN == unique(data$PROTEIN)[i], ]
+				sub.pro.id <- unique(data$PROTEIN)[i]
 				
 				if (message.show) {
 				    message(paste("Getting the summarization for censored missing values per subplot for protein ",
-				                  unique(sub$PROTEIN), "(", i, " of ", length(unique(data$PROTEIN)), ")"))
+				                  sub.pro.id, "(", i, " of ", length(unique(data$PROTEIN)), ")"))
 				}
 				
 				sub$FEATURE <- factor(sub$FEATURE)
 	
 				## if all measurements are NA,
       			if (nrow(sub) == sum(is.na(sub$ABUNDANCE))) {
-       				message(paste("Can't summarize for ", unique(sub$PROTEIN), 
+       				message(paste("Can't summarize for ", sub.pro.id, 
        				              "(", i, " of ", length(unique(data$PROTEIN)),
        				              ") because all measurements are NAs."))
         			next()
@@ -4686,6 +4694,7 @@ resultsAsLists <- function(x, ...) {
 	## final result
 	finalout <- list(rqdata=result, ModelQC=dataafterfit, PredictedBySurvival=predAbundance)
 	return(finalout)
+	
 }
 
 
