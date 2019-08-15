@@ -58,7 +58,7 @@ MaxQtoMSstatsFormat <- function(evidence,
     annotinfo <- unique(annot[, c("Raw.file", "Condition", 'BioReplicate')])	
 	
 	## Each Run should has unique information about condition and bioreplicate
-	check.annot <- xtabs(~Run, annotinfo)
+	check.annot <- xtabs(~Raw.file, annotinfo)
 	if ( any(check.annot > 1) ) {
 	    stop('** Please check annotation. Each MS run (Raw.file) can\'t have multiple conditions or BioReplicates.' )
 	}

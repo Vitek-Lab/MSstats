@@ -2370,17 +2370,29 @@ dataProcess  <-  function(raw,
   		## how to decide top3 for DIA?
         work$remove <- FALSE
 	
-		temp1 <- aggregate(INTENSITY~PROTEIN+FEATURE,data=work, function(x) mean(x, na.rm=TRUE))
+        worktemp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE != 0, ]
+        
+        ## updated on 2019.08.09, due to big memory consumption for lapply and unlist
+		#temp1 <- aggregate(INTENSITY~PROTEIN+FEATURE, data=work, function(x) mean(x, na.rm=TRUE))
+        
+        #temp2 <- split(temp1, temp1$PROTEIN)
 
-		temp2 <- split(temp1, temp1$PROTEIN)
-
-		temp3 <- lapply(temp2, function(x) { 
-			x <- x[order(x$INTENSITY, decreasing=TRUE), ]
-			x <- x$FEATURE[1:3]
-			})
+		#temp3 <- lapply(tmp2, function(x) { 
+		#	x <- x[order(x$INTENSITY, decreasing=TRUE), ]
+		#	x <- x$FEATURE[1:3]
+		#	})
 	
-		selectfeature <- unlist(temp3, use.names=FALSE)
+		#selectfeature <- unlist(temp3, use.names=FALSE)
+		
+		temp1 <- worktemp %>% group_by(PROTEIN, FEATURE) %>%
+		    summarize(mean = mean(INTENSITY, na.rm = TRUE)) %>%
+		    group_by(PROTEIN) %>%
+		    filter(row_number(desc(mean)) <= 3)  ## updated on 2019.08.15, in order to get first row if there are ties.
+		    #top_n(3)
+		
+		selectfeature <- temp1$FEATURE
 		selectfeature <- selectfeature[!is.na(selectfeature)]
+		## end 2019.08.09
 		
 		## get subset
 		work[-which(work$FEATURE %in% selectfeature), 'remove']	<- TRUE
@@ -2403,17 +2415,28 @@ dataProcess  <-  function(raw,
 	    work$remove <- FALSE
 	  
         worktemp <- work[!is.na(work$ABUNDANCE) & work$ABUNDANCE != 0, ]
-	    temp1 <- aggregate(INTENSITY ~ PROTEIN+FEATURE, data=worktemp, function(x) mean(x, na.rm=TRUE))
+        
+        ## updated on 2019.08.09, due to big memory consumption for lapply and unlist
+	    #temp1 <- aggregate(INTENSITY ~ PROTEIN+FEATURE, data=worktemp, function(x) mean(x, na.rm=TRUE))
 	  
-	    temp2 <- split(temp1, temp1$PROTEIN)
+	    #temp2 <- split(temp1, temp1$PROTEIN)
 	  
-	    temp3 <- lapply(temp2, function(x) { 
-	        x <- x[order(x$INTENSITY, decreasing=TRUE), ]
-	        x <- x$FEATURE[1:n_top_feature]
-	    })
+	    #temp3 <- lapply(temp2, function(x) { 
+	    #    x <- x[order(x$INTENSITY, decreasing=TRUE), ]
+	    #    x <- x$FEATURE[1:n_top_feature]
+	    #})
 	  
-	    selectfeature <- unlist(temp3, use.names=FALSE)
+	    #selectfeature <- unlist(temp3, use.names=FALSE)
+
+	    temp1 <- worktemp %>% group_by(PROTEIN, FEATURE) %>%
+	        summarize(mean = mean(INTENSITY, na.rm = TRUE)) %>%
+	        group_by(PROTEIN) %>%
+	        filter(row_number(desc(mean)) <= n_top_feature) ## updated on 2019.08.15, in order to get first row if there are ties.
+	    #top_n(n_top_feature)
+	    
+	    selectfeature <- temp1$FEATURE
 	    selectfeature <- selectfeature[!is.na(selectfeature)]
+	    ## end 2019.08.09
 	  
 	    ## get subset
 	    work[-which(work$FEATURE %in% selectfeature), 'remove']	<- TRUE
