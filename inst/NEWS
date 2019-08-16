@@ -1,3 +1,21 @@
+CHANGES IN VERSION 3.16.2 [2019-08-15]
+-------------------------
+    BUG FIXES
+	 - dataProcess, featureSubset='top3' or 'topN' with n_top_feature : fix the bug for featureSubset = 'top3' and 'topN' option and improve the memory consumption.
+	 - groupComparison : remove the warning message for singularity issue.
+
+
+CHANGES IN VERSION 3.16.1 [2019-05-07]
+-------------------------
+    BUG FIXES
+	 - MaxQtoMSstatsFormat : fix the bug when no + in Only.identified.by.site column in proteinGroups input.
+     
+CHANGES IN VERSION 3.16.0 [2019-05-03]
+-------------------------
+    UPDATED FEATURES
+     - featureSubset="highquality", remove_uninformative_feature_outlier=TRUE available
+	 
+	 
 CHANGES IN VERSION 3.13.5 [2018-07-30]
 -------------------------
     BUG FIXES

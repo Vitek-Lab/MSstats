@@ -37,6 +37,15 @@ OpenSWATHtoMSstatsFormat <- function(input,
             annotinfo <- annotation
         }
     }
+  
+    ## check annotation information
+    ## get annotation
+    ## Each Run should has unique information about condition and bioreplicate
+    check.annot <- xtabs(~Run, annotinfo)
+  
+    if ( any(check.annot > 1) ) {
+        stop('** Please check annotation. Each MS run can\'t have multiple conditions or BioReplicates.' )
+    }
 
     ## Check correct option or input
     requiredinput.general <- c('ProteinName', 'FullPeptideName', 'Charge', 'Sequence',

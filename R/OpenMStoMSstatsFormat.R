@@ -65,6 +65,15 @@ OpenMStoMSstatsFormat <- function(input,
         }
     }
     
+    ## check annotation information
+    ## get annotation
+    ## Each Run should has unique information about condition and bioreplicate
+    check.annot <- xtabs(~Run, annotinfo)
+    
+    if ( any(check.annot > 1) ) {
+        stop('** Please check annotation. Each MS run can\'t have multiple conditions or BioReplicates.' )
+    }
+    
     ##############################
     ## 2. remove featuares with all na or zero
     ## some rows have all zero values across all MS runs. They should be removed.

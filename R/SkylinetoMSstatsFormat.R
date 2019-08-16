@@ -45,7 +45,24 @@ SkylinetoMSstatsFormat <- function(input,
     colnames(input)[colnames(input) == 'FileName'] <- 'Run'
     ## replace 'Area' with Intensity
     colnames(input)[colnames(input) == 'Area'] <- 'Intensity'
-  
+    
+    
+    ##############################
+    ## 1.1. check annotation information
+    ##############################
+    ## get annotation
+    if (is.null(annotation)) {
+        annotinfo <- unique(input[, c("Run", "Condition", 'BioReplicate')])	
+    } else {
+        annotinfo <- annotation
+    }
+    
+    ## Each Run should has unique information about condition and bioreplicate
+    check.annot <- xtabs(~Run, annotinfo)
+    if ( any(check.annot > 1) ) {
+        stop('** Please check annotation. Each MS run can\'t have multiple conditions or BioReplicates.' )
+    }
+    
     ##############################
     ## 2. Remove decoy protein name
     ##############################

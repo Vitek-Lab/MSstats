@@ -127,9 +127,9 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
      
     if (data$SummaryMethod == "logOfSum") {
         message("\n ** Use t-test for log sum summarization per subject.")
-     	processout <- rbind(processout, 
+     	  processout <- rbind(processout, 
      	                    "** Use t-test for log sum summarization per subject.")
-     	write.table(processout, file=finalfile, row.names=FALSE)
+     	  write.table(processout, file=finalfile, row.names=FALSE)
     
         if (repeated) {
      		
@@ -138,7 +138,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
          	write.table(processout, file=finalfile, row.names=FALSE)
         
          	stop("\n * Only group comparsion is available for t-test.")
-     	}
+     	  }
     }
     
     ## need original group information
@@ -179,7 +179,7 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         } else { ## linear model
      	
         	sub$GROUP <- factor(sub$GROUP)
-            sub$SUBJECT <- factor(sub$SUBJECT)
+          sub$SUBJECT <- factor(sub$SUBJECT)
         	sub$GROUP_ORIGINAL <- factor(sub$GROUP_ORIGINAL, levels=groupinfo)	
         	sub$SUBJECT_ORIGINAL <- factor(sub$SUBJECT_ORIGINAL)
         	sub$SUBJECT_NESTED <- factor(sub$SUBJECT_NESTED)
@@ -568,10 +568,10 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         	if (!TechReplicate | singleSubject) {
                 fit.full <- lm(ABUNDANCE ~ GROUP, data=data2)
             } else {
-                fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), 
-                                 data=data2)
-                df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT, 
-                              data=data2)$df.residual
+                fit.full <- suppressMessages(try(lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data=data2),
+                                                 TRUE))
+                df.full <- suppressMessages(try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=data2)$df.residual,
+                                                TRUE))
             }
         } else { ## time-course
             if (singleSubject) {
@@ -579,15 +579,17 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
                                data=data2)
             } else { ## no single subject
                 if (!TechReplicate) {
-                      fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), 
-                                       data=data2)
-                      df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT, 
-                                    data=data2)$df.residual
+                      fit.full <- suppressMessages(try(lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data=data2), 
+                                       TRUE))
+                      df.full <- suppressMessages(try(lm(ABUNDANCE ~ GROUP + SUBJECT, data=data2)$df.residual, 
+                                    TRUE))
                 } else {
-                      fit.full <- lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), 
-                                       data=data2) ## SUBJECT==SUBJECT_NESTED here
-                      df.full <- lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT, 
-                                    data=data2)$df.residual
+                      fit.full <- suppressMessages(try(lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT), 
+                                       data=data2), 
+                                       TRUE))## SUBJECT==SUBJECT_NESTED here
+                      df.full <- suppressMessages(try(lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT, 
+                                    data=data2)$df.residual,
+                                    TRUE))
                 }
             }	
         } ## time-course

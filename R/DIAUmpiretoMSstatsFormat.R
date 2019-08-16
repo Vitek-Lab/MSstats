@@ -45,6 +45,12 @@ DIAUmpiretoMSstatsFormat <- function(raw.frag, raw.pep, raw.pro,
         }
     }
     
+    ## Each Run should has unique information about condition and bioreplicate
+    check.annot <- xtabs(~Run, annot)
+    if ( any(check.annot > 1) ) {
+        stop('** Please check annotation. Each MS run can\'t have multiple conditions or BioReplicates.' )
+    }
+    
     ########################
     ## 1.  get selected frag from DIA-Umpire
     ########################

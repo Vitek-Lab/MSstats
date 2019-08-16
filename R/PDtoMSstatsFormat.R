@@ -28,6 +28,16 @@ PDtoMSstatsFormat <- function(input,
                    "'Run' will be matched with 'Spectrum.File' "))
     }
     
+    ## check annotation information
+    ## get annotation
+    annotinfo <- unique(annotation[, c("Run", "Condition", 'BioReplicate')])	
+
+    ## Each Run should has unique information about condition and bioreplicate
+    check.annot <- xtabs(~Run, annotinfo)
+    if ( any(check.annot > 1) ) {
+        stop('** Please check annotation. Each MS run can\'t have multiple conditions or BioReplicates.' )
+    }
+    
     ################################################
     ## 0.1. which intensity : Precursor.Area vs. Intensity vs Area
     ################################################
