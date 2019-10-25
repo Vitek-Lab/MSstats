@@ -28,6 +28,9 @@ fit_prot_huber <- function(df_prot) {
 #' @keywords internal
 #' 
 calc_fvar <- function(augmented_data, s_resid, rm_olr = FALSE, tol = 3) {
+    
+    select <- dplyr::select
+    
     v_resid <- s_resid ^ 2
     if (rm_olr) {
         augmented_data <- augmented_data %>% 
@@ -42,7 +45,7 @@ calc_fvar <- function(augmented_data, s_resid, rm_olr = FALSE, tol = 3) {
             svar_feature = sum(.resid ^ 2) / (nb_run - 1) / v_resid, 
             svar_ref = sum(resid_null ^ 2) / (nb_run - 1) / v_resid
         ) %>% 
-        dplyr::select(feature, svar_feature, svar_ref)
+        select(feature, svar_feature, svar_ref)
     
     return(varfeature)
 }
@@ -53,7 +56,7 @@ calc_fvar <- function(augmented_data, s_resid, rm_olr = FALSE, tol = 3) {
 flag_outlier <- function(augmented_data, s_resid, tol = 3, keep_run = FALSE) {
     outlier <- augmented_data %>% 
         mutate(is_olr = abs(.resid / s_resid) > tol) %>% 
-        dplyr::select(run, feature, is_olr)
+        select(run, feature, is_olr)
     # To keep runs from being completely removed
     if (keep_run) {
         uncovered_run <- outlier %>% 
@@ -84,7 +87,7 @@ flag_noninf_data <- function(processedData) {
     
     # Convert to the working format
     # df_allftr <- processedData %>%
-    #     dplyr::select(
+    #     select(
     #         protein = PROTEIN,
     #         peptide = PEPTIDE,
     #         feature = FEATURE, 
@@ -104,7 +107,7 @@ flag_noninf_data <- function(processedData) {
     #     )
     if ("censored" %in% names(processedData)) {
         df_allftr <- processedData %>%
-            dplyr::select(
+            select(
                 protein = PROTEIN,
                 peptide = PEPTIDE,
                 feature = FEATURE, 
@@ -115,7 +118,7 @@ flag_noninf_data <- function(processedData) {
             )
     } else {
         df_allftr <- processedData %>%
-            dplyr::select(
+            select(
                 protein = PROTEIN,
                 peptide = PEPTIDE,
                 feature = FEATURE, 
@@ -181,12 +184,12 @@ flag_noninf_data <- function(processedData) {
         
         # Nested data frame
         nested_prot <- df_onelab %>% 
-            dplyr::select(protein, run, peptide, feature, log2inty, is_obs) %>% 
+            select(protein, run, peptide, feature, log2inty, is_obs) %>% 
             group_by(protein) %>% 
             nest()
         
         nested_prot <- nested_prot %>% 
-            left_join(obs_protein %>% dplyr::select(protein, min_obs))
+            left_join(obs_protein %>% select(protein, min_obs))
         
         # Coverage
         message("Identifying low-coverage features...")
@@ -231,7 +234,7 @@ flag_noninf_data <- function(processedData) {
 
         # Extract variances and degrees of freedom
         var_protein <- nested_prot %>% 
-            dplyr::select(protein, s_resid, df_resid) %>% 
+            select(protein, s_resid, df_resid) %>% 
             mutate(var_resid = s_resid ^ 2) %>% 
             filter(!is.na(s_resid), df_resid > 0)
         
@@ -242,7 +245,7 @@ flag_noninf_data <- function(processedData) {
             mutate(s_resid_eb = sqrt(var_resid_eb))
         
         nested_prot <- nested_prot %>% 
-            left_join(var_protein %>% dplyr::select(protein, s_resid_eb))
+            left_join(var_protein %>% select(protein, s_resid_eb))
         
         # Feature variance and outlier detection
         message("Identifying outliers and calculating feature variances...")
@@ -274,21 +277,21 @@ flag_noninf_data <- function(processedData) {
         # Noisy features
         allfvar <- nested_prot %>% 
             filter(!is.na(s_resid_eb)) %>% 
-            dplyr::select(protein, var_feature) %>% 
+            select(protein, var_feature) %>% 
             unnest(var_feature)
         fvar_cut <- quantile(allfvar$svar_ref, 0.05, na.rm = TRUE)
         ftr_hivar <- allfvar %>% filter(svar_feature > fvar_cut) %>% distinct(protein, feature)
         
         # Combine unreplicated, low-coverage, and noisy features
         df_rmftr[[l]] <- bind_rows(ftr_hivar, ftr_lowcvr, ftr_unrep) %>% 
-            dplyr::select(protein, feature) %>% 
+            select(protein, feature) %>% 
             mutate(label = lab)
         
         # Outliers
         df_rmpk[[l]] <- nested_prot %>% 
             unnest(data) %>% 
             filter(is_olr) %>% 
-            dplyr::select(protein, run, feature) %>% 
+            select(protein, run, feature) %>% 
             mutate(label = lab)
         
         message(paste0("Outlier detection and feature selection in ", lab, " channel are completed"))
@@ -302,7 +305,7 @@ flag_noninf_data <- function(processedData) {
             df_rmpk, 
             df_allftr %>% 
                 filter(label == "H", log2inty <= 0) %>% 
-                dplyr::select(protein, run, feature, label)
+                select(protein, run, feature, label)
         )
     }
     
@@ -342,7 +345,7 @@ flag_noninf_data_nbftr <- function(processedData) {
     
     # Convert to the working format
     # df_allftr <- processedData %>%
-    #     dplyr::select(
+    #     select(
     #         protein = PROTEIN,
     #         peptide = PEPTIDE,
     #         feature = FEATURE, 
@@ -362,7 +365,7 @@ flag_noninf_data_nbftr <- function(processedData) {
     #     )
     if ("censored" %in% names(processedData)) {
         df_allftr <- processedData %>%
-            dplyr::select(
+            select(
                 protein = PROTEIN,
                 peptide = PEPTIDE,
                 feature = FEATURE, 
@@ -373,7 +376,7 @@ flag_noninf_data_nbftr <- function(processedData) {
             )
     } else {
         df_allftr <- processedData %>%
-            dplyr::select(
+            select(
                 protein = PROTEIN,
                 peptide = PEPTIDE,
                 feature = FEATURE, 
@@ -449,12 +452,12 @@ flag_noninf_data_nbftr <- function(processedData) {
         
         # Nested data frame
         nested_prot <- df_onelab %>% 
-            dplyr::select(protein, run, peptide, feature, log2inty, is_obs) %>% 
+            select(protein, run, peptide, feature, log2inty, is_obs) %>% 
             group_by(protein) %>% 
             nest()
         
         nested_prot <- nested_prot %>% 
-            left_join(obs_protein %>% dplyr::select(protein, min_obs))
+            left_join(obs_protein %>% select(protein, min_obs))
         
         # Coverage
         message("Identifying low-coverage features...")
@@ -502,7 +505,7 @@ flag_noninf_data_nbftr <- function(processedData) {
         
         # Extract variances and degrees of freedom
         var_protein <- nested_prot %>% 
-            dplyr::select(protein, s_resid, df_resid) %>% 
+            select(protein, s_resid, df_resid) %>% 
             mutate(var_resid = s_resid ^ 2) %>% 
             filter(!is.na(s_resid), df_resid > 0)
         
@@ -513,7 +516,7 @@ flag_noninf_data_nbftr <- function(processedData) {
             mutate(s_resid_eb = sqrt(var_resid_eb))
         
         nested_prot <- nested_prot %>% 
-            left_join(var_protein %>% dplyr::select(protein, s_resid_eb))
+            left_join(var_protein %>% select(protein, s_resid_eb))
         
         # Feature variance and outlier detection
         message("Identifying outliers and calculating feature variances...")
@@ -545,21 +548,21 @@ flag_noninf_data_nbftr <- function(processedData) {
         # Noisy features
         allfvar <- nested_prot %>% 
             filter(!is.na(s_resid_eb)) %>% 
-            dplyr::select(protein, var_feature) %>% 
+            select(protein, var_feature) %>% 
             unnest(var_feature)
         fvar_cut <- quantile(allfvar$svar_ref, 0.05, na.rm = TRUE)
         ftr_hivar <- allfvar %>% filter(svar_feature > fvar_cut) %>% distinct(protein, feature)
         
         # Combine unreplicated, low-coverage, and noisy features
         df_rmftr[[l]] <- bind_rows(ftr_hivar, ftr_lowcvr, ftr_unrep) %>% 
-            dplyr::select(protein, feature) %>% 
+            select(protein, feature) %>% 
             mutate(label = lab)
         
         # Outliers
         df_rmpk[[l]] <- nested_prot %>% 
             unnest(data) %>% 
             filter(is_olr) %>% 
-            dplyr::select(protein, run, feature) %>% 
+            select(protein, run, feature) %>% 
             mutate(label = lab)
         
         message(paste0("Outlier detection and feature selection in ", lab, " channel are completed"))
@@ -573,7 +576,7 @@ flag_noninf_data_nbftr <- function(processedData) {
             df_rmpk, 
             df_allftr %>% 
                 filter(label == "H", log2inty <= 0) %>% 
-                dplyr::select(protein, run, feature, label)
+                select(protein, run, feature, label)
         )
     }
     

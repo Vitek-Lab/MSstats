@@ -1,3 +1,12 @@
+CHANGES IN VERSION 3.17.2 [2019-10-24]
+-------------------------
+    BUG FIXES
+	 - Warning message: Warning message:replacing previous import ‘MASS::select’ by ‘dplyr::select’ when loading ‘MSstats’, is fixed.
+	 
+    RETIRED FEATURES
+     - designSampleSizeClassification and designSampleSizeClassificationPlots are retired
+	 
+
 CHANGES IN VERSION 3.16.2 [2019-08-15]
 -------------------------
     BUG FIXES

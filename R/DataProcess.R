@@ -5,7 +5,6 @@
 #' @export dataProcess
 #' @import survival 
 #' @import preprocessCore 
-#' @import MASS
 #' @import statmod
 #' @importFrom reshape2 dcast melt
 #' @importFrom stats medpolish aggregate t.test lm summary.lm fitted resid p.adjust
