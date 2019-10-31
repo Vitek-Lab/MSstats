@@ -18,7 +18,7 @@ Package: MSstats
 
 Author: Meena Choi <mnchoi67@gmail.com>, Tsung-Heng Tsai <tsai.tsungheng@gmail.com>, Cyril Galitzine <cyrildgg@gmail.com>
 
-Date: October 2, 2017   
+Date: October 31, 2019   
 
 
 This vignette summarizes the introduction and various options of all functionalities in MSstats. More details are available in `User Manual`.
@@ -125,18 +125,17 @@ Data pre-processing and quality control of MS runs of the original raw data into
 
 - Transformation: logarithm transformation of intensity with base 2 or 10. 
 - Normalization: to remove systematic bias between MS runs.
-- 
 
 ### Arguments
 
 * `raw` : name of the raw (input) data set.
 * `logTrans` : logarithm transformation with base 2(default) or 10. If `logTrans=2`, the measurement of Variable `ABUNDANCE` is log-transformed with base 2. Same apply to `logTrans=10`.
 * `normalization` : normalization to remove systematic bias between MS runs. There are three different normalizations supported. `'equalizeMedians'` (default) represents constant normalization (equalizing the medians) based on reference signals is performed. `'quantile'` represents quantile normalization based on reference signals is performed. `'globalStandards'` represents normalization with global standards proteins. `FALSE` represents no normalization is performed. 
-* `betweenRunInterferenceScore` : interference is detected by a between-run-interference score. `TRUE` means the scores are generated automatically and stored in a .csv file. `FALSE` (default) means no scores are generated.
+* `nameStandards` : vector of global standard peptide names. only for normalization with global standard peptides.
 * `fillIncompleteRows` : If the input dataset has incomplete rows, `TRUE` (default) adds the rows with intensity value=NA for missing peaks. `FALSE` reports error message with list of features which have incomplete rows. 
-* `featureSubset` : `"all"` (default) uses all features that the data set has. `"top3"` uses top 3 features which have highest average of log2(intensity) across runs. `"topN"` uses top N features which has highest average of log2(intensity) across runs. It needs the input for `n_top_feature` option. `"highQuality"` selects the most informative features which agree the pattern of the average features across the runs.
-* `remove_proteins_with_interference` : `TRUE` allows the algorithm to remove the proteins if deem interfered. `FALSE` (default) does not allow to remove the proteins, in which all features are interfered. In this case, the proteins, which will completely loss all features by the algorithm, will keep the most abundant peptide
-* `n_top_feature` : The number of top features for `featureSubset='topN'`. Default is `n_top_feature=3`, which means to use top 3 features.}
+* `featureSubset` : `"all"` (default) uses all features that the data set has. `"top3"` uses top 3 features which have highest average of log2(intensity) across runs. `"topN"` uses top N features which has highest average of log2(intensity) across runs. It needs the input for `n_top_feature` option. `"highQuality"` flags uninformative feature and outliers.
+* `remove_uninformative_feature_outlier` : It only works after users used `featureSubset="highQuality"` in dataProcess. `TRUE` allows to remove 1) the features are flagged in the column, `feature_quality="Uninformative"` which are features with bad quality, 2) outliers that are flagged in the column, `is_outlier=TRUE`, for run-level summarization. `FALSE` (default) uses all features and intensities for run-level summarization.
+* `n_top_feature` : The number of top features for `featureSubset='topN'`. Default is `n_top_feature=3`, which means to use top 3 features.
 * `summaryMethod` : `"TMP"` (default) means Tukey's median polish, which is robust estimation method. `"linear"` uses linear mixed model.
 * `equalFeatureVar` : only for `summaryMethod="linear"`. Default is `TRUE`. Logical variable for whether the model should account for heterogeneous variation among intensities from different features. Default is TRUE, which assume equal variance among intensities from features. `FALSE` means that we cannot assume equal variance among intensities from features, then we will account for heterogeneous variation from different features.
 * `censoredInt` : Missing values are censored or at random. `'NA'` (default) assumes that all 'NA's in 'Intensity' column are censored. `'0'` uses zero intensities as censored intensity. In this case, NA intensities are missing at random. The output from Skyline and Progenesis should use '0'. Null assumes that all NA intensites are randomly missing.
@@ -146,6 +145,20 @@ Data pre-processing and quality control of MS runs of the original raw data into
 * `address` : the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output csv file is automatically created with the default name of "BetweenRunInterferenceFile.csv". The command address can help to specify where to store the file as well as how to modify the beginning of the file name.
 * `maxQuantileforCensored` : Maximum quantile for deciding censored missing values. Default is 0.999.
 
+
+### Details of outputs
+
+#### RunlevelData from dataProcess
+* LogIntensities : Estimated protein abundance for aa`RUN` and `Protein`.
+* NumMeasuredFeature : Number of measured features in a `RUN` and `Protein`. It counts feature intensities greater than 1, after selecting all/topN/highquality features and removing features with only one measurement across MS runs.
+* Missing percentage : Number of measured features in a `RUN` and `Protein` /total number of features in a `Proteins`.
+* NumImputedFeature : Number of imputed intensities (censored intensities) in a `RUN` and `Protein`. This column is shown only if users allow to impute the missing value.
+
+##### ComparisonResult from groupComparison : one or two columns will be added.
+* MissingPercentage : Number of measured intensities/ total number of intensities (which is the number of features * the number of runs in a protein) by protein
+* ImputationPercentage : Number of imputed intensities/total number of intensities by protein
+
+            
 ### Example 
 ```{r, eval=FALSE}
 QuantData <- dataProcess(SRMRawData)

@@ -2443,7 +2443,7 @@ dataProcess  <-  function(raw,
 	}
   
 	## check missingness 
-	## transitions are completely missing in one condition : missingness ##
+	## transitions are completely missing in at least one of the condition : missingness ##
 	if (nlevels(work$LABEL) == 1) {
         #Use the data frame before imputation to summarize the missingness
         all.work <- work	
@@ -2589,7 +2589,7 @@ dataProcess  <-  function(raw,
 	print(summary.s)
   
 	message("\n Summary of Missingness :\n" )
-	message("  # transitions are completely missing in one condition: ", sum(final.decision!=0), "\n")
+	message("  # transitions are completely missing in at least one of the conditions : ", sum(final.decision!=0), "\n")
 	if (sum(final.decision!=0)!=0) {
 	    tmp.final <- final.decision[final.decision != 0]
 	    if( length(tmp.final) > 5 ){
@@ -2610,7 +2610,7 @@ dataProcess  <-  function(raw,
   
 	## output process
 	processout <- rbind(processout, c("Summary of Missingness :"))
-	processout <- rbind(processout, c(paste0("  # transitions are completely missing in one condition: ", 
+	processout <- rbind(processout, c(paste0("  # transitions are completely missing in at least one of the conditions : ", 
 	                                        sum(final.decision!=0))))
 	if (sum(final.decision!=0)!=0){
 		
@@ -3387,9 +3387,10 @@ resultsAsLists <- function(x, ...) {
     						}
     					
     						if (censoredInt == "0") {
-    							subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-    							subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-    							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE != 0, ]
+    							subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY > 1, ] ## change at 2019. 10. 25
+    							subtemp <- subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE > 0, ] ## change at 2019. 10. 25
+    							
+    							subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$censored, ] ## change at 2019. 10. 25
     						}
     						
     					    subtemp$RUN <- factor(subtemp$RUN, levels = rownames(data_w))
@@ -3467,9 +3468,10 @@ resultsAsLists <- function(x, ...) {
     						}
     					
     						if (censoredInt == "0") {
-    							subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-    							subtempimpute <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-    							subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE != 0, ]
+    							subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY > 1, ] ## change at 2019. 10. 25
+    							subtemp <- subtemp[subtemp$LABEL == "L" & !is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE > 0, ] ## change at 2019. 10. 25
+    							
+    							subtempimpute <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$censored, ] ## change at 2019. 10. 25
     						}
     						
           			        numFea <- xtabs(~RUN, subtemp)
@@ -3534,9 +3536,11 @@ resultsAsLists <- function(x, ...) {
     					}
     					
     					if (censoredInt == "0") {
-    						subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-    						subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-    						subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE != 0, ]
+    						subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY > 1, ] ## change at 2019. 10. 25
+    						subtempcount <- subtempcount[!is.na(subtempcount$ABUNDANCE) & subtempcount$ABUNDANCE > 0, ] ## change at 2019. 10. 25
+    						
+    						subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$censored, ] ## change at 2019. 10. 25
+    						
     					}
     						
     					numFea <- xtabs(~RUN, subtempcount)
@@ -4033,9 +4037,11 @@ resultsAsLists <- function(x, ...) {
                             }
                               
                             if (censoredInt == "0") {
-                                subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-                                subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-                                subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE != 0, ]
+                                subtemp <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY > 1, ] ## change at 2019. 10. 25
+                                subtemp <- subtemp[!is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE > 0, ] ## change at 2019. 10. 25
+                                
+                                subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$censored, ] ## change at 2019. 10. 25
+                                
                             }
                               
                             subtemp$RUN <- factor(subtemp$RUN, levels = rownames(data_w))
@@ -4113,9 +4119,11 @@ resultsAsLists <- function(x, ...) {
                             }
                               
                             if (censoredInt == "0") {
-                                subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-                                subtempimpute <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-                                subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE != 0, ]
+                                subtemp <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$INTENSITY > 1, ] ## change at 2019. 10. 25
+                                subtemp <- subtemp[subtemp$LABEL == "L" & !is.na(subtemp$ABUNDANCE) & subtemp$ABUNDANCE > 0, ] ## change at 2019. 10. 25
+                                
+                                subtempimpute <- sub[sub$LABEL == "L" & !is.na(sub$INTENSITY) & sub$censored, ] ## change at 2019. 10. 25
+                               
                             }
                               
                             numFea <- xtabs(~RUN, subtemp)
@@ -4180,9 +4188,11 @@ resultsAsLists <- function(x, ...) {
                         }
                           
                         if (censoredInt == "0") {
-                            subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY != 0, ]
-                            subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY == 0, ]
-                            subtempimpute <- subtempimpute[!is.na(subtempimpute$ABUNDANCE) & subtempimpute$ABUNDANCE != 0, ]
+                            subtempcount <- sub[!is.na(sub$INTENSITY) & sub$INTENSITY > 1, ] ## change at 2019. 10. 25
+                            subtempcount <- subtempcount[!is.na(subtempcount$ABUNDANCE) & subtempcount$ABUNDANCE > 0, ] ## change at 2019. 10. 25
+                            
+                            subtempimpute <- sub[!is.na(sub$INTENSITY) & sub$censored, ] ## change at 2019. 10. 25
+                            
                         }
                           
                         numFea <- xtabs(~RUN, subtempcount)

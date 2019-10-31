@@ -1,8 +1,8 @@
 Package: MSstats
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
-Version: 3.19.0
-Date: 2019-10-24
+Version: 3.19.1
+Date: 2019-10-31
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
 Authors@R: c(
   person("Meena","Choi", , "mnchoi67@gmail.com", c("aut", "cre")),
@@ -10,7 +10,6 @@ Authors@R: c(
   person("Cyril","Galitzine", , "cyrildgg@gmail.com", role="aut"), 
   person("Ting","Huang", , "thuang0703@gmail.com", role="aut"), 
   person("Olga","Vitek", , "o.vitek@northeastern.edu", role="aut")) 
-Maintainer: Meena Choi <mnchoi67@gmail.com>
 License: Artistic-2.0
 Depends: R (>= 3.6)
 Imports: lme4, marray, limma, gplots, ggplot2, methods, grid,
@@ -28,8 +27,3 @@ RoxygenNote: 6.1.1
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
-Author: Meena Choi [aut, cre],
-  Cyril Galitzine [aut],
-  Ting Huang [aut],
-  Tsung-Heng Tsai [aut],
-  Olga Vitek [aut]
