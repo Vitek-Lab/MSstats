@@ -1,7 +1,7 @@
 \name{dataProcess}
 \alias{dataProcess}
 \title{Data pre-processing and quality control of MS runs of raw data}
-\description{Data pre-processing and quality control of MS runs of the original raw data into quantitative data for model fitting and group comparison. Log transformation is automatically applied and additional variables are created in columns for model fitting and group comparison process. Three options of data pre-processing and quality control of MS runs in dataProcess are (1) Transformation: logarithm transformation with base 2 or 10; (2) Normalization: to remove systematic bias between MS runs.}
+\description{Data pre-processing and quality control of MS runs of the original raw data into quantitative data for model fitting and group comparison. Log transformation is automatically applied and additional variables are created in columns for model fitting and group comparison process. Two options of data pre-processing and quality control of MS runs in dataProcess are (1) Transformation: logarithm transformation with base 2 or 10; (2) Normalization: to remove systematic bias between MS runs.}
 
 \usage{
 dataProcess(raw,
@@ -51,6 +51,12 @@ dataProcess(raw,
 \item{normalization : if normalization=TRUE and logTrans=2, the measurement of Variable ABUNDANCE is log-transformed with base 2 and normalized. Same as for logTrans=10.}
 \item{featureSubset : After the data was normalized, we deeply looked at each single feature (which is a precursor in DDA, a fragment in DIA, and a transition in SRM) and quantify its un-explainable variation. Ultimately, we remove the features with interference.}
 \item{equalFeatureVar : If the unequal variation of error for different peptide features is detected, then a possible solution is to account for the unequal error variation by means of a procedure called iteratively re-weighted least squares. equalFeatureVar=FALSE performs an iterative fitting procedure, in which features are weighted inversely proportionaly to the variation in their intensities, so that feature with large variation are given less importance in the estimation of parameters in the model.}
+
+\item{LogIntensities in RunlevelData from dataProcess : Estimated protein abundance for aa`RUN` and `Protein`.}
+\item{NumMeasuredFeature in RunlevelData from dataProcess : Number of measured features in a `RUN` and `Protein`. It counts feature intensities greater than 1, after selecting all/topN/highquality features and removing features with only one measurement across MS runs.}
+\item{Missing percentage in RunlevelData from dataProcess : Number of measured features in a `RUN` and `Protein` /total number of features in a `Proteins`.}
+\item{NumImputedFeature in RunlevelData from dataProcess : Number of imputed intensities (censored intensities) in a `RUN` and `Protein`. This column is shown only if users allow to impute the missing value.}
+
 }
 }
 
