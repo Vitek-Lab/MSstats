@@ -20,11 +20,11 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
 
     #percentile of the prediction interval considered
     if(missing(alpha)){
-        alpha = 5/100;
+        alpha <- 5/100;
     }
   
     
-    if( alpha >= 1 | alpha  <= 0){
+    if( alpha >= 1 | alpha <= 0){
         print("incorrect specified value for alpha,  0 < alpha < 1")
         return(NULL)
     }
@@ -32,12 +32,12 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
     #Number of boostrap samples
     if(missing(Nbootstrap)){
         B <- 2000
-    } else B <= Nbootstrap
+    } else B <- Nbootstrap
   
   
     #Number of points for the discretization interval
     if(missing(Npoints)){
-        Npoints = 100
+        Npoints <- 100
     }
 
     #Number of bootstrap samples for the prediction inteval for the changepoint
@@ -48,7 +48,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
     BB <- 200
   
     #Number of trials for convergence of every curvefit algorithm
-    NMAX = 30
+    NMAX <- 30
   
   
     datain <- datain[!is.na(datain$I) & !is.na(datain$C),]  
@@ -139,7 +139,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
             noise_re = sample(tmp_blank$I,length(tmp_blank$I),replace=TRUE)
             noise_B = mean(noise_re) #Mean of resampled noise (= mean of noise)
         
-            ii = 0;
+            ii = 0
             if(1)     while(ii < NMAX){#Number of ii trials for bilinear fit < NMAX
                 ii = ii + 1
                 {
@@ -169,7 +169,7 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
                 if(!is.null(fit.blank_B) && out_loop == 0){ #Boostrap again to see whether bilinear fit is real:
             
                     change_BB <- rep(NA,B1)
-                    bb = 0;
+                    bb = 0
                     while(bb < B1){#Number of second boostrap samples bb < NMAX
                         bb = bb + 1
               
@@ -316,10 +316,11 @@ nonlinear_quantlim <- function(datain, alpha = 0.05, Npoints = 100, Nbootstrap =
     }#Full bootstrap method
 
     
-    LOD_pred_mean_low = 0; LOD_pred_high =0;
+    LOD_pred_mean_low <- 0 
+    LOD_pred_high <- 0
     #Calculate the LOD/LOQ from the prediction interval:
-    i_before = which(diff(sign( up_noise - mean_bilinear  ))!=0) #before sign change
-    if(length(i_before)>0){
+    i_before = which(diff(sign( up_noise - mean_bilinear)) != 0) #before sign change
+    if(length(i_before) > 0){
         i_after = i_before+1
         x1 = xaxis_orig_2[i_before]; f1 = (up_noise - mean_bilinear)[i_before]
         x2 = xaxis_orig_2[i_after];  f2 = (up_noise - mean_bilinear)[i_after]
