@@ -21,6 +21,7 @@ groupComparisonPlots <- function(data=data,
                                  y.axis.size=10,
                                  dot.size=3,
                                  text.size=4,
+                                 text.angle=0,
                                  legend.size=13,
                                  ProteinName=TRUE,
                                  colorkey=TRUE,
@@ -830,6 +831,15 @@ groupComparisonPlots <- function(data=data,
             if (is.numeric(ylimDown)) {
                 y.limdown <- ylimDown 
             }
+            
+            ## adjust xthe location for x-axis label
+            if(text.angle != 0){
+                hjust <- 1
+                vjust <- 1
+            } else {
+                hjust <- 0.5
+                vjust <- 0.5
+            }
       
             ptemp <- ggplot(aes_string(x='Label', y='logFC'), data=sub) +
                 geom_errorbar(aes(ymax = logFC + ciw, ymin=logFC - ciw),
@@ -848,7 +858,8 @@ groupComparisonPlots <- function(data=data,
                     panel.background = element_rect(fill='white', colour="black"),
                     panel.grid.major.y = element_line(colour="grey95"),
                     panel.grid.minor.y = element_blank(),
-                    axis.text.x = element_text(size=x.axis.size, colour="black"),
+                    axis.text.x = element_text(size=x.axis.size, colour="black",
+                                               angle=text.angle, hjust=hjust, vjust=vjust),
                     axis.text.y = element_text(size=y.axis.size, colour="black"),
                     axis.ticks = element_line(colour="black"),
                     axis.title.x = element_text(size=x.axis.size+5, vjust=-0.4),

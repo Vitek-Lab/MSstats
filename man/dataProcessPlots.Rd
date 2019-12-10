@@ -38,7 +38,7 @@ dataProcessPlots(data=data,
   \item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and QC Plot, and "Condition" in Condition Plot. Default is 10.}
   \item{y.axis.size}{size of y-axis labels. Default is 10.}
   \item{text.size}{size of labels represented each condition at the top of graph in Profile Plot and QC plot. Default is 4.}
-    \item{text.angle}{angle of labels represented each condition at the top of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. Default is 0.}
+  \item{text.angle}{angle of labels represented each condition at the top of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. Default is 0.}
   \item{legend.size}{size of feature legend (transition-level or peptide-level) above graph in Profile Plot. Default is 7.}
   \item{dot.size.profile}{size of dots in profile plot. Default is 2.}
   \item{dot.size.condition}{size of dots in condition plot. Default is 3.}
