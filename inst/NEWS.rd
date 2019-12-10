@@ -2,6 +2,18 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 3.18.3 (2019-12-10)}{
+    \itemize{
+        \item groupComparisonPlots : add 'text.angle' option.
+    }
+}
+
+\section{Version 3.18.2 (2019-11-22)}{
+    \itemize{
+        \item Fixed nonlinear_quantlim error.
+    }
+}
+
 \section{Version 3.18.1 (2019-10-31)}{
     \itemize{
         \item Fixed message: transitions are completely missing in one condition.-> transitions are completely missing in at least one of the conditions.

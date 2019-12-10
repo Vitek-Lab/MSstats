@@ -16,6 +16,7 @@ groupComparisonPlots(data=data,
 		y.axis.size=10,
 		dot.size=3,
 		text.size=4,
+		text.angle=0,
 		legend.size=13,
 		ProteinName=TRUE,
 		colorkey=TRUE,
@@ -40,11 +41,12 @@ groupComparisonPlots(data=data,
   \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}
   \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
   \item{dot.size}{size of dots in volcano plot and comparison plot. Default is 3.}
- \item{text.size}{size of ProteinName label in the graph for Volcano Plot. Default is 4.}
+  \item{text.size}{size of ProteinName label in the graph for Volcano Plot. Default is 4.}
+  \item{text.angle}{angle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.}
   \item{legend.size}{size of legend for color at the bottom of volcano plot.  Default is 7.}
   \item{ProteinName}{for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.}
   \item{colorkey}{TRUE(default) shows colorkey.}
-   \item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180. }
+  \item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180. }
    \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
   \item{width}{width of the saved file. Default is 10.}
   \item{height}{height of the saved file. Default is 10.}
