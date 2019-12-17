@@ -190,6 +190,7 @@ dataProcessPlots <- function(data=data,
         }	
         					
         if (originalPlot) {
+            
         	if (address != FALSE) {
           		allfiles <- list.files()
           
@@ -229,7 +230,7 @@ dataProcessPlots <- function(data=data,
           		temp1 <- xtabs(~b[, 1])
           		ss <- NULL
           		s <- NULL
-          
+          		
           		for (j in 1:length(temp1)) {
             		temp3 <- rep(j, temp1[j])
             		s <- c(s, temp3)
@@ -241,6 +242,14 @@ dataProcessPlots <- function(data=data,
           		groupNametemp <- data.frame(groupName, 
           		                           "FEATURE"=unique(sub$FEATURE)[1], 
           		                            "PEPTIDE"=unique(sub$PEPTIDE)[1])
+          		
+          		## 2019. 12. 17, MC : for profile plot, define color for dot
+          		cbp <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+          		check.length <- length(unique(s)) %/% length(cbp)
+          		if ( check.length > 0 ){
+          		    cbp <- rep(cbp, times=check.length + 1)
+          		}
+          		## 
 
     			if (toupper(featureName) == "TRANSITION") {
     				    
@@ -255,7 +264,7 @@ dataProcessPlots <- function(data=data,
             			    geom_line(size=0.5) +
             			    geom_point(aes_string(x='RUN', y='ABUNDANCE', color='FEATURE', shape='censored'), data=sub, 
             			             size=dot.size.profile) +
-            			    scale_colour_manual(values=s) +
+            			    scale_colour_manual(values=cbp[s]) + ## 2019. 12. 17, MC
             			    scale_linetype_manual(values=ss) +
             			    scale_shape_manual(values=c(16, 1), 
             			                       labels=c("Detected data", "Censored missing data")) +
@@ -304,7 +313,7 @@ dataProcessPlots <- function(data=data,
     				        facet_grid(~LABEL) +
     				        geom_point(size=dot.size.profile) +
     				        geom_line(size=0.5) +
-    				        scale_colour_manual(values=s) +
+    				        scale_colour_manual(values=cbp[s]) + ## 2019. 12. 17, MC
     				        scale_linetype_manual(values=ss) +
     				        scale_shape_manual(values=c(16)) +
     				        scale_x_continuous('MS runs', breaks=cumGroupAxis) +
@@ -356,13 +365,13 @@ dataProcessPlots <- function(data=data,
           		        sub$censored <- factor(sub$censored, levels=c('FALSE', 'TRUE'))
           		    
           		        ptemp <- ggplot(aes_string(x='RUN', y='ABUNDANCE', 
-          		                                   olor='PEPTIDE', linetype='FEATURE'), data=sub) +
+          		                                   color='PEPTIDE', linetype='FEATURE'), data=sub) +
           		            facet_grid(~LABEL) +
           		            geom_line(size=0.5) +
           		            geom_point(aes_string(x='RUN', y='ABUNDANCE', 
           		                                  color='PEPTIDE', shape='censored'), data=sub, 
           		                 size=dot.size.profile) +
-          		            scale_colour_manual(values=unique(s)) + ## unique(s) ??
+          		            scale_colour_manual(values=cbp[1:length(unique(s))])+ ## 2019. 12. 17, MC
           		            scale_linetype_manual(values=ss, guide="none") +
           		            scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data")) +
           		            scale_x_continuous('MS runs', breaks=cumGroupAxis) +
@@ -407,7 +416,7 @@ dataProcessPlots <- function(data=data,
           		            facet_grid(~LABEL) +
           		            geom_point(size=dot.size.profile) +
           		            geom_line(size=0.5) +
-          		            scale_colour_manual(values=unique(s)) +
+          		            scale_colour_manual(values=cbp[1:length(unique(s))]) + ## 2019. 12. 17, MC
           		            scale_linetype_manual(values=ss, guide="none") +
           		            scale_shape_manual(values=c(16)) +
           		            scale_x_continuous('MS runs', breaks=cumGroupAxis) +
@@ -461,7 +470,7 @@ dataProcessPlots <- function(data=data,
           		            geom_point(aes_string(x='RUN', y='ABUNDANCE', 
           		                                  color='PEPTIDE', shape='censored'), data=sub, 
           		                       size=dot.size.profile) +
-          		            scale_colour_manual(values=unique(s), guide="none") + 
+          		            scale_colour_manual(values=cbp[1:length(unique(s))], guide="none") + ## 2019. 12. 17, MC
           		            scale_linetype_manual(values=ss, guide="none") +
           		            scale_shape_manual(values=c(16, 1), labels=c("Detected data", "Censored missing data")) +
           		            scale_x_continuous('MS runs', breaks=cumGroupAxis) +
@@ -499,7 +508,7 @@ dataProcessPlots <- function(data=data,
           		            facet_grid(~LABEL) +
           		            geom_point(size=dot.size.profile) +
           		            geom_line(size=0.5) +
-          		            scale_colour_manual(values=unique(s), guide="none") +
+          		            scale_colour_manual(values=cbp[s], guide="none") + ## 2019. 12. 17, MC
           		            scale_linetype_manual(values=ss, guide="none") +
           		            scale_shape_manual(values=c(16)) +
           		            scale_x_continuous('MS runs', breaks=cumGroupAxis) +
