@@ -35,7 +35,6 @@ MaxQtoMSstatsFormat <- function(evidence,
         stop('** Please select \'Proteins\' or \'Leading.razor.proteins\' for \'proteinID\'.')
     }
     
-	experiment <- "DDA"
 	
 	## evidence.txt file
 	infile <- evidence
