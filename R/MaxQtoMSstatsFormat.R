@@ -20,7 +20,8 @@ MaxQtoMSstatsFormat <- function(evidence,
                                 fewMeasurements="remove", 
                                 removeMpeptides=FALSE,
                                 removeOxidationMpeptides=FALSE,
-                                removeProtein_with1Peptide=FALSE){
+                                removeProtein_with1Peptide=FALSE,
+                                experiment = "DDA"){
 	
     if (is.null(fewMeasurements)) {
         stop('** Please select \'remove\' or \'keep\' for \'fewMeasurements\'.')
@@ -139,7 +140,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 	## ? can remove Retention.time column later
 	if (experiment == "SILAC") {
 		
-		infile <- infile[c("uniqueProteins", "Protein.group.IDs", "Sequence", 
+		infile <- infile[, c("uniqueProteins", "Protein.group.IDs", "Sequence", 
 		                   "Modified.sequence", "Charge", "Raw.file", 
 		                   "Intensity.L", "Intensity.H", "Retention.time", "id")]
 		infile.l <- infile[, !(colnames(infile) %in% "Intensity.H")]
@@ -333,9 +334,9 @@ MaxQtoMSstatsFormat <- function(evidence,
 	## Create Condition & Bioreplicate columns; TODO: fill in with correct values
 	infile_l <- merge(infile_l, annot, by=c("Raw.file", "IsotopeLabelType"))
 
-	infile_l.final <- infile_l[, c(c("ProteinName", "PeptideSequence", "PrecursorCharge", 
+	infile_l.final <- infile_l[, c("ProteinName", "PeptideSequence", "PrecursorCharge", 
                              "FragmentIon", "ProductCharge", "IsotopeLabelType", 
-                             "Condition", "BioReplicate", "Raw.file", "Intensity"))]
+                             "Condition", "BioReplicate", "Raw.file", "Intensity")]
 	colnames(infile_l.final)[9] <- "Run"
 
 	if (any(is.element(colnames(infile_l), 'Fraction'))) {
@@ -409,15 +410,8 @@ MaxQtoMSstatsFormat <- function(evidence,
 .remove_feature_with_few <- function(x){
 	count_measure <- apply (x[, !(colnames(x) %in% c("Proteins", "Modified.sequence", "Charge"))], 1, 
 	                        function ( x ) length ( x[!is.na(x)] ) ) 
-	remove_feature_name <- x[count_measure < 3, c("Proteins", "Modified.sequence", "Charge")]
-
-	x$Feature <- paste(x$Proteins, x$Modified.sequence, x$Charge, sep="_")
-	remove_feature_name$Feature <- paste(remove_feature_name$Proteins, 
-	                                     remove_feature_name$Modified.sequence, 
-	                                     remove_feature_name$Charge, sep="_")
-
-	x <- x[-which(x$Feature %in% remove_feature_name$Feature), ]
-	x <- x[, -ncol(x)]
+	ind <- which(count_measure < 3)
+	x <- x[-ind, ]
 	
 	return(x)
 }
