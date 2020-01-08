@@ -463,14 +463,17 @@ flag_noninf_data_nbftr <- function(processedData) {
         message("Identifying low-coverage features...")
         
         list_cover <- vector("list", length = nrow(nested_prot))
+        augdata_list <- as.list(nested_prot$data)
         for (i in seq_along(list_cover)) {
             augdata <- nested_prot$data[[i]] %>% 
                 group_by(feature) %>% 
                 mutate(is_lowcvr = sum(is_obs) < nested_prot$min_obs[i]) %>% 
                 ungroup()
-            nested_prot$data[[i]] <- augdata
+            #nested_prot$data[[i]] <- augdata
+            augdata_list[[i]] <- augdata
             list_cover[[i]] <- augdata %>% distinct(feature, is_lowcvr)
         }
+        nested_prot$data <- augdata_list
         nested_prot$cover_feature <- list_cover
         rm(list_cover)
         
@@ -511,9 +514,12 @@ flag_noninf_data_nbftr <- function(processedData) {
         
         # Shrinkage variance estimation with limma
         eb_fit <- limma::squeezeVar(var_protein$var_resid, var_protein$df_resid, robust = TRUE)
-        var_protein <- var_protein %>% 
-            mutate(var_resid_eb = eb_fit$var.post) %>% 
-            mutate(s_resid_eb = sqrt(var_resid_eb))
+        # var_protein <- var_protein %>% 
+        #     mutate(var_resid_eb = eb_fit$var.post) %>% 
+        #     mutate(s_resid_eb = sqrt(var_resid_eb))
+        
+        var_protein$var_resid_eb <- eb_fit$var.post
+        var_protein$s_resid_eb <- sqrt(var_protein$var_resid_eb)
         
         nested_prot <- nested_prot %>% 
             left_join(var_protein %>% select(protein, s_resid_eb))
