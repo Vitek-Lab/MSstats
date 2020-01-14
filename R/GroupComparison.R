@@ -83,6 +83,28 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         stop("No row.names of comparison exist.\n")
     }
     
+    ## if contrast.matrix has colnames, check if they match GROUP_ORIGINAL in data, check their order, and fix order if necessary
+    if (!is.null(colnames(contrast.matrix))){
+      if (setequal(colnames(contrast.matrix), levels(data$ProcessedData$GROUP_ORIGINAL))){
+        #colnames all have a match, check if out of order, warn and fix
+        if (any(colnames(contrast.matrix) != levels(data$ProcessedData$GROUP_ORIGINAL))){
+          messageStr <- "ALERT: The input contrast.matrix has the correct columns but in the wrong order. Proceeding with a re-ordered contrast.matrix."
+          processout <- rbind(processout, messageStr)
+          write.table(processout, file=finalfile, row.names=FALSE)
+          message (messageStr, "\n")
+          contrast.matrix <- contrast.matrix[,match(levels(data$ProcessedData$GROUP_ORIGINAL),colnames(contrast.matrix))]
+        }
+      } else {
+        #colnames do not match, warn and  proceed
+        messageStr <- "WARNING: The input contrast.matrix has column names that do not match the group names in the data. Proceeding using the mapped names below. Please correct the names in the contrast matrix if these mappings are not intended."
+        misMatches <-  colnames(contrast.matrix) != levels(data$ProcessedData$GROUP_ORIGINAL)
+        colMappingStr <- paste (colnames(contrast.matrix)[misMatches], levels(data$ProcessedData$GROUP_ORIGINAL)[misMatches], sep="-->", collapse = "; ")
+        processout <- rbind(processout, messageStr)
+        processout <- rbind(processout, colMappingStr)
+        write.table(processout, file=finalfile, row.names=FALSE)
+        message (messageStr,"\n Names mapped, contrast-->group: ", colMappingStr, "\n")
+      }
+    }
     
     if (!(scopeOfBioReplication == "restricted" | scopeOfBioReplication == "expanded")) {
         processout <- rbind(processout,

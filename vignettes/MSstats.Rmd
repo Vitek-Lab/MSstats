@@ -221,7 +221,7 @@ Tests for significant changes in protein abundance across conditions based on a 
  
 ### Arguments
 
-* `contrast.matrix` : comparison between conditions of interests. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command `levels(xxx$ProcessedData$GROUP_ORIGINAL)` after using `dataProcess` function can illustrate the actual order of the levels of conditions.
+* `contrast.matrix` : a matrix encoding comparisons between conditions of interest. Each row in the matrix encodes one comparison, and each column one group in the original data. Most commonly you would specify 1 and -1 in the two conditions to be compared in each row and 0 otherwise. The order of conditions (columns) must either match the levels of the `xxx$ProcessedData$GROUP_ORIGINAL` returned by `dataProcess`, or if the order does not match then the set of column names must match exactly the set of levels.  The Command `levels(xxx$ProcessedData$GROUP_ORIGINAL)` after using the `dataProcess` function can illustrate the order and names of the levels of conditions.
 * `data` : name of the (output of dataProcess function) data set.
 
 
