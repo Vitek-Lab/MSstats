@@ -65,6 +65,15 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
         stop("Please use 'dataProcess' first. Then use output of dataProcess function as input in groupComparison.")
     }
     
+    ## check that GROUP and GROUP_ORIGINAL map to each other as expected:
+    if (!.checkGroupMappings(data$ProcessedData) | !.checkGroupMappings(data$RunlevelData)){
+      processout <- rbind(processout,
+                          "The required input - data : did not process from dataProcess function. GROUP and GROUP_ORIGINAL columns are not mapped sequentially as expected. GROUP ordered numerically should match GROUP_ORIGINAL ordered alphabetically. - stop")
+      write.table(processout, file=finalfile, row.names=FALSE)
+      
+      stop("GROUP and GROUP_ORIGINAL columns are not mapped sequentially as expected. GROUP ordered numerically should match GROUP_ORIGINAL ordered alphabetically.")
+    }
+    
     ## contrast. matrix
     if (ncol(contrast.matrix) != length(unique(data$ProcessedData$GROUP_ORIGINAL))) {
         processout <- rbind(processout,
@@ -364,6 +373,31 @@ groupComparison <- function(contrast.matrix=contrast.matrix,
 #############################################
 ## fit.model
 #############################################
+
+
+#############################################
+## check if GROUP and GROUP_ORIGINAL are mapped as expected
+## This should only fail if the output of dataProcess is edited outside of MSstats,
+## but it is critical that these match for returning properly labeled contrast results.
+#############################################
+.checkGroupMappings <- function(data){
+  groupMappings <- unique(with (data,{data.frame(GROUP_ORIGINAL = GROUP_ORIGINAL,
+                                                 groupOriginalOrder = as.integer(GROUP_ORIGINAL),
+                                                 GROUP = GROUP,
+                                                 groupOrder = as.integer(GROUP_ORIGINAL))
+  }))
+  groupMappings <- groupMappings[order(groupMappings$GROUP_ORIGINAL),]
+  
+  # test three things:
+  # does order match between GROUP and GROUP_ORIGINAL; e.g. 1,2,3.. match 1,2,3..
+  # are there any missing values in group; e.g. 1,2,4  is bad (maybe)
+  # does character GROUP match the order;  e.g. "1" and 1, "2" and 2 is good
+  return (
+    all(groupMappings$groupOriginalOrder == groupMappings$groupOrder) &
+      all(groupMappings$groupOrder == 1:(max(groupMappings$groupOrder))) &
+      all(as.integer(as.character(groupMappings$GROUP)) == groupMappings$groupOrder))
+}
+
 
 #############################################
 ## check if measurements are missing for entire group
