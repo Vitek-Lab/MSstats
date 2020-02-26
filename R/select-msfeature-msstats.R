@@ -54,6 +54,9 @@ calc_fvar <- function(augmented_data, s_resid, rm_olr = FALSE, tol = 3) {
 #' @keywords internal
 #' 
 flag_outlier <- function(augmented_data, s_resid, tol = 3, keep_run = FALSE) {
+    
+    select <- dplyr::select
+    
     outlier <- augmented_data %>% 
         mutate(is_olr = abs(.resid / s_resid) > tol) %>% 
         select(run, feature, is_olr)
@@ -84,6 +87,8 @@ flag_outlier <- function(augmented_data, s_resid, tol = 3, keep_run = FALSE) {
 #' @keywords internal
 #' 
 flag_noninf_data <- function(processedData) {
+    
+    select <- dplyr::select
     
     # Convert to the working format
     # df_allftr <- processedData %>%
@@ -246,7 +251,7 @@ flag_noninf_data <- function(processedData) {
             mutate(s_resid_eb = sqrt(var_resid_eb))
         
         nested_prot <- nested_prot %>% 
-            left_join(var_protein %>% select(protein, s_resid_eb))
+            left_join(var_protein %>% dplyr::select(protein, s_resid_eb))
         
         # Feature variance and outlier detection
         message("Identifying outliers and calculating feature variances...")
@@ -339,6 +344,8 @@ flag_noninf_data <- function(processedData) {
 #' @keywords internal
 #' 
 flag_noninf_data_nbftr <- function(processedData) {
+    
+    select <- dplyr::select
     
     ### [TEST] ###
     min_ftr <- 2
@@ -513,6 +520,7 @@ flag_noninf_data_nbftr <- function(processedData) {
         # Shrinkage variance estimation with limma
         eb_fit <- limma::squeezeVar(var_protein$var_resid, var_protein$df_resid, robust = TRUE)
         var_protein <- var_protein %>% 
+            ungroup() %>%
             mutate(var_resid_eb = eb_fit$var.post) %>% 
             mutate(s_resid_eb = sqrt(var_resid_eb))
         
