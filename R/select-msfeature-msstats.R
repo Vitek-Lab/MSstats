@@ -241,6 +241,7 @@ flag_noninf_data <- function(processedData) {
         # Shrinkage variance estimation with limma
         eb_fit <- limma::squeezeVar(var_protein$var_resid, var_protein$df_resid, robust = TRUE)
         var_protein <- var_protein %>% 
+            ungroup() %>%
             mutate(var_resid_eb = eb_fit$var.post) %>% 
             mutate(s_resid_eb = sqrt(var_resid_eb))
         
