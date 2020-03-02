@@ -1,8 +1,8 @@
 Package: MSstats
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
-Version: 3.18.4
-Date: 2019-12-17
+Version: 3.18.5
+Date: 2020-02-26
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
 Authors@R: c(
   person("Meena","Choi", , "mnchoi67@gmail.com", c("aut", "cre")),
