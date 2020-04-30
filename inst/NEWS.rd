@@ -2,6 +2,12 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 3.18.5 (2020-02-26)}{
+    \itemize{
+        \item Fix the error for feature selection option in dataProcess.
+    }
+}
+
 \section{Version 3.18.4 (2019-12-17)}{
     \itemize{
         \item dataProcessPlots : bug to draw profile plot. The option for scale_colour_manual is updated.
