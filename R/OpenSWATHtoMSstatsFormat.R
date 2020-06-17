@@ -131,6 +131,9 @@ OpenSWATHtoMSstatsFormat <- function(input,
     input$PeptideSequence <- gsub(':', '_', input$PeptideSequence)
     input$FragmentIon <- gsub(':', '_', input$FragmentIon)
     
+    ## class of intensity is character, change it as numeric
+    input$Intensity <- as.numeric(input$Intensity)	
+	
     ## there are incomplete rows, which potentially NA
     ## if negative and 0 values should be replaced with NA
     input[input$Intensity < 1, "Intensity"] <- 0
@@ -272,13 +275,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
     }
     
     ##############################
-    ## 10. class of intensity is character, change it as numeric
-    ##############################
-    
-    input$Intensity <- as.numeric(input$Intensity)
-    
-    ##############################
-    ## 11. merge annotation
+    ## 10. merge annotation
     ##############################
     input <- merge(input, annotinfo, by='Run', all=TRUE)
     
