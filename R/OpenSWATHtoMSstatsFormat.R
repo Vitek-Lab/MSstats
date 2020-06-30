@@ -252,7 +252,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
                           value.var='Intensity', 
-                          fun.aggregate=summaryforMultipleRows, fill='0') 
+                          fun.aggregate=summaryforMultipleRows, fill=0) 
     
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))
@@ -265,7 +265,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
         ## still need to fill incomplete rows
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
                           value.var='Intensity', 
-                          fill='0') 
+                          fill=0) 
         
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))
@@ -273,6 +273,7 @@ OpenSWATHtoMSstatsFormat <- function(input,
         
         message('** No multiple measurements in a feature and a run.')
     }
+    
     
     ##############################
     ## 10. merge annotation
