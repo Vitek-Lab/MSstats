@@ -539,10 +539,10 @@ dataProcess  <-  function(raw,
 	                                     function(x) max(x))
 	                max.feature.1 <- count.feature3[max.feature == 1, 'FEATURE'] 
 	                
-	                work <- work[-which(work$FEATURE %in% max.feature.1), ]
-	                
-	                count.feature3 <- count.feature3[-which(count.feature3$FEATURE %in% max.feature.1), ]
-	                
+		            if (length(max.feature.1) > 0){
+	                    work <- work[-which(work$FEATURE %in% max.feature.1), ]
+	                    count.feature3 <- count.feature3[-which(count.feature3$FEATURE %in% max.feature.1), ]
+	                }
 	                if ( nrow(count.feature3) > 0 ) {
 	                    
 	                    ###############

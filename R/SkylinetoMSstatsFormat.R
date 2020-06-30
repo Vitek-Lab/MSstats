@@ -355,7 +355,9 @@ SkylinetoMSstatsFormat <- function(input,
     } else if (missing.annotation & !is.null(annotation)) {
         annotinfo <- annotation
         
-        input <- input[, -which(colnames(input) %in% c('Condition', 'BioReplicate'))]
+        if( length(which(colnames(input) %in% c('Condition', 'BioReplicate'))) != 0 ) {
+            input <- input[, -which(colnames(input) %in% c('Condition', 'BioReplicate'))]
+        }
         
         ## assign the annotation
         ## merge it by Run
