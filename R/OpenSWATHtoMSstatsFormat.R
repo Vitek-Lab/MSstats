@@ -252,7 +252,8 @@ OpenSWATHtoMSstatsFormat <- function(input,
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
                           value.var='Intensity', 
-                          fun.aggregate=summaryforMultipleRows, fill=0) 
+                          fun.aggregate=summaryforMultipleRows, na.rm=T,
+                          fill=0) 
     
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))

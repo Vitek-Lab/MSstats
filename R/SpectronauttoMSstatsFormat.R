@@ -292,7 +292,8 @@ SpectronauttoMSstatsFormat <- function(input,
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon + ProductCharge ~ Run, data=input, 
                           value.var='Intensity', 
-                          fun.aggregate=summaryforMultipleRows, fill=NA_real_) 
+                          fun.aggregate=summaryforMultipleRows, na.rm=T,
+                          fill=NA_real_) 
     
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon', 'ProductCharge'))

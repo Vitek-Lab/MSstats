@@ -190,7 +190,8 @@ OpenMStoMSstatsFormat <- function(input,
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
                           value.var='Intensity', 
-                          fun.aggregate=summaryforMultipleRows, fill='NA') 
+                          fun.aggregate=summaryforMultipleRows, na.rm=T, 
+                          fill='NA') 
     
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))
@@ -202,7 +203,7 @@ OpenMStoMSstatsFormat <- function(input,
         
         ## still need to fill incomplete rows
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon + ProductCharge ~ Run, data=input, 
-                          value.var='Intensity', 
+                          value.var='Intensity', na.rm=T,
                           fill='NA') 
         
         ## reformat for long format

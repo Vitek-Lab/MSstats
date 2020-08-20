@@ -215,7 +215,7 @@ PDtoMSstatsFormat <- function(input,
     ## maximum or sum up abundances among intensities for identical features within one run
     input_sub <- dcast( ProteinName + PeptideSequence + Modifications + Charge ~ Run, data=input, 
                         value.var='Intensity', 
-                        fun.aggregate=summaryforMultipleRows, 
+                        fun.aggregate=summaryforMultipleRows, na.rm=T,
                         fill=NA_real_) 
  
     ## reformat for long format

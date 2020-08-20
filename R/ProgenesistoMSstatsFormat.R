@@ -166,7 +166,7 @@ ProgenesistoMSstatsFormat <- function(input,
     ## maximum or sum up abundances among intensities for identical features within one run
     input <- dcast(ProteinName + PeptideModifiedSequence + PrecursorCharge ~ Run, data=input_remove, 
                    value.var='Intensity', 
-                   fun.aggregate=summaryforMultipleRows, 
+                   fun.aggregate=summaryforMultipleRows, na.rm=T,
                    fill=NA_real_) 
   
     ## reformat for long format
