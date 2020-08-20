@@ -2,6 +2,13 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 3.21.2 (2020-08-19)}{
+    \itemize{
+        \item Fix the bugs for converter.(dcast updated)
+        \item Remove CV in sample size calculation plot.
+    }
+}
+
 \section{Version 3.18.5 (2020-02-26)}{
     \itemize{
         \item Fix the error for feature selection option in dataProcess.

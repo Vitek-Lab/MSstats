@@ -196,10 +196,10 @@ designSampleSizePlots <- function(data=data) {
   	    axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
   	         labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
   	         cex.axis=axis.size)
-  	    axis(3, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
-  	         labels=data$CV[which(data$desiredFC %in% seq(min(data$desiredFC), max(data$desiredFC), 0.05))],
-  	         cex.axis=axis.size)
-  	    mtext("Coefficient of variation, CV", 3, line=2.5, cex=lab.size)
+  	    #axis(3, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
+  	    #     labels=data$CV[which(data$desiredFC %in% seq(min(data$desiredFC), max(data$desiredFC), 0.05))],
+  	    #     cex.axis=axis.size)
+  	    #mtext("Coefficient of variation, CV", 3, line=2.5, cex=lab.size)
   	    mtext("Desired fold change", 1, line=3.5, cex=lab.size)
   	    mtext("Minimal number of biological replicates", 2, line=2.5, cex=lab.size)
   	    legend("topright",

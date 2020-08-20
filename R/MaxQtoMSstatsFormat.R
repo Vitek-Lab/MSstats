@@ -362,7 +362,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 .cast_maxquant_to_wide_glf <- function(d_long, aggregateFun=aggregateFun){
 	data_w <- dcast( Proteins + Modified.sequence + Charge ~ Raw.file, data=d_long, 
                    value.var='Intensity', 
-                   fun.aggregate=aggregateFun, 
+                   fun.aggregate=aggregateFun, na.rm=T,
                    keep=TRUE) 
 	## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
 	## when there is completely missing in certain feature and certain run, '1' will be filled. Therefore put NA instead of 1.
@@ -383,7 +383,7 @@ MaxQtoMSstatsFormat <- function(evidence,
 	
 	data_w <- dcast( Proteins + Modified.sequence + Charge + IsotopeLabelType ~ Raw.file, data=d_long, 
 	                 value.var='Intensity', 
-	                 fun.aggregate=aggregateFun, 
+	                 fun.aggregate=aggregateFun, na.rm=T, 
 	                 keep=TRUE) 
 	## keep=TRUE : will keep the data.frame value as 1 even though there is no values for certain feature and certain run.
   
