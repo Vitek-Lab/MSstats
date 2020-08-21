@@ -155,21 +155,6 @@
     tmp_result
 }
 
-.getNonMissingFilter = function(input, impute, censored_symbol) {
-    if (impute) {
-        if (!is.null(censored_symbol)) {
-            if (censored_symbol == "0") {
-                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
-            } else if (censored_symbol == "NA") {
-                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE)
-            }  
-        } 
-    } else {
-        nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
-    }
-    nonmissing_filter
-}
-
 .fitTukey = function(input, original_scale, features, log_base) {
     features = as.character(unique(input$FEATURE))
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,

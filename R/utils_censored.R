@@ -53,3 +53,78 @@
     }
     input
 }
+
+.setCensoredByThreshold = function(input, cutoff_base, censored_symbol,
+                                   remove50missing) {
+    if (censored_symbol == "NA") {
+        nonmissing_filter = !is.na(input$ABUNDANCE)
+    } else if (censored_symbol == "0") {
+        nonmissing_filter = !is.na(input$INTENSITY) & input$INTENSITY != 0
+    }
+    
+    if (cutoff_base == "minFeature") {
+        grouping_vars = c("FEATURE", "LABEL")
+    } else if (cutoff_base == "minRun") {
+        grouping_vars = c("RUN", "LABEL")
+    } 
+    
+    if (cutoff_base %in% c("minFeature", "minRun")) {
+        cutoffs = input[nonmissing_filter, 
+                        list(ABUNDANCE_cut = 0.99*min(ABUNDANCE)), 
+                        by = grouping_vars]
+        input = merge(input, cutoffs, by = grouping_vars)
+        input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE,
+                                 input$ABUNDANCE_cut)
+        input = input[, !(colnames(input) == "ABUNDANCE_cut"), with = FALSE]
+    } else {
+        feature_cutoffs = input[nonmissing_filter, 
+                                list(ABUNDANCE_cut_fea = 0.99*min(ABUNDANCE)),
+                                by = c("FEATURE", "LABEL")]
+        
+        if (remove50missing & censored_symbol == "0") {
+            n_features = data.table::uniqueN(input$FEATURE)
+            missing_runs = input[, list(perc_nm = .N / n_features), 
+                                 by = "RUN"]
+            missing_runs = missing_runs[perc_nm < 0.5, ]
+            if (nrow(missing_runs) > 0) {
+                input = input[!(RUN %in% unique(missing_runs$RUN)), ]
+                input$RUN = factor(input$RUN)
+            }
+        }
+        
+        run_cutoffs = input[nonmissing_filter, 
+                            list(ABUNDANCE_cut_run = 0.99*min(ABUNDANCE)),
+                            by = c("RUN", "LABEL")]
+        cutoffs = merge(feature_cutoffs, run_cutoffs, by = c("LABEL"),
+                        allow.cartesian = TRUE)
+        cutoffs$final_cutoff = sapply(1:nrow(cutoffs), 
+                                      function(i) min(cutoffs$ABUNDANCE_cut_fea[i],
+                                                      cutoffs$ABUNDANCE_cut_run[i]))
+        if (data.table::uniqueN(input[, list(FEATURE, RUN)]) > 1) {
+            input$ABUNDANCE = ifelse(nonmissing_filter,
+                                     input$ABUNDANCE, cutoffs$final_cutoff)
+        } else {
+            if (censored_symbol == "0") {
+                input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE, 
+                                         cutoffs$ABUNDANCE_cut_fea)
+            }
+        }
+    }
+    input
+}
+
+.getNonMissingFilter = function(input, impute, censored_symbol) {
+    if (impute) {
+        if (!is.null(censored_symbol)) {
+            if (censored_symbol == "0") {
+                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
+            } else if (censored_symbol == "NA") {
+                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE)
+            }  
+        } 
+    } else {
+        nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
+    }
+    nonmissing_filter
+}
+
