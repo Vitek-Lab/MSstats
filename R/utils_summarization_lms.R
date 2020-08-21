@@ -1,3 +1,25 @@
+.fit.quantification.run <- function(sub, singleFeature, singleSubject, TechReplicate, labeled, equalFeatureVar) {
+    if (!labeled) {
+        if (singleFeature) {
+            fit.full <- lm(ABUNDANCE ~ RUN , data = sub)
+        } else{
+            fit.full <- lm(ABUNDANCE ~ FEATURE + RUN , data = sub)
+        }
+    } else{
+        if (singleFeature) {
+            fit.full <- lm(ABUNDANCE ~ RUN+ref , data = sub)
+        } else{ ## several subjects
+            fit.full <- lm(ABUNDANCE ~ FEATURE+RUN+ref , data = sub)
+        }
+    }
+    
+    ## make equal variance for feature : need to be updated
+    if (!equalFeatureVar) {
+        fit.full <- .iter.wls.fit.model(data=sub, fit=fit.full, nrepeats=1)
+    }
+    
+    fit.full
+}
 
 ##################################
 ########### make contrast ########
