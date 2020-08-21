@@ -1,4 +1,4 @@
-Package: MSstats
+Package: MSstatsdev
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
 Version: 3.21.1
@@ -14,8 +14,19 @@ Authors@R: c(
 License: Artistic-2.0
 Depends: R (>= 3.6)
 Imports: 
-    MSstatsConvert
-Suggests: BiocStyle, knitr, rmarkdown, MSstatsBioData
+    MSstatsConvert,
+    data.table,
+    checkmate,
+    MASS,
+    limma,
+    lme4
+Suggests: 
+    BiocStyle,
+    knitr,
+    rmarkdown,
+    MSstatsBioData,
+    tinytest,
+    covr
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
