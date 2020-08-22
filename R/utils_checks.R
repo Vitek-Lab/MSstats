@@ -169,9 +169,8 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
 #' @param log_base base of the logarithm
 #' @keywords internal
 .preProcessIntensities = function(input, log_base) {
-    n_smaller_than_1 = sum(input$INTENSITY < 1, na.rm = TRUE)
-    if (n_smaller_than_1 > 0) {
-        input[INTENSITY < 1, INTENSITY := 1]
+    if (any(input$INTENSITY < 1, na.rm = TRUE)) {
+        input[, INTENSITY = ifelse(INTENSITY < 1, 1, INTENSITY)]
         msg = paste("** There are", n_smaller_than_1, 
                     "intensities which are zero or less than 1.",
                     "These intensities are replaced with 1",
@@ -187,11 +186,17 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
                                   collapse = " "))
 }
 
+#' @importFrom utils getFromNamespace
+.updateColnames = utils::getFromNamespace(".updateColnames", "MSstatsConvert")
 
 #' Create columns for data processing
 #' @param input data.table
 #' @keywords internal
 .updateColumnsForProcessing = function(input) {
+    colnames(input) = .updateColnames(
+        input, c("PROTEINNAME", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE"), 
+        c("PROTEIN", "LABEL", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
+    
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
     input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, 0)]
     input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, 0)]
@@ -202,8 +207,6 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", "SUBJECT", 
              "SUBJECT_NESTED", "INTENSITY")
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
-    # processout <- rbind(processout, c("New input format : made new columns for analysis - okay"))
-    # write.table(processout, file=finalfile, row.names=FALSE)
 }
 
 
@@ -227,3 +230,25 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
     getOption("MSstatsLog")("INFO", msg)
     input
 }
+
+# .makeFactorColumns = function(input) {
+#     input[, PROTEIN := factor(PROTEIN)]
+#     input[, PEPTIDE := factor(PEPTIDE)]
+#     input[, TRANSITION := factor(TRANSITION)]
+#     
+#     input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, 
+#                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
+#     
+#     input[, GROUP := factor(GROUP)]
+#     input[, SUBJECT := factor(SUBJECT)]
+#     input[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
+#     input[, FEATURE := factor(FEATURE)]
+#     input[, originalRun := RUN]
+#     input[, RUN := factor(RUN, levels = unique(RUN), labels = seq_along(unique(RUN)))]
+#     
+#     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
+#                 "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN) - okay")
+#     getOption("MSstatsLog")("INFO", msg)
+#     input
+# }
+
