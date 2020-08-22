@@ -1,9 +1,9 @@
-.selectFeatures = function(input, method, top_n) {
+.selectFeatures = function(input, method, top_n = NULL, min_feature_count = NULL) {
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
     } else if (method == "highQuality") {
         msg = "** Flag uninformative feature and outliers by feature selection algorithm."
-        features_quality = .selectHighQualityFeatures(input)
+        features_quality = .selectHighQualityFeatures(input, min_feature_count)
         input = merge(input, features_quality, all.x = TRUE,
                       by.x = c("LABEL", "PROTEIN", "FEATURE", "originalRUN"),
                       by.y = c("label", "protein", "feature", "run"))
@@ -58,7 +58,7 @@
 }
 
 
-.flagUninformativeSingleLabel = function(input, min_feature_count = 2) {
+.flagUninformativeSingleLabel = function(input, min_feature_count = 3) {
     if (nrow(input) == 0) {
         return(NULL)
     }
@@ -75,7 +75,7 @@
     .addOutlierCutoff(input)
     .addCoverageInfo(input)
     # TODO: add a column that tells if protein has 3 informative features
-    .addThreeInformativeInfo(input)
+    .addNInformativeInfo(input, min_feature_count)
     .addModelInformation(input)
     input = .addModelVariances(input)
     input = .addNoisyFlag(input)
@@ -86,7 +86,8 @@
     )
     input$is_outlier = ifelse(input$label == "H" & input$log2inty <= 0,
                               TRUE, input$is_outlier)
-    unique(input[, list(protein, feature, run, feature_quality, is_outlier)])
+    input = unique(input[, list(protein, feature, run, feature_quality, is_outlier)])
+    input
 }
 
 .addOutlierCutoff = function(input, quantile_order = 0.01) {
@@ -114,10 +115,10 @@
     sum(input$is_obs) < unique(input$min_obs)
 }
 
-.addThreeInformativeInfo = function(input) {
+.addNInformativeInfo = function(input, min_feature_count) {
     input[, n_informative := .countInformative(.SD), by = "protein",
           .SDcols = c("feature", "is_lowcvr")]
-    input[, has_three_informative := n_informative > 3]
+    input[, has_three_informative := n_informative > min_feature_count]
     input[, n_informative := NULL]
 }
 
@@ -138,11 +139,11 @@
                             error = function(e) NULL,
                             warning = function(w) NULL) 
     if (is.null(robust_model)) {
-        list(NA, NA, NA)
+        list(NA_real_, NA_real_, NA_real_)
     } else {
-        model_residuals = rep(NA, nrow(input))
+        model_residuals = rep(NA_real_, nrow(input))
         model_residuals[!input$is_lowcvr & !is.na(input$log2inty)] = residuals(robust_model)
-        list(model_residuals,
+        list(as.numeric(model_residuals),
              rep(summary(robust_model)$df[2], nrow(input)),
              rep(summary(robust_model)$sigma ^ 2, nrow(input)))
     }
