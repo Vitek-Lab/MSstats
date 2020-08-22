@@ -7,6 +7,10 @@
         input = merge(input, features_quality, all.x = TRUE,
                       by.x = c("LABEL", "PROTEIN", "FEATURE", "originalRUN"),
                       by.y = c("label", "protein", "feature", "run"))
+        input$feature_quality = ifelse(is.na(input$feature_quality),
+                                                  "Uninformative", input$feature_quality) # is this OK?
+        input$is_outlier = ifelse(is.na(input$is_outlier),
+                                             TRUE, input$is_outlier)
     } else if (method %in% c("top3", "topN")) {
         msg = paste0("** Use top", top_n, " features that have highest average of log2(intensity) across runs.")
         input = .selectTopFeatures(input, top_n)
@@ -52,10 +56,6 @@
     features_quality = data.table::rbindlist(lapply(split(input, input$label),
                                                     .flagUninformativeSingleLabel,
                                                     min_feature_count = min_feature_count))
-    features_quality$feature_quality = ifelse(is.na(features_quality$feature_quality),
-                                              "Uninformative", features_quality$feature_quality) # is this OK?
-    features_quality$is_outlier = ifelse(is.na(features_quality$is_outlier),
-                                         TRUE, features_quality$is_outlier)
     features_quality
 }
 
