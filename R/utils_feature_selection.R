@@ -79,7 +79,7 @@
     .addNInformativeInfo(input, min_feature_count)
     .addModelInformation(input)
     input = .addModelVariances(input)
-    .addNoisyFlag(input)
+    input = .addNoisyFlag(input)
     
     input$feature_quality = ifelse(
         !input$unrep & !input$is_lowcvr & !input$is_noisy & !input$few_observed, 
@@ -183,9 +183,11 @@
         input = merge(input, feature_vars, by = "feature")
         input[, is_outlier := .addOutlierInformation(.SD), by = "feature"]
         input[, is_noisy := svar_feature > quantile(svar_ref, 0.05, na.rm = TRUE)]
+        input
     } else {
         input[, is_outlier := NA]
         input[, is_noisy := NA]
+        input
     }
 }
 
