@@ -92,9 +92,6 @@ dataProcess = function(
     peptides_dict = unique(input[, list(PeptideSequence, PrecursorCharge)])
     peptides_dict[, PEPTIDE := paste(PeptideSequence, PrecursorCharge, sep = "_")]
     input = .checkDataValidity(raw)
-    colnames(input) = MSstatsConvert:::.updateColnames(
-        input, c("PROTEINNAME", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE"), 
-        c("PROTEIN", "LABEL", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
     input = .updateColumnsForProcessing(input)
     .preProcessIntensities(input, logTrans)    # rm(raw) # here?
     # Handle fractions and missing run values ----
