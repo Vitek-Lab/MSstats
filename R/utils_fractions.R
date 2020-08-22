@@ -14,9 +14,11 @@
         } else {
             info = unique(input[, list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN)])
             info[, condition := paste(GROUP_ORIGINAL, SUBJECT_ORIGINAL, sep = "_")]
-            single_sample_data = merge(input[!is.na(ABUNDANCE), ], 
-                                       info[condition == unique(condition)[1], 
-                                            list(GROUP_ORIGINAL, SUBJECT_ORIGINAL)])
+            single_sample = unique(info[condition == unique(condition)[1],
+                                 list(GROUP_ORIGINAL, SUBJECT_ORIGINAL)])
+            single_sample_data = input[!is.na(ABUNDANCE) & 
+                                           GROUP_ORIGINAL == single_sample$GROUP_ORIGINAL &
+                                           SUBJECT_ORIGINAL == single_sample$SUBJECT_ORIGINAL]
             single_run_features = unique(single_sample_data[RUN == unique(RUN)[1], 
                                                             as.character(FEATURE)])
             common = single_sample_data[, list(n_common = .countCommonFeatures(FEATURE, single_run_features)), 
