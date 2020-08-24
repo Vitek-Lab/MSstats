@@ -15,27 +15,24 @@
     input
 }
 
+.getMedian = function(df, label) {
+    median(df$ABUNDANCE[df$LABEL == label], na.rm = TRUE)
+}
 
 .normalizeMedian = function(input) {
     if (length(unique(input$LABEL)) == 1L) {
-        label_filter = rep(TRUE, nrow(input))
+        label = "L"
     } else {
-        label_filter = input$LABEL == "H"
+        label = "H"
     }
-    median_by_run = input[label_filter, 
-                          list(ABUNDANCE_RUN = median(ABUNDANCE, na.rm = TRUE)),
-                          by = c("RUN", "FRACTION")]
-    median_by_fraction = median_by_run[, 
-                                       list(ABUNDANCE_FRACTION = median(ABUNDANCE_RUN, na.rm = TRUE)),
-                                       by = "FRACTION"]
-    input = merge(merge(input, median_by_run, all.x = TRUE,
-                        by = c("RUN", "FRACTION")),
-                  median_by_fraction, all.x = TRUE, by = "FRACTION")
+    input[, ABUNDANCE_RUN := .getMedian(.SD, label),
+          by = c("RUN", "FRACTION"), .SDcols = c("ABUNDANCE", "LABEL")]
+    input[, ABUNDANCE_FRACTION := median(ABUNDANCE_RUN, na.rm = TRUE),
+          by = "FRACTION"]
     input$ABUNDANCE = input$ABUNDANCE - input$ABUNDANCE_RUN + input$ABUNDANCE_FRACTION
     input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
           with = FALSE]
 }
-
 
 .normalizeQuantile = function(input) {
     input[ABUNDANCE == 0, "ABUNDANCE"] = 1
