@@ -75,7 +75,6 @@
 }
 
 
-.updateColnames = utils::getFromNamespace(".updateColnames", "MSstatsConvert")
 #' Check validity of data that were not processed by MSstats converter
 #' @param input data.table
 #' @importFrom data.table uniqueN as.data.table
