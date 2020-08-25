@@ -1,4 +1,4 @@
-.normalize = function(input, normalization_method, standards = NULL) {
+.normalize = function(input, normalization_method, peptides_dict, standards = NULL) {
     normalization_method = toupper(normalization_method)
     if (normalization_method == "NONE" | normalization_method == "FALSE") {
         return(input)
@@ -7,7 +7,7 @@
     } else if (normalization_method == "QUANTILE") {
         input = .normalizeQuantile(input)
     } else if (normalization_method == "GLOBALSTANDARDS") {
-        input = .normalizeGlobalStandards(input, standards)
+        input = .normalizeGlobalStandards(input, peptides_dict, standards)
     }
     input[!is.na(input$ABUNDANCE) & input$ABUNDANCE < 0, "ABUNDANCE"] = 0
     input[!is.na(input$INTENSITY) & input$INTENSITY == 1, "ABUNDANCE"] = 0
@@ -29,9 +29,11 @@
           by = c("RUN", "FRACTION"), .SDcols = c("ABUNDANCE", "LABEL")]
     input[, ABUNDANCE_FRACTION := median(ABUNDANCE_RUN, na.rm = TRUE),
           by = "FRACTION"]
-    input$ABUNDANCE = input$ABUNDANCE - input$ABUNDANCE_RUN + input$ABUNDANCE_FRACTION
-    input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
-          with = FALSE]
+    input[, ABUNDANCE := ABUNDANCE - ABUNDANCE_RUN + ABUNDANCE_FRACTION]
+    input = input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
+                  with = FALSE]
+    getOption("MSstatsLog")("Normalization based on median: OK")
+    input
 }
 
 .normalizeQuantile = function(input) {
@@ -121,7 +123,7 @@
 }
 
 
-.normalizeGlobalStandards = function(input, standards, peptides_dict) {
+.normalizeGlobalStandards = function(input, peptides_dict, standards) {
     proteins = as.character(unique(input$PROTEIN))
     means_by_standard = unique(input[, list(RUN)])
     for (standard_id in seq_along(standards)) {
@@ -162,9 +164,8 @@
     
     # TODO: check if this is correct
     input = merge(input, means_by_standard, all.x = TRUE, by = c("RUN", "FRACTION"))
-    input$ABUNDANCE = ifelse(input$LABEL == "L", 
-                             input$ABUNDANCE - input$mean_by_run + input$median_by_fraction, input$ABUNDANCE)
-    
+    input[, ABUNDANCE := ifelse(LABEL == "L", ABUNDANCE - mean_by_run + mean_by_fraction, ABUNDANCE)]
+
     if (length(fractions) == 1L) {
         msg = "Normalization : normalization with global standards protein - okay"
     } else { # TODO: message should include more information?

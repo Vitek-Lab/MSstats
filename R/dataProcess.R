@@ -101,7 +101,7 @@ dataProcess = function(
     .checkDuplicatedMeasurements(input)
     input = .makeFactorColumns(input)
     # Normalization, Imputation and feature selection ----
-    input = .normalize(input, normalization, nameStandards)
+    input = .normalize(input, normalization, peptides_dict, nameStandards)
     input = .flagCensored(input, summaryMethod, MBimpute, 
                           censoredInt, maxQuantileforCensored)
     input = .selectFeatures(input, featureSubset, n_top_feature)
