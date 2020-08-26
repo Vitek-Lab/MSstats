@@ -1,4 +1,4 @@
-.normalize = function(input, normalization_method, peptides_dict, standards = NULL) {
+.normalize = function(input, normalization_method, peptides_dict = NULL, standards = NULL) {
     normalization_method = toupper(normalization_method)
     if (normalization_method == "NONE" | normalization_method == "FALSE") {
         return(input)
@@ -9,9 +9,6 @@
     } else if (normalization_method == "GLOBALSTANDARDS") {
         input = .normalizeGlobalStandards(input, peptides_dict, standards)
     }
-    input[!is.na(input$ABUNDANCE) & input$ABUNDANCE < 0, "ABUNDANCE"] = 0
-    input[!is.na(input$INTENSITY) & input$INTENSITY == 1, "ABUNDANCE"] = 0
-    input = .prepareForFeatureSelection(input)
     input
 }
 
@@ -57,12 +54,12 @@
         for (fraction_id in fractions) {
             fraction_runs = as.character(unique(input[FRACTION == fractions[fraction_id], RUN]))
             wide_h = .getWideTable(input, fraction_runs, "H", FALSE)
-            normalized_h = .quantileNormalizationSingleLabel(wide_h, 
+            normalized_h = .quantileNormalizationSingleLabel(wide_h,
                                                              fraction_runs, "H")
             normalized_h$LABEL = "H"
             wide_l = .getWideTable(input, fraction_runs)
             for (run_col in fraction_runs) {
-                wide_l[[run_col]] = wide_l[[run_col]] - wide_h[[run_col]] + normalized_h[[run_col]] 
+                wide_l[[run_col]] = wide_l[[run_col]] - wide_h[[run_col]] + normalized_h[[run_col]]
             }
             wide_l$LABEL = "L"
             per_fraction_normalized[[fraction_id]] = data.table::melt(
@@ -72,9 +69,9 @@
     }
     
     per_fraction_normalized = data.table::rbindlist(per_fraction_normalized)
-    input = merge(input[, colnames(input)!= "ABUNDANCE", with = FALSE], 
+    input = merge(input[, colnames(input) != "ABUNDANCE", with = FALSE],
                   per_fraction_normalized, by = grouping_cols)
-    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, 
+    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
     input[!is.na(INTENSITY) & INTENSITY == 1, "ABUNDANCE"] = 0 # Skyline
     
@@ -88,7 +85,6 @@
     input
 }
 
-
 .getWideTable = function(input, runs, label = "L", remove_missing = TRUE) {
     if (remove_missing) {
         nonmissing_filter = !is.na(input$INTENSITY)
@@ -97,13 +93,12 @@
     }
     label_filter = input$LABEL == label
     
-    wide = data.table::dcast(input[nonmissing_filter & label_filter & RUN %in% runs], 
+    wide = data.table::dcast(input[nonmissing_filter & label_filter & RUN %in% runs],
                              FEATURE ~ RUN, value.var = "ABUNDANCE")
     wide = wide[, lapply(.SD, .replaceZerosWithNA)]
     colnames(wide)[-1] = runs
-    wide    
+    wide
 }
-
 
 .quantileNormalizationSingleLabel = function(input, runs, label = "L") {
     normalized = input[, list(FEATURE, preprocessCore::normalize.quantiles(as.matrix(.SD))),
@@ -111,7 +106,6 @@
     colnames(normalized)[-1] = runs
     normalized
 }
-
 
 .replaceZerosWithNA = function(vec) {
     vec = unlist(vec, FALSE, FALSE)
@@ -122,12 +116,11 @@
     }
 }
 
-
 .normalizeGlobalStandards = function(input, peptides_dict, standards) {
     proteins = as.character(unique(input$PROTEIN))
     means_by_standard = unique(input[, list(RUN)])
     for (standard_id in seq_along(standards)) {
-        peptide_name = unlist(peptides_dict[PEPTIDESEQUENCE == standards[standard_id], 
+        peptide_name = unlist(peptides_dict[PeptideSequence == standards[standard_id],
                                             as.character(PEPTIDE)], FALSE, FALSE)
         if (length(peptide_name) > 0) {
             standard = input[PEPTIDE == peptide_name, ]
@@ -135,44 +128,43 @@
             if (standards[standard_id] %in% proteins) {
                 standard = input[PROTEIN == standards[standard_id], ]
             } else {
-                msg = paste("global standard peptides or proteins, ", 
+                msg = paste("global standard peptides or proteins, ",
                             standards[standard_id],", is not in dataset.",
                             "Please check whether 'nameStandards' input is correct or not.")
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             }
         }
-        mean_by_run = standard[GROUP != "0" & !is.na(ABUNDANCE), 
-                               list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)), 
+        mean_by_run = standard[GROUP != "0" & !is.na(ABUNDANCE),
+                               list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)),
                                by = "RUN"]
         colnames(mean_by_run)[2] = paste0("meanStandard", standard_id)
-        means_by_standard = merge(means_by_standard, mean_by_run, 
+        means_by_standard = merge(means_by_standard, mean_by_run,
                                   by = "RUN", all.x = TRUE)
     }
     means_by_standard = data.table::melt(means_by_standard, id.vars = "RUN",
                                          variable.name = "Standard", value.name = "ABUNDANCE")
     means_by_standard[, mean_by_run := mean(ABUNDANCE, na.rm = TRUE), by = "RUN"]
-    means_by_standard[order(RUN, Standard)]
     means_by_standard = merge(means_by_standard, unique(input[, list(RUN, FRACTION)]),
                               by = "RUN")
-    means_by_standard[, median_by_fraction := median(mean_by_run, na.rm = TRUE), 
+    means_by_standard[, median_by_fraction := median(mean_by_run, na.rm = TRUE),
                       by = "FRACTION"]
-    means_by_standard$LABEL = "L"
+    # means_by_standard[, LABEL := "L"]
     means_by_standard[, ABUNDANCE := NULL]
     means_by_standard[, Standard := NULL]
     means_by_standard = unique(means_by_standard)
     
     # TODO: check if this is correct
     input = merge(input, means_by_standard, all.x = TRUE, by = c("RUN", "FRACTION"))
-    input[, ABUNDANCE := ifelse(LABEL == "L", ABUNDANCE - mean_by_run + mean_by_fraction, ABUNDANCE)]
-
-    if (length(fractions) == 1L) {
+    input[, ABUNDANCE := ifelse(LABEL == "L", ABUNDANCE - mean_by_run + median_by_fraction, ABUNDANCE)]
+    
+    if (data.table::uniqueN(input$FRACTION) == 1L) {
         msg = "Normalization : normalization with global standards protein - okay"
     } else { # TODO: message should include more information?
         msg = "Normalization : normalization with global standards protein - okay"
     }
     getOption("MSstatsLog")("INFO", msg)
-    input[ !(colnames(input) %in% c("mean_by_run", "median_by_fraction")), with = FALSE]
+    input[ , !(colnames(input) %in% c("mean_by_run", "median_by_fraction")), with = FALSE]
 }
 
 
@@ -181,6 +173,8 @@
 #' @importFrom data.table uniqueN
 #' @keywords internal
 .prepareForFeatureSelection = function(input) {
+    input[!is.na(input$ABUNDANCE) & input$ABUNDANCE < 0, "ABUNDANCE"] = 0
+    input[!is.na(input$INTENSITY) & input$INTENSITY == 1, "ABUNDANCE"] = 0
     if (data.table::uniqueN(input$FRACTION) == 1) {
         return(input)
     } else {

@@ -102,6 +102,7 @@ dataProcess = function(
     input = .makeFactorColumns(input)
     # Normalization, Imputation and feature selection ----
     input = .normalize(input, normalization, peptides_dict, nameStandards)
+    input = .prepareForFeatureSelection(input)
     input = .flagCensored(input, summaryMethod, MBimpute, 
                           censoredInt, maxQuantileforCensored)
     input = .selectFeatures(input, featureSubset, n_top_feature)
