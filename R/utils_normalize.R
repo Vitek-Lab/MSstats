@@ -149,12 +149,10 @@
                               by = "RUN")
     means_by_standard[, median_by_fraction := median(mean_by_run, na.rm = TRUE),
                       by = "FRACTION"]
-    # means_by_standard[, LABEL := "L"]
     means_by_standard[, ABUNDANCE := NULL]
     means_by_standard[, Standard := NULL]
     means_by_standard = unique(means_by_standard)
     
-    # TODO: check if this is correct
     input = merge(input, means_by_standard, all.x = TRUE, by = c("RUN", "FRACTION"))
     input[, ABUNDANCE := ifelse(LABEL == "L", ABUNDANCE - mean_by_run + median_by_fraction, ABUNDANCE)]
     
