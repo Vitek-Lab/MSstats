@@ -95,13 +95,12 @@ dataProcess = function(
     input = .updateColumnsForProcessing(input)
     .preProcessIntensities(input, logTrans)    # rm(raw) # here?
     # Handle fractions and missing run values ----
-    check_multi_run = .checkMultiRun(input)
-    input = .handleFractions(input, check_multi_run)
+    input = .handleFractions(input)
     input = .makeBalancedDesign(input, fillIncompleteRows)
     .checkDuplicatedMeasurements(input)
     input = .makeFactorColumns(input)
     # Normalization, Imputation and feature selection ----
-    input = .normalize(input, normalization, peptides_dict, nameStandards)
+    input = .normalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
     input = .prepareForFeatureSelection(input)
     input = .flagCensored(input, summaryMethod, MBimpute, 
                           censoredInt, maxQuantileforCensored)
