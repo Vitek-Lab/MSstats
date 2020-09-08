@@ -8,7 +8,7 @@
         if (!is.null(censored_cutoff)) {
             quantiles = input[!is.na(INTENSITY) & INTENSITY > 1 & LABEL == "L", 
                               quantile(ABUNDANCE, 
-                                       prob = c(0.01, 0.25, 0.5, 0.76, 
+                                       prob = c(0.01, 0.25, 0.5, 0.75, 
                                                 censored_cutoff), 
                                        na.rm = TRUE)]
             iqr = quantiles[4] - quantiles[2]
