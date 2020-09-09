@@ -30,7 +30,7 @@ OpenMStoMSstatsFormat <- function(input,
     ## Check correct option or input
     requiredinput.general <- c("ProteinName", "PeptideSequence", "PrecursorCharge", 
                                "FragmentIon", "ProductCharge", "IsotopeLabelType",
-                               "Condition", "BioReplicate", "Run", "Intensity")
+                               "Condition", "BioReplicate", "Run", "Intensity", "Fraction")
     
     ################################
     ## 1. check general input and use only required columns.
@@ -48,11 +48,11 @@ OpenMStoMSstatsFormat <- function(input,
     
     ## get annotation
     if (is.null(annotation)) {
-        annotinfo <- unique(input[, c("Run", "Condition", 'BioReplicate')])	
+        annotinfo <- unique(input[, c("Run", "Condition", 'BioReplicate', 'Fraction')])
     } else {
         
         ## check annotation
-        required.annotation <- c('Condition', 'BioReplicate', 'Run')
+        required.annotation <- c('Condition', 'BioReplicate', 'Run', 'Fraction')
         
         if (!all(required.annotation %in% colnames(annotation))) {
             
@@ -235,6 +235,7 @@ OpenMStoMSstatsFormat <- function(input,
                               "Condition" = input$Condition,
                               "BioReplicate" = input$BioReplicate,
                               "Run" = input$Run,
+                              "Fraction" = input$Fraction,
                               "Intensity" = input$Intensity)
     
     input <- input.final
