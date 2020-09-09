@@ -107,7 +107,7 @@
         input = .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
         if (impute) {
             survival_fit = .fitSurvival(input[LABEL == "L", ])
-            input$ABUNDANCE = ifelse(is.na(input$ABUNDANCE) & input$LABEL == "L",
+            input$ABUNDANCE = ifelse(input$censored & input$LABEL == "L",
                                      predict(survival_fit, newdata = input, 
                                              type = "response"), input$ABUNDANCE)
         }
@@ -146,12 +146,14 @@
         } else {
             nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY) & input$censored
         }
-        imputed = input[nonmissing_filter,
+        imputed = input[!nonmissing_filter,
                         list(NumImputedFeature = data.table::uniqueN(FEATURE)),
                         by = "RUN"]
-        stats = merge(stats, imputed, by = "RUN")
+        stats = merge(stats, imputed, by = "RUN", all.x = TRUE, sort = FALSE)
+        stats[, NumImputedFeature := ifelse(is.na(NumImputedFeature), 0, 
+                                            NumImputedFeature)]
     }
-    tmp_result = merge(tmp_result, stats, by = "RUN")
+    tmp_result = merge(tmp_result, stats, by = "RUN", all.x = TRUE, sort = FALSE)
     tmp_result
 }
 
