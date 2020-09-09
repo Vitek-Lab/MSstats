@@ -1,4 +1,3 @@
-
 ## OpenMS output has 10 required format
 ## however, still need preprocessing
 
@@ -26,11 +25,24 @@ OpenMStoMSstatsFormat <- function(input,
     } else {
         annotinfo <- annotation
     }
-
+    
     ## Check correct option or input
     requiredinput.general <- c("ProteinName", "PeptideSequence", "PrecursorCharge", 
                                "FragmentIon", "ProductCharge", "IsotopeLabelType",
-                               "Condition", "BioReplicate", "Run", "Intensity", "Fraction")
+                               "Condition", "BioReplicate", "Run", "Intensity")
+    
+    required.annotation <- c("Run", "Condition", "BioReplicate")
+    if ("Fraction" %in% colnames(input))
+    {
+        requiredinput.general <- c("ProteinName", "PeptideSequence", "PrecursorCharge", 
+                                   "FragmentIon", "ProductCharge", "IsotopeLabelType",
+                                   "Condition", "BioReplicate", "Run", "Fraction", "Intensity")
+        available.annotation <- c(required.annotation, "Fraction")
+    }
+    else
+    {
+        available.annotation <- required.annotation
+    }
     
     ################################
     ## 1. check general input and use only required columns.
@@ -41,19 +53,17 @@ OpenMStoMSstatsFormat <- function(input,
         misssing.col <- requiredinput.general[!requiredinput.general %in% colnames(input)]
         
         stop(paste0("** Please check the required input. The required input needs : ", 
-                   toString(missing.col)))
+                    toString(missing.col)))
     } else {
         input <- input[, colnames(input) %in% requiredinput.general]
     }
     
     ## get annotation
     if (is.null(annotation)) {
-        annotinfo <- unique(input[, c("Run", "Condition", 'BioReplicate', 'Fraction')])
+        annotinfo <- unique(input[, available.annotation])
     } else {
         
         ## check annotation
-        required.annotation <- c('Condition', 'BioReplicate', 'Run', 'Fraction')
-        
         if (!all(required.annotation %in% colnames(annotation))) {
             
             missedAnnotation <- which(!(required.annotation %in% colnames(annotation)))
@@ -61,6 +71,13 @@ OpenMStoMSstatsFormat <- function(input,
             stop(paste("**", toString(required.annotation[missedAnnotation]), 
                        "is not provided in Annotation. Please check the annotation file."))
         } else {
+            if ("Fraction" %in% colnames(annotation))
+            {
+                ## Make sure Fraction is listed in the output then, too
+                requiredinput.general <- c("ProteinName", "PeptideSequence", "PrecursorCharge", 
+                                           "FragmentIon", "ProductCharge", "IsotopeLabelType",
+                                           "Condition", "BioReplicate", "Run", "Fraction", "Intensity")
+            }
             annotinfo <- annotation
         }
     }
@@ -78,13 +95,13 @@ OpenMStoMSstatsFormat <- function(input,
     ## 2. remove featuares with all na or zero
     ## some rows have all zero values across all MS runs. They should be removed.
     ##############################
-  
+    
     input$fea <- paste(input$PeptideSequence,
                        input$PrecursorCharge,
                        input$FragmentIon,
                        input$ProductCharge,
                        sep="_")
-  
+    
     inputtmp <- input[!is.na(input$Intensity) & input$Intensity > 1, ]
     
     count <- inputtmp %>% group_by(fea) %>% summarise(length=length(Intensity))
@@ -96,7 +113,7 @@ OpenMStoMSstatsFormat <- function(input,
         
         nfea.remove <- length(unique(input$fea)) - nrow(getfea)
         input <- input[which(input$fea %in% getfea$fea), ]
-
+        
         message(paste0('** ', nfea.remove, ' features have all NAs or zero intensity values and are removed.'))
     } else {
         stop(message('No intensity is available. Please check the input.'))
@@ -109,39 +126,39 @@ OpenMStoMSstatsFormat <- function(input,
     ## we assume to use unique peptide
     ################################################
     if (useUniquePeptide) {
-    
+        
         pepcount <- unique(input[, c("ProteinName", "PeptideSequence")]) ## Protein.group.IDs or Sequence
         pepcount$PeptideSequence <- factor(pepcount$PeptideSequence)
-    
+        
         ## count how many proteins are assigned for each peptide
         structure <- pepcount %>% group_by(PeptideSequence) %>% summarise(length=length(ProteinName))
         
         remove_peptide <- structure[structure$length != 1, ]
-    
+        
         ## remove the peptides which are used in more than one protein
         if (nrow(remove_peptide) != 0) {
             input <- input[-which(input$PeptideSequence %in% remove_peptide$PeptideSequence), ]
-      
+            
             message('** Peptides, that are used in more than one proteins, are removed.')
         } else {
             message('** All peptides are unique peptides in proteins.')
         }
-    
+        
         rm(structure)
         rm(remove_peptide)
     }
-  
+    
     ##############################
     ##  4. remove features which has 1 or 2 measurements across runs
     ##############################
     if (fewMeasurements == "remove") {
-    
+        
         ## it is the same across experiments. # measurement per feature. 
         xtmp <- input[!is.na(input$Intensity) & input$Intensity > 0, ]
         count_measure <- xtabs( ~fea, xtmp)
-    
+        
         remove_feature_name <- count_measure[count_measure < 3]
-    
+        
         if (length(remove_feature_name) > 0) {
             
             input <- input[-which(input$fea %in% names(remove_feature_name)), ]
@@ -151,11 +168,11 @@ OpenMStoMSstatsFormat <- function(input,
             
         }
     }
-  
+    
     ##############################
     ## 5. remove proteins with only one peptide and charge per protein
     ##############################
-  
+    
     if (removeProtein_with1Feature) {
         
         ## remove protein which has only one peptide
@@ -163,11 +180,11 @@ OpenMStoMSstatsFormat <- function(input,
         tmp$ProteinName <- factor(tmp$ProteinName)
         count <- xtabs( ~ ProteinName, data=tmp)
         lengthtotalprotein <- length(count)
-    
+        
         removepro <- names(count[count <= 1])
-    
+        
         if (length(removepro) > 0) {
-      
+            
             input <- input[-which(input$ProteinName %in% removepro), ]
             
             message(paste0("** ", length(removepro), 
@@ -177,28 +194,28 @@ OpenMStoMSstatsFormat <- function(input,
             message("** All proteins have at least two features.")
         }
     }
-
+    
     ##############################
     ## 6. remove multiple measurements per feature and run
     ##############################
-  
+    
     count <- aggregate(Intensity ~ fea, data=input, FUN=length)
-  
+    
     ## if any feature has more number of total MS runs, 
     if (any(unique(count$Intensity) > length(unique(input$Run)))) {
-    
+        
         ## maximum or sum up abundances among intensities for identical features within one run
         input_w <- dcast( ProteinName + PeptideSequence + PrecursorCharge + FragmentIon ~ Run, data=input, 
                           value.var='Intensity', 
                           fun.aggregate=summaryforMultipleRows, na.rm=T, 
                           fill='NA') 
-    
+        
         ## reformat for long format
         input <- melt(input_w, id=c('ProteinName', 'PeptideSequence', 'PrecursorCharge', 'FragmentIon'))
         colnames(input)[which(colnames(input) %in% c('variable','value'))] <- c("Run","Intensity")
-    
+        
         message('** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows.')
-    
+        
     } else {
         
         ## still need to fill incomplete rows
@@ -224,26 +241,12 @@ OpenMStoMSstatsFormat <- function(input,
     ## 11. merge annotation
     ##############################
     input <- merge(input, annotinfo, by='Run', all=TRUE)
+    ## Always add constant label column (even though it is required in the input)
+    input$IsotopeLabelType <- factor("L")
+    ## Make sure ProteinNames are factors as well
+    input$ProteinName <- as.factor(input$ProteinName)
+    ## Arrange columns
+    input <- input[,requiredinput.general]
     
-    ## fill in extra columns
-    input.final <- data.frame("ProteinName" = input$ProteinName,
-                              "PeptideSequence" = input$PeptideSequence,
-                              "PrecursorCharge" = input$PrecursorCharge,
-                              "FragmentIon" = input$FragmentIon,
-                              "ProductCharge" = input$ProductCharge,
-                              "IsotopeLabelType" = "L",
-                              "Condition" = input$Condition,
-                              "BioReplicate" = input$BioReplicate,
-                              "Run" = input$Run,
-                              "Fraction" = input$Fraction,
-                              "Intensity" = input$Intensity)
-    
-    input <- input.final
-    input$ProteinName <- factor(input$ProteinName)
-    
-    rm(input.final)
-  
-	return(input)
+    return(input)
 }
-
-
