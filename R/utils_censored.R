@@ -72,7 +72,7 @@
         cutoffs = input[nonmissing_filter, 
                         list(ABUNDANCE_cut = 0.99*min(ABUNDANCE)), 
                         by = grouping_vars]
-        input = merge(input, cutoffs, by = grouping_vars)
+        input = merge(input, cutoffs, by = grouping_vars, sort = FALSE, all.x = TRUE)
         input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE,
                                  input$ABUNDANCE_cut)
         input = input[, !(colnames(input) == "ABUNDANCE_cut"), with = FALSE]
@@ -96,7 +96,7 @@
                             list(ABUNDANCE_cut_run = 0.99*min(ABUNDANCE)),
                             by = c("RUN", "LABEL")]
         cutoffs = merge(feature_cutoffs, run_cutoffs, by = c("LABEL"),
-                        allow.cartesian = TRUE)
+                        allow.cartesian = TRUE, sort = FALSE)
         cutoffs$final_cutoff = sapply(1:nrow(cutoffs), 
                                       function(i) min(cutoffs$ABUNDANCE_cut_fea[i],
                                                       cutoffs$ABUNDANCE_cut_run[i]))
