@@ -143,6 +143,8 @@
         colnames(input) = MSstatsConvert:::.updateColnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
+    colnames(input) = MSstatsConvert:::.updateColnames(input,
+                                                       "Fraction", "FRACTION")
     
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
@@ -169,7 +171,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
 #' @keywords internal
 .preProcessIntensities = function(input, log_base) {
     if (any(input$INTENSITY < 1, na.rm = TRUE)) {
-        input[, INTENSITY = ifelse(INTENSITY < 1, 1, INTENSITY)]
+        input[, INTENSITY := ifelse(INTENSITY < 1, 1, INTENSITY)]
         msg = paste("** There are", n_smaller_than_1, 
                     "intensities which are zero or less than 1.",
                     "These intensities are replaced with 1",
@@ -204,7 +206,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
     
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", "SUBJECT", 
-             "SUBJECT_NESTED", "INTENSITY")
+             "SUBJECT_NESTED", "FRACTION", "INTENSITY")
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
