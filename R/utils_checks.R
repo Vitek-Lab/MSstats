@@ -171,6 +171,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
 #' @keywords internal
 .preProcessIntensities = function(input, log_base) {
     if (any(input$INTENSITY < 1, na.rm = TRUE)) {
+        n_smaller_than_1 = sum(input$INTENSITY < 1, na.rm = T)
         input[, INTENSITY := ifelse(INTENSITY < 1, 1, INTENSITY)]
         msg = paste("** There are", n_smaller_than_1, 
                     "intensities which are zero or less than 1.",
@@ -221,7 +222,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
     input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, 
                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
     input$GROUP = factor(input$GROUP)
-    input$SUBJECT = factor(input$SUBJECT)
+    input$SUBJECT = factor(as.character(input$SUBJECT))
     input$SUBJECT_NESTED = factor(input$SUBJECT_NESTED, levels = unique(input$SUBJECT_NESTED))
     input$FEATURE = factor(input$FEATURE, levels = unique(input$FEATURE))
     input$originalRUN = input$RUN
@@ -253,3 +254,15 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
 #     input
 # }
 
+
+.getPeptidesDict = function(input, normalization) {
+    if (toupper(normalization) == "GLOBALSTANDARDS") {
+        cols = intersect(c("PeptideSequence", "PeptideModifiedSequence", 
+                           "PrecursorCharge"), colnames(input))
+        peptides_dict = unique(input[, cols, with = FALSE])
+        colnames(peptides_dict)[1] = "PeptideSequence"
+        peptides_dict[, PEPTIDE := paste(PeptideSequence, PrecursorCharge, sep = "_")]
+    } else {
+        NULL
+    }
+}
