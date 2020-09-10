@@ -26,13 +26,19 @@
     getOption("MSstatsLog")("INFO", counts_msg)
     
     if (length(features_per_protein) > 0) {
-        single_msg = paste("The following proteins have only one feature:", "\n",
-                           paste(unique(as.character(features_per_protein)),
-                                 sep = ",\n ", collapse = ",\n"))
-        getOption("MSstatsLog")("INFO", single_msg)
-        getOption("MSstatsMsg")("INFO", single_msg)
+        single_features = unique(as.character(features_per_protein))
+        n_feat = min(length(single_features), 5)
+        single_msg_log = paste("The following proteins have only one feature:", "\n",
+                               paste(single_features,
+                                     sep = ",\n ", collapse = ",\n"))
+        single_msg_print = paste("The following proteins have only one feature:", "\n",
+                                 paste(unique(as.character(features_per_protein))[1:n_feat],
+                                       sep = ",\n ", collapse = ",\n"),
+                                 "... (see log file for a full list)")
+        getOption("MSstatsLog")("INFO", single_msg_log)
+        getOption("MSstatsMsg")("INFO", single_msg_print)
     }
-
+    
     samples_info = input[, list(NumRuns = data.table::uniqueN(RUN),
                                 NumBioReplicates = data.table::uniqueN(SUBJECT_ORIGINAL),
                                 NumFractions = data.table::uniqueN(FRACTION)), 
@@ -61,14 +67,20 @@
 
 .logSingleLabeledProteins = function(input, label) {
     name = ifelse(label == "L", "endogeneous", "reference")
-    proteins = input[LABEL == label, as.character(PROTEIN)]
-    msg = paste(paste("The following proteins only have", name,
-                        "intensities in label-based experiment",
-                        "Please check or remove these proteins:"),
-                  paste(proteins, sep = ", \n ", collapse = ", \n "))
+    proteins = unique(input[LABEL == label, as.character(PROTEIN)])
     if (length(proteins) > 0) {
-        getOption("MSstatsMsg")("WARN", msg)
-        getOption("MsstatsLog")("WARN", msg)
+        n_prot = min(length(proteins), 5)
+        msg_print = paste(paste("The following proteins only have", name,
+                                "intensities in label-based experiment",
+                                "Please check or remove these proteins:"),
+                          paste(proteins[1:n_prot], sep = ", \n ", collapse = ", \n "),
+                          "... (see the log file for a full list)")
+        msg_log = paste(paste("The following proteins only have", name,
+                              "intensities in label-based experiment",
+                              "Please check or remove these proteins:"),
+                        paste(proteins, sep = ", \n ", collapse = ", \n "))
+        getOption("MSstatsMsg")("WARN", msg_print)
+        getOption("MsstatsLog")("WARN", msg_log)
     }
     
 }
