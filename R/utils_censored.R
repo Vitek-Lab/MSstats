@@ -1,9 +1,21 @@
-
-.flagCensored = function(input, summary_method, impute, missing_symbol,
-                         censored_cutoff) {
+#' Handle censored missing values 
+#' 
+#' @param input `data.table` in MSstats data format
+#' @param summary_method summarization method (`summaryMethod` parameter to `dataProcess`)
+#' @param impute if TRUE, missing values are supposed to be imputed 
+#' (`MBimpute` parameter to `dataProcess`)
+#' @param missing_symbol `censoredInt` parameter to `dataProcess`
+#' @param censored_cutoff `cutoffCensored` parameter to `dataProcess`
+#' 
+#' @export
+#'  
+MSstatsHandleMissing = function(input, summary_method, impute, 
+                                missing_symbol, censored_cutoff) {
+    INTENSITY = LABEL = ABUNDANCE = NULL
+    
     if (summary_method == "TMP" & impute) {
         is_labeled = nlevels(input$LABEL) == 2 # label <- nlevels(input$LABEL) == 2
-        input$censored <- FALSE
+        input$censored = FALSE
         ## if intensity = 1, but abundance > cutoff after normalization, it also should be censored.
         if (!is.null(censored_cutoff)) {
             quantiles = input[!is.na(INTENSITY) & INTENSITY > 1 & LABEL == "L", 
@@ -34,8 +46,8 @@
                 msg_2 = paste("** Log2 intensities =", missing_symbol, "were considered as censored missing values.")
             } else {
                 msg = paste('** Log2 endogenous intensities under cutoff =', 
-                      format(cutoff_lower, digits = 5), 
-                      ' were considered as censored missing values.')
+                            format(cutoff_lower, digits = 5), 
+                            ' were considered as censored missing values.')
                 getOption("MSstatsMsg")("INFO", msg)
                 getOption("MSstatsMsg")("INFO", msg)
             }
@@ -54,8 +66,18 @@
     input
 }
 
+
+#' Set censored values based on minimum in run/feature/run or feature
+#' @param input `data.table` in MSstats format
+#' @param cutoff_base cutoffCensored parameter to `dataProcess`
+#' @param censored_symbol censoredInt parameter to `dataProcess`
+#' @param remove50missing if TRUE, features with at least 50% missing values
+#' will be removed
+#' @keywords internal
 .setCensoredByThreshold = function(input, cutoff_base, censored_symbol,
                                    remove50missing) {
+    ABUNDANCE = perc_nm = RUN = FEATURE = NULL
+    
     if (censored_symbol == "NA") {
         nonmissing_filter = !is.na(input$ABUNDANCE)
     } else if (censored_symbol == "0") {
@@ -113,6 +135,12 @@
     input
 }
 
+
+#' Identify non-missing values
+#' @param input `data.table` in MSstats format
+#' @param impute if TRUE, missing values are supposed to be imputed
+#' @param censored_symbol `censoredInt` parameter to dataProcess
+#' @keywords internal
 .getNonMissingFilter = function(input, impute, censored_symbol) {
     if (impute) {
         if (!is.null(censored_symbol)) {
@@ -127,4 +155,3 @@
     }
     nonmissing_filter
 }
-
