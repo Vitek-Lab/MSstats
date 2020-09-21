@@ -1,4 +1,5 @@
-.selectFeatures = function(input, method, top_n = NULL, min_feature_count = NULL) {
+#' Feature selection before feature-level data summarization
+MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count = NULL) {
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
     } else if (method == "highQuality") {
