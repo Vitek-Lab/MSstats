@@ -67,16 +67,37 @@
 #' @export
 #' 
 
-dataProcess = function(
+
+processUnvalidatedData = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
     address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
     remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
     summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
     cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
-    maxQuantileforCensored = 0.999, clusters = NULL
+    fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL
 ) {
-    # Setup: check validity of data and parameters ----    
-    # Logging is taken care of by MSstatsLogging()
+    input = data.table::as.data.table(unclass(raw))
+    input = MSstatsConvert::MSstatsBalancedDesign(
+        input, c("PeptideSequence", "ProteinName", 
+                 "FragmentIon", "ProductCharge"), 
+        TRUE, fillIncompleteRows, fix_missing)
+    processValidatedData(
+        input, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
+        address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
+        remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
+        summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
+        cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
+        fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL)
+}
+
+processValidatedData = function(
+    raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
+    address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
+    remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
+    summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
+    cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
+    fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL
+) {
     .saveSessionInfo()
     getOption("MSstatsLog")("INFO", "MSstats - dataProcess function")
     .checkDataProcessParams(
@@ -88,33 +109,34 @@ dataProcess = function(
              cutoff = cutoffCensored,
              MB = MBimpute), 
         clusters)
-    input = data.table::as.data.table(as(raw, "data.frame"))
-    peptides_dict = unique(input[, list(PeptideSequence, PrecursorCharge)])
-    peptides_dict[, PEPTIDE := paste(PeptideSequence, PrecursorCharge, sep = "_")]
-    input = .checkDataValidity(raw)
-    input = .updateColumnsForProcessing(input)
-    .preProcessIntensities(input, logTrans)    # rm(raw) # here?
-    # Handle fractions and missing run values ----
-    input = .handleFractions(input)
-    input = .makeBalancedDesign(input, fillIncompleteRows)
-    .checkDuplicatedMeasurements(input)
-    input = .makeFactorColumns(input)
+    input = data.table::as.data.table(unclass(raw))
+    
+    peptides_dict = makePeptidesDictionary(input, normalization)
+    input = MSstatsPrepareForDataProcess(input, logTrans)
     # Normalization, Imputation and feature selection ----
-    input = .normalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
-    input = .prepareForFeatureSelection(input)
-    input = .flagCensored(input, summaryMethod, MBimpute, 
-                          censoredInt, maxQuantileforCensored)
-    input = .selectFeatures(input, featureSubset, n_top_feature)
+    input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
+    input = MSstatsMergeFractions(input)
+    input = MSstatsHandleMissing(input, summaryMethod, MBimpute, 
+                                 censoredInt, maxQuantileforCensored)
+    input = MSstatsSelectFeatures(input, featureSubset, n_top_feature)
     # Record statistics about the dataset
-    input = .removeSingleLabelFeatures(input)
     .logDatasetInformation(input)    
     # Summarization per subplot (per RUN) ----
     getOption("MSstatsMsg")("INFO", 
                             "\n == Start the summarization per subplot...")
-    summarization = try(.runQuantification(
+    summarization = tryCatch(MSstatsSummarize(
         input, summaryMethod, equalFeatureVar, cutoffCensored, censoredInt, 
         remove50missing, MBimpute, original_scale = FALSE, logsum = FALSE, 
         featureSubset, remove_uninformative_feature_outlier, 
-        message.show = FALSE, clusters = clusters), silent = TRUE)
-    .processFinalOutput(input, summarization, summaryMethod)
+        message.show = FALSE, clusters = clusters), 
+        error = function(e) print(e))
+    MSstatsSummarizationOutput(input, summarization, summaryMethod)
 }
+
+setGeneric("dataProcess", 
+           def = processUnvalidatedData, 
+           signature = "raw")
+
+setMethod("dataProcess", 
+          definition = processValidatedData,
+          signature = "MSstatsValidated")
