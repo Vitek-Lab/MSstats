@@ -1,4 +1,18 @@
-.normalize = function(input, normalization_method, peptides_dict = NULL, standards = NULL) {
+#' Normalize MS data
+#' 
+#' @param input data.table in MSstats format
+#' @param normalization_method name of a chosen normalization method: "NONE" or
+#' "FALSE" for no normalization, "EQUALIZEMEDIANS" for median normalization,
+#' "QUANTILE" normalization for quantile normalization from `preprocessCore` package,
+#' "GLOBALSTANDARDS" for normalization based on selected peptides or proteins.
+#' @param peptides_dict `data.table` of names of peptides and their corresponding 
+#' features. 
+#' @param standards character vector with names of standards, required if 
+#' "GLOBALSTANDARDS" method was selected.
+#' 
+#' @export
+#' 
+MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, standards = NULL) {
     normalization_method = toupper(normalization_method)
     if (normalization_method == "NONE" | normalization_method == "FALSE") {
         return(input)
@@ -12,10 +26,19 @@
     input
 }
 
+
+#' Get median of protein abundances for a given label
+#' @param df `data.table`
+#' @param label "L" for light isotopes, "H" for heavy isotopes.
+#' @keywords internal
 .getMedian = function(df, label) {
     median(df$ABUNDANCE[df$LABEL == label], na.rm = TRUE)
 }
 
+
+#' Median normalization
+#' @param input `data.table` in standard MSstats format
+#' @keywords internal
 .normalizeMedian = function(input) {
     if (length(unique(input$LABEL)) == 1L) {
         label = "L"
@@ -33,6 +56,10 @@
     input
 }
 
+
+#' Quantile normalization based on the `preprocessCore` package
+#' @param input `data.table` in MSstats standard format
+#' @keywords internal
 .normalizeQuantile = function(input) {
     input[ABUNDANCE == 0, "ABUNDANCE"] = 1
     fractions = unique(input$FRACTION)
@@ -85,6 +112,13 @@
     input
 }
 
+
+#' Utility function for quantile normalization - get table in wide format
+#' @param input `data.table` in MSstats standard format
+#' @param vector of run labels
+#' @param label "L" for light isotopes, "H" for heavy isotopes
+#' @param remove_missing if TRUE, only non-missing values will be considered
+#' @keywords internal
 .getWideTable = function(input, runs, label = "L", remove_missing = TRUE) {
     if (remove_missing) {
         nonmissing_filter = !is.na(input$INTENSITY)
@@ -93,13 +127,20 @@
     }
     label_filter = input$LABEL == label
     
-    wide = data.table::dcast(input[nonmissing_filter & label_filter & RUN %in% runs],
+    wide = data.table::dcast(input[nonmissing_filter & label_filter & (RUN %in% runs)],
                              FEATURE ~ RUN, value.var = "ABUNDANCE")
     wide = wide[, lapply(.SD, .replaceZerosWithNA)]
     colnames(wide)[-1] = runs
     wide
 }
 
+
+#' Quantile normalization for a single label
+#' @param input `data.table` in MSstats standard format
+#' @param runs run labels
+#' @param label "L" for light isotopes, "H" for heavy isotopes
+#' @importFrom preprocessCore normalize.quantiles
+#' @keywords internal
 .quantileNormalizationSingleLabel = function(input, runs, label = "L") {
     normalized = input[, list(FEATURE, preprocessCore::normalize.quantiles(as.matrix(.SD))),
                        .SDcols = runs]
@@ -107,6 +148,10 @@
     normalized
 }
 
+
+#' Utility function for normalization: replace 0s by NA
+#' @param vec vector
+#' @keywords internal
 .replaceZerosWithNA = function(vec) {
     vec = unlist(vec, FALSE, FALSE)
     if (is.character(vec) | is.factor(vec)) {
@@ -116,7 +161,15 @@
     }
 }
 
+
+#' Normalization based on standards
+#' @inheritParams MSstatsNormalize
+#' @importFrom data.table melt uniqueN
+#' @keywords internal
 .normalizeGlobalStandards = function(input, peptides_dict, standards) {
+    PeptideSequence = PEPTIDE = PROTEIN = NULL
+    Standard = FRACTION = LABEL = ABUNDANCE = RUN = GROUP = NULL
+    
     proteins = as.character(unique(input$PROTEIN))
     means_by_standard = unique(input[, list(RUN)])
     for (standard_id in seq_along(standards)) {
@@ -158,7 +211,7 @@
     
     if (data.table::uniqueN(input$FRACTION) == 1L) {
         msg = "Normalization : normalization with global standards protein - okay"
-    } else { # TODO: message should include more information?
+    } else {
         msg = "Normalization : normalization with global standards protein - okay"
     }
     getOption("MSstatsLog")("INFO", msg)
@@ -167,12 +220,15 @@
 
 
 #' Re-format the data before feature selection
-#' @param input data.table
+#' @param input `data.table` in MSstats format
 #' @importFrom data.table uniqueN
-#' @keywords internal
-.prepareForFeatureSelection = function(input) {
-    input[!is.na(input$ABUNDANCE) & input$ABUNDANCE < 0, "ABUNDANCE"] = 0
-    input[!is.na(input$INTENSITY) & input$INTENSITY == 1, "ABUNDANCE"] = 0
+#' @export
+MSstatsMergeFractions = function(input) {
+    ABUNDANCE = INTENSITY = GROUP_ORIGINAL = SUBJECT_ORIGINAL = RUN = NULL
+    originalRUN = FRACTION = TECHREPLICATE = NULL
+    
+    input[!is.na(ABUNDANCE) & ABUNDANCE < 0, "ABUNDANCE"] = 0
+    input[!is.na(INTENSITY) & INTENSITY == 1, "ABUNDANCE"] = 0
     if (data.table::uniqueN(input$FRACTION) == 1) {
         return(input)
     } else {
@@ -224,14 +280,16 @@
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
-                input$newRun = NA
-                input$newRun = as.character(input$newRun)
-                run_info[, GROUP_ORIGINAL := as.character(GROUP_ORIGINAL)]
-                run_info[, SUBJECT_ORIGINAL := as.character(SUBJECT_ORIGINAL)]
-                for (k in 1:nrow(run_info)){
-                    input[originalRUN %in%  run_info[k, 3:ncol(run_info)], "newRun"] = paste(paste(run_info[k, 1:3], 
-                                                                                              collapse = "_"), "merged", sep = "_")
-                }
+                match_runs[, merged := "merged"]
+                match_runs[, newRun := do.call(paste, c(.SD, sep = "_")), 
+                           .SDcols = c(1:3, ncol(match_runs))]
+                match_runs = unique(match_runs[, list(GROUP_ORIGINAL,
+                                                      SUBJECT_ORIGINAL,
+                                                      newRun)])
+                
+                input = merge(input, match_runs,
+                              by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+                              all.x = TRUE)
                 select_fraction = input[!is.na(ABUNDANCE) & input$ABUNDANCE > 0,
                                         list(ncount = .N),
                                         by = c("FEATURE", "FRACTION")]
