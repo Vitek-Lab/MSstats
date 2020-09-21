@@ -1,9 +1,31 @@
+#' Prepare data for processing by `dataProcess` function
+#' 
+#' @param input `data.table` in MSstats format
+#' @param log_base base of the logarithm to transform intensities
+#' @export
+#' 
+MSstatsPrepareForDataProcess = function(input, log_base) {
+    input = .checkDataValidity(input)
+    input = .updateColumnsForProcessing(input)
+    .preProcessIntensities(input, log_base)
+    input = .makeFactorColumns(input)
+    input
+}
+
+
+#' @importFrom utils getFromNamespace
+.updateColnames = utils::getFromNamespace(".updateColnames", "MSstatsConvert")
+
+
 #' Save information about R session to sessionInfo.txt file.
 #' @importFrom utils sessionInfo
 #' @keywords internal
 .saveSessionInfo = function() {
+    file_name = paste0("msstats_sessionInfo_", 
+                       gsub(" " , "T", as.character(Sys.time())), 
+                       ".txt")
     session_info = utils::sessionInfo()
-    sink("sessionInfo.txt")
+    sink(file_name)
     print(session_info)
     sink()
 }
@@ -37,7 +59,6 @@
     checkmate::assertChoice(imputation$symbol, c("0", "NA"), 
                             null.ok = TRUE, .var.name = "censoredInt")
     getOption("MSstatsLog")("INFO", paste("censoredInt:", imputation$symbol))
-    ## check input for censoredInt and MBimpute
     if (summarization$method == "TMP" & imputation$MB & is.null(imputation$symbol)) {
         msg = paste("The combination of required input",
                     "MBimpute == TRUE and censoredInt = NULL",
@@ -57,7 +78,6 @@
         getOption("MSstatsLog")("ERROR", msg)
         stop(msg)
     }
-    # TODO: more checks
 }
 
 
@@ -143,8 +163,8 @@
         colnames(input) = MSstatsConvert:::.updateColnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-    colnames(input) = MSstatsConvert:::.updateColnames(input,
-                                                       "Fraction", "FRACTION")
+    colnames(input) = .updateColnames(input,
+                                      "Fraction", "FRACTION")
     
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
@@ -162,7 +182,7 @@
 setGeneric(".checkDataValidity", 
            function(input) standardGeneric(".checkDataValidity"))
 setMethod(".checkDataValidity", "data.frame", .checkUnProcessedDataValidity)
-setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TODO: or change column names
+setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 
 
 #' Create ABUNDANCE column and log-transform intensities
@@ -170,6 +190,8 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
 #' @param log_base base of the logarithm
 #' @keywords internal
 .preProcessIntensities = function(input, log_base) {
+    INTENSITY = ABUNDANCE = NULL
+    
     if (any(input$INTENSITY < 1, na.rm = TRUE)) {
         n_smaller_than_1 = sum(input$INTENSITY < 1, na.rm = T)
         input[, INTENSITY := ifelse(INTENSITY < 1, 1, INTENSITY)]
@@ -188,13 +210,14 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
                                   collapse = " "))
 }
 
-#' @importFrom utils getFromNamespace
-.updateColnames = utils::getFromNamespace(".updateColnames", "MSstatsConvert")
 
 #' Create columns for data processing
 #' @param input data.table
 #' @keywords internal
 .updateColumnsForProcessing = function(input) {
+    FEATURE = PEPTIDE = TRANSITION = GROUP = LABEL = GROUP_ORIGINAL = NULL
+    SUBJECT = SUBJECT_ORIGINAL = SUBJECT_NESTED = PROTEIN = NULL
+    
     colnames(input) = .updateColnames(
         input, c("PROTEINNAME", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE"), 
         c("PROTEIN", "LABEL", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
@@ -216,46 +239,52 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess) # TO
 #' @param input data.table
 #' @keywords internal
 .makeFactorColumns = function(input) {
+    PROTEIN = PEPTIDE = TRANSITION = LABEL = GROUP_ORIGINAL = RUN = GROUP = NULL
+    SUBJECT_ORIGINAL = SUBJECT_NESTED = FEATURE = originalRUN = SUBJECT = NULL
+    
     input$PROTEIN = factor(input$PROTEIN)
     input$PEPTIDE = factor(input$PEPTIDE)
     input$TRANSITION = factor(input$TRANSITION)
-    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, 
+    # input[, PROTEIN := factor(PROTEIN)]
+    # input[, PEPTIDE := factor(PEPTIDE)]
+    # input[, TRANSITION := factor(TRANSITION)]
+    
+    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
+    
     input$GROUP = factor(input$GROUP)
-    input$SUBJECT = factor(as.character(input$SUBJECT))
-    input$SUBJECT_NESTED = factor(input$SUBJECT_NESTED, levels = unique(input$SUBJECT_NESTED))
-    input$FEATURE = factor(input$FEATURE, levels = unique(input$FEATURE))
-    input$originalRUN = input$RUN
-    input$RUN = factor(input$RUN, levels = unique(input$RUN), labels = seq(1, length(unique(input$RUN))))
+    input$SUBJECT = factor(input$SUBJECT)
+    input$SUBJECT_NESTED = factor(input$SUBJECT_NESTED)
+    input$FEATURE = factor(input$FEATURE)
+    input$originalRUN = factor(input$RUN)
+    input$RUN = factor(input$RUN, levels = unique(input$RUN),
+                       labels = seq_along(unique(input$RUN)))
+    # input[, GROUP := factor(GROUP)]
+    # input[, SUBJECT := factor(SUBJECT)]
+    # input[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
+    # input[, FEATURE := factor(FEATURE)]
+    # input[, originalRUN := RUN]
+    # input[, RUN := factor(RUN, levels = unique(RUN), 
+    #                       labels = seq_along(unique(RUN)))]
+    
     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
-                "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN) - okay")
+                "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN)",
+                "- okay")
     getOption("MSstatsLog")("INFO", msg)
     input
 }
 
-# .makeFactorColumns = function(input) {
-#     input[, PROTEIN := factor(PROTEIN)]
-#     input[, PEPTIDE := factor(PEPTIDE)]
-#     input[, TRANSITION := factor(TRANSITION)]
-#     
-#     input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL, 
-#                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
-#     
-#     input[, GROUP := factor(GROUP)]
-#     input[, SUBJECT := factor(SUBJECT)]
-#     input[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
-#     input[, FEATURE := factor(FEATURE)]
-#     input[, originalRun := RUN]
-#     input[, RUN := factor(RUN, levels = unique(RUN), labels = seq_along(unique(RUN)))]
-#     
-#     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
-#                 "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN) - okay")
-#     getOption("MSstatsLog")("INFO", msg)
-#     input
-# }
 
-
-.getPeptidesDict = function(input, normalization) {
+#' Prepare a peptides dictionary for global standards normalization
+#' 
+#' @param input `data.table` in MSstats standard format
+#' @param normalization normalization method
+#' 
+#' @export
+#' 
+makePeptidesDictionary = function(input, normalization) {
+    PEPTIDE = PeptideSequence = PrecursorCharge = NULL
+    
     if (toupper(normalization) == "GLOBALSTANDARDS") {
         cols = intersect(c("PeptideSequence", "PeptideModifiedSequence", 
                            "PrecursorCharge"), colnames(input))
