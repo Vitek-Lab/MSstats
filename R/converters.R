@@ -1,9 +1,29 @@
-#' Import converters from MSstatsConvert package 
-#' @importFrom MSstatsConvert MSstatsImport MSstatsClean MSstatsPreprocess
-#' @importFrom utils getFromNamespace
-.documentFunction = utils::getFromNamespace(".documentFunction", "MSstatsConvert")
-.makeAnnotation = utils::getFromNamespace(".makeAnnotation", "MSstatsConvert")
-.updateColnames = utils::getFromNamespace(".updateColnames", "MSstatsConvert")
+#' A dummy function to store shared documentation items.
+#' 
+#' @import data.table
+#' @importFrom MSstatsConvert MSstatsImport MSstatsClean MSstatsPreprocess 
+#' MSstatsBalancedDesign MSstatsMakeAnnotation
+#' 
+#' @param fewMeasurements 'remove'(default) will remove the features that have 1 or 2 measurements across runs.
+#' @param useUniquePeptide TRUE (default) removes peptides that are assigned for more than one proteins. 
+#' We assume to use unique peptide for each protein.
+#' @param summaryforMultipleRows max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.
+#' @param removeProtein_with1Feature TRUE will remove the proteins which have only 1 feature, which is the combination of peptide, precursor charge, fragment and charge. FALSE is default.
+#' @param removeProtein_with1Peptide TRUE will remove the proteins which have only 1 peptide and charge. FALSE is default.
+#' @param removeOxidationMpeptides TRUE will remove the peptides including 'oxidation (M)' in modification. FALSE is default.
+#' @param removeMpeptides TRUE will remove the peptides including 'M' sequence. FALSE is default.
+#' 
+#' @keywords internal
+#' 
+.documentFunction = function() {
+    NULL
+}
+
+standard_columns = c("ProteinName", "PeptideSequence", 
+                     "PeptideModifiedSequence", "PrecursorCharge", 
+                     "FragmentIon", "ProductCharge", "IsotopeLabelType",
+                     "Condition", "BioReplicate", "Run", "StandardType", 
+                     "Fraction", "DetectionQValue", "Intensity")
 
 #' Import DIA-Umpire files 
 #' 
@@ -27,24 +47,29 @@ DIAUmpiretoMSstatsFormat = function(
     useSelectedPep = TRUE, fewMeasurements = "remove",
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(Fragments = raw.frag, Peptides = raw.pep, 
+    input = MSstatsImport(list(Fragments = raw.frag, 
+                               Peptides = raw.pep, 
                                Proteins = raw.pro), 
                           type = "MSstats", tool = "DIAUmpire", ...)
-    input = MSstatsConvert::MSstatsClean(input, use_frag = useSelectedFrag, 
+    input = MSstatsClean(input, 
+                         use_frag = useSelectedFrag, 
                          use_pept = useSelectedPep)
-    annotation = .makeAnnotation(input, annotation)
-    input = MSstatsConvert::MSstatsPreprocess(input, annotation,
-                              c("PeptideSequence", "FragmentIon"),
-                              remove_shared_peptides = TRUE, 
-                              remove_single_feature_proteins = removeProtein_with1Feature,
-                              feature_cleaning = list(
-                                  handle_features_with_few_measurements = fewMeasurements,
-                                  summarize_multiple_psms = summaryforMultipleRows
-                              ),
-                              columns_to_fill = list("PrecursorCharge" = NA,
-                                                     "ProductCharge" = NA,
-                                                     "IsotopeLabelType" = "L"))
-    input
+    annotation = MSstatsMakeAnnotation(input, annotation)
+    
+    feature_columns = c("PeptideSequence", "FragmentIon")
+    input = MSstatsPreprocess(
+        input, 
+        annotation,
+        feature_columns,
+        remove_shared_peptides = TRUE, 
+        remove_single_feature_proteins = removeProtein_with1Feature,
+        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
+                                summarize_multiple_psms = summaryforMultipleRows),
+        columns_to_fill = list("PrecursorCharge" = NA,
+                               "ProductCharge" = NA,
+                               "IsotopeLabelType" = "L"))
+    input = MSstatsBalancedDesign(input, feature_columns)
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -71,76 +96,42 @@ MaxQtoMSstatsFormat = function(
     fewMeasurements = "remove", removeMpeptides = FALSE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE, ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(evidence = evidence, protein_groups = proteinGroups), 
+    input = MSstatsImport(list(evidence = evidence, 
+                               protein_groups = proteinGroups), 
                           type = "MSstats", tool = "MaxQuant", ...)
-    input = MSstatsConvert::MSstatsClean(input, protein_id_col = proteinID)
-    annotation = .makeAnnotation(input, annotation, "Run" = "Rawfile")
+    input = MSstatsClean(input, 
+                         protein_id_col = proteinID, 
+                         remove_by_site = TRUE)
+    annotation = MSstatsMakeAnnotation(input, 
+                                       annotation, 
+                                       "Run" = "Rawfile")
     
-    m_filter = list(col_name = "PeptideSequence", pattern = "M", 
-                    filter = removeMpeptides, drop_column = FALSE)
-    oxidation_filter = list(col_name = "Modifications", pattern = "Oxidation", 
-                            filter = removeOxidationMpeptides, drop_column = TRUE)
+    m_filter = list(col_name = "PeptideSequence", 
+                    pattern = "M", 
+                    filter = removeMpeptides, 
+                    drop_column = FALSE)
     
-    input = MSstatsConvert::MSstatsPreprocess(input, annotation,
-                              feature_columns = c("PeptideSequence", "PrecursorCharge"),
-                              remove_shared_peptides = TRUE, 
-                              remove_single_feature_proteins = removeProtein_with1Peptide,
-                              pattern_filtering = list(oxidation = oxidation_filter),
-                              feature_cleaning = list(
-                                  handle_features_with_few_measurements = fewMeasurements,
-                                  summarize_multiple_psms = summaryforMultipleRows
-                              ),
-                              columns_to_fill = list("PrecursorCharge" = NA,
-                                                     "ProductCharge" = NA,
-                                                     "IsotopeLabelType" = "L"))
-    input
-}
-
-
-#' Generate MSstatsTMT required input format from MaxQuant output
-#' 
-#' @param evidence name of 'evidence.txt' data, which includes feature-level data.
-#' @param proteinGroups name of 'proteinGroups.txt' data.
-#' @param annotation data frame which contains column Run, Fraction, TechRepMixture, Mixture, Channel, BioReplicate, Condition. Refer to the example 'annotation.mq' for the meaning of each column.
-#' @param which.proteinid Use 'Proteins'(default) column for protein name. 'Leading.proteins' or 'Leading.razor.proteins' or 'Gene.names' can be used instead to get the protein ID with single protein. However, those can potentially have the shared peptides.
-#' @param rmProt_Only.identified.by.site TRUE will remove proteins with '+' in 'Only.identified.by.site' column from proteinGroups.txt, which was identified only by a modification site. FALSE is the default.
-#' @param useUniquePeptide TRUE(default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
-#' @param rmPSM_withMissing_withinRun TRUE will remove PSM with any missing value within each Run. Defaut is FALSE.
-#' @param rmPSM_withfewMea_withinRun only for rmPSM_withMissing_withinRun = FALSE. TRUE(default) will remove the features that have 1 or 2 measurements within each Run.
-#' @param rmProtein_with1Feature TRUE will remove the proteins which have only 1 peptide and charge. Defaut is FALSE.
-#' @param summaryforMultipleRows sum(default) or max - when there are multiple measurements for certain feature in certain run, select the feature with the largest summation or maximal value.
-#' @param ... additional parameters to `data.table::fread`.
-#' 
-#' @return data.frame of class "MSstatsTMT"
-#' 
-#' @export
-MaxQtoMSstatsTMTFormat = function(
-    evidence, proteinGroups, annotation, which.proteinid = 'Proteins',
-    rmProt_Only.identified.by.site = FALSE, useUniquePeptide = TRUE,
-    rmPSM_withMissing_withinRun = FALSE, rmPSM_withfewMea_withinRun = TRUE,
-    rmProtein_with1Feature = FALSE, summaryforMultipleRows = sum, ...
-) {
-    input = MSstatsConvert::MSstatsImport(list(evidence = evidence, protein_groups = proteinGroups), 
-                          "MSstatsTMT", "MaxQuant", ...)
-    input = MSstatsConvert::MSstatsClean(input, protein_id_col = which.proteinid, 
-                         remove_by_site = rmProt_Only.identified.by.site,
-                         channel_columns = "Reporterintensitycorrected")
-    annotation = .makeAnnotation(input, annotation)
-    few_measurements = ifelse(rmPSM_withfewMea_withinRun, "remove", "keep")
+    oxidation_filter = list(col_name = "Modifications", 
+                            pattern = "Oxidation", 
+                            filter = removeOxidationMpeptides, 
+                            drop_column = TRUE)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge"),
-        remove_shared_peptides = useUniquePeptide,
-        remove_single_feature_proteins = rmProtein_with1Feature,
-        list(handle_features_with_few_measurements = few_measurements,
-             summarize_multiple_psms = summaryforMultipleRows,
-             remove_psms_with_any_missing = rmPSM_withMissing_withinRun)
-    )
-    colnames(input) = .updateColnames(input, "PrecursorCharge", "Charge")
-    input = input[, c("ProteinName", "PeptideSequence", "Charge", "PSM", "Mixture", 
-                      "TechRepMixture", "Run", "Channel", "BioReplicate", "Condition", "Intensity")]
-    input
+    feature_columns = c("PeptideSequence", "PrecursorCharge")
+    input = MSstatsPreprocess(
+        input, 
+        annotation,
+        feature_columns,
+        remove_shared_peptides = useUniquePeptide, 
+        remove_single_feature_proteins = removeProtein_with1Peptide,
+        pattern_filtering = list(oxidation = oxidation_filter,
+                                 m = m_filter),
+        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
+                                summarize_multiple_psms = summaryforMultipleRows),
+        columns_to_fill = list("FragmentIon" = NA,
+                               "ProductCharge" = NA,
+                               "IsotopeLabelType" = "L"))
+    input = MSstatsBalancedDesign(input, feature_columns)
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -162,59 +153,23 @@ OpenMStoMSstatsFormat = function(
     input, annotation = NULL, useUniquePeptide = TRUE, fewMeasurements = "remove",
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "OpenMS", ...)
-    input = MSstatsConvert::MSstatsClean(input)
-    annotation = .makeAnnotation(input, annotation)
+    input = MSstatsImport(list(input = input), 
+                          "MSstats", "OpenMS", ...)
+    input = MSstatsClean(input)
+    annotation = MSstatsMakeAnnotation(input, annotation)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge", 
-                            "FragmentIon", "ProductCharge"),
+    feature_columns = c("PeptideSequence", "PrecursorCharge", 
+                        "FragmentIon", "ProductCharge")
+    input = MSstatsPreprocess(
+        input, 
+        annotation, 
+        feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        list(handle_features_with_few_measurements = fewMeasurements,
-             summarize_multiple_psms = summaryforMultipleRows)
-    )
-    input
-}
-
-
-#' Generate MSstatsTMT required input format for OpenMS output
-#' @param input MSstatsTMT report from OpenMS
-#' @param useUniquePeptide TRUE(default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
-#' @param rmPSM_withMissing_withinRun TRUE will remove PSM with any missing value within each Run. Defaut is FALSE.
-#' @param rmPSM_withfewMea_withinRun only for rmPSM_withMissing_withinRun = FALSE. TRUE(default) will remove the features that have 1 or 2 measurements within each Run.
-#' @param rmProtein_with1Feature TRUE will remove the proteins which have only 1 peptide and charge. Defaut is FALSE.
-#' @param summaryforMultiplePSMs sum(default) or max - when there are multiple measurements for certain feature in certain run, select the feature with the largest summation or maximal value.
-#' @param ... additional parameters to `data.table::fread`.
-#' 
-#' @return `data.frame` of class `MSstatsTMT`.
-#' 
-#' @export
-#' 
-OpenMStoMSstatsTMTFormat = function(
-    input, useUniquePeptide = TRUE, rmPSM_withMissing_withinRun = FALSE,
-    rmPSM_withfewMea_withinRun = TRUE, rmProtein_with1Feature = FALSE,
-    summaryforMultiplePSMs = sum, ...
-) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "OpenMS", ...)
-    input = MSstatsConvert::MSstatsClean(input)
-    few_measurements = ifelse(rmPSM_withfewMea_withinRun, "remove", "keep")
-    
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, NULL, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge", "Reference", "RetentionTime"),
-        remove_shared_peptides = useUniquePeptide,
-        remove_single_feature_proteins = rmProtein_with1Feature,
-        list(handle_features_with_few_measurements = few_measurements,
-             summarize_multiple_psms = summaryforMultiplePSMs,
-             remove_psms_with_any_missing = rmPSM_withMissing_withinRun)
-    )
-    colnames(input) = .updateColnames(input, "PrecursorCharge", "Charge")
-    cols = c("ProteinName", "PeptideSequence", "Charge", "PSM", "Mixture",  "Fraction",
-             "TechRepMixture", "Run", "Channel", "Condition", "BioReplicate", "Intensity")
-    input = input[, intersect(cols, colnames(input))]
-    input
+        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
+                                summarize_multiple_psms = summaryforMultipleRows))
+    input = MSstatsBalancedDesign(input, feature_columns)
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -239,29 +194,41 @@ OpenSWATHtoMSstatsFormat = function(
     useUniquePeptide = TRUE, fewMeasurements = "remove",
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "OpenSWATH", ...)
-    # TODO: check the existence of m_score column earlier
-    input = MSstatsConvert::MSstatsClean(input)
-    annotation = .makeAnnotation(input, .getDataTable(annotation))
+    input = MSstatsImport(list(input = input), 
+                          "MSstats", "OpenSWATH", ...)
+    input = MSstatsClean(input)
+    annotation = MSstatsMakeAnnotation(input, annotation)
     
-    m_score_filter = list(score_column = "m_score", score_threshold = mscore_cutoff, 
-                          direction = "smaller", behavior = "remove", 
-                          handle_na = "remove", fill_value = NA,
-                          filter = TRUE, drop_column = TRUE)
-    decoy_filter = list(col_name = "decoy", filter_symbols = 1, 
-                        filter = TRUE, drop_column = TRUE)
+    m_score_filter = list(score_column = "m_score", 
+                          score_threshold = mscore_cutoff, 
+                          direction = "smaller", 
+                          behavior = "remove", 
+                          handle_na = "remove", 
+                          fill_value = NA,
+                          filter = filter_with_mscore, 
+                          drop_column = TRUE)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        c("PeptideSequence", "PrecursorCharge", "FragmentIon"),
+    decoy_filter = list(col_name = "decoy", 
+                        filter_symbols = 1, 
+                        filter = TRUE, 
+                        drop_column = TRUE)
+    
+    feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon")
+    input = MSstatsPreprocess(
+        input, 
+        annotation, 
+        feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
         feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
         score_filtering = list(ms_filter = m_score_filter),
         exact_filtering = list(decoy = decoy_filter),
-        columns_to_fill = c("ProductCharge" = NA, "IsotopeLabelType" = "L"))
-    input
+        columns_to_fill = c("ProductCharge" = NA, 
+                            "IsotopeLabelType" = "L"))
+    input = MSstatsBalancedDesign(input, feature_columns, 
+                                  fix_missing = "na_to_zero")
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -283,25 +250,35 @@ ProgenesistoMSstatsFormat = function(
     fewMeasurements = "remove", removeOxidationMpeptides = FALSE, 
     removeProtein_with1Peptide = FALSE, ... 
 ) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "Progenesis", ...)
-    annotation = .makeAnnotation(input, annotation)
-    input = MSstatsConvert::MSstatsClean(input, unique(annotation$Run), TRUE)
+    input = MSstatsImport(list(input = input), 
+                          "MSstats", "Progenesis", ...)
+    input = MSstatsClean(input, 
+                         unique(as.character(annotation$Run)), 
+                         fix_colnames = TRUE)
+    annotation = MSstatsMakeAnnotation(input, annotation)
     
-    oxidation_filter = list(col_name = "PeptideSequence", pattern = "Oxidation", 
-                            filter = TRUE, drop_column = FALSE)
+    oxidation_filter = list(col_name = "PeptideSequence", 
+                            pattern = "Oxidation", 
+                            filter = removeOxidationMpeptides, 
+                            drop_column = FALSE)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        c("PeptideSequence", "PrecursorCharge"),
+    feature_columns = c("PeptideSequence", "PrecursorCharge")
+    input = MSstatsPreprocess(
+        input, 
+        annotation, 
+        feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Peptide,
         feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
         pattern_filtering = list(oxidation = oxidation_filter),
-        columns_to_fill = list("FragmentIon" = NA, "ProductCharge" = NA,
+        columns_to_fill = list("FragmentIon" = NA, 
+                               "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    colnames(input) = .updateColnames(input, "PeptideSequence", "PeptideModifiedSequence")
-    input
+    input = MSstatsBalancedDesign(input, feature_columns)
+    data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
+                         skip_absent = TRUE)
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -331,75 +308,37 @@ PDtoMSstatsFormat = function(
     which.proteinid = 'Protein.Group.Accessions', which.sequence = 'Sequence',
     ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "ProteomeDiscoverer", ...)
-    input = MSstatsConvert::MSstatsClean(input, quantification_column = which.quantification, 
+    input = MSstatsImport(list(input = input), 
+                          "MSstats", "ProteomeDiscoverer", ...)
+    input = MSstatsClean(input, 
+                         quantification_column = which.quantification, 
                          protein_id_column = which.proteinid,
                          sequence_column = which.sequence, 
                          remove_shared = useNumProteinsColumn)
-    annotation = .makeAnnotation(input, annotation)
+    annotation = MSstatsMakeAnnotation(input, annotation)
     
-    oxidation_filter = list(col_name = "PeptideSequence", pattern = "Oxidation", 
-                            filter = TRUE, drop_column = FALSE)
+    oxidation_filter = list(col_name = "PeptideSequence", 
+                            pattern = "Oxidation", 
+                            filter = removeOxidationMpeptides, 
+                            drop_column = FALSE)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge"),
+    feature_columns = c("PeptideSequence", "PrecursorCharge")
+    input = MSstatsPreprocess(
+        input, 
+        annotation, 
+        feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Peptide,
         feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
         pattern_filtering = list(oxidation = oxidation_filter),
-        columns_to_fill = list("FragmentIon" = NA, "ProductCharge" = NA,
+        columns_to_fill = list("FragmentIon" = NA, 
+                               "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    colnames(input) = .updateColnames(colnames(input), "PeptideSequence",
-                                      "PeptideModifiedSequence")
-    input
-}
-
-
-#' Convert Proteome Discoverer output to MSstatsTMT format.
-#' 
-#' @param input PD report or a path to it.
-#' @param annotation annotation with Run, Fraction, TechRepMixture, Mixture, Channel, 
-#' BioReplicate, Condition columns or a path to file. Refer to the example 'annotation' for the meaning of each column.
-#' @param which.proteinid Use 'Proteins'(default) column for protein name. 'Leading.proteins' or 'Leading.razor.proteins' or 'Gene.names' can be used instead to get the protein ID with single protein. However, those can potentially have the shared peptides.
-#' @param useNumProteinsColumn logical, if TRUE, shared peptides will be removed.
-#' @param useUniquePeptide lgl, if TRUE (default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
-#' @param rmPSM_withMissing_withinRun lgl, if TRUE, will remove PSM with any missing value within each Run. Default is FALSE.
-#' @param rmPSM_withfewMea_withinRun lgl, only for rmPSM_withMissing_withinRun = FALSE. TRUE (default) will remove the features that have 1 or 2 measurements within each Run.
-#' @param rmProtein_with1Feature TRUE will remove the proteins which have only 1 peptide and charge. Defaut is FALSE.
-#' @param summaryforMultipleRows sum(default) or max - when there are multiple measurements for certain feature in certain run, select the feature with the largest summation or maximal value.
-#' @param ... additional parameters to `data.table::fread`.
-#' 
-#' @return `data.frame` of class `MSstatsTMT`
-#' 
-#' @export
-#' 
-PDtoMSstatsTMTFormat <- function(
-    input, annotation, which.proteinid = 'Protein.Accessions', 
-    useNumProteinsColumn = TRUE, useUniquePeptide = TRUE, 
-    rmPSM_withMissing_withinRun = FALSE, rmPSM_withfewMea_withinRun = TRUE, 
-    rmProtein_with1Feature = FALSE, summaryforMultipleRows = sum, ...
-) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstatsTMT", "ProteomeDiscoverer", ...)
-    input = MSstatsConvert::MSstatsClean(input, protein_id_column = which.proteinid,
-                         remove_shared = useNumProteinsColumn)
-    annotation = .makeAnnotation(input, annotation)
-    
-    few_measurements = ifelse(rmPSM_withfewMea_withinRun, "remove", "keep")
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge"),
-        remove_shared_peptides = useUniquePeptide,
-        remove_single_feature_proteins = rmProtein_with1Feature,
-        feature_cleaning = list(handle_features_with_few_measurements = few_measurements,
-                                summarize_multiple_psms = summaryforMultipleRows,
-                                remove_psms_with_any_missing = rmPSM_withMissing_withinRun)
-    )
-    colnames(input) = .updateColnames(input, "PrecursorCharge", "Charge")
-    input = input[, c("ProteinName", "PeptideSequence", "Charge", "PSM", "Mixture", 
-                      "TechRepMixture", "Run", "Channel", "Condition", "BioReplicate", "Intensity")] # unique?
-    input
+    input = MSstatsBalancedDesign(input, feature_columns)
+    data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
+                         skip_absent = TRUE)
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -424,95 +363,63 @@ SkylinetoMSstatsFormat = function(
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, fewMeasurements = "remove",
     removeOxidationMpeptides = FALSE, removeProtein_with1Feature = FALSE, ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "Skyline", ...)
-    input = MSstatsConvert::MSstatsClean(input)
-    annotation = .makeAnnotation(input, annotation, Run = "Rawfile")
+    input = MSstatsImport(list(input = input), 
+                          "MSstats", "Skyline", ...)
+    input = MSstatsClean(input)
+    annotation = MSstatsMakeAnnotation(input, 
+                                       annotation, 
+                                       Run = "FileName")
     
     decoy_filter = list(col_name = "ProteinName",
-                        filter_symbols = c("DECOY", "Decoys"),
-                        filter = TRUE, drop_column = FALSE)
-    irt_filter = list(col_name = "StandardType", filter_symbols = "iRT",
-                      filter = removeiRT, drop_column = FALSE)
+                        pattern = c("DECOY", "Decoys"),
+                        filter = TRUE, 
+                        drop_column = FALSE)
+    
+    irt_filter = list(col_name = "StandardType", 
+                      filter_symbols = "iRT",
+                      filter = removeiRT, 
+                      drop_column = FALSE)
+    
     oxidation_filter = list(col_name = "PeptideSequence",
                             pattern = "\\+16", 
                             filter = removeOxidationMpeptides, 
                             drop_column = FALSE)
-    truncated_filter = list(score_column = "Truncated", score_threshold = 0,
-                            direction = "smaller", behavior = "fill",
-                            fill_value = NA_real_, handle_na = "keep",
-                            filter = TRUE, drop_column = TRUE)
-    qval_filter = list(score_column = "DetectionQValue", 
-                       score_threshold = qvalue_cutoff, direction = "smaller",
-                       behavior = "fill", fill_value = 0, handle_na = "keep",
-                       filter = filter_with_Qvalue, drop_column = TRUE)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge"),
+    truncated_filter = list(score_column = "Truncated", 
+                            score_threshold = 0,
+                            direction = "smaller", 
+                            behavior = "fill",
+                            fill_value = NA_real_, 
+                            handle_na = "keep",
+                            filter = TRUE, 
+                            drop_column = TRUE)
+    
+    qval_filter = list(score_column = "DetectionQValue", 
+                       score_threshold = qvalue_cutoff, 
+                       direction = "smaller",
+                       behavior = "fill", 
+                       fill_value = 0, 
+                       handle_na = "keep",
+                       filter = filter_with_Qvalue, 
+                       drop_column = TRUE)
+    
+    feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge")
+    input = MSstatsPreprocess(
+        input, 
+        annotation, 
+        feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        score_filtering = list(truncated = truncated_filter, qval = qval_filter),
-        pattern_filtering = list(oxidation = oxidation_filter),
-        exact_filtering = list(decoy = decoy_filter, irt = irt_filter),
+        score_filtering = list(truncated = truncated_filter, 
+                               qval = qval_filter),
+        pattern_filtering = list(decoy = decoy_filter, 
+                                 oxidation = oxidation_filter),
+        exact_filtering = list(irt = irt_filter),
         aggregate_isotopic = TRUE,
         feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = sum)
-    )
-    input
-}
-
-
-#' Import data from SpectroMine
-#'
-#' @param input data name of SpectroMine PSM output. Read PSM sheet.
-#' @param annotation data frame which contains column Run, Fraction, TechRepMixture, Mixture, Channel, BioReplicate, Condition. Refer to the example 'annotation.mine' for the meaning of each column.
-#' @param filter_with_Qvalue TRUE(default) will filter out the intensities that have greater than qvalue_cutoff in EG.Qvalue column. Those intensities will be replaced with NA and will be considered as censored missing values for imputation purpose.
-#' @param qvalue_cutoff Cutoff for EG.Qvalue. default is 0.01.
-#' @param useUniquePeptide TRUE(default) removes peptides that are assigned for more than one proteins. We assume to use unique peptide for each protein.
-#' @param rmPSM_withMissing_withinRun TRUE will remove PSM with any missing value within each Run. Defaut is FALSE.
-#' @param rmPSM_withfewMea_withinRun only for rmPSM_withMissing_withinRun = FALSE. TRUE(default) will remove the features that have 1 or 2 measurements within each Run.
-#' @param rmProtein_with1Feature TRUE will remove the proteins which have only 1 peptide and charge. Defaut is FALSE.
-#' @param summaryforMultipleRows sum(default) or max - when there are multiple measurements for certain feature in certain run, select the feature with the largest summation or maximal value.
-#' @param ... additional parameters to `data.table::fread`.
-#' 
-#' @return `data.frame` of class `MSstatsTMT`
-#' 
-#' @export 
-#' 
-SpectroMinetoMSstatsTMTFormat <- function(
-    input, annotation, filter_with_Qvalue = TRUE, qvalue_cutoff = 0.01,
-    useUniquePeptide = TRUE, rmPSM_withMissing_withinRun = FALSE,
-    rmPSM_withfewMea_withinRun = TRUE, rmProtein_with1Feature = FALSE,
-    summaryforMultipleRows = sum, ...
-) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstatsTMT", "SpectroMine", ...)
-    input = MSstatsConvert::MSstatsClean(input)
-    annotation = .makeAnnotation(input, annotation)
-    
-    few_measurements = ifelse(rmPSM_withfewMea_withinRun, "remove", "keep")
-    pq_filter = list(score_column = "PGQValue", score_threshold = 0.01, 
-                     direction = "smaller", behavior = "fill", 
-                     handle_na = "keep", fill_value = NA,
-                     filter = TRUE, drop_column = TRUE)
-    qval_filter = list(score_column = "Qvalue", score_threshold = qvalue_cutoff, 
-                       direction = "smaller", behavior = "fill", 
-                       handle_na = "keep", fill_value = NA,
-                       filter = filter_with_Qvalue, drop_column = TRUE)
-    
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge"),
-        remove_shared_peptides = useUniquePeptide,
-        remove_single_feature_proteins = rmProtein_with1Feature,
-        score_filtering = list(pgq = pq_filter, psm_q = qval_filter),
-        feature_cleaning = list(handle_features_with_few_measurements = few_measurements,
-                                summarize_multiple_psms = summaryforMultipleRows,
-                                remove_psms_with_any_missing = rmPSM_withMissing_withinRun)
-    )
-    colnames(input) = .updateColnames(input, "PrecursorCharge", "Charge")
-    input = input[, c("ProteinName", "PeptideSequence", "Charge", "PSM", "Mixture", 
-                      "TechRepMixture", "Run", "Channel", "BioReplicate", "Condition", "Intensity")]
-    input
+                                summarize_multiple_psms = sum))
+    input = MSstatsBalancedDesign(input, feature_columns)
+    input[, intersect(standard_columns, colnames(input))]
 }
 
 
@@ -537,28 +444,44 @@ SpectronauttoMSstatsFormat = function(
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, fewMeasurements="remove",
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, ...
 ) {
-    input = MSstatsConvert::MSstatsImport(list(input = input), "MSstats", "Spectronaut", ...)
-    input = MSstatsConvert::MSstatsClean(input, intensity = intensity)
-    annotation = .makeAnnotation(input, annotation, "Run" = "RFileName", 
-                                 "Condition" = "RCondition", "BioReplicate" = "RReplicate")
+    input = MSstatsImport(list(input = input), 
+                          "MSstats", "Spectronaut", ...)
+    input = MSstatsClean(input, intensity = intensity)
+    annotation = MSstatsMakeAnnotation(input, 
+                                       annotation, 
+                                       "Run" = "RFileName", 
+                                       "Condition" = "RCondition", 
+                                       "BioReplicate" = "RReplicate")
     
-    pq_filter = list(score_column = "PGQvalue", score_threshold = 0.01, 
-                     direction = "smaller", behavior = "fill", 
-                     handle_na = "keep", fill_value = NA,
-                     filter = TRUE, drop_column = TRUE)
-    qval_filter = list(score_column = "Qvalue", score_threshold = qvalue_cutoff, 
-                       direction = "smaller", behavior = "fill", 
-                       handle_na = "keep", fill_value = 0, 
-                       filter = filter_with_Qvalue, drop_column = TRUE)
+    pq_filter = list(score_column = "PGQvalue", 
+                     score_threshold = 0.01, 
+                     direction = "smaller", 
+                     behavior = "fill", 
+                     handle_na = "keep", 
+                     fill_value = NA,
+                     filter = TRUE, 
+                     drop_column = TRUE)
+    qval_filter = list(score_column = "Qvalue", 
+                       score_threshold = qvalue_cutoff, 
+                       direction = "smaller", 
+                       behavior = "fill", 
+                       handle_na = "keep", 
+                       fill_value = 0, 
+                       filter = filter_with_Qvalue, 
+                       drop_column = TRUE)
     
-    input = MSstatsConvert::MSstatsPreprocess(
-        input, annotation, 
-        feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge"),
+    feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge")
+    input = MSstatsPreprocess(
+        input, 
+        annotation, 
+        feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
         feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
-        score_filtering = list(pgq = pq_filter, psm_q = qval_filter),
+        score_filtering = list(pgq = pq_filter, 
+                               psm_q = qval_filter),
         columns_to_fill = list("IsotopeLabelType" = "L"))
-    input
+    input = MSstatsBalancedDesign(input, feature_columns)
+    input[, intersect(standard_columns, colnames(input))]
 }

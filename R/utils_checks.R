@@ -13,10 +13,6 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
 }
 
 
-#' @importFrom utils getFromNamespace
-.updateColnames = utils::getFromNamespace(".updateColnames", "MSstatsConvert")
-
-
 #' Save information about R session to sessionInfo.txt file.
 #' @importFrom utils sessionInfo
 #' @keywords internal
@@ -116,7 +112,7 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
     }    
     
     if (is.element("PEPTIDEMODIFIEDSEQUENCE", provided_cols)) {
-        colnames(input) = .updateColnames(
+        colnames(input) = data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
     
@@ -160,11 +156,10 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
     colnames(input) = toupper(colnames(input))
     
     if (is.element("PEPTIDEMODIFIEDSEQUENCE", colnames(input))) {
-        colnames(input) = MSstatsConvert:::.updateColnames(
+        colnames(input) = data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-    colnames(input) = .updateColnames(input,
-                                      "Fraction", "FRACTION")
+    colnames(input) = data.table::setnames(input, "Fraction", "FRACTION")
     
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
@@ -218,7 +213,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     FEATURE = PEPTIDE = TRANSITION = GROUP = LABEL = GROUP_ORIGINAL = NULL
     SUBJECT = SUBJECT_ORIGINAL = SUBJECT_NESTED = PROTEIN = NULL
     
-    colnames(input) = .updateColnames(
+    colnames(input) = data.table::setnames(
         input, c("PROTEINNAME", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE"), 
         c("PROTEIN", "LABEL", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
     

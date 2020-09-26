@@ -42,7 +42,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     if (!("censored" %in% cols)) {
         input$censored = FALSE
     } 
-    colnames(input) = MSstatsConvert:::.updateColnames(input, "censored", "is_censored")
+    colnames(input) = data.table::setnames(input, "censored", "is_censored")
     input = input[, list(protein = as.character(PROTEIN),
                          peptide = as.character(PEPTIDE),
                          feature = as.character(FEATURE),
