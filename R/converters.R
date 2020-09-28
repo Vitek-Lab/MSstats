@@ -210,6 +210,8 @@ OpenSWATHtoMSstatsFormat = function(
     
     decoy_filter = list(col_name = "decoy", 
                         filter_symbols = 1, 
+                        behavior = "remove",
+                        fill_value = NULL,
                         filter = TRUE, 
                         drop_column = TRUE)
     
@@ -378,6 +380,8 @@ SkylinetoMSstatsFormat = function(
     irt_filter = list(col_name = "StandardType", 
                       filter_symbols = "iRT",
                       filter = removeiRT, 
+                      behavior = "remove",
+                      fill_value = NULL,
                       drop_column = FALSE)
     
     oxidation_filter = list(col_name = "PeptideSequence",
@@ -385,12 +389,10 @@ SkylinetoMSstatsFormat = function(
                             filter = removeOxidationMpeptides, 
                             drop_column = FALSE)
     
-    truncated_filter = list(score_column = "Truncated", 
-                            score_threshold = 0,
-                            direction = "smaller", 
+    truncated_filter = list(col_name = "Truncated", 
+                            filter_symbols = "TRUE",
                             behavior = "fill",
-                            fill_value = NA_real_, 
-                            handle_na = "keep",
+                            fill_value = NA_real_,
                             filter = TRUE, 
                             drop_column = TRUE)
     
@@ -410,11 +412,11 @@ SkylinetoMSstatsFormat = function(
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        score_filtering = list(truncated = truncated_filter, 
-                               qval = qval_filter),
+        score_filtering = list(qval = qval_filter),
         pattern_filtering = list(decoy = decoy_filter, 
                                  oxidation = oxidation_filter),
-        exact_filtering = list(irt = irt_filter),
+        exact_filtering = list(irt = irt_filter,
+                               truncated = truncated_filter),
         aggregate_isotopic = TRUE,
         feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
                                 summarize_multiple_psms = sum))
