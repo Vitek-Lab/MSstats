@@ -117,7 +117,7 @@ MaxQtoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(evidence = evidence, 
                                protein_groups = proteinGroups), 
@@ -179,7 +179,7 @@ OpenMStoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(input = input), 
                           "MSstats", "OpenMS", ...)
@@ -225,7 +225,7 @@ OpenSWATHtoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(input = input), 
                           "MSstats", "OpenSWATH", ...)
@@ -288,7 +288,7 @@ ProgenesistoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(input = input), 
                           "MSstats", "Progenesis", ...)
@@ -350,7 +350,7 @@ PDtoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(input = input), 
                           "MSstats", "ProteomeDiscoverer", ...)
@@ -410,7 +410,7 @@ SkylinetoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(input = input), 
                           "MSstats", "Skyline", ...)
@@ -496,7 +496,7 @@ SpectronauttoMSstatsFormat = function(
     session_info_path = NULL, ...
 ) {
     MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo()
+    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
     input = MSstatsImport(list(input = input), 
                           "MSstats", "Spectronaut", ...)
