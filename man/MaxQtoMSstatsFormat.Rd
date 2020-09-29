@@ -15,6 +15,11 @@ MaxQtoMSstatsFormat(
   removeMpeptides = FALSE,
   removeOxidationMpeptides = FALSE,
   removeProtein_with1Peptide = FALSE,
+  use_log_file = TRUE,
+  append = FALSE,
+  verbose = TRUE,
+  log_file_path = NULL,
+  session_info_path = NULL,
   ...
 )
 }
@@ -39,6 +44,20 @@ We assume to use unique peptide for each protein.}
 \item{removeOxidationMpeptides}{TRUE will remove the peptides including 'oxidation (M)' in modification. FALSE is default.}
 
 \item{removeProtein_with1Peptide}{TRUE will remove the proteins which have only 1 peptide and charge. FALSE is default.}
+
+\item{use_log_file}{logical. If TRUE, information about data processing
+will be saved to a file.}
+
+\item{append}{logical. If TRUE, information about data processing will be added
+to an existing log file.}
+
+\item{verbose}{logical. If TRUE, information about data processing wil be printed
+to the console.}
+
+\item{log_file_path}{character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.}
 
 \item{...}{additional parameters to `data.table::fread`.}
 }

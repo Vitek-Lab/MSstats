@@ -11,6 +11,11 @@ OpenMStoMSstatsFormat(
   fewMeasurements = "remove",
   removeProtein_with1Feature = FALSE,
   summaryforMultipleRows = max,
+  use_log_file = TRUE,
+  append = FALSE,
+  verbose = TRUE,
+  log_file_path = NULL,
+  session_info_path = NULL,
   ...
 )
 }
@@ -28,6 +33,20 @@ We assume to use unique peptide for each protein.}
 \item{removeProtein_with1Feature}{TRUE will remove the proteins which have only 1 feature, which is the combination of peptide, precursor charge, fragment and charge. FALSE is default.}
 
 \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.}
+
+\item{use_log_file}{logical. If TRUE, information about data processing
+will be saved to a file.}
+
+\item{append}{logical. If TRUE, information about data processing will be added
+to an existing log file.}
+
+\item{verbose}{logical. If TRUE, information about data processing wil be printed
+to the console.}
+
+\item{log_file_path}{character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.}
 
 \item{...}{additional parameters to `data.table::fread`.}
 }

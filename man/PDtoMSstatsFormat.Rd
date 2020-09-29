@@ -16,6 +16,11 @@ PDtoMSstatsFormat(
   which.quantification = "Precursor.Area",
   which.proteinid = "Protein.Group.Accessions",
   which.sequence = "Sequence",
+  use_log_file = TRUE,
+  append = FALSE,
+  verbose = TRUE,
+  log_file_path = NULL,
+  session_info_path = NULL,
   ...
 )
 }
@@ -43,6 +48,20 @@ We assume to use unique peptide for each protein.}
 \item{which.proteinid}{Use 'Protein.Accessions'(default) column for protein name. 'Master.Protein.Accessions' can be used instead.}
 
 \item{which.sequence}{Use 'Sequence'(default) column for peptide sequence. 'Annotated.Sequence' can be used instead.}
+
+\item{use_log_file}{logical. If TRUE, information about data processing
+will be saved to a file.}
+
+\item{append}{logical. If TRUE, information about data processing will be added
+to an existing log file.}
+
+\item{verbose}{logical. If TRUE, information about data processing wil be printed
+to the console.}
+
+\item{log_file_path}{character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.}
 
 \item{...}{additional parameters to `data.table::fread`.}
 }
