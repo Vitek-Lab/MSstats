@@ -11,7 +11,7 @@ DIAUmpiretoMSstatsFormat(
   annotation,
   useSelectedFrag = TRUE,
   useSelectedPep = TRUE,
-  fewMeasurements = "remove",
+  removeFewMeasurements = TRUE,
   removeProtein_with1Feature = FALSE,
   summaryforMultipleRows = max,
   use_log_file = TRUE,
@@ -35,7 +35,7 @@ DIAUmpiretoMSstatsFormat(
 
 \item{useSelectedPep}{TRUE will use the selected peptide for each protein. 'Selected_peptides' column is required.}
 
-\item{fewMeasurements}{'remove'(default) will remove the features that have 1 or 2 measurements across runs.}
+\item{removeFewMeasurements}{TRUE (default) will remove the features that have 1 or 2 measurements across runs.}
 
 \item{removeProtein_with1Feature}{TRUE will remove the proteins which have only 1 feature, which is the combination of peptide, precursor charge, fragment and charge. FALSE is default.}
 

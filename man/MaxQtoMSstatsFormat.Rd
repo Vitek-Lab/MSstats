@@ -11,7 +11,7 @@ MaxQtoMSstatsFormat(
   proteinID = "Proteins",
   useUniquePeptide = TRUE,
   summaryforMultipleRows = max,
-  fewMeasurements = "remove",
+  removeFewMeasurements = TRUE,
   removeMpeptides = FALSE,
   removeOxidationMpeptides = FALSE,
   removeProtein_with1Peptide = FALSE,
@@ -37,7 +37,7 @@ We assume to use unique peptide for each protein.}
 
 \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.}
 
-\item{fewMeasurements}{'remove'(default) will remove the features that have 1 or 2 measurements across runs.}
+\item{removeFewMeasurements}{TRUE (default) will remove the features that have 1 or 2 measurements across runs.}
 
 \item{removeMpeptides}{TRUE will remove the peptides including 'M' sequence. FALSE is default.}
 

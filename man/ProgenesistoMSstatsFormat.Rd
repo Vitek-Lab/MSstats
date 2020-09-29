@@ -9,7 +9,7 @@ ProgenesistoMSstatsFormat(
   annotation,
   useUniquePeptide = TRUE,
   summaryforMultipleRows = max,
-  fewMeasurements = "remove",
+  removeFewMeasurements = TRUE,
   removeOxidationMpeptides = FALSE,
   removeProtein_with1Peptide = FALSE,
   use_log_file = TRUE,
@@ -30,7 +30,7 @@ We assume to use unique peptide for each protein.}
 
 \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.}
 
-\item{fewMeasurements}{'remove'(default) will remove the features that have 1 or 2 measurements across runs.}
+\item{removeFewMeasurements}{TRUE (default) will remove the features that have 1 or 2 measurements across runs.}
 
 \item{removeOxidationMpeptides}{TRUE will remove the peptides including 'oxidation (M)' in modification. FALSE is default.}
 

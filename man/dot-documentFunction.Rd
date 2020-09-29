@@ -7,7 +7,7 @@
 .documentFunction()
 }
 \arguments{
-\item{fewMeasurements}{'remove'(default) will remove the features that have 1 or 2 measurements across runs.}
+\item{removeFewMeasurements}{TRUE (default) will remove the features that have 1 or 2 measurements across runs.}
 
 \item{useUniquePeptide}{TRUE (default) removes peptides that are assigned for more than one proteins. 
 We assume to use unique peptide for each protein.}

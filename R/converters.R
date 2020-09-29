@@ -5,7 +5,7 @@
 #' MSstatsBalancedDesign MSstatsMakeAnnotation MSstatsSaveSessionInfo
 #' MSstatsLogsSettings
 #' 
-#' @param fewMeasurements 'remove'(default) will remove the features that have 1 or 2 measurements across runs.
+#' @param removeFewMeasurements TRUE (default) will remove the features that have 1 or 2 measurements across runs.
 #' @param useUniquePeptide TRUE (default) removes peptides that are assigned for more than one proteins. 
 #' We assume to use unique peptide for each protein.
 #' @param summaryforMultipleRows max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.
@@ -57,7 +57,7 @@ standard_columns = c("ProteinName", "PeptideSequence",
 #' 
 DIAUmpiretoMSstatsFormat = function(
     raw.frag, raw.pep, raw.pro, annotation, useSelectedFrag = TRUE,
-    useSelectedPep = TRUE, fewMeasurements = "remove",
+    useSelectedPep = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -84,7 +84,7 @@ DIAUmpiretoMSstatsFormat = function(
         remove_shared_peptides = TRUE, 
         remove_single_feature_proteins = removeProtein_with1Feature,
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows),
         columns_to_fill = list("PrecursorCharge" = NA,
                                "ProductCharge" = NA,
@@ -114,7 +114,7 @@ DIAUmpiretoMSstatsFormat = function(
 MaxQtoMSstatsFormat = function(
     evidence, annotation, proteinGroups, proteinID = "Proteins", 
     useUniquePeptide = TRUE, summaryforMultipleRows = max, 
-    fewMeasurements = "remove", removeMpeptides = FALSE,
+    removeFewMeasurements = TRUE, removeMpeptides = FALSE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -154,7 +154,7 @@ MaxQtoMSstatsFormat = function(
         pattern_filtering = list(oxidation = oxidation_filter,
                                  m = m_filter),
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows),
         columns_to_fill = list("FragmentIon" = NA,
                                "ProductCharge" = NA,
@@ -179,7 +179,7 @@ MaxQtoMSstatsFormat = function(
 #' @export
 #' 
 OpenMStoMSstatsFormat = function(
-    input, annotation = NULL, useUniquePeptide = TRUE, fewMeasurements = "remove",
+    input, annotation = NULL, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -202,7 +202,7 @@ OpenMStoMSstatsFormat = function(
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
@@ -227,7 +227,7 @@ OpenMStoMSstatsFormat = function(
 #' 
 OpenSWATHtoMSstatsFormat = function(
     input, annotation, filter_with_mscore = TRUE, mscore_cutoff = 0.01,
-    useUniquePeptide = TRUE, fewMeasurements = "remove",
+    useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -265,7 +265,7 @@ OpenSWATHtoMSstatsFormat = function(
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows),
         score_filtering = list(ms_filter = m_score_filter),
         exact_filtering = list(decoy = decoy_filter),
@@ -292,7 +292,7 @@ OpenSWATHtoMSstatsFormat = function(
 #' 
 ProgenesistoMSstatsFormat = function(
     input, annotation, useUniquePeptide = TRUE, summaryforMultipleRows = max,
-    fewMeasurements = "remove", removeOxidationMpeptides = FALSE, 
+    removeFewMeasurements = TRUE, removeOxidationMpeptides = FALSE, 
     removeProtein_with1Peptide = FALSE, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -321,7 +321,7 @@ ProgenesistoMSstatsFormat = function(
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Peptide,
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows),
         pattern_filtering = list(oxidation = oxidation_filter),
         columns_to_fill = list("FragmentIon" = NA, 
@@ -354,7 +354,7 @@ ProgenesistoMSstatsFormat = function(
 #' 
 PDtoMSstatsFormat = function(
     input, annotation, useNumProteinsColumn = FALSE, useUniquePeptide = TRUE,
-    summaryforMultipleRows = max, fewMeasurements = "remove",
+    summaryforMultipleRows = max, removeFewMeasurements = TRUE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE,
     which.quantification = 'Precursor.Area', 
     which.proteinid = 'Protein.Group.Accessions', which.sequence = 'Sequence',
@@ -388,7 +388,7 @@ PDtoMSstatsFormat = function(
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Peptide,
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows),
         pattern_filtering = list(oxidation = oxidation_filter),
         columns_to_fill = list("FragmentIon" = NA, 
@@ -419,7 +419,7 @@ PDtoMSstatsFormat = function(
 #' 
 SkylinetoMSstatsFormat = function(
     input, annotation = NULL, removeiRT = TRUE, filter_with_Qvalue = TRUE,
-    qvalue_cutoff = 0.01, useUniquePeptide = TRUE, fewMeasurements = "remove",
+    qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Feature = FALSE,
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -483,7 +483,7 @@ SkylinetoMSstatsFormat = function(
                                truncated = truncated_filter),
         aggregate_isotopic = TRUE,
         feature_cleaning = list(
-            remove_features_with_few_measurements = fewMeasurements,
+            remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = sum))
     input = MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
@@ -508,7 +508,7 @@ SkylinetoMSstatsFormat = function(
 #' 
 SpectronauttoMSstatsFormat = function(
     input, annotation = NULL, intensity = 'PeakArea', filter_with_Qvalue = TRUE,
-    qvalue_cutoff = 0.01, useUniquePeptide = TRUE, fewMeasurements="remove",
+    qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements=TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
@@ -551,7 +551,7 @@ SpectronauttoMSstatsFormat = function(
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        feature_cleaning = list(remove_features_with_few_measurements = fewMeasurements,
+        feature_cleaning = list(remove_features_with_few_measurements = removeFewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
         score_filtering = list(pgq = pq_filter, 
                                psm_q = qval_filter),
