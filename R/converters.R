@@ -535,7 +535,7 @@ SpectronauttoMSstatsFormat = function(
                      fill_value = NA,
                      filter = TRUE, 
                      drop_column = TRUE)
-    qval_filter = list(score_column = "Qvalue", 
+    qval_filter = list(score_column = "EGQvalue", 
                        score_threshold = qvalue_cutoff, 
                        direction = "smaller", 
                        behavior = "fill", 
