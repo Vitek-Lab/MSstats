@@ -62,31 +62,34 @@ DIAUmpiretoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(Fragments = raw.frag, 
-                               Peptides = raw.pep, 
-                               Proteins = raw.pro), 
-                          type = "MSstats", tool = "DIAUmpire", ...)
-    input = MSstatsClean(input, 
-                         use_frag = useSelectedFrag, 
-                         use_pept = useSelectedPep)
-    annotation = MSstatsMakeAnnotation(input, annotation)
+    input = MSstatsConvert::MSstatsImport(list(Fragments = raw.frag, 
+                                               Peptides = raw.pep, 
+                                               Proteins = raw.pro), 
+                                          type = "MSstats", 
+                                          tool = "DIAUmpire", ...)
+    input = MSstatsConvert::MSstatsClean(input, 
+                                         use_frag = useSelectedFrag, 
+                                         use_pept = useSelectedPep)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
     
     feature_columns = c("PeptideSequence", "FragmentIon")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation,
         feature_columns,
         remove_shared_peptides = TRUE, 
         remove_single_feature_proteins = removeProtein_with1Feature,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = summaryforMultipleRows),
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows),
         columns_to_fill = list("PrecursorCharge" = NA,
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
 }
 
@@ -116,18 +119,20 @@ MaxQtoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(evidence = evidence, 
-                               protein_groups = proteinGroups), 
-                          type = "MSstats", tool = "MaxQuant", ...)
-    input = MSstatsClean(input, 
-                         protein_id_col = proteinID, 
-                         remove_by_site = TRUE)
-    annotation = MSstatsMakeAnnotation(input, 
-                                       annotation, 
-                                       "Run" = "Rawfile")
+    input = MSstatsConvert::MSstatsImport(list(evidence = evidence, 
+                                               protein_groups = proteinGroups), 
+                                          type = "MSstats",
+                                          tool = "MaxQuant", ...)
+    input = MSstatsConvert::MSstatsClean(input, 
+                                         protein_id_col = proteinID, 
+                                         remove_by_site = TRUE)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, 
+                                                       annotation, 
+                                                       "Run" = "Rawfile")
     
     m_filter = list(col_name = "PeptideSequence", 
                     pattern = "M", 
@@ -140,7 +145,7 @@ MaxQtoMSstatsFormat = function(
                             drop_column = TRUE)
     
     feature_columns = c("PeptideSequence", "PrecursorCharge")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation,
         feature_columns,
@@ -148,12 +153,13 @@ MaxQtoMSstatsFormat = function(
         remove_single_feature_proteins = removeProtein_with1Peptide,
         pattern_filtering = list(oxidation = oxidation_filter,
                                  m = m_filter),
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = summaryforMultipleRows),
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows),
         columns_to_fill = list("FragmentIon" = NA,
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
 }
 
@@ -178,25 +184,27 @@ OpenMStoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(input = input), 
-                          "MSstats", "OpenMS", ...)
-    input = MSstatsClean(input)
-    annotation = MSstatsMakeAnnotation(input, annotation)
+    input = MSstatsConvert::MSstatsImport(list(input = input), 
+                                          "MSstats", "OpenMS", ...)
+    input = MSstatsConvert::MSstatsClean(input)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
     
     feature_columns = c("PeptideSequence", "PrecursorCharge", 
                         "FragmentIon", "ProductCharge")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation, 
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = summaryforMultipleRows))
-    input = MSstatsBalancedDesign(input, feature_columns)
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows))
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
 }
 
@@ -224,13 +232,14 @@ OpenSWATHtoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(input = input), 
-                          "MSstats", "OpenSWATH", ...)
-    input = MSstatsClean(input)
-    annotation = MSstatsMakeAnnotation(input, annotation)
+    input = MSstatsConvert::MSstatsImport(list(input = input), 
+                                          "MSstats", "OpenSWATH", ...)
+    input = MSstatsConvert::MSstatsClean(input)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
     
     m_score_filter = list(score_column = "m_score", 
                           score_threshold = mscore_cutoff, 
@@ -249,20 +258,21 @@ OpenSWATHtoMSstatsFormat = function(
                         drop_column = TRUE)
     
     feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation, 
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = summaryforMultipleRows),
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows),
         score_filtering = list(ms_filter = m_score_filter),
         exact_filtering = list(decoy = decoy_filter),
         columns_to_fill = c("ProductCharge" = NA, 
                             "IsotopeLabelType" = "L"))
-    input = MSstatsBalancedDesign(input, feature_columns, 
-                                  fix_missing = "na_to_zero")
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns, 
+                                                  fix_missing = "na_to_zero")
     input[, intersect(standard_columns, colnames(input))]
 }
 
@@ -287,15 +297,16 @@ ProgenesistoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(input = input), 
-                          "MSstats", "Progenesis", ...)
-    input = MSstatsClean(input, 
-                         unique(as.character(annotation$Run)), 
-                         fix_colnames = TRUE)
-    annotation = MSstatsMakeAnnotation(input, annotation)
+    input = MSstatsConvert::MSstatsImport(list(input = input), 
+                                          "MSstats", "Progenesis", ...)
+    input = MSstatsConvert::MSstatsClean(input, 
+                                         unique(as.character(annotation$Run)), 
+                                         fix_colnames = TRUE)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
     
     oxidation_filter = list(col_name = "PeptideSequence", 
                             pattern = "Oxidation", 
@@ -303,19 +314,20 @@ ProgenesistoMSstatsFormat = function(
                             drop_column = FALSE)
     
     feature_columns = c("PeptideSequence", "PrecursorCharge")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation, 
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Peptide,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = summaryforMultipleRows),
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows),
         pattern_filtering = list(oxidation = oxidation_filter),
         columns_to_fill = list("FragmentIon" = NA, 
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
     input[, intersect(standard_columns, colnames(input))]
@@ -349,17 +361,19 @@ PDtoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(input = input), 
-                          "MSstats", "ProteomeDiscoverer", ...)
-    input = MSstatsClean(input, 
-                         quantification_column = which.quantification, 
-                         protein_id_column = which.proteinid,
-                         sequence_column = which.sequence, 
-                         remove_shared = useNumProteinsColumn)
-    annotation = MSstatsMakeAnnotation(input, annotation)
+    input = MSstatsConvert::MSstatsImport(list(input = input), 
+                                          "MSstats", "ProteomeDiscoverer", ...)
+    input = MSstatsConvert::MSstatsClean(
+        input, 
+        quantification_column = which.quantification, 
+        protein_id_column = which.proteinid,
+        sequence_column = which.sequence, 
+        remove_shared = useNumProteinsColumn)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
     
     oxidation_filter = list(col_name = "PeptideSequence", 
                             pattern = "Oxidation", 
@@ -367,19 +381,20 @@ PDtoMSstatsFormat = function(
                             drop_column = FALSE)
     
     feature_columns = c("PeptideSequence", "PrecursorCharge")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation, 
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Peptide,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = summaryforMultipleRows),
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows),
         pattern_filtering = list(oxidation = oxidation_filter),
         columns_to_fill = list("FragmentIon" = NA, 
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
     input[, intersect(standard_columns, colnames(input))]
@@ -409,15 +424,16 @@ SkylinetoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(input = input), 
-                          "MSstats", "Skyline", ...)
-    input = MSstatsClean(input)
-    annotation = MSstatsMakeAnnotation(input, 
-                                       annotation, 
-                                       Run = "FileName")
+    input = MSstatsConvert::MSstatsImport(list(input = input), 
+                                          "MSstats", "Skyline", ...)
+    input = MSstatsConvert::MSstatsClean(input)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, 
+                                                       annotation, 
+                                                       Run = "FileName")
     
     decoy_filter = list(col_name = "ProteinName",
                         pattern = c("DECOY", "Decoys"),
@@ -452,8 +468,9 @@ SkylinetoMSstatsFormat = function(
                        filter = filter_with_Qvalue, 
                        drop_column = TRUE)
     
-    feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge")
-    input = MSstatsPreprocess(
+    feature_columns = c("PeptideSequence", "PrecursorCharge", 
+                        "FragmentIon", "ProductCharge")
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation, 
         feature_columns,
@@ -465,8 +482,9 @@ SkylinetoMSstatsFormat = function(
         exact_filtering = list(irt = irt_filter,
                                truncated = truncated_filter),
         aggregate_isotopic = TRUE,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
-                                summarize_multiple_psms = sum))
+        feature_cleaning = list(
+            remove_features_with_few_measurements = fewMeasurements,
+            summarize_multiple_psms = sum))
     input = MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
 }
@@ -495,17 +513,19 @@ SpectronauttoMSstatsFormat = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     session_info_path = NULL, ...
 ) {
-    MSstatsLogsSettings(use_log_file, append, verbose, log_file_path)
-    MSstatsSaveSessionInfo(session_info_path, append = TRUE)
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
     
-    input = MSstatsImport(list(input = input), 
-                          "MSstats", "Spectronaut", ...)
-    input = MSstatsClean(input, intensity = intensity)
-    annotation = MSstatsMakeAnnotation(input, 
-                                       annotation, 
-                                       "Run" = "RFileName", 
-                                       "Condition" = "RCondition", 
-                                       "BioReplicate" = "RReplicate")
+    input = MSstatsConvert::MSstatsImport(list(input = input), 
+                                          "MSstats", "Spectronaut", ...)
+    input = MSstatsConvert::MSstatsClean(input, intensity = intensity)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(
+        input, 
+        annotation, 
+        "Run" = "RFileName", 
+        "Condition" = "RCondition", 
+        "BioReplicate" = "RReplicate")
     
     pq_filter = list(score_column = "PGQvalue", 
                      score_threshold = 0.01, 
@@ -525,17 +545,17 @@ SpectronauttoMSstatsFormat = function(
                        drop_column = TRUE)
     
     feature_columns = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge")
-    input = MSstatsPreprocess(
+    input = MSstatsConvert::MSstatsPreprocess(
         input, 
         annotation, 
         feature_columns,
         remove_shared_peptides = useUniquePeptide,
         remove_single_feature_proteins = removeProtein_with1Feature,
-        feature_cleaning = list(handle_features_with_few_measurements = fewMeasurements,
+        feature_cleaning = list(remove_features_with_few_measurements = fewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
         score_filtering = list(pgq = pq_filter, 
                                psm_q = qval_filter),
         columns_to_fill = list("IsotopeLabelType" = "L"))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     input[, intersect(standard_columns, colnames(input))]
 }
