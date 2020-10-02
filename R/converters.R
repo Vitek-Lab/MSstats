@@ -32,11 +32,6 @@
     NULL
 }
 
-standard_columns = c("ProteinName", "PeptideSequence", 
-                     "PeptideModifiedSequence", "PrecursorCharge", 
-                     "FragmentIon", "ProductCharge", "IsotopeLabelType",
-                     "Condition", "BioReplicate", "Run", "StandardType", 
-                     "Fraction", "DetectionQValue", "Intensity")
 
 #' Import DIA-Umpire files 
 #' 
@@ -90,7 +85,7 @@ DIAUmpiretoMSstatsFormat = function(
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -160,7 +155,7 @@ MaxQtoMSstatsFormat = function(
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -205,7 +200,7 @@ OpenMStoMSstatsFormat = function(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -273,7 +268,7 @@ OpenSWATHtoMSstatsFormat = function(
                             "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns, 
                                                   fix_missing = "na_to_zero")
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -330,7 +325,7 @@ ProgenesistoMSstatsFormat = function(
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -397,7 +392,7 @@ PDtoMSstatsFormat = function(
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -486,7 +481,7 @@ SkylinetoMSstatsFormat = function(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = sum))
     input = MSstatsBalancedDesign(input, feature_columns)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
 
 
@@ -557,5 +552,5 @@ SpectronauttoMSstatsFormat = function(
                                psm_q = qval_filter),
         columns_to_fill = list("IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
-    input[, intersect(standard_columns, colnames(input))]
+    input
 }
