@@ -133,10 +133,11 @@ processValidatedData = function(
     MSstatsSummarizationOutput(input, summarization, summaryMethod)
 }
 
+#' Data process
+#' @export
 setGeneric("dataProcess", 
            def = processUnvalidatedData, 
            signature = "raw")
-
 setMethod("dataProcess", 
           definition = processValidatedData,
           signature = "MSstatsValidated")
