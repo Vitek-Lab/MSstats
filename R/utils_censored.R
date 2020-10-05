@@ -79,58 +79,58 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     ABUNDANCE = perc_nm = RUN = FEATURE = NULL
     
     if (censored_symbol == "NA") {
-        nonmissing_filter = !is.na(input$ABUNDANCE)
+        input[, nonmissing_all := !is.na(ABUNDANCE)]
     } else if (censored_symbol == "0") {
-        nonmissing_filter = !is.na(input$INTENSITY) & input$INTENSITY != 0
+        input[, nonmissing_all := !is.na(INTENSITY) & input$INTENSITY != 0]
     }
     
     if (cutoff_base == "minFeature") {
-        grouping_vars = c("FEATURE", "LABEL")
+        grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
     } else if (cutoff_base == "minRun") {
-        grouping_vars = c("RUN", "LABEL")
+        grouping_vars = c("PROTEIN", "RUN", "LABEL")
     } 
     
     if (cutoff_base %in% c("minFeature", "minRun")) {
-        cutoffs = input[nonmissing_filter, 
-                        list(ABUNDANCE_cut = 0.99*min(ABUNDANCE)), 
-                        by = grouping_vars]
-        input = merge(input, cutoffs, by = grouping_vars, sort = FALSE, all.x = TRUE)
-        input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE,
-                                 input$ABUNDANCE_cut)
-        input = input[, !(colnames(input) == "ABUNDANCE_cut"), with = FALSE]
+        input[, ABUNDANCE_cut := 0.99*min(ABUNDANCE * nonmissing_all, na.rm = TRUE),
+              by = grouping_vars]
+        input[, ABUNDANCE := ifelse(nonmissing_all, ABUNDANCE, ABUNDANCE_cut)]
     } else {
         feature_cutoffs = input[nonmissing_filter, 
                                 list(ABUNDANCE_cut_fea = 0.99*min(ABUNDANCE)),
-                                by = c("FEATURE", "LABEL")]
+                                by = c("PROTEIN", "FEATURE", "LABEL")]
         
         if (remove50missing & censored_symbol == "0") {
             n_features = data.table::uniqueN(input$FEATURE)
             missing_runs = input[, list(perc_nm = .N / n_features), 
-                                 by = "RUN"]
+                                 by = c("PROTEIN", "RUN")]
             missing_runs = missing_runs[perc_nm < 0.5, ]
             if (nrow(missing_runs) > 0) {
                 input = input[!(RUN %in% unique(missing_runs$RUN)), ]
-                input$RUN = factor(input$RUN)
             }
         }
         
         run_cutoffs = input[nonmissing_filter, 
                             list(ABUNDANCE_cut_run = 0.99*min(ABUNDANCE)),
-                            by = c("RUN", "LABEL")]
-        cutoffs = merge(feature_cutoffs, run_cutoffs, by = c("LABEL"),
+                            by = c("PROTEIN", "RUN", "LABEL")]
+        cutoffs = merge(feature_cutoffs, run_cutoffs,
+                        by = c("PROTEIN", "LABEL"),
                         allow.cartesian = TRUE, sort = FALSE)
         cutoffs$final_cutoff = sapply(1:nrow(cutoffs), 
                                       function(i) min(cutoffs$ABUNDANCE_cut_fea[i],
                                                       cutoffs$ABUNDANCE_cut_run[i]))
-        if (data.table::uniqueN(input[, list(FEATURE, RUN)]) > 1) {
-            input$ABUNDANCE = ifelse(nonmissing_filter,
-                                     input$ABUNDANCE, cutoffs$final_cutoff)
-        } else {
-            if (censored_symbol == "0") {
-                input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE, 
-                                         cutoffs$ABUNDANCE_cut_fea)
-            }
-        }
+        # input[, n_feat_run := data.table::uniqueN(.SD), by = "PROTEIN",
+        #       .SDcols = c("FEATURE", "RUN")]
+        # input[, ABUNDANCE := ifelse(n_feat_run > 1,
+        #                             ifelse(nonmissing, ABUNDANCE, ))]
+        # if (data.table::uniqueN(input[, list(FEATURE, RUN)]) > 1) {
+        #     input$ABUNDANCE = ifelse(nonmissing_filter,
+        #                              input$ABUNDANCE, cutoffs$final_cutoff)
+        # } else {
+        #     if (censored_symbol == "0") {
+        #         input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE, 
+        #                                  cutoffs$ABUNDANCE_cut_fea)
+        #     }
+        # }
     }
     input
 }
