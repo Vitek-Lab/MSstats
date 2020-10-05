@@ -1,4 +1,6 @@
 #' @importFrom data.table uniqueN
+#' @importFrom survival survreg
+#' @import survival
 .fitSurvival = function(input) {
     missingness_filter = !is.na(input$ABUNDANCE)
     n_total = nrow(input[missingness_filter, ])
@@ -39,4 +41,16 @@
         }  
     }
     fit
+}
+
+
+.addSurvivalPredictions = function(input) {
+    if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) {
+        survival_fit = .fitSurvival(input[LABEL == "L", ])
+        ifelse(input$censored & input$LABEL == "L",
+               predict(survival_fit, newdata = input, 
+                       type = "response"), input$ABUNDANCE)
+    } else {
+        NA
+    }
 }
