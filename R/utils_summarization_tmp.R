@@ -1,3 +1,5 @@
+#' Summarization with Tukey median polish
+#' @importFrom utils setTxtProgressBar
 .summarizeTukey = function(input, impute, cutoff_base, censored_symbol, 
                            remove50missing, original_scale = FALSE, 
                            n_threads = NULL) {
@@ -45,6 +47,7 @@
     n_proteins = length(proteins)
     summarized_results = vector("list", n_proteins)
     
+    pb = utils::txtProgressBar(min = 1, max = n_proteins, style = 3)
     for (protein_id in seq_along(proteins)) {
         single_protein = input[PROTEIN == proteins[protein_id]]
         single_protein = single_protein[(n_obs > 0 & !is.na(n_obs)) &
@@ -54,6 +57,7 @@
         
         if (impute) {
             fitted_survival = .fitSurvival(single_protein[LABEL == "L"])
+            # single_protein[, ABUNDANCE_orig := ABUNDANCE]
             single_protein[, ABUNDANCE := ifelse(
                 censored & LABEL == "L",
                 predict(fitted_survival, newdata = single_protein, 
@@ -63,6 +67,7 @@
         summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
             single_protein, impute, cutoff_base, censored_symbol,
             remove50missing, original_scale, n_threads)
+        setTxtProgressBar(pb, protein_id)
     }
     summarized_results = data.table::rbindlist(summarized_results)
     summarized_results
