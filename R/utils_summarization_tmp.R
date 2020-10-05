@@ -1,13 +1,67 @@
 .summarizeTukey = function(input, impute, cutoff_base, censored_symbol, 
                            remove50missing, original_scale = FALSE, 
                            n_threads = NULL) {
+    if (impute & !is.null(censored_symbol)) {
+        if (censored_symbol == "0") {
+            input[, ABUNDANCE := ifelse(censored, 0, ABUNDANCE)]
+        } else if (censored_symbol == "NA") {
+            input[, ABUNDANCE := ifelse(censored, NA, ABUNDANCE)]
+        }
+        input[, cen := ifelse(censored, 0, 1)]
+    }
+    
+    input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
+    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
+    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
+    
+    input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
+    input[, 
+          prop_features := sum(nonmissing) / total_features,
+          by = c("PROTEIN", "RUN")] 
+
+    if (any(input$cen == 0)) {
+        input = .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
+    }
+    
+    input[, NumMeasuredFeature := sum(nonmissing), 
+          by = c("PROTEIN", "RUN")]
+    input[, MissingPercentage := 1 - prop_features]
+    input[, more50missing := MissingPercentage >= 0.5]
+    if (!is.null(censored_symbol)) {
+        if (censored_symbol == "NA") {
+            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
+        } else {
+            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & censored]
+        }
+        if (impute) {
+            input[, NumImputedFeature := sum(!nonmissing),
+                  by = c("PROTEIN", "RUN")]
+        } else {
+            input[, NumImputedFeature := 0]
+        }
+    }
+
     proteins = unique(input$PROTEIN)
     n_proteins = length(proteins)
     summarized_results = vector("list", n_proteins)
+    
     for (protein_id in seq_along(proteins)) {
-        single_protein = input[PROTEIN == proteins[protein_id], ]
+        single_protein = input[PROTEIN == proteins[protein_id]]
+        single_protein = single_protein[(n_obs > 0 & !is.na(n_obs)) &
+                                            (n_obs_run > 0 & !is.na(n_obs_run))]
+        single_protein[, RUN := factor(RUN)]
+        single_protein[, FEATURE := factor(FEATURE)]
+        
+        if (impute) {
+            fitted_survival = .fitSurvival(single_protein[LABEL == "L"])
+            single_protein[, ABUNDANCE := ifelse(
+                censored & LABEL == "L",
+                predict(fitted_survival, newdata = single_protein, 
+                        type = "response"), ABUNDANCE)]
+        }
+        
         summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
-            single_protein, impute, cutoff_base, censored_symbol, 
+            single_protein, impute, cutoff_base, censored_symbol,
             remove50missing, original_scale, n_threads)
     }
     summarized_results = data.table::rbindlist(summarized_results)
@@ -21,16 +75,6 @@
     #             "per subplot for protein", unique(input$PROTEIN))
     # # TODO: add info about i of n proteins
     # getOption("MSstatsMsg")("INFO", msg)
-    input$FEATURE = factor(input$FEATURE)	
-    
-    if (impute & !is.null(censored_symbol)) {
-        if (censored_symbol == "0") {
-            input$ABUNDANCE = ifelse(input$censored, 0, input$ABUNDANCE)
-        } else if (censored_symbol == "NA") {
-            input$ABUNDANCE = ifelse(input$censored, NA, input$ABUNDANCE)
-        }
-        input$cen = ifelse(input$censored, 0, 1)
-    }
     
     if (all(is.na(input$ABUNDANCE) | input$ABUNDANCE == 0)) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN),
@@ -39,29 +83,18 @@
         return(NULL)
     }
     
-    nonmissing_filter = .getNonMissingFilter(input, impute, censored_symbol)
-    count_by_feature = input[nonmissing_filter, list(n_obs = .N), by = "FEATURE"]
-    count_by_feature = count_by_feature[n_obs > 0, ]
-    
-    input = input[FEATURE %in% count_by_feature$FEATURE, ]
-    if (nrow(input) == 0) {
+    if (all(is.na(input$n_obs) | input$n_obs == 0)) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
                     "because all measurements are NAs.")
         getOption("MSstatsMsg")("INFO", msg)
         return(NULL)
-    } else {
-        input[, FEATURE := factor(FEATURE)]
-    }
+    } 
     
-    single_feature = count_by_feature[n_obs == 1, as.character(unique(FEATURE))]
-    input = input[!(FEATURE %in% single_feature), ]
-    if (nrow(input) == 0) {
+    if (all(input$n_obs == 1 | is.na(input$n_obs))) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
                     "because features have only one measurement across MS runs.")
         getOption("MSstatsMsg")("INFO", msg)
         return(NULL)
-    } else {
-        input[, FEATURE := factor(FEATURE)]
     }
     
     if (all(is.na(input$ABUNDANCE) | input$ABUNDANCE == 0) | nrow(input) == 0) {
@@ -72,46 +105,24 @@
         return(NULL)
     }
     
-    nonmissing_filter = .getNonMissingFilter(input, impute, censored_symbol)
-    counts = input[nonmissing_filter, list(n_obs = .N), by = "RUN"]
-    counts = counts[n_obs > 0]
-    
-    missing_runs = setdiff(unique(input$RUN), counts$RUN)
+    missing_runs = setdiff(unique(input$RUN), 
+                           unique(input[n_obs_run == 0 | is.na(n_obs_run), RUN]))
     if (length(missing_runs) > 0 & length(intersect(missing_runs, as.character(unique(input$RUN))))) { 
-        # Condition is hard to read here
-        input = input[RUN %in% counts$RUN, ]
-        input[, RUN := factor(RUN)]
+        input = input[n_obs_run > 0 & !is.na(n_obs_run), ]
     }
     
     if (remove50missing) {
-        nonmissing_filter = .getNonMissingFilter(input, TRUE, censored_symbol)
-        n_features = data.table::uniqueN(input[nonmissing_filter, FEATURE])
-        n_runs = data.table::uniqueN(input$RUN)
-        prop_features = input[nonmissing_filter, 
-                              list(prop_features = data.table::uniqueN(FEATURE) / n_features),
-                              by = "RUN"] # RUN or RUN, LABEL?
-        prop_features = prop_features[prop_features <= 0.5, unique(RUN)]
-        
-        if (length(prop_features) == n_runs) {
+        if (all(input$prop_features <= 0.5 | is.na(input$prop_features))) {
             msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
                         "because all runs have more than 50% NAs and",
                         "are removed with the option, remove50missing=TRUE.")
             getOption("MSstatsMsg")("INFO", msg)
             return(NULL)
         }
-        input = input[!(RUN %in% unique(prop_features)), ]
-        input[, RUN := factor(RUN)]
     }
     
-    if (any(input$cen == 0)) {
-        input = .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
-        if (impute) {
-            survival_fit = .fitSurvival(input[LABEL == "L", ])
-            input$ABUNDANCE = ifelse(input$censored & input$LABEL == "L",
-                                     predict(survival_fit, newdata = input, 
-                                             type = "response"), input$ABUNDANCE)
-        }
-    }
+    input[, RUN := factor(RUN)]
+    input[, FEATURE := factor(FEATURE)]
     
     input = input[!is.na(ABUNDANCE), ]
     is_labeled = nlevels(input$LABEL) > 1
@@ -134,26 +145,6 @@
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
-    
-    nonmissing_filter = .getNonMissingFilterStats(input, censored_symbol)
-    stats = input[nonmissing_filter, 
-                  list(NumMeasuredFeature = data.table::uniqueN(FEATURE)), by = "RUN"]
-    stats[, MissingPercentage := 1 - NumMeasuredFeature / data.table::uniqueN(features)]
-    stats[, more50missing := MissingPercentage >= 0.5]
-    if (!is.null(censored_symbol)) {
-        if (censored_symbol == "NA") {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY) & !is.na(input$ABUNDANCE)
-        } else {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY) & input$censored
-        }
-        imputed = input[!nonmissing_filter,
-                        list(NumImputedFeature = data.table::uniqueN(FEATURE)),
-                        by = "RUN"]
-        stats = merge(stats, imputed, by = "RUN", all.x = TRUE, sort = FALSE)
-        stats[, NumImputedFeature := ifelse(is.na(NumImputedFeature), 0, 
-                                            NumImputedFeature)]
-    }
-    tmp_result = merge(tmp_result, stats, by = "RUN", all.x = TRUE, sort = FALSE)
     tmp_result
 }
 
@@ -162,12 +153,12 @@
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
                              value.var = "ABUNDANCE", keep = TRUE)
     if (original_scale) {
-        wide[, features] = wide[, lapply(.SD, function(x) log_base^x), .SDcols = features]
+        wide[, features] = wide[, lapply(.SD, function(x) log_base^x), 
+                                .SDcols = features]
     }
     tmp_fit = medpolish(wide[, features, with = FALSE], na.rm = TRUE, trace.iter = FALSE)
-    tmp_result = data.table::data.table(LABEL = wide$LABEL,
-                                        RUN = wide$RUN,
-                                        ABUNDANCE = tmp_fit$overall + tmp_fit$row)
+    wide[, ABUNDANCE := tmp_fit$overall + tmp_fit$row]
+    tmp_result = wide[, list(LABEL, RUN, ABUNDANCE)]
     if (original_scale) {
         tmpt_result[, ABUNDANCE := log(ABUNDANCE, base_log)]
     }
