@@ -194,8 +194,7 @@
                                     remove50missing)
     survival_fit = .fitSurvival(input)
     surv_coef = summary(survival_fit)$coefficients
-    # TODO: IMPUTATION SEEMS TO BE MISSING!!
-    
+
     result = data.table::data.table(Protein = unique(input$PROTEIN),
                                     RUN = unique(input$RUN))
     
