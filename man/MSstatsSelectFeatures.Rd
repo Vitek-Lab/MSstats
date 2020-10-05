@@ -6,6 +6,18 @@
 \usage{
 MSstatsSelectFeatures(input, method, top_n = NULL, min_feature_count = NULL)
 }
+\arguments{
+\item{input}{data.table}
+
+\item{method}{"all" / "highQuality", "topN"}
+
+\item{top_n}{number of features to use for "topN" method}
+
+\item{minimum}{number of quality features for "highQuality" method}
+}
+\value{
+data.table
+}
 \description{
 Feature selection before feature-level data summarization
 }
