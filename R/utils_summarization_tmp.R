@@ -25,9 +25,10 @@
         input = .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
     }
     
-    input[, NumMeasuredFeature := sum(nonmissing), 
+    input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
+    input[, NumMeasuredFeature := sum(NonMissingStats), 
           by = c("PROTEIN", "RUN")]
-    input[, MissingPercentage := 1 - prop_features]
+    input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
     input[, more50missing := MissingPercentage >= 0.5]
     if (!is.null(censored_symbol)) {
         if (censored_symbol == "NA") {
@@ -65,7 +66,9 @@
         }
         
         summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
-            single_protein, impute, cutoff_base, censored_symbol,
+            single_protein[, list(LABEL, RUN, FEATURE, ABUNDANCE,
+                                  n_obs, n_obs_run, prop_features)],
+            impute, cutoff_base, censored_symbol,
             remove50missing, original_scale, n_threads)
         setTxtProgressBar(pb, protein_id)
     }
