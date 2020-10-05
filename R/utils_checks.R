@@ -213,9 +213,10 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     FEATURE = PEPTIDE = TRANSITION = GROUP = LABEL = GROUP_ORIGINAL = NULL
     SUBJECT = SUBJECT_ORIGINAL = SUBJECT_NESTED = PROTEIN = NULL
     
-    colnames(input) = data.table::setnames(
+    data.table::setnames(
         input, c("PROTEINNAME", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE"), 
-        c("PROTEIN", "LABEL", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
+        c("PROTEIN", "LABEL", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+        skip_absent = TRUE)
     
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
     input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, 0)]
@@ -264,7 +265,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     
     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
                 "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN)",
-                "- okay")
+                "- okay.")
     getOption("MSstatsLog")("INFO", msg)
     input
 }
