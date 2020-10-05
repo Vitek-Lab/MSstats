@@ -1,4 +1,11 @@
 #' Feature selection before feature-level data summarization
+#' @param input data.table
+#' @param method "all" / "highQuality", "topN"
+#' @param top_n number of features to use for "topN" method
+#' @param minimum number of quality features for "highQuality" method
+#' @return data.table
+#' @export
+#' 
 MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count = NULL) {
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
