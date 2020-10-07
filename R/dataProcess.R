@@ -109,10 +109,9 @@ processValidatedData = function(
              cutoff = cutoffCensored,
              MB = MBimpute),
         clusters)
-    input = data.table::as.data.table(unclass(raw))
 
-    peptides_dict = makePeptidesDictionary(input, normalization)
-    input = MSstatsPrepareForDataProcess(input, logTrans)
+    peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
+    input = MSstatsPrepareForDataProcess(raw, logTrans)
     # Normalization, Imputation and feature selection ----
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
     input = MSstatsMergeFractions(input)
