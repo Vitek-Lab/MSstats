@@ -444,21 +444,23 @@
         rf_c = NULL
     }
     
-    ## subject_nested
-    temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
-	if (length(temp) > 0) {
-	    if (nlevels(sub1$LABEL) == 2) {
-	        subjectNested_c = contrast.matrix
-	    } else if (nlevels(sub1$LABEL) == 1) {
-		    ## label-free
-		    subjectNested_c = contrast.matrix[-1]
-		}
-		names(subjectNested_c) = temp
-	} else {
-	    subjectNested_c = NULL
-	}
+#     ## subject_nested
+#     temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
+# 	if (length(temp) > 0) {
+# 	    if (nlevels(sub1$LABEL) == 2) {
+# 	        subjectNested_c = contrast.matrix
+# 	    } else if (nlevels(sub1$LABEL) == 1) {
+# 		    ## label-free
+# 		    subjectNested_c = contrast.matrix[-1]
+# 		}
+# 		names(subjectNested_c) = temp
+# 	} else {
+# 	    subjectNested_c = NULL
+# 	}
 
-	contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)
+	#contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)
+	contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c)
+	
 	if (class(fit) == "lm") {
 	    contrast1 = contrast[!is.na(coef(fit))]
 	} else {
@@ -1448,33 +1450,33 @@
 	    group_c=NULL
 	}
 	
-	## subject_nested
-	temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
-	if (length(temp) > 0) {
-	    temp1 = t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))
-		temp2 = as.vector(xtabs(~ temp1[, 1]))
-		tempdata = fit$model
-		group_levels = levels(tempdata$GROUP)
-		sub_contrast = contrast.matrix[as.numeric(as.character(group_levels))]
-		
-		## the base is alway be the first SUBJECT_NESTED
-		## (SUBJECT_NESTED1.1)
-		temp3 = temp2
-		if (length(temp2) == length(sub_contrast)) {
-		    ## this line first, otherwise length of temp3 >1
-		    temp3[1] = temp2[1] + 1
-		} else {
-		    temp3 = c(1, temp3)
-		}
-		
-		## in case of unequal sample per group, wrong
-		# subjectNested_c=rep(contrast.matrix/(temp3),temp2) 
-		
-		subjectNested_c = rep(sub_contrast / temp3, temp3)[-1]
-		names(subjectNested_c) = temp
-	} else if (length(temp) == 0) {
-	    subjectNested_c = NULL
-	}
+	# ## subject_nested
+	# temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
+	# if (length(temp) > 0) {
+	#     temp1 = t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))
+	# 	temp2 = as.vector(xtabs(~ temp1[, 1]))
+	# 	tempdata = fit$model
+	# 	group_levels = levels(tempdata$GROUP)
+	# 	sub_contrast = contrast.matrix[as.numeric(as.character(group_levels))]
+	# 	
+	# 	## the base is alway be the first SUBJECT_NESTED
+	# 	## (SUBJECT_NESTED1.1)
+	# 	temp3 = temp2
+	# 	if (length(temp2) == length(sub_contrast)) {
+	# 	    ## this line first, otherwise length of temp3 >1
+	# 	    temp3[1] = temp2[1] + 1
+	# 	} else {
+	# 	    temp3 = c(1, temp3)
+	# 	}
+	# 	
+	# 	## in case of unequal sample per group, wrong
+	# 	# subjectNested_c=rep(contrast.matrix/(temp3),temp2) 
+	# 	
+	# 	subjectNested_c = rep(sub_contrast / temp3, temp3)[-1]
+	# 	names(subjectNested_c) = temp
+	# } else if (length(temp) == 0) {
+	#     subjectNested_c = NULL
+	# }
 	
 	## subject by group: only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
 	temp = coef_name[intersect(grep("SUBJECT", coef_name), 
@@ -1676,21 +1678,23 @@
         rf_c = NULL
     }
     
-    ## subject_nested
-    temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
-    if (length(temp) > 0) {
-        if (nlevels(sub1$LABEL) == 2) {
-            subjectNested_c = contrast.matrix
-		} else if (nlevels(sub1$LABEL) == 1) {
-		    ## label-free
-		    subjectNested_c = contrast.matrix[-1]
-		}
-        names(subjectNested_c) = temp
-    } else {
-        subjectNested_c = NULL
-    }
+#     ## subject_nested
+#     temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
+#     if (length(temp) > 0) {
+#         if (nlevels(sub1$LABEL) == 2) {
+#             subjectNested_c = contrast.matrix
+# 		} else if (nlevels(sub1$LABEL) == 1) {
+# 		    ## label-free
+# 		    subjectNested_c = contrast.matrix[-1]
+# 		}
+#         names(subjectNested_c) = temp
+#     } else {
+#         subjectNested_c = NULL
+#     }
     
-    contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)
+    #contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)
+    contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c)
+    
     contrast1 = contrast[!is.na(fit$coefficients)]
     
     return(contrast1)
