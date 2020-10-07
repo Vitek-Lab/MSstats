@@ -153,14 +153,14 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
 #' @param input data.frame of class `MSstatsValidated`
 #' @keywords internal
 .prepareForDataProcess = function(input) {
+    input = as.data.table(unclass(input))
     colnames(input) = toupper(colnames(input))
     
     if (is.element("PEPTIDEMODIFIEDSEQUENCE", colnames(input))) {
-        colnames(input) = data.table::setnames(
+        data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-    colnames(input) = data.table::setnames(input, "Fraction", "FRACTION")
-    
+
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
     # TODO: := ?
