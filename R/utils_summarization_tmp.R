@@ -66,8 +66,8 @@
         }
         
         summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
-            single_protein[, list(LABEL, RUN, FEATURE, ABUNDANCE,
-                                  n_obs, n_obs_run, prop_features)],
+            single_protein[, list(PROTEIN, LABEL, RUN, FEATURE, ABUNDANCE,
+                                  n_obs, n_obs_run, prop_features, censored)],
             impute, cutoff_base, censored_symbol,
             remove50missing, original_scale, n_threads)
         setTxtProgressBar(pb, protein_id)
