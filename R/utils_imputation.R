@@ -2,7 +2,7 @@
 #' @importFrom survival survreg
 #' @import survival
 .fitSurvival = function(input) {
-    missingness_filter = !is.na(input$ABUNDANCE)
+    missingness_filter = is.finite(input$ABUNDANCE)
     n_total = nrow(input[missingness_filter, ])
     n_features = data.table::uniqueN(input[missingness_filter, FEATURE])
     n_runs = data.table::uniqueN(input[missingness_filter, RUN])
