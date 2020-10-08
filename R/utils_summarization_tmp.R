@@ -211,13 +211,13 @@
     if (impute) {
         if (!is.null(censored_symbol)) {
             if (censored_symbol == "0") {
-                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
+                nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & input$newABUNDANCE != 0
             } else if (censored_symbol == "NA") {
-                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE)
+                nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE)
             }  
         } 
     } else {
-        nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
+        nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & input$newABUNDANCE != 0
     }
     nonmissing_filter
 }
