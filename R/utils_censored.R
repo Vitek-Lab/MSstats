@@ -104,12 +104,8 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     } 
     
     if (cutoff_base %in% c("minFeature", "minRun")) {
-<<<<<<< Updated upstream
-        input[, ABUNDANCE_cut := .getMin(ABUNDANCE, nonmissing_all),
-=======
         input[n_obs > 1 & n_obs_run > 0, 
               ABUNDANCE_cut := .getMin(ABUNDANCE, nonmissing_all),
->>>>>>> Stashed changes
               by = grouping_vars]
         input[, ABUNDANCE := ifelse(!nonmissing_all & censored, 
                                     ABUNDANCE_cut, ABUNDANCE)]
