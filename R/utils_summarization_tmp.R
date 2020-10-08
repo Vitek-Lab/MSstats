@@ -47,6 +47,14 @@
             input[, NumImputedFeature := 0]
         }
     }
+    
+    if (impute) {
+        input[, predictedSurvival := .addSurvivalPredictions(.SD),
+              by = "PROTEIN"]
+        input[, ABUNDANCE_orig := ABUNDANCE]
+        input[, ABUNDANCE := ifelse(censored & LABEL == "L",
+                                    predictedSurvival, input$ABUNDANCE)]
+    }
 
     proteins = unique(input$PROTEIN)
     n_proteins = length(proteins)
@@ -62,7 +70,6 @@
         
         if (impute) {
             fitted_survival = .fitSurvival(single_protein[LABEL == "L"])
-            # single_protein[, ABUNDANCE_orig := ABUNDANCE]
             single_protein[, ABUNDANCE := ifelse(
                 censored & LABEL == "L",
                 predict(fitted_survival, newdata = single_protein, 

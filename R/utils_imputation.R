@@ -47,9 +47,7 @@
 .addSurvivalPredictions = function(input) {
     if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) {
         survival_fit = .fitSurvival(input[LABEL == "L", ])
-        ifelse(input$censored & input$LABEL == "L",
-               predict(survival_fit, newdata = input, 
-                       type = "response"), input$ABUNDANCE)
+        predict(survival_fit, newdata = input)
     } else {
         NA
     }
