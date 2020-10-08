@@ -111,7 +111,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                                        ABUNDANCE_cut, newABUNDANCE)]
     } else {
         feature_cutoffs = input[nonmissing_filter, 
-                                list(ABUNDANCE_cut_fea = 0.99*min(ABUNDANCE)),
+                                list(ABUNDANCE_cut_fea = 0.99*min(newABUNDANCE)),
                                 by = c("PROTEIN", "FEATURE", "LABEL")]
         
         if (remove50missing & censored_symbol == "0") {
@@ -125,7 +125,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
         }
         
         run_cutoffs = input[nonmissing_filter, 
-                            list(ABUNDANCE_cut_run = 0.99*min(ABUNDANCE)),
+                            list(ABUNDANCE_cut_run = 0.99*min(newABUNDANCE)),
                             by = c("PROTEIN", "RUN", "LABEL")]
         cutoffs = merge(feature_cutoffs, run_cutoffs,
                         by = c("PROTEIN", "LABEL"),
