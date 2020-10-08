@@ -19,26 +19,21 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         rqmodelqc = NULL
         workpred = NULL
     } else {
-        label <- nlevels(input$LABEL) == 2
-        if (!is.element("RUN", colnames(summarized))) {
-            lab = unique(input[, c("GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "SUBJECT_NESTED", "SUBJECT")])
-            if (label) {
-                lab = lab[GROUP != 0, ]
-            }
-            rqall = merge(summarized, lab, by = "SUBJECT_ORIGINAL")
-        } else {
-            lab = unique(input[, c("RUN", "originalRUN", "GROUP", "GROUP_ORIGINAL", 
-                                   "SUBJECT_ORIGINAL", "SUBJECT_NESTED", "SUBJECT")])
-            if (label) {
-                lab = lab[GROUP != 0, ]
-            }
-            rqall = merge(summarized, lab, by = "RUN")
+        cols = intersect(c("PROTEIN", "RUN", "GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "SUBJECT",
+                           "NumMeasuredFeature", "MissingPercentage", "more50missing", "NumImputedFeature"),
+                         colnames(input))
+        merge_col = ifelse(is.element("RUN", colnames(summarized)), "RUN", "SUBJECT_ORIGINAL")
+        lab = unique(input[, cols, with = FALSE])
+        if (nlevels(input$LABEL) > 1) {
+            lab = lab[GROUP != 0]
         }
+        rqall = merge(summarized, lab, by.x = c(merge_col, "Protein"),
+                      by.y = c(merge_col, "PROTEIN"))
+        
         
         rqall$GROUP = factor(rqall$GROUP)
         rqall$Protein = factor(rqall$Protein)
         rqmodelqc = summarized$ModelQC
-        #MC : can't use this predicted value.
         #workpred <- rqresult$PredictedBySurvival
         workpred <- NULL
     }
@@ -48,7 +43,10 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         rownames(rqall) = NULL
     }
     
-    list(ProcessedData = as.data.frame(input), 
+    output_cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
+                    "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
+                    "originalRUN", "censored", "INTENSITY", "ABUNDANCE")
+    list(ProcessedData = as.data.frame(input)[, output_cols], 
          RunlevelData = as.data.frame(rqall), 
          SummaryMethod = summary_method, 
          ModelQC = NULL, 
