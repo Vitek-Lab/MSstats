@@ -147,7 +147,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
         #     }
         # }
     }
-    input[, colnames(input) %in% c("ABUNDANCE_cut", "nonmissing_all"), 
+    input[, !(colnames(input) %in% c("ABUNDANCE_cut", "nonmissing_all")), 
           with = FALSE]
 }
 
