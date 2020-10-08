@@ -81,7 +81,8 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     if (censored_symbol == "NA") {
         input[, nonmissing_all := !is.na(ABUNDANCE)]
     } else if (censored_symbol == "0") {
-        input[, nonmissing_all := !is.na(INTENSITY) & input$INTENSITY != 0]
+        #input[, nonmissing_all := !is.na(INTENSITY) & input$INTENSITY != 0]
+        input[, nonmissing_all := !is.na(ABUNDANCE) & input$ABUNDANCE != 0]
     }
     
     if (cutoff_base == "minFeature") {
@@ -91,6 +92,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     } 
     
     if (cutoff_base %in% c("minFeature", "minRun")) {
+        ## Matt : ABUNDANCE*nomissing_all doesn't work.
         input[, ABUNDANCE_cut := 0.99*min(ABUNDANCE * nonmissing_all, na.rm = TRUE),
               by = grouping_vars]
         input[, ABUNDANCE := ifelse(!nonmissing_all & censored, 
