@@ -34,7 +34,11 @@
         if (censored_symbol == "NA") {
             input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
         } else {
-            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & censored]
+            if (is.element("censored", colnames(input))) {
+                input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & censored]
+            } else {
+                input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
+            }
         }
         if (impute) {
             input[, NumImputedFeature := sum(!nonmissing),
@@ -67,7 +71,7 @@
         
         summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
             single_protein[, list(PROTEIN, LABEL, RUN, FEATURE, ABUNDANCE,
-                                  n_obs, n_obs_run, prop_features, censored)],
+                                  n_obs, n_obs_run, prop_features)],
             impute, cutoff_base, censored_symbol,
             remove50missing, original_scale, n_threads)
         setTxtProgressBar(pb, protein_id)
