@@ -19,7 +19,7 @@
 #' The output from Skyline should use '0'. 
 #' Null assumes that all NA intensites are randomly missing.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50% missing values. FALSE is default.
+#' which have more than 50\% missing values. FALSE is default.
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
 #' FALSE uses the values assigned by cutoffCensored
