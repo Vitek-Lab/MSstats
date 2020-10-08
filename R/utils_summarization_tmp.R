@@ -25,6 +25,14 @@
         input = .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
     }
     
+    if (impute) {
+        input[, predicted := .addSurvivalPredictions(.SD),
+              by = "PROTEIN"]
+        input[, ABUNDANCE_orig := ABUNDANCE]
+        input[, ABUNDANCE := ifelse(censored & LABEL == "L",
+                                    predicted, ABUNDANCE)]
+    }
+    
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 
           by = c("PROTEIN", "RUN")]
@@ -48,14 +56,6 @@
         }
     }
     
-    if (impute) {
-        input[, predictedSurvival := .addSurvivalPredictions(.SD),
-              by = "PROTEIN"]
-        input[, ABUNDANCE_orig := ABUNDANCE]
-        input[, ABUNDANCE := ifelse(censored & LABEL == "L",
-                                    predictedSurvival, ABUNDANCE)]
-    }
-
     proteins = unique(input$PROTEIN)
     n_proteins = length(proteins)
     summarized_results = vector("list", n_proteins)
@@ -204,6 +204,21 @@
         }
     } else {
         nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+    }
+    nonmissing_filter
+}
+
+.getNonMissingFilter = function(input, impute, censored_symbol) {
+    if (impute) {
+        if (!is.null(censored_symbol)) {
+            if (censored_symbol == "0") {
+                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
+            } else if (censored_symbol == "NA") {
+                nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE)
+            }  
+        } 
+    } else {
+        nonmissing_filter = input$LABEL == "L" & !is.na(input$ABUNDANCE) & input$ABUNDANCE != 0
     }
     nonmissing_filter
 }
