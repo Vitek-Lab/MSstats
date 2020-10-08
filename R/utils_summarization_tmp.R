@@ -5,9 +5,9 @@
                            n_threads = NULL) {
     if (impute & !is.null(censored_symbol)) {
         if (censored_symbol == "0") {
-            input[, ABUNDANCE := ifelse(censored, 0, ABUNDANCE)]
+            input[, newABUNDANCE := ifelse(censored, 0, ABUNDANCE)]
         } else if (censored_symbol == "NA") {
-            input[, ABUNDANCE := ifelse(censored, NA, ABUNDANCE)]
+            input[, newABUNDANCE := ifelse(censored, NA, ABUNDANCE)]
         }
         input[, cen := ifelse(censored, 0, 1)]
     }

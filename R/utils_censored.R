@@ -89,12 +89,12 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' @keywords internal
 .setCensoredByThreshold = function(input, cutoff_base, censored_symbol,
                                    remove50missing) {
-    ABUNDANCE = perc_nm = RUN = FEATURE = NULL
+    ABUNDANCE = newABUNDANCE = perc_nm = RUN = FEATURE = NULL
     
     if (censored_symbol == "NA") {
-        input[, nonmissing_all := !is.na(ABUNDANCE)]
+        input[, nonmissing_all := !is.na(newABUNDANCE)]
     } else if (censored_symbol == "0") {
-        input[, nonmissing_all := !is.na(ABUNDANCE) & input$ABUNDANCE != 0]
+        input[, nonmissing_all := !is.na(newABUNDANCE) & input$newABUNDANCE != 0]
     }
     
     if (cutoff_base == "minFeature") {
@@ -105,10 +105,10 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     
     if (cutoff_base %in% c("minFeature", "minRun")) {
         input[n_obs > 1 & n_obs_run > 0, 
-              ABUNDANCE_cut := .getMin(ABUNDANCE, nonmissing_all),
+              ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
               by = grouping_vars]
         input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
-                                       ABUNDANCE_cut, ABUNDANCE)]
+                                       ABUNDANCE_cut, newABUNDANCE)]
     } else {
         feature_cutoffs = input[nonmissing_filter, 
                                 list(ABUNDANCE_cut_fea = 0.99*min(ABUNDANCE)),
@@ -147,8 +147,8 @@ MSstatsHandleMissing = function(input, summary_method, impute,
         #     }
         # }
     }
-    ## Matt : can we remove nomissing_all and ABUNDANCE_cut columns?
-    input
+    input[, colnames(input) %in% c("ABUNDANCE_cut", "nonmissing_all"), 
+          with = FALSE]
 }
 
 
