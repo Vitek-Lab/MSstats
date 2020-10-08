@@ -45,7 +45,12 @@
 
 
 .addSurvivalPredictions = function(input) {
+<<<<<<< Updated upstream
     if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) { ## this condition?
+=======
+    if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) {
+        input = input[n_obs > 1 & n_obs_run > 0]
+>>>>>>> Stashed changes
         input$RUN = factor(input$RUN)
         input$FEATURE = factor(input$FEATURE)
         survival_fit = .fitSurvival(input[LABEL == "L", ])
