@@ -2,6 +2,8 @@
 #' @importFrom survival survreg
 #' @import survival
 .fitSurvival = function(input) {
+    input$RUN = factor(input$RUN)
+    input$FEATURE = factor(input$FEATURE)
     missingness_filter = is.finite(input$ABUNDANCE)
     n_total = nrow(input[missingness_filter, ])
     n_features = data.table::uniqueN(input[missingness_filter, FEATURE])
@@ -45,11 +47,8 @@
 
 
 .addSurvivalPredictions = function(input) {
-    if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) {
-        input = input[n_obs > 1 & n_obs_run > 0]
-        input$RUN = factor(input$RUN)
-        input$FEATURE = factor(input$FEATURE)
-        survival_fit = .fitSurvival(input[LABEL == "L", ])
+    if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) { ## this condition?
+        survival_fit = .fitSurvival(input[LABEL == "L" & n_obs > 1 & n_obs_run > 0, ])
         predict(survival_fit, newdata = input)
     } else {
         NA
