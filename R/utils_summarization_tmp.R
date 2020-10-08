@@ -90,14 +90,14 @@
     
     if (all(is.na(input$ABUNDANCE) | input$ABUNDANCE == 0)) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN),
-                    "because all measurements are NAs.")
+                    "because all measurements are missing or censored.")
         getOption("MSstatsMsg")("INFO", msg)
         return(NULL)
     }
     
     if (all(is.na(input$n_obs) | input$n_obs == 0)) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
-                    "because all measurements are NAs.")
+                    "because all measurements are missing or censored.")
         getOption("MSstatsMsg")("INFO", msg)
         return(NULL)
     } 
@@ -112,7 +112,7 @@
     if (all(is.na(input$ABUNDANCE) | input$ABUNDANCE == 0) | nrow(input) == 0) {
         msg = paste("After removing features which has only 1 measurement,",
                     "Can't summarize for protein", unique(input$PROTEIN), 
-                    "because all measurements are NAs.")
+                    "because all measurements are missing or censored.")
         getOption("MSstatsMsg")("INFO", msg)
         return(NULL)
     }
@@ -126,7 +126,7 @@
     if (remove50missing) {
         if (all(input$prop_features <= 0.5 | is.na(input$prop_features))) {
             msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
-                        "because all runs have more than 50% NAs and",
+                        "because all runs have more than 50% missing values and",
                         "are removed with the option, remove50missing=TRUE.")
             getOption("MSstatsMsg")("INFO", msg)
             return(NULL)
