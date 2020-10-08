@@ -107,8 +107,8 @@ MSstatsHandleMissing = function(input, summary_method, impute,
         input[n_obs > 1 & n_obs_run > 0, 
               ABUNDANCE_cut := .getMin(ABUNDANCE, nonmissing_all),
               by = grouping_vars]
-        input[, ABUNDANCE := ifelse(!nonmissing_all & censored, 
-                                    ABUNDANCE_cut, ABUNDANCE)]
+        input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
+                                       ABUNDANCE_cut, ABUNDANCE)]
     } else {
         feature_cutoffs = input[nonmissing_filter, 
                                 list(ABUNDANCE_cut_fea = 0.99*min(ABUNDANCE)),
