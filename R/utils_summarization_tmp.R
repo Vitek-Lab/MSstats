@@ -26,7 +26,7 @@
     }
     
     if (impute) {
-        input[, predicted := .addSurvivalPredictions(.SD),
+        input[n_obs_run > 0 & n_obs > 1, predicted := .addSurvivalPredictions(.SD),
               by = "PROTEIN"]
         input[, ABUNDANCE_orig := ABUNDANCE]
         input[, ABUNDANCE := ifelse(censored & LABEL == "L",

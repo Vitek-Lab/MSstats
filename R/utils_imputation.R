@@ -47,10 +47,6 @@
 
 
 .addSurvivalPredictions = function(input) {
-    if (!all(input$n_obs == 0) & !all(input$n_obs_run <= 1)) { ## this condition?
-        survival_fit = .fitSurvival(input[LABEL == "L" & n_obs > 1 & n_obs_run > 0, ])
-        predict(survival_fit, newdata = input)
-    } else {
-        NA
-    }
+    survival_fit = .fitSurvival(input[LABEL == "L", ])
+    predict(survival_fit, newdata = input)
 }
