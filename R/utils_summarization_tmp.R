@@ -207,17 +207,4 @@
     nonmissing_filter
 }
 
-.getNonMissingFilter = function(input, impute, censored_symbol) {
-    if (impute) {
-        if (!is.null(censored_symbol)) {
-            if (censored_symbol == "0") {
-                nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & input$newABUNDANCE != 0
-            } else if (censored_symbol == "NA") {
-                nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE)
-            }  
-        } 
-    } else {
-        nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & input$newABUNDANCE != 0
-    }
-    nonmissing_filter
-}
+
