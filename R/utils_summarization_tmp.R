@@ -68,14 +68,6 @@
         single_protein[, RUN := factor(RUN)]
         single_protein[, FEATURE := factor(FEATURE)]
         
-        if (impute) {
-            fitted_survival = .fitSurvival(single_protein[LABEL == "L"])
-            single_protein[, ABUNDANCE := ifelse(
-                censored & LABEL == "L",
-                predict(fitted_survival, newdata = single_protein, 
-                        type = "response"), ABUNDANCE)]
-        }
-        
         summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
             single_protein[, list(PROTEIN, LABEL, RUN, FEATURE, ABUNDANCE,
                                   n_obs, n_obs_run, prop_features)],
