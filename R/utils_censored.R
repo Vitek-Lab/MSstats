@@ -67,6 +67,10 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 }
 
 
+.getMin = function(abundance, nonmissing) {
+    0.99*min(abundance[nonmissing & abundance > 0], na.rm = TRUE)
+}
+
 #' Set censored values based on minimum in run/feature/run or feature
 #' @param input `data.table` in MSstats format
 #' @param cutoff_base cutoffCensored parameter to `dataProcess`
@@ -93,7 +97,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     
     if (cutoff_base %in% c("minFeature", "minRun")) {
         ## Matt : ABUNDANCE*nomissing_all doesn't work.
-        input[, ABUNDANCE_cut := 0.99*min(ABUNDANCE * nonmissing_all, na.rm = TRUE),
+        input[, ABUNDANCE_cut := .getMin(ABUNDANCE, nonmissing_all),
               by = grouping_vars]
         input[, ABUNDANCE := ifelse(!nonmissing_all & censored, 
                                     ABUNDANCE_cut, ABUNDANCE)]
