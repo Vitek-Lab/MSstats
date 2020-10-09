@@ -19,8 +19,10 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         rqmodelqc = NULL
         workpred = NULL
     } else {
-        cols = intersect(c("PROTEIN", "RUN", "GROUP", "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "SUBJECT",
-                           "NumMeasuredFeature", "MissingPercentage", "more50missing", "NumImputedFeature"),
+        cols = intersect(c("PROTEIN", "originalRUN", "RUN", "GROUP_ORIGINAL", 
+                           "SUBJECT_ORIGINAL", "NumMeasuredFeature", 
+                           "MissingPercentage", "more50missing", 
+                           "NumImputedFeature"),
                          colnames(input))
         merge_col = ifelse(is.element("RUN", colnames(summarized)), "RUN", "SUBJECT_ORIGINAL")
         lab = unique(input[, cols, with = FALSE])
@@ -29,12 +31,12 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         }
         rqall = merge(summarized, lab, by.x = c(merge_col, "Protein"),
                       by.y = c(merge_col, "PROTEIN"))
-        
+        data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+                             c("GROUP", "SUBJECT"))
         
         rqall$GROUP = factor(rqall$GROUP)
         rqall$Protein = factor(rqall$Protein)
         rqmodelqc = summarized$ModelQC
-        #workpred <- rqresult$PredictedBySurvival
         workpred <- NULL
     }
     
