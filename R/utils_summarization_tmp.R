@@ -62,7 +62,7 @@
     pb = utils::txtProgressBar(min = 1, max = n_proteins, style = 3)
     for (protein_id in seq_along(proteins)) {
         single_protein = input[PROTEIN == proteins[protein_id]]
-        single_protein = single_protein[(n_obs > 0 & !is.na(n_obs)) &
+        single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
                                             (n_obs_run > 0 & !is.na(n_obs_run))]
         single_protein[, RUN := factor(RUN)]
         single_protein[, FEATURE := factor(FEATURE)]
