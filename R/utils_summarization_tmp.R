@@ -22,7 +22,7 @@
           by = c("PROTEIN", "RUN")] 
     
     if (any(input$cen == 0)) {
-        input = .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
+        .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
     }
     
     if (impute) {
