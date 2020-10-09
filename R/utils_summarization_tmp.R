@@ -39,16 +39,17 @@
     input[, more50missing := MissingPercentage >= 0.5]
     if (!is.null(censored_symbol)) {
         if (censored_symbol == "NA") {
-            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
+            #input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
+            input[, nonmissing_orig := LABEL == "L" & !censored]
         } else {
             if (is.element("censored", colnames(input))) {
-                input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & censored]
+                input[, nonmissing_orig := LABEL == "L" & !censored]
             } else {
                 input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
             }
         }
         if (impute) {
-            input[, NumImputedFeature := sum(!nonmissing),
+            input[, NumImputedFeature := sum(!nonmissing_orig),
                   by = c("PROTEIN", "RUN")]
         } else {
             input[, NumImputedFeature := 0]
@@ -205,5 +206,4 @@
     nonmissing_filter = nonmissing_filter & input$n_obs_run > 0 & input$n_obs > 1
     nonmissing_filter
 }
-
 
