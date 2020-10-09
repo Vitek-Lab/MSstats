@@ -195,11 +195,13 @@
 .getNonMissingFilterStats = function(input, censored_symbol) {
     if (!is.null(censored_symbol)) {
         if (censored_symbol == "NA") {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+            #nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+            nonmissing_filter = input$LABEL == "L" & !input$censored
         } else {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
-            nonmissing_filter = nonmissing_filter & input$INTENSITY > 1
-            nonmissing_filter = nonmissing_filter & !is.na(input$ABUNDANCE) & input$ABUNDANCE > 0
+            #nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+            #nonmissing_filter = nonmissing_filter & input$INTENSITY > 1
+            #nonmissing_filter = nonmissing_filter & !is.na(input$newABUNDANCE) & input$newABUNDANCE > 0
+            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored 
         }
     } else {
         nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
