@@ -20,9 +20,9 @@
 #' @param fillIncompleteRows If the input dataset has incomplete rows, 
 #' TRUE (default) adds the rows with intensity value = NA for missing peaks. 
 #' FALSE reports error message with list of features which have incomplete rows.
-#' @param featureSubset "all" (default) uses all features that the data set has. 
+#' @param featureSubset "all" uses all features that the data set has. 
 #' "top3" uses top 3 features which have highest average of log-intensity across runs. 
-#' "topN" uses top N features which has highest average of log-intensity across runs. 
+#' "topN" (default) uses top N features which has highest average of log-intensity across runs. 
 #' It needs the input for n_top_feature option. 
 #' "highQuality" flags uninformative feature and outliers.
 #' @param remove_uninformative_feature_outlier optional. Only required if 
@@ -70,8 +70,8 @@
 
 processUnvalidatedData = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-    address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
-    remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
+    address = "", fillIncompleteRows = TRUE, featureSubset = "topN", 
+    remove_uninformative_feature_outlier = FALSE, n_top_feature = 200, 
     summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
     cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
     fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL
@@ -83,8 +83,8 @@ processUnvalidatedData = function(
         TRUE, fillIncompleteRows, fix_missing)
     processValidatedData(
         input, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-        address = "", fillIncompleteRows = TRUE, featureSubset = "all",
-        remove_uninformative_feature_outlier = FALSE, n_top_feature = 3,
+        address = "", fillIncompleteRows = TRUE, featureSubset = "topN",
+        remove_uninformative_feature_outlier = FALSE, n_top_feature = 200,
         summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA",
         cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
         fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL)
@@ -92,8 +92,8 @@ processUnvalidatedData = function(
 
 processValidatedData = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-    address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
-    remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
+    address = "", fillIncompleteRows = TRUE, featureSubset = "topN", 
+    remove_uninformative_feature_outlier = FALSE, n_top_feature = 200, 
     summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
     cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
     fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL
