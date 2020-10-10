@@ -73,7 +73,7 @@
     n_proteins = length(proteins)
     summarized_results = vector("list", n_proteins)
     
-    pb = utils::txtProgressBar(min = 1, max = n_proteins, style = 3)
+    pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
     for (protein_id in seq_along(proteins)) {
         single_protein = input[PROTEIN == proteins[protein_id]]
         single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
