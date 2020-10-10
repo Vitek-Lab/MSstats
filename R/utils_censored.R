@@ -32,7 +32,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
             if (cutoff_lower <= 0 & !is.null(missing_symbol) & missing_symbol == "0") {
                 # zero_one_filter = (!is.na(input$INTENSITY) & input$INTENSITY == 1) |
                 #     (!is.na(input$ABUNDANCE & input$ABUNDANCE) <= 0)
-                zero_one_filter = !is.na(input$ABUNDANCE & input$ABUNDANCE) <= 0
+                zero_one_filter = !is.na(input$ABUNDANCE) & input$ABUNDANCE <= 0
                 input$censored = ifelse(zero_one_filter, TRUE, input$censored)
             }
             if (!is.null(missing_symbol) & missing_symbol == "NA") {
