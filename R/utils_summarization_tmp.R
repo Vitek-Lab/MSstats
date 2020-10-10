@@ -41,16 +41,26 @@
     input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
     input[, more50missing := MissingPercentage >= 0.5]
     if (!is.null(censored_symbol)) {
-        if (censored_symbol == "NA") {
-            #input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
+        # if (censored_symbol == "NA") {
+        #     #input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
+        #     input[, nonmissing_orig := LABEL == "L" & !censored]
+        #     
+        # } else {
+        #     if (is.element("censored", colnames(input))) {
+        #         input[, nonmissing_orig := LABEL == "L" & !censored]
+        #     } else {
+        #         input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
+        #     }
+        # }
+        # # nonmissing_org to calculate imputed measurement
+        # input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
+        if (is.element("censored", colnames(input))) {
             input[, nonmissing_orig := LABEL == "L" & !censored]
         } else {
-            if (is.element("censored", colnames(input))) {
-                input[, nonmissing_orig := LABEL == "L" & !censored]
-            } else {
-                input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
-            }
+            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
         }
+        # nonmissing_org to calculate imputed measurement
+        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
         if (impute) {
             input[, NumImputedFeature := sum(!nonmissing_orig),
                   by = c("PROTEIN", "RUN")]
@@ -199,7 +209,7 @@
 .getNonMissingFilterStats = function(input, censored_symbol) {
     if (!is.null(censored_symbol)) {
         if (censored_symbol == "NA") {
-            nonmissing_filter = input$LABEL == "L" & !input$censored
+            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored
         } else {
             nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored 
         }
