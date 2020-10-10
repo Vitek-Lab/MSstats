@@ -14,6 +14,8 @@
     
     input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
     input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
+    # remove feature with 1 measurement
+    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)] 
     input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
     
     input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
