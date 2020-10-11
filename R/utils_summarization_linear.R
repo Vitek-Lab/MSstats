@@ -1,3 +1,7 @@
+#' Linear summarization
+#' @inheritParams .summarizeTukey
+#' @return data.table
+#' @keywords internal
 .summarizeLinear = function(input, cutoff_base, censored_symbol, remove50missing) {
     if (is.null(censored_symbol)) {
         .summarizeLinearNoImputation(input)
@@ -6,7 +10,11 @@
     }
 }
 
+
+#' 
 .summarizeLinearNoImputation = function(input) {
+    PROTEIN = NULL
+    
     input = input[!is.na(input$ABUNDANCE),]
     proteins = unique(input$PROTEIN)
     n_proteins = data.table::uniqueN(input$PROTEIN)
@@ -19,10 +27,8 @@
         summarized_result[[protein_id]] = single_protein_output
     }
     
-    list(
-        input,    
-        summarized = data.table::rbindlist(summarized_result)
-    )
+    summarized = data.table::rbindlist(summarized_result)
+    summarized
 }
 
 .summarizeLinearSingleProtein = function(input) {
@@ -179,12 +185,14 @@
         input$FEATURE = factor(input$FEATURE)
     }		
     if (nrow(input) == 0) {
-        message(paste("* All measurements are NAs or only one measurement per feature in",
-                      unique(input$PROTEIN), ". Can't summarize with censored intensities."))
-        
+        msg = paste("*** All measurements are NAs or only one",
+                      "measurement per feature in",
+                      unique(input$PROTEIN), 
+                      ". Can't summarize with censored intensities.")
+        getOption("MSstatsMsg")("INFO", msg)
         return(NULL)
     }	
-
+    
     if (censored_symbol == "0") {
         input$cen = ifelse(!is.na(input$INTENSITY) & input$INTENSITY == 0, 0, 1)
     } else if (censored_symbol == "NA") {
@@ -194,7 +202,7 @@
                                     remove50missing)
     survival_fit = .fitSurvival(input)
     surv_coef = summary(survival_fit)$coefficients
-
+    
     result = data.table::data.table(Protein = unique(input$PROTEIN),
                                     RUN = unique(input$RUN))
     
@@ -205,11 +213,10 @@
         contrast = .make.contrast.run.quantification.Survival(survival_fit, 
                                                               contrast_matrix,
                                                               input, label)
-        log_intensities[run_id] = .estimableFixedQuantificationSurvival(surv_coef, contrast)
+        log_intensities[run_id] = .estimableFixedQuantificationSurvival(
+            surv_coef, contrast
+        )
     }
     result$LogIntensities = log_intensities
-    # What was the reshape-melt code for?
     result
-    # Add survival predictions to the "input" output [if not imputed, put NA, put NA on H]
-    # 
 }

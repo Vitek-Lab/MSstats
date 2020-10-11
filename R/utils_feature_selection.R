@@ -1,9 +1,12 @@
 #' Feature selection before feature-level data summarization
+#' 
 #' @param input data.table
 #' @param method "all" / "highQuality", "topN"
 #' @param top_n number of features to use for "topN" method
 #' @param minimum number of quality features for "highQuality" method
+#' 
 #' @return data.table
+#' 
 #' @export
 #' 
 MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count = NULL) {
@@ -29,18 +32,19 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 .selectTopFeatures = function(input, top_n) {
+    ABUNDANCE = MeanAbundance = NULL
+    
     mean_by_feature = input[, 
-                            list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)),
+                            list(MeanAbundance = mean(ABUNDANCE, na.rm = TRUE)),
                             by = c("PROTEIN", "FEATURE")]
-    mean_by_feature[, feature_rank := rank(mean_abundance), by = "PROTEIN"]
+    mean_by_feature[, feature_rank := rank(MeanAbundance), by = "PROTEIN"]
     mean_by_feature = mean_by_feature[feature_rank <= top_n, ]
-    input$remove = !(input$FEATURE %in% mean_by_feature$FEATURE)
+    input[, remove := !(FEATURE %in% mean_by_feature$FEATURE)]
     input
 }
 
 
 #' @keywords internal
-#' 
 .selectHighQualityFeatures = function(input, min_feature_count) {
     cols = c("PROTEIN", "PEPTIDE", "FEATURE", "originalRUN", "LABEL", 
              "ABUNDANCE", "censored")
@@ -49,7 +53,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     if (!("censored" %in% cols)) {
         input$censored = FALSE
     } 
-    colnames(input) = data.table::setnames(input, "censored", "is_censored")
+    data.table::setnames(input, "censored", "is_censored")
     input = input[, list(protein = as.character(PROTEIN),
                          peptide = as.character(PEPTIDE),
                          feature = as.character(FEATURE),

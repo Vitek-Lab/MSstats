@@ -112,7 +112,7 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
     }    
     
     if (is.element("PEPTIDEMODIFIEDSEQUENCE", provided_cols)) {
-        colnames(input) = data.table::setnames(
+        data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
     

@@ -124,29 +124,10 @@
 	    ## length(temp) == 0
 	    subject_c = NULL
 	}
-    
-    ## subject by group in label-free: only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
-    # temp=coef_name[intersect(grep("SUBJECT",coef_name),grep("GROUP",coef_name))]
-    
-    # tempSub=unique(sub1[,c("GROUP","SUBJECT")])
-    # tempSub1=xtabs(~GROUP,data=tempSub)
-    # tempSub2=tempSub1[-1]
-    # if(length(temp)>0){
-    # 	temp1=t(matrix(unlist(strsplit(as.character(temp),"\\:")),nrow=2))
-    # 	temp2=as.vector(xtabs(~temp1[,2]))	## count per GROUP
-    # 	#gs_c=rep(as.vector(contrast.matrix[-1]/(tempSub2)),temp2[1]) ## assume no missing for group and subject
-    # 	# when Group completely  missing
-    # 	sub.matrix=contrast.matrix[unique(tempSub$GROUP)]
-    # 	gs_c=rep(as.vector(sub.matrix[-1]/(tempSub2)),each=temp2[1])
-    # 	names(gs_c)=temp
-    # }
-    # if(length(temp)==0) gs_c=NULL
-    
+
     temp = coef_name[intersect(grep("SUBJECT", coef_name), 
                                 grep("GROUP", coef_name))]
     if (length(temp) > 0) {
-        # subject_c=rep(0,length(temp))
-        # names(subject_c)=temp
         tempdata = fit$model
         group_levels = unique(tempdata$GROUP)
         labels = paste("GROUP", group_levels, sep="")
@@ -226,12 +207,9 @@
 }
 
 
-##================================
 ## .make.contrast.based: 
 ## label-based: equal or unequal subjects per group
 ## fixed or random subject
-##================================
-
 .make.contrast.based = function(fit, contrast.matrix, sub1) {
     
     if (class(fit) == "lm") {

@@ -1,8 +1,29 @@
-#' Summarization with Tukey median polish
+#' Summarization with Tukey median polish for a full dataset
+#' @param input `data.table` processed by the `MSstatsSelectFeatures` function.
+#' @param impute only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'. 
+#' TRUE (default) imputes "NA" or "0" (depending on censored_symbol option) by 
+#' Accelated failure model. FALSE uses the values assigned by cutoffCensored.
+#' @param cutoff_base cutoff value for censoring (with censored_symbol = "NA"
+#' or censored_symbol = "0"). "minFeature"/"minRun"/"minFeatureNRun".
+#' @param censored_symbol Missing values are censored or at random. 
+#' "NA" (default) assumes that all NAs in Intensity column are censored. 
+#' "0" uses zero intensities as censored intensity. In this case, NA intensities 
+#' are missing at random. The output from Skyline should use "0". 
+#' Null assumes that all NA intensites are randomly missing.
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
+#' which have more than 50% missing values. FALSE is default.
+#' @param original_scale if TRUE, data will be summarized on the original scale.
+#' @param n_threads currently ignored. In the future, number of threads used
+#' for parallel processing.
 #' @importFrom utils setTxtProgressBar
+#' @return data.table
+#' @keywords internal
 .summarizeTukey = function(input, impute, cutoff_base, censored_symbol, 
                            remove50missing, original_scale = FALSE, 
                            n_threads = NULL) {
+    cen = censored = ABUNDANCE = FEATURE = LABEL = more50missing = NULL
+    INTENSITY = PROTEIN = n_obs = n_obs_run = RUN = NULL
+    
     if (impute & !is.null(censored_symbol)) {
         if (censored_symbol == "0") {
             input[, newABUNDANCE := ifelse(censored, 0, ABUNDANCE)]
@@ -19,8 +40,7 @@
     input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
     
     input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
-    input[, 
-          prop_features := sum(nonmissing) / total_features,
+    input[, prop_features := sum(nonmissing) / total_features,
           by = c("PROTEIN", "RUN")] 
     
     if (any(input$cen == 0)) {
@@ -41,25 +61,11 @@
     input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
     input[, more50missing := MissingPercentage >= 0.5]
     if (!is.null(censored_symbol)) {
-        # if (censored_symbol == "NA") {
-        #     #input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY) & !is.na(ABUNDANCE)]
-        #     input[, nonmissing_orig := LABEL == "L" & !censored]
-        #     
-        # } else {
-        #     if (is.element("censored", colnames(input))) {
-        #         input[, nonmissing_orig := LABEL == "L" & !censored]
-        #     } else {
-        #         input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
-        #     }
-        # }
-        # # nonmissing_org to calculate imputed measurement
-        # input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
         if (is.element("censored", colnames(input))) {
             input[, nonmissing_orig := LABEL == "L" & !censored]
         } else {
             input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
         }
-        # nonmissing_org to calculate imputed measurement
         input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
         if (impute) {
             input[, NumImputedFeature := sum(!nonmissing_orig),
@@ -92,13 +98,14 @@
     summarized_results
 }
 
+#' Tukey median polish for a single protein
+#' @inheritParams .summarizeTukey
+#' @return data.table
+#' @keywords internal
 .summarizeTukeySingleProtein = function(
     input, impute, cutoff_base, censored_symbol, remove50missing, original_scale,
     n_threads = NULL) {
-    # msg = paste("Getting the summarization by Tukey's median polish",
-    #             "per subplot for protein", unique(input$PROTEIN))
-    # # TODO: add info about i of n proteins
-    # getOption("MSstatsMsg")("INFO", msg)
+    newABUNDANCE = RUN = FEATURE = n_obs_run = NULL
     
     if (all(is.na(input$newABUNDANCE) | input$newABUNDANCE == 0)) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN),
@@ -147,7 +154,6 @@
     
     input[, RUN := factor(RUN)]
     input[, FEATURE := factor(FEATURE)]
-    
     input = input[!is.na(newABUNDANCE), ]
     is_labeled = nlevels(input$LABEL) > 1
     result = .runTukey(input, is_labeled, censored_symbol, remove50missing,
@@ -155,24 +161,41 @@
     result
 }
 
+
+#' Fit Tukey median polish
+#' @param input data.table with data for a single protein
+#' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
+#' @inheritParams .summarizeTukey
+#' @param log_base base of the logarithm function used for ABUNDANCE column
+#' @return data.table
+#' @keywords internal
 .runTukey = function(input, is_labeled, censored_symbol, remove50missing,
                      original_scale = FALSE, log_base = 2) {
     features = as.character(unique(input$FEATURE))
+    Protein = RUN = newABUNDANCE = NULL
     
-    if (nlevels(input$FEATURE) > 1) { ## for more than 1 features
+    if (nlevels(input$FEATURE) > 1) {
         tmp_result = .fitTukey(input, original_scale, features, log_base)
     } else { 
         if (is_labeled) {
             tmp_result = .adjustLRuns(input, TRUE)
         } else {
-            tmp_result = input[input$LABEL == "L", list(RUN, LogIntensities = newABUNDANCE)]
+            tmp_result = input[input$LABEL == "L", 
+                               list(RUN, LogIntensities = newABUNDANCE)]
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
     tmp_result
 }
 
-.fitTukey = function(input, original_scale, features, log_base) {
+
+#' Fit tukey median polish for a data matrix
+#' @inheritParams .runTukey
+#' @return data.table
+#' @keywords internal
+.fitTukey = function(input, original_scale, log_base) {
+    LABEL = RUN = newABUNDANCE = base_log = NULL
+    
     features = as.character(unique(input$FEATURE))
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
                              value.var = "newABUNDANCE", keep = TRUE)
@@ -180,11 +203,12 @@
         wide[, features] = wide[, lapply(.SD, function(x) log_base^x), 
                                 .SDcols = features]
     }
-    tmp_fit = medpolish(wide[, features, with = FALSE], na.rm = TRUE, trace.iter = FALSE)
+    tmp_fit = medpolish(wide[, features, with = FALSE],
+                        na.rm = TRUE, trace.iter = FALSE)
     wide[, newABUNDANCE := tmp_fit$overall + tmp_fit$row]
     tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
     if (original_scale) {
-        tmpt_result[, newABUNDANCE := log(newABUNDANCE, base_log)]
+        tmp_result[, newABUNDANCE := log(newABUNDANCE, base_log)]
     }
     
     if (data.table::uniqueN(input$LABEL) == 2) {
@@ -193,7 +217,15 @@
     tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
 }
 
+
+#' Adjust summarized abundance based on the heavy channel
+#' @param input data.table
+#' @param rename if TRUE, rename the output column to LogIntensities
+#' @return data.table
+#' @keywords internal
 .adjustLRuns = function(input, rename = FALSE) {
+    LABEL = newABUNDANCE = RUN = newABUNDANCE.h = NULL
+    
     h_runs = input[LABEL == "H", list(RUN, newABUNDANCE)]
     h_median = median(input[LABEL == "H", newABUNDANCE], na.rm = TRUE)
     input = input[LABEL == "L"]
@@ -206,6 +238,11 @@
     }
 }
 
+
+#' Get a logical vector for non-missing values to calculate summary statistics
+#' @inheritParams .runTukey
+#' @return data.table
+#' @keywords internal
 .getNonMissingFilterStats = function(input, censored_symbol) {
     if (!is.null(censored_symbol)) {
         if (censored_symbol == "NA") {
@@ -219,4 +256,3 @@
     nonmissing_filter = nonmissing_filter & input$n_obs_run > 0 & input$n_obs > 1
     nonmissing_filter
 }
-
