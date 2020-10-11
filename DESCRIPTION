@@ -19,7 +19,9 @@ Imports:
     checkmate,
     MASS,
     limma,
-    lme4
+    lme4,
+    preprocessCore,
+    survival
 Suggests: 
     BiocStyle,
     knitr,

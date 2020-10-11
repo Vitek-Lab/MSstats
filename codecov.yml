@@ -1,5 +1,8 @@
 comment: false
 
+ignore:
+  - "R/converters.R"
+
 coverage:
   status:
     project:
