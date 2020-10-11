@@ -21,7 +21,8 @@ Imports:
     limma,
     lme4,
     preprocessCore,
-    survival
+    survival,
+    utils
 Suggests: 
     BiocStyle,
     knitr,
