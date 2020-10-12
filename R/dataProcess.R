@@ -123,12 +123,11 @@ processValidatedData = function(
     # Summarization per subplot (per RUN) ----
     getOption("MSstatsMsg")("INFO",
                             "\n == Start the summarization per subplot...")
-    summarization = tryCatch(MSstatsSummarize(
+    summarization = MSstatsSummarize(
         input, summaryMethod, equalFeatureVar, cutoffCensored, censoredInt,
         remove50missing, MBimpute, original_scale = FALSE, logsum = FALSE,
         featureSubset, remove_uninformative_feature_outlier,
-        message.show = FALSE, clusters = clusters),
-        error = function(e) print(e))
+        message.show = FALSE, clusters = clusters)
     MSstatsSummarizationOutput(input, summarization, summaryMethod)
 }
 
