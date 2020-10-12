@@ -175,7 +175,7 @@
     Protein = RUN = newABUNDANCE = NULL
     
     if (nlevels(input$FEATURE) > 1) {
-        tmp_result = .fitTukey(input, original_scale, features, log_base)
+        tmp_result = .fitTukey(input, original_scale, log_base)
     } else { 
         if (is_labeled) {
             tmp_result = .adjustLRuns(input, TRUE)
