@@ -68,18 +68,10 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 }
 
 
-# .getMin = function(abundance, nonmissing) {
-#     just_nonmissing = abundance[nonmissing]
-#     if (length(just_nonmissing) > 0) {
-#         0.99*min(, na.rm = TRUE)
-#     } else {
-#         NA
-#     }
-# }
-
 .getMin = function(abundance, nonmissing) {
     0.99*min(abundance[nonmissing], na.rm = TRUE)
 }
+
 
 #' Set censored values based on minimum in run/feature/run or feature
 #' @param input `data.table` in MSstats format
