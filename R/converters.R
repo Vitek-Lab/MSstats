@@ -85,6 +85,12 @@ DIAUmpiretoMSstatsFormat = function(
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -155,6 +161,12 @@ MaxQtoMSstatsFormat = function(
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -200,6 +212,12 @@ OpenMStoMSstatsFormat = function(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -268,6 +286,12 @@ OpenSWATHtoMSstatsFormat = function(
                             "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns, 
                                                   fix_missing = "na_to_zero")
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -325,6 +349,12 @@ ProgenesistoMSstatsFormat = function(
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -392,6 +422,12 @@ PDtoMSstatsFormat = function(
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -481,6 +517,12 @@ SkylinetoMSstatsFormat = function(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = sum))
     input = MSstatsBalancedDesign(input, feature_columns)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
 
@@ -552,5 +594,11 @@ SpectronauttoMSstatsFormat = function(
                                psm_q = qval_filter),
         columns_to_fill = list("IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
     input
 }
