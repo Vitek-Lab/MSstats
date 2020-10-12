@@ -1,5 +1,8 @@
 #' @importFrom data.table uniqueN
+#' @importFrom stats na.omit
 .removeSingleLabelFeatures = function(input) {
+    n_obs = NULL
+    
     if (data.table::uniqueN(input$LABEL) == 2) {
         counts = na.omit(input)[, list(n_obs = .N), 
                                 by = c("LABEL", "FEATURE", 
