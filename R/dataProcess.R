@@ -80,7 +80,7 @@ processUnvalidatedData = function(
     input = MSstatsConvert::MSstatsBalancedDesign(
         input, c("PeptideSequence", "ProteinName",
                  "FragmentIon", "ProductCharge"),
-        TRUE, fillIncompleteRows, fix_missing)
+        fillIncompleteRows, TRUE, fix_missing)
     processValidatedData(
         input, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
         address = "", fillIncompleteRows = TRUE, featureSubset = "all",
