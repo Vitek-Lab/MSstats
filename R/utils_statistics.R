@@ -1,10 +1,17 @@
+#' Log information about feature-level data
+#' @parma input data.table
+#' @return TRUE invisibly after successful logging
+#' @keywords internal
 .logDatasetInformation = function(input) {
     .logSummaryStatistics(input)
     .checkSingleLabelProteins(input)
     .logMissingness(input)
+    invisible(TRUE)
 }
 
 .logSummaryStatistics = function(input) {
+    PEPTIDE = FEATURE = PROTEIN = feature_count = NULL
+    
     num_proteins = data.table::uniqueN(input$PROTEIN)
     peptides_per_protein = input[, list(peptide_count = data.table::uniqueN(PEPTIDE)),
                                  by = "PROTEIN"]
@@ -28,24 +35,27 @@
     if (length(features_per_protein) > 0) {
         single_features = unique(as.character(features_per_protein))
         n_feat = min(length(single_features), 5)
-        single_msg_log = paste("The following proteins have only one feature:", "\n",
-                               paste(single_features,
-                                     sep = ",\n ", collapse = ",\n"))
-        single_msg_print = paste("The following proteins have only one feature:", "\n",
-                                 paste(unique(as.character(features_per_protein))[1:n_feat],
-                                       sep = ",\n ", collapse = ",\n"),
-                                 "... (see log file for a full list)")
-        getOption("MSstatsLog")("INFO", single_msg_log)
-        getOption("MSstatsMsg")("INFO", single_msg_print)
+        msg = paste("Five or more proteins have only one feature:", "\n",
+                    paste(unique(as.character(features_per_protein))[1:n_feat],
+                          sep = ",\n ", collapse = ",\n"),
+                    "...")
+        getOption("MSstatsLog")("INFO", msg)
+        getOption("MSstatsMsg")("INFO", msg)
     }
     
     samples_info = input[, list(NumRuns = data.table::uniqueN(RUN),
                                 NumBioReplicates = data.table::uniqueN(SUBJECT_ORIGINAL),
                                 NumFractions = data.table::uniqueN(FRACTION)), 
                          by = "GROUP_ORIGINAL"]
-    samples_info = samples_info[, list(GROUP_ORIGINAL, NumRuns, NumBioReplicates, 
-                                       NumTechReplicates = as.integer(round(NumRuns / (NumBioReplicates * NumFractions))))]
-    samples_info = data.table::dcast(data.table::melt(samples_info, id.vars = "GROUP_ORIGINAL"), variable ~ GROUP_ORIGINAL)
+    samples_info = samples_info[
+        , 
+        list(GROUP_ORIGINAL, NumRuns, NumBioReplicates, 
+             NumTechReplicates = as.integer(
+                 round(NumRuns / (NumBioReplicates * NumFractions)
+                 )))]
+    samples_info = data.table::dcast(data.table::melt(samples_info, 
+                                                      id.vars = "GROUP_ORIGINAL"), 
+                                     variable ~ GROUP_ORIGINAL)
     colnames(samples_info)[1] = ""
     samples_info[, 1] = c("# runs", "# bioreplicates", "# tech. replicates")
     
@@ -66,21 +76,19 @@
 } 
 
 .logSingleLabeledProteins = function(input, label) {
+    LABEL = PROTEIN = NULL
+    
     name = ifelse(label == "L", "endogeneous", "reference")
     proteins = unique(input[LABEL == label, as.character(PROTEIN)])
     if (length(proteins) > 0) {
         n_prot = min(length(proteins), 5)
-        msg_print = paste(paste("The following proteins only have", name,
-                                "intensities in label-based experiment",
-                                "Please check or remove these proteins:"),
-                          paste(proteins[1:n_prot], sep = ", \n ", collapse = ", \n "),
-                          "... (see the log file for a full list)")
-        msg_log = paste(paste("The following proteins only have", name,
-                              "intensities in label-based experiment",
-                              "Please check or remove these proteins:"),
-                        paste(proteins, sep = ", \n ", collapse = ", \n "))
-        getOption("MSstatsMsg")("WARN", msg_print)
-        getOption("MsstatsLog")("WARN", msg_log)
+        msg = paste(paste("5 or more proteins only have", name,
+                          "intensities in label-based experiment",
+                          "Please check or remove these proteins:"),
+                    paste(proteins[1:n_prot], sep = ", \n ", collapse = ", \n "),
+                    "... (see the log file for a full list)")
+        getOption("MSstatsMsg")("WARN", msg)
+        getOption("MsstatsLog")("WARN", msg)
     }
     
 }
@@ -112,13 +120,12 @@
     missing_by_run = as.character(missing_by_run[FractionMissing > 0.75, RUN])
     
     if (length(missing_in_any) > 0) {
-        msg = paste("The following features are completely missing in at least one condition,\n",
-                    paste(missing_in_any, sep = ",\n ", collapse = ",\n "))
-        msg_short = paste("Some feature are completely missing in at least one condition, for example:\n",
-                          paste(missing_in_any[1:5], sep = ",\n ", collapse = ",\n "),
-                          "(See the log for a complete list).")
+        msg = paste("Five or more features are completely",
+                          "missing in at least one condition,\n",
+                          paste(missing_in_any[1:5], sep = ",\n ", 
+                                collapse = ",\n "))
         getOption("MSstatsLog")("INFO", msg)
-        getOption("MSstatsMsg")("INFO", msg_short)
+        getOption("MSstatsMsg")("INFO", msg)
     }
     
     if (length(missing_by_run) > 0) {

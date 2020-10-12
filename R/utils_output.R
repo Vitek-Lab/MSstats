@@ -5,6 +5,11 @@
 #' @param summary_method name of the summarization method
 #' (`summaryMethod` parameter to `dataProcess`)
 #' 
+#' @return list that consists of the following elements:
+#' \item{ProcessedData - feature-level data after processing,} 
+#' \item{RunlevelData - run-level (summarized) data,}
+#' \item{SummaryMethod (string) - name of summarization method that was used.}
+#' 
 #' @export
 #' 
 MSstatsSummarizationOutput = function(input, summarized, summary_method) {

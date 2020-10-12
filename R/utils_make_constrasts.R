@@ -421,22 +421,7 @@
     } else {
         rf_c = NULL
     }
-    
-#     ## subject_nested
-#     temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
-# 	if (length(temp) > 0) {
-# 	    if (nlevels(sub1$LABEL) == 2) {
-# 	        subjectNested_c = contrast.matrix
-# 	    } else if (nlevels(sub1$LABEL) == 1) {
-# 		    ## label-free
-# 		    subjectNested_c = contrast.matrix[-1]
-# 		}
-# 		names(subjectNested_c) = temp
-# 	} else {
-# 	    subjectNested_c = NULL
-# 	}
 
-	#contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)
 	contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c)
 	
 	if (class(fit) == "lm") {
@@ -450,7 +435,7 @@
 
 
 
-##########################################################################################
+
 .make.contrast.run.quantification.reference = function(fit, contrast.matrix, 
                                                         sub1) {
     
@@ -509,13 +494,9 @@
 }
 
 
-
-##================================
 ## .make.contrast.group.quantification: 
 ## label-based/label-free; single/multiple features
 ## all fixed subject and run
-##================================
-
 .make.contrast.group.quantification = function(fit, contrast.matrix, sub1) {
     
     if (class(fit) == "lm") {
@@ -640,12 +621,6 @@
             group_c = contrast.matrix[-1]
         }
         names(group_c) = temp
-        
-        ## if some group's coef is NA, need to remove
-        #tempname=rownames(summary(fit)$coefficients)
-        #tempname1=tempname[grep("GROUP",tempname)[!grep("GROUP",tempname)%in%grep(":",tempname)]]
-        #group_c=group_c[names(group_c)==tempname1]
-        
     } else {
         group_c = NULL
     }
@@ -653,14 +628,6 @@
     ## run
     temp = coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]
     if (length(temp) > 0) {
-        
-        # if(class(fit)=="lm"){
-        # 	run_c=rep(1/nlevels(fit$model$RUN),length(temp))
-        # }else{
-        # 	### need to fix fit$omdel
-        # 	run_c=rep(1/nlevels(eval(getCall(fit)$data)$RUN),length(temp))
-        # }
-        
         run_c = rep(1 / nlevels(sub1$RUN), length(temp))
         names(run_c) = temp
     } else {
@@ -709,12 +676,9 @@
 	return(contrast1)
 }
 
-##================================
 ## .make.contrast.group.quantification.reference: 
 ## label-based/label-free; single/multiple features
 ## all fixed subject and run
-##================================
-
 .make.contrast.group.quantification.reference = function(fit, contrast.matrix, 
                                                           sub1) {
     
@@ -734,20 +698,6 @@
     
     ## feature
     temp = coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]
-    
-    # if(length(temp)>0){
-    # 	if(class(fit)=="lm"){
-    # 		feature_c=rep(1/nlevels(fit$model$FEATURE),length(temp))
-    # 	}else{
-    # 		### need to fix fit$omdel
-    # 		tempfeature=eval(getCall(fit)$data)
-    # 		tempfeature$FEATURE=factor(tempfeature$FEATURE)
-    # 		feature_c=rep(1/nlevels(tempfeature$FEATURE),length(temp))
-    # 	}
-    # 	names(feature_c)=temp
-    # }else{
-    # 	feature_c=NULL
-    # }
     
     if (length(temp) > 0) {
         tempSub = unique(sub1[, c("FEATURE", "GROUP")])
@@ -805,17 +755,6 @@
     ## run
     temp = coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]
     if (length(temp) > 0) {
-        
-        # if(class(fit)=="lm"){
-        # 	run_c=rep(1/nlevels(fit$model$RUN),length(temp))
-        # }else{
-        # 	### need to fix fit$omdel
-        # 	temprun=eval(getCall(fit)$data)
-        # 	tempfeature$FEATURE=factor(tempfeature$FEATURE)
-        # 	feature_c=rep(1/nlevels(tempfeature$FEATURE),length(temp))
-        # 	run_c=rep(1/nlevels(eval(getCall(fit)$d)$RUN),length(temp))
-        # }
-        
         run_c = rep(1 / nlevels(sub1$RUN), length(temp))
         names(run_c) = temp
     } else {
@@ -855,12 +794,9 @@
 }
 
 
-##================================
 ## .make.contrast.subject.quantification.single: 
 ## label-based/label-free; single features
 ## all fixed subject and run
-##================================
-
 .make.contrast.subject.quantification.single = function(fit, contrast.matrix, 
                                                          sub1) {
     
@@ -869,11 +805,7 @@
     } else {
         coef_name = names(fixef(fit))
     }
-    
-    #contrastList=unique(sub1[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])
-    #contrastGroup=rep(0,nlevels(sub1$GROUP_ORIGINAL))
-    #contrastGroup[as.numeric(contrastList[contrast.matrix==1,"GROUP_ORIGINAL"])]=1
-    
+
     ## for label-based	
 	if (nlevels(sub1$LABEL) == 2) {
 	    ## remove GROUP==0
@@ -900,21 +832,7 @@
     
     ## feature
     temp = coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]
-    
-    # if(length(temp)>0){
-    # 	if(class(fit)=="lm"){
-    # 		feature_c=rep(1/nlevels(fit$model$FEATURE),length(temp))
-    # 	}else{
-    # 		### need to fix fit$omdel
-    # 		tempfeature=eval(getCall(fit)$data)
-    # 		tempfeature$FEATURE=factor(tempfeature$FEATURE)
-    # 		feature_c=rep(1/nlevels(tempfeature$FEATURE),length(temp))
-    # 	}
-    # 	names(feature_c)=temp
-    # }else{
-    # 	feature_c=NULL
-    # }
-    
+
     if (length(temp) > 0) {
         tempSub = unique(sub1[, c("FEATURE", "SUBJECT_NESTED")])
         tempSub1 = xtabs(~ SUBJECT_NESTED + FEATURE, data=tempSub)
@@ -962,9 +880,6 @@
     ## run
     temp = coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]
     if (length(temp) > 0) {
-        
-        #run_c=rep(1/nlevels(fit$model$RUN),length(temp))
-        
         ## when no technical replicate: subject_nested = run
 		run_c = contrast.matrix[-1]
 		## however, with technical replicate: subject_nested != run, need others
@@ -1016,12 +931,9 @@
 }
 
 
-##================================
 ## .make.contrast.subject.quantification: 
 ## label-based/label-free; multiple features
 ## all fixed subject and run
-##================================
-
 .make.contrast.subject.quantification = function(fit, contrast.matrix, sub1) {
     
     if (class(fit) == "lm") {
@@ -1032,10 +944,7 @@
     
     ## when there are missing value in endogenous, there are error, because the 
     ## number of group_original and fitted group are different
-    #contrastList=unique(sub1[,c("GROUP_ORIGINAL","SUBJECT_ORIGINAL")])
-    #contrastGroup=rep(0,nlevels(sub1$GROUP_ORIGINAL))
-    #contrastGroup[as.numeric(contrastList[contrast.matrix==1,"GROUP_ORIGINAL"])]=1
-    
+
     ## for label-based
     if (nlevels(sub1$LABEL) == 2) {
         contrastList = unique(sub1[, c("GROUP", "SUBJECT_ORIGINAL", 
@@ -1071,21 +980,7 @@
     
     ## feature
     temp = coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]
-    
-    # if(length(temp)>0){
-    # 	if(class(fit)=="lm"){
-    # 		feature_c=rep(1/nlevels(fit$model$FEATURE),length(temp))
-    # 	}else{
-    # 		### need to fix fit$omdel
-    # 		tempfeature=eval(getCall(fit)$data)
-    # 		tempfeature$FEATURE=factor(tempfeature$FEATURE)
-    # 		feature_c=rep(1/nlevels(tempfeature$FEATURE),length(temp))
-    # 	}
-    # 	names(feature_c)=temp
-    # }else{
-    # 	feature_c=NULL
-    # }
-    
+
     if (length(temp) > 0) {
         tempSub = unique(sub1[, c("FEATURE", "SUBJECT_NESTED")])
 		tempSub1 = xtabs(~ SUBJECT_NESTED + FEATURE, data=tempSub)
@@ -1143,14 +1038,6 @@
     ## run
     temp = coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]
     if (length(temp) > 0) {
-        
-        # if(class(fit)=="lm"){
-        # 	run_c=rep(1/nlevels(fit$model$RUN),length(temp))
-        # }else{
-        # 	### need to fix fit$omdel
-        # 	run_c=rep(1/nlevels(eval(getCall(fit)$data)$RUN),length(temp))
-        # }
-        
         run_c = rep(1 / nlevels(sub1$RUN), length(temp))
         names(run_c) = temp
     } else {
@@ -1200,13 +1087,9 @@
 }
 
 
-
-##================================
 ## .make.contrast.subject.quantification.reference: 
 ## label-based/label-free; single/multiple features
 ## all fixed subject and run
-##================================
-
 .make.contrast.subject.quantification.reference = function(fit, 
                                                             contrast.matrix, 
                                                             sub1) {
@@ -1227,21 +1110,7 @@
 	
 	## feature
 	temp = coef_name[setdiff(grep("FEATURE", coef_name), grep(":", coef_name))]
-	
-	# if(length(temp)>0){
-	# 	if(class(fit)=="lm"){
-	# 		feature_c=rep(1/nlevels(fit$model$FEATURE),length(temp))
-	# 	}else{
-	# 		### need to fix fit$omdel
-	# 		tempfeature=eval(getCall(fit)$data)
-	# 		tempfeature$FEATURE=factor(tempfeature$FEATURE)
-	# 		feature_c=rep(1/nlevels(tempfeature$FEATURE),length(temp))
-	# 	}
-	# 	names(feature_c)=temp
-	# }else{
-	# 	feature_c=NULL
-	# }
-	
+
 	if (length(temp) > 0) {
 	    tempSub = unique(sub1[, c("FEATURE", "SUBJECT_NESTED")])
 	    tempSub1 = xtabs(~ SUBJECT_NESTED + FEATURE, data=tempSub)
@@ -1289,14 +1158,6 @@
 	## run
 	temp = coef_name[setdiff(grep("RUN", coef_name), grep(":", coef_name))]
 	if (length(temp) > 0) {
-	    
-	    # if(class(fit)=="lm"){
-	    # 	run_c=rep(1/nlevels(fit$model$RUN),length(temp))
-	    # }else{
-	    # 	### need to fix fit$omdel
-	    # 	run_c=rep(1/nlevels(eval(getCall(fit)$data)$RUN),length(temp))
-	    # }
-	    
 	    run_c = rep(1 / nlevels(sub1$RUN), length(temp))
 	    names(run_c) = temp
 	} else {
@@ -1335,9 +1196,7 @@
 	return(contrast1)
 }
 
-##================================
 ## label-free, single
-##================================
 .make.contrast.free.single = function(fit, contrast.matrix, sub1) {
     
     if (class(fit) == "lm") {
@@ -1345,23 +1204,6 @@
 	} else {
 	    coef_name = names(fixef(fit))
 	}
-    
-    ## change contrast.matrix without Group1
-    # cons=1
-    # if(contrast.matrix[1]==0) contrast.free=contrast.matrix[-1]
-    # if(contrast.matrix[1]<0){ 
-    # 	contrast.free=contrast.matrix[-1]/abs(contrast.matrix[1])
-    # 	cons=abs(contrast.matrix[1])
-    # 	}
-    # if(contrast.matrix[1]>0){ 
-    # 	contrast.free=contrast.matrix[-1]*(-1)/contrast.matrix[1]
-    # 	cons=contrast.matrix[1]*(-1)
-    # 	}
-    # if(class(fit)=="lm"){
-    # 	coef_name=names(coef(fit))
-    # }else{
-    # 	coef_name=names(fixef(fit))
-    # }
     
     ## intercept
     temp = coef_name[grep("Intercept", coef_name)]
@@ -1375,10 +1217,6 @@
     temp = coef_name[setdiff(grep("SUBJECT", coef_name), 
                               grep(":|NESTED", coef_name))]
     if (length(temp) > 0) {
-        
-        # subject_c=rep(0,length(temp))
-        # names(subject_c)=temp
-        
         tempdata = fit$model
         group_levels = levels(tempdata$GROUP)
         labels = paste("GROUP", group_levels, sep="")
@@ -1427,43 +1265,11 @@
 	if (length(temp) == 0) {
 	    group_c=NULL
 	}
-	
-	# ## subject_nested
-	# temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
-	# if (length(temp) > 0) {
-	#     temp1 = t(matrix(unlist(strsplit(as.character(temp), "\\.")), nrow=2))
-	# 	temp2 = as.vector(xtabs(~ temp1[, 1]))
-	# 	tempdata = fit$model
-	# 	group_levels = levels(tempdata$GROUP)
-	# 	sub_contrast = contrast.matrix[as.numeric(as.character(group_levels))]
-	# 	
-	# 	## the base is alway be the first SUBJECT_NESTED
-	# 	## (SUBJECT_NESTED1.1)
-	# 	temp3 = temp2
-	# 	if (length(temp2) == length(sub_contrast)) {
-	# 	    ## this line first, otherwise length of temp3 >1
-	# 	    temp3[1] = temp2[1] + 1
-	# 	} else {
-	# 	    temp3 = c(1, temp3)
-	# 	}
-	# 	
-	# 	## in case of unequal sample per group, wrong
-	# 	# subjectNested_c=rep(contrast.matrix/(temp3),temp2) 
-	# 	
-	# 	subjectNested_c = rep(sub_contrast / temp3, temp3)[-1]
-	# 	names(subjectNested_c) = temp
-	# } else if (length(temp) == 0) {
-	#     subjectNested_c = NULL
-	# }
-	
+
 	## subject by group: only for time-course - SUBJECT and GROUP (order) even GROUP:SUBJECT in model
 	temp = coef_name[intersect(grep("SUBJECT", coef_name), 
 	                            grep("GROUP", coef_name))]
 	if (length(temp) > 0) {
-	    
-	    # subject_c=rep(0,length(temp))
-	    # names(subject_c)=temp
-	    
 	    tempdata = fit$model
 	    group_levels = levels(tempdata$GROUP)
 	    labels = paste("GROUP", group_levels, sep="")
@@ -1515,12 +1321,7 @@
 }
 
 
-
-##################################
-##################################
 ########### estimate   ###########
-##################################
-##################################	
 .getParameterFixed = function(obj) {
     temp1 = summary.lm(obj)
     cf = temp1$coefficients
@@ -1552,7 +1353,6 @@
 	return(result)
 }
 
-##########################################################################################
 
 .estimableFixedQuantification = function(cf, cm) {
     cm = matrix(cm, nrow=1)
@@ -1563,7 +1363,6 @@
     return(result)
 }
 
-##########################################################################################
 
 .estimableRandomQuantification = function(cf, cm) {
     cm = matrix(cm, nrow=1)
@@ -1574,7 +1373,6 @@
     return(result)
 }
 
-##########################################################################################
 
 .estimableFixedQuantificationSurvival = function(cf, cm) {
     cm = matrix(cm, nrow=1)
@@ -1585,8 +1383,6 @@
     return(result)
 }
 
-
-##########################################################################################
 
 .make.contrast.run.quantification.Survival = function(fit, contrast.matrix, 
                                                        sub1, labeled) {
@@ -1656,31 +1452,11 @@
         rf_c = NULL
     }
     
-#     ## subject_nested
-#     temp = coef_name[grep("SUBJECT_NESTED", coef_name)]
-#     if (length(temp) > 0) {
-#         if (nlevels(sub1$LABEL) == 2) {
-#             subjectNested_c = contrast.matrix
-# 		} else if (nlevels(sub1$LABEL) == 1) {
-# 		    ## label-free
-# 		    subjectNested_c = contrast.matrix[-1]
-# 		}
-#         names(subjectNested_c) = temp
-#     } else {
-#         subjectNested_c = NULL
-#     }
-    
-    #contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c, subjectNested_c)
     contrast = c(intercept_c, feature_c, run_c, ref_c, rf_c)
-    
     contrast1 = contrast[!is.na(fit$coefficients)]
-    
-    return(contrast1)
+    contrast1    
 }
 
-
-
-##########################################################################################
 
 .iter.wls.fit.model = function(data, fit, nrepeats) {
     for (i in 1:nrepeats) {
@@ -1767,4 +1543,3 @@
         }
     }
 }
-
