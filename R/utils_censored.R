@@ -5,7 +5,7 @@
 #' @param impute if TRUE, missing values are supposed to be imputed 
 #' (`MBimpute` parameter to `dataProcess`)
 #' @param missing_symbol `censoredInt` parameter to `dataProcess`
-#' @param censored_cutoff `cutoffCensored` parameter to `dataProcess`
+#' @param censored_cutoff `maxQuantileforCensored` parameter to `dataProcess`
 #' 
 #' @export
 #'  
