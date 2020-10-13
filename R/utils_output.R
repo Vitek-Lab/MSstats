@@ -45,7 +45,7 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         workpred <- NULL
     }
     
-    if (is.element("RUN", colnames(rqall))) {
+    if (is.element("RUN", colnames(rqall)) & !is.null(rqall)) {
         rqall = rqall[order(Protein, as.numeric(as.character(RUN))), ]
         rownames(rqall) = NULL
     }
