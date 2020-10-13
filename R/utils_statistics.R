@@ -1,5 +1,5 @@
 #' Log information about feature-level data
-#' @parma input data.table
+#' @param input data.table
 #' @return TRUE invisibly after successful logging
 #' @keywords internal
 .logDatasetInformation = function(input) {

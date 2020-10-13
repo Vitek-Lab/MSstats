@@ -32,7 +32,7 @@
         }
         input[, cen := ifelse(censored, 0, 1)]
     }
-    
+
     input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
     input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
     # remove feature with 1 measurement
