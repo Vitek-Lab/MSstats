@@ -67,30 +67,7 @@
 #' @export
 #' 
 
-
-processUnvalidatedData = function(
-    raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-    address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
-    remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
-    summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
-    cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
-    fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL
-) {
-    input = data.table::as.data.table(unclass(raw))
-    input = MSstatsConvert::MSstatsBalancedDesign(
-        input, c("PeptideSequence", "ProteinName",
-                 "FragmentIon", "ProductCharge"),
-        fillIncompleteRows, TRUE, fix_missing)
-    processValidatedData(
-        input, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-        address = "", fillIncompleteRows = TRUE, featureSubset = "all",
-        remove_uninformative_feature_outlier = FALSE, n_top_feature = 3,
-        summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA",
-        cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
-        fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL)
-}
-
-processValidatedData = function(
+dataProcess = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
     address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
     remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
@@ -109,9 +86,10 @@ processValidatedData = function(
              cutoff = cutoffCensored,
              MB = MBimpute),
         clusters)
-
+    
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
-    input = MSstatsPrepareForDataProcess(raw, logTrans)
+    input = MSstatsPrepareForDataProcess(raw, logTrans, 
+                                         fix_missing, fillIncompleteRows)
     # Normalization, Imputation and feature selection ----
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
     input = MSstatsMergeFractions(input)
@@ -123,19 +101,14 @@ processValidatedData = function(
     # Summarization per subplot (per RUN) ----
     getOption("MSstatsMsg")("INFO",
                             "\n == Start the summarization per subplot...")
-    summarization = MSstatsSummarize(
+    summarization = tryCatch(MSstatsSummarize(
         input, summaryMethod, equalFeatureVar, cutoffCensored, censoredInt,
         remove50missing, MBimpute, original_scale = FALSE, logsum = FALSE,
         featureSubset, remove_uninformative_feature_outlier,
-        message.show = FALSE, clusters = clusters)
+        message.show = FALSE, clusters = clusters),
+        error = function(e) {
+            print(e)
+            NULL
+        })
     MSstatsSummarizationOutput(input, summarization, summaryMethod)
 }
-
-#' Data process
-#' @export
-setGeneric("dataProcess", 
-           def = processUnvalidatedData, 
-           signature = "raw")
-setMethod("dataProcess", 
-          definition = processValidatedData,
-          signature = "MSstatsValidated")

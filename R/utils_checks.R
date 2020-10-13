@@ -2,10 +2,13 @@
 #' 
 #' @param input `data.table` in MSstats format
 #' @param log_base base of the logarithm to transform intensities
+#' @inheritParams MSstatsConvert::MSstatsBalancedDesign
 #' @export
 #' 
-MSstatsPrepareForDataProcess = function(input, log_base) {
-    input = .checkDataValidity(input)
+MSstatsPrepareForDataProcess = function(input, log_base,
+                                        fix_missing, fill_incomplete) {
+    input = .checkDataValidity(input, fix_missing = fix_missing,
+                               fill_incomplete = fill_incomplete)
     input = .updateColumnsForProcessing(input)
     .preProcessIntensities(input, log_base)
     input = .makeFactorColumns(input)
@@ -93,15 +96,14 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
 
 #' Check validity of data that were not processed by MSstats converter
 #' @param input data.table
+#' @inheritParams MSstatsPrepareForDataProcess
 #' @importFrom data.table uniqueN as.data.table
 #' @keywords internal
-.checkUnProcessedDataValidity = function(input) {
-    input = data.table::as.data.table(input)
-    colnames(input) = toupper(colnames(input))
+.checkUnProcessedDataValidity = function(input, fix_missing, fill_incomplete) {
+    input = data.table::as.data.table(unclass(input))
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
              "PrecursorCharge", "FragmentIon", "ProductCharge", "IsotopeLabelType", 
              "Condition", "BioReplicate", "Run", "Intensity")
-    cols = toupper(cols)
     provided_cols = intersect(cols, colnames(input))
     
     if (length(provided_cols) < 10) {
@@ -111,6 +113,13 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
         stop(msg)
     }    
     
+    input = MSstatsConvert::MSstatsBalancedDesign(
+        input, c("PeptideSequence", "PrecursorCharge",
+                 "FragmentIon", "ProductCharge"), 
+        fill_incomplete, TRUE, fix_missing)
+    input = data.table::as.data.table(unclass(input))
+    data.table::setnames(input, colnames(input), toupper(colnames(input)))
+
     if (is.element("PEPTIDEMODIFIEDSEQUENCE", provided_cols)) {
         data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
@@ -126,9 +135,11 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
     .checkExperimentDesign(input, "BIOREPLICATE")
     .checkExperimentDesign(input, "CONDITION")
     
+    cols = toupper(cols)
     cols = intersect(c(cols, "FRACTION", "TECHREPLICATE"),
                      colnames(input))
     input = input[, cols, with = FALSE]
+    
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
     # TODO: := ?
@@ -160,7 +171,7 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
         data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-
+    
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
     # TODO: := ?
@@ -175,7 +186,7 @@ MSstatsPrepareForDataProcess = function(input, log_base) {
 }
 
 setGeneric(".checkDataValidity", 
-           function(input) standardGeneric(".checkDataValidity"))
+           function(input, ...) standardGeneric(".checkDataValidity"))
 setMethod(".checkDataValidity", "data.frame", .checkUnProcessedDataValidity)
 setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 
