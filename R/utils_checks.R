@@ -162,8 +162,9 @@ MSstatsPrepareForDataProcess = function(input, log_base,
 
 #' Check validity of data already processed by MSstats converter
 #' @param input data.frame of class `MSstatsValidated`
+#' @param .. additional parameters, currently ignored
 #' @keywords internal
-.prepareForDataProcess = function(input) {
+.prepareForDataProcess = function(input, ...) {
     input = as.data.table(unclass(input))
     colnames(input) = toupper(colnames(input))
     
