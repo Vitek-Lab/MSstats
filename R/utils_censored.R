@@ -63,6 +63,8 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                 input$censored = input$LABEL == "L" & is.na(input$ABUNDANCE)
             }
         }
+    } else {
+        input$censored = FALSE
     }
     input
 }
