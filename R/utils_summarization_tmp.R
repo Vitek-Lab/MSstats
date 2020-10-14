@@ -31,6 +31,8 @@
             input[, newABUNDANCE := ifelse(censored, NA, ABUNDANCE)]
         }
         input[, cen := ifelse(censored, 0, 1)]
+    } else {
+        input[, newABUNDANCE := ABUNDANCE]
     }
 
     input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
