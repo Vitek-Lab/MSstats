@@ -49,14 +49,68 @@
         .setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
     }
     
-    if (impute) {
-        input[n_obs_run > 0 & n_obs > 1, predicted := .addSurvivalPredictions(.SD),
-              by = "PROTEIN"]
-        input[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-        input[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                       predicted, newABUNDANCE)]
-    }
+    proteins = unique(input$PROTEIN)
+    n_proteins = length(proteins)
+    cols = intersect(colnames(input), c("newABUNDANCE", "cen", "RUN",
+                                        "FEATURE", "ref"))
+    # if (impute) {
+    #     survival_predictions = vector("list", n_proteins)
+    #     for (i in seq_len(n_proteins)) {
+    #         single_protein = input[PROTEIN == proteins[i] & 
+    #                                    n_obs_run > 0 &
+    #                                    n_obs > 1 &
+    #                                    LABEL == "L",
+    #                                cols, with = FALSE]
+    #         survival_fit = .fitSurvival(single_protein)
+    #         single_protein[, predicted := predict(survival_fit, 
+    #                                               newdata = .SD)]
+    #         survival_predictions[[i]] = single_protein
+    #     }
+    #     predicted_survival = data.table::rbindlist(survival_predictions)
+    #     input = merge(input, predicted_survival[, !(colnames(predicted_survival) == "newABUNDANCE"),
+    #                                             with = FALSE],
+    #                   by = setdiff(cols, "newABUNDANCE"),
+    #                   all.x = TRUE)
+    #     # input[n_obs_run > 0 & n_obs > 1, predicted := .addSurvivalPredictions(.SD),
+    #     #       by = "PROTEIN"]
+    #     input[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
+    #     input[, newABUNDANCE := ifelse(censored & LABEL == "L",
+    #                                    predicted, newABUNDANCE)]
+    # }
     
+    summarized_results = vector("list", n_proteins)
+    survival_predictions = vector("list", n_proteins)
+    pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
+    for (protein_id in seq_along(proteins)) {
+        single_protein = input[PROTEIN == proteins[protein_id]]
+        single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
+                                            (n_obs_run > 0 & !is.na(n_obs_run))]
+        single_protein[, RUN := factor(RUN)]
+        single_protein[, FEATURE := factor(FEATURE)]
+        if (impute) {
+            survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
+                                                       with = FALSE])
+            single_protein[, predicted := predict(survival_fit,
+                                                  newdata = .SD)]
+            single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
+                                           predicted, newABUNDANCE)]
+            survival_predictions[[protein_id]] = single_protein[, c(cols, "predicted"),
+                                                                with = FALSE]
+        }
+        
+        summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
+            single_protein[, list(PROTEIN, LABEL, RUN, FEATURE, newABUNDANCE,
+                                  n_obs, n_obs_run, prop_features)],
+            impute, cutoff_base, censored_symbol,
+            remove50missing, original_scale, n_threads)
+        setTxtProgressBar(pb, protein_id)
+    }
+    predicted_survival = data.table::rbindlist(survival_predictions)
+    input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
+                  predicted_survival,
+                  by = setdiff(cols, "newABUNDANCE"),
+                  all.x = TRUE)
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 
           by = c("PROTEIN", "RUN")]
@@ -77,27 +131,8 @@
         }
     }
     
-    proteins = unique(input$PROTEIN)
-    n_proteins = length(proteins)
-    summarized_results = vector("list", n_proteins)
-    
-    pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
-    for (protein_id in seq_along(proteins)) {
-        single_protein = input[PROTEIN == proteins[protein_id]]
-        single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
-                                            (n_obs_run > 0 & !is.na(n_obs_run))]
-        single_protein[, RUN := factor(RUN)]
-        single_protein[, FEATURE := factor(FEATURE)]
-        
-        summarized_results[[protein_id]] = .summarizeTukeySingleProtein(
-            single_protein[, list(PROTEIN, LABEL, RUN, FEATURE, newABUNDANCE,
-                                  n_obs, n_obs_run, prop_features)],
-            impute, cutoff_base, censored_symbol,
-            remove50missing, original_scale, n_threads)
-        setTxtProgressBar(pb, protein_id)
-    }
     summarized_results = data.table::rbindlist(summarized_results)
-    summarized_results
+    list(input, summarized_results)
 }
 
 #' Tukey median polish for a single protein

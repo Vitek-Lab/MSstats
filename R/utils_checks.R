@@ -231,8 +231,8 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
         skip_absent = TRUE)
     
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
-    input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, 0)]
-    input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, 0)]
+    input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, "0")]
+    input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, "0")]
     input[, SUBJECT_NESTED := paste(GROUP, SUBJECT, sep = ".")]
     # as.factor() / factor() everywhere?
     

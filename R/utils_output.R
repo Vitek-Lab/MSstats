@@ -39,7 +39,7 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
                              c("GROUP", "SUBJECT"))
         
-        rqall$GROUP = factor(rqall$GROUP)
+        rqall$GROUP = factor(as.character(rqall$GROUP))
         rqall$Protein = factor(rqall$Protein)
         rqmodelqc = summarized$ModelQC
         workpred <- NULL
