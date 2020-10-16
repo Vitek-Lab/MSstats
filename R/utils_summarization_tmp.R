@@ -78,26 +78,6 @@
     #                                    predicted, newABUNDANCE)]
     # }
     
-    input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
-    input[, NumMeasuredFeature := sum(NonMissingStats), 
-          by = c("PROTEIN", "RUN")]
-    input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
-    input[, more50missing := MissingPercentage >= 0.5]
-    if (!is.null(censored_symbol)) {
-        if (is.element("censored", colnames(input))) {
-            input[, nonmissing_orig := LABEL == "L" & !censored]
-        } else {
-            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
-        }
-        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
-        if (impute) {
-            input[, NumImputedFeature := sum(!nonmissing_orig),
-                  by = c("PROTEIN", "RUN")]
-        } else {
-            input[, NumImputedFeature := 0]
-        }
-    }
-    
     summarized_results = vector("list", n_proteins)
     survival_predictions = vector("list", n_proteins)
     pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
@@ -127,8 +107,32 @@
         setTxtProgressBar(pb, protein_id)
     }
     predicted_survival = data.table::rbindlist(survival_predictions)
+    input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
+                  predicted_survival,
+                  by = setdiff(cols, "newABUNDANCE"),
+                  all.x = TRUE)
+    input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
+    input[, NumMeasuredFeature := sum(NonMissingStats), 
+          by = c("PROTEIN", "RUN")]
+    input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
+    input[, more50missing := MissingPercentage >= 0.5]
+    if (!is.null(censored_symbol)) {
+        if (is.element("censored", colnames(input))) {
+            input[, nonmissing_orig := LABEL == "L" & !censored]
+        } else {
+            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
+        }
+        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
+        if (impute) {
+            input[, NumImputedFeature := sum(!nonmissing_orig),
+                  by = c("PROTEIN", "RUN")]
+        } else {
+            input[, NumImputedFeature := 0]
+        }
+    }
+    
     summarized_results = data.table::rbindlist(summarized_results)
-    summarized_results
+    list(input, summarized_results)
 }
 
 #' Tukey median polish for a single protein
