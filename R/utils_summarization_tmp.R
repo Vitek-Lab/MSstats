@@ -107,10 +107,12 @@
         setTxtProgressBar(pb, protein_id)
     }
     predicted_survival = data.table::rbindlist(survival_predictions)
-    input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
-                  predicted_survival,
-                  by = setdiff(cols, "newABUNDANCE"),
-                  all.x = TRUE)
+    if (impute) {
+        input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
+                      predicted_survival,
+                      by = setdiff(cols, "newABUNDANCE"),
+                      all.x = TRUE)
+    }
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 
           by = c("PROTEIN", "RUN")]
