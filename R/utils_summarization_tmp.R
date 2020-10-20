@@ -53,31 +53,7 @@
     n_proteins = length(proteins)
     cols = intersect(colnames(input), c("newABUNDANCE", "cen", "RUN",
                                         "FEATURE", "ref"))
-    # if (impute) {
-    #     survival_predictions = vector("list", n_proteins)
-    #     for (i in seq_len(n_proteins)) {
-    #         single_protein = input[PROTEIN == proteins[i] & 
-    #                                    n_obs_run > 0 &
-    #                                    n_obs > 1 &
-    #                                    LABEL == "L",
-    #                                cols, with = FALSE]
-    #         survival_fit = .fitSurvival(single_protein)
-    #         single_protein[, predicted := predict(survival_fit, 
-    #                                               newdata = .SD)]
-    #         survival_predictions[[i]] = single_protein
-    #     }
-    #     predicted_survival = data.table::rbindlist(survival_predictions)
-    #     input = merge(input, predicted_survival[, !(colnames(predicted_survival) == "newABUNDANCE"),
-    #                                             with = FALSE],
-    #                   by = setdiff(cols, "newABUNDANCE"),
-    #                   all.x = TRUE)
-    #     # input[n_obs_run > 0 & n_obs > 1, predicted := .addSurvivalPredictions(.SD),
-    #     #       by = "PROTEIN"]
-    #     input[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-    #     input[, newABUNDANCE := ifelse(censored & LABEL == "L",
-    #                                    predicted, newABUNDANCE)]
-    # }
-    
+
     summarized_results = vector("list", n_proteins)
     survival_predictions = vector("list", n_proteins)
     pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
