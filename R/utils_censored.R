@@ -14,7 +14,6 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     INTENSITY = LABEL = ABUNDANCE = NULL
     
     if (summary_method == "TMP" & impute) {
-        is_labeled = nlevels(input$LABEL) == 2 # label <- nlevels(input$LABEL) == 2
         input$censored = FALSE
         ## if intensity = 1, but abundance > cutoff after normalization, it also should be censored.
         if (!is.null(censored_cutoff)) {
@@ -30,8 +29,6 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                 input$LABEL == "L" &
                 input$ABUNDANCE < cutoff_lower
             if (cutoff_lower <= 0 & !is.null(missing_symbol) & missing_symbol == "0") {
-                # zero_one_filter = (!is.na(input$INTENSITY) & input$INTENSITY == 1) |
-                #     (!is.na(input$ABUNDANCE & input$ABUNDANCE) <= 0)
                 zero_one_filter = !is.na(input$ABUNDANCE) & input$ABUNDANCE <= 0
                 input$censored = ifelse(zero_one_filter, TRUE, input$censored)
             }
@@ -40,18 +37,11 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                                         input$censored)
             }
             
-            #if (!is_labeled) {
-                msg = paste('** Log2 intensities under cutoff =', 
-                            format(cutoff_lower, digits = 5), 
-                            ' were considered as censored missing values.')
-                msg_2 = paste("** Log2 intensities =", missing_symbol, "were considered as censored missing values.")
-            # } else {
-            #     msg = paste('** Log2 endogenous intensities under cutoff =', 
-            #                 format(cutoff_lower, digits = 5), 
-            #                 ' were considered as censored missing values.')
-            #     getOption("MSstatsMsg")("INFO", msg)
-            #     getOption("MSstatsMsg")("INFO", msg)
-            # }
+            msg = paste('** Log2 intensities under cutoff =', 
+                        format(cutoff_lower, digits = 5), 
+                        ' were considered as censored missing values.')
+            msg_2 = paste("** Log2 intensities =", missing_symbol, "were considered as censored missing values.")
+            
             getOption("MSstatsMsg")("INFO", msg)
             getOption("MSstatsMsg")("INFO", msg_2)
         } else {
@@ -63,7 +53,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                 input$censored = input$LABEL == "L" & is.na(input$ABUNDANCE)
             }
         }
-        input[input$LABEL == 'H', 'censored'] <- FALSE
+        input[input$LABEL == 'H', 'censored'] = FALSE
     } else {
         input$censored = FALSE
     }
@@ -85,7 +75,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' @keywords internal
 .setCensoredByThreshold = function(input, cutoff_base, censored_symbol,
                                    remove50missing) {
-    ABUNDANCE = newABUNDANCE = perc_nm = RUN = FEATURE = NULL
+    total_features = n_obs = newABUNDANCE = perc_nm = RUN = FEATURE = NULL
     
     if (censored_symbol == "NA") {
         input[, nonmissing_all := !is.na(newABUNDANCE)]
