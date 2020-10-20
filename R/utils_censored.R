@@ -40,18 +40,18 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                                         input$censored)
             }
             
-            if (!is_labeled) {
+            #if (!is_labeled) {
                 msg = paste('** Log2 intensities under cutoff =', 
                             format(cutoff_lower, digits = 5), 
                             ' were considered as censored missing values.')
                 msg_2 = paste("** Log2 intensities =", missing_symbol, "were considered as censored missing values.")
-            } else {
-                msg = paste('** Log2 endogenous intensities under cutoff =', 
-                            format(cutoff_lower, digits = 5), 
-                            ' were considered as censored missing values.')
-                getOption("MSstatsMsg")("INFO", msg)
-                getOption("MSstatsMsg")("INFO", msg)
-            }
+            # } else {
+            #     msg = paste('** Log2 endogenous intensities under cutoff =', 
+            #                 format(cutoff_lower, digits = 5), 
+            #                 ' were considered as censored missing values.')
+            #     getOption("MSstatsMsg")("INFO", msg)
+            #     getOption("MSstatsMsg")("INFO", msg)
+            # }
             getOption("MSstatsMsg")("INFO", msg)
             getOption("MSstatsMsg")("INFO", msg_2)
         } else {

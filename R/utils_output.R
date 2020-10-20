@@ -31,9 +31,9 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
                          colnames(input))
         merge_col = ifelse(is.element("RUN", colnames(summarized)), "RUN", "SUBJECT_ORIGINAL")
         lab = unique(input[, cols, with = FALSE])
-        if (nlevels(input$LABEL) > 1) {
-            lab = lab[GROUP != 0]
-        }
+        # if (nlevels(input$LABEL) > 1) {
+        #     lab = lab[GROUP != 0]
+        # }
         rqall = merge(summarized, lab, by.x = c(merge_col, "Protein"),
                       by.y = c(merge_col, "PROTEIN"))
         data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
