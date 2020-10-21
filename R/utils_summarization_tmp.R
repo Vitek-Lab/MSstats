@@ -218,9 +218,8 @@
         wide[, features] = wide[, lapply(.SD, function(x) log_base^x), 
                                 .SDcols = features]
     }
-    tmp_fit = medpolish(wide[, features, with = FALSE],
-                        na.rm = TRUE, trace.iter = FALSE)
-    wide[, newABUNDANCE := tmp_fit$overall + tmp_fit$row]
+    tmp_fitted = median_polish_summary(as.matrix(wide[, features, with = FALSE]))
+    wide[, newABUNDANCE := tmp_fitted]
     tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
     if (original_scale) {
         tmp_result[, newABUNDANCE := log(newABUNDANCE, base_log)]

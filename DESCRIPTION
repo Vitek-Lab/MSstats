@@ -22,7 +22,8 @@ Imports:
     lme4,
     preprocessCore,
     survival,
-    utils
+    utils,
+    Rcpp
 Suggests: 
     BiocStyle,
     knitr,
@@ -40,3 +41,5 @@ RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
+LinkingTo: 
+    Rcpp
