@@ -22,7 +22,7 @@ MSstatsHandleMissing(
 
 \item{missing_symbol}{`censoredInt` parameter to `dataProcess`}
 
-\item{censored_cutoff}{`cutoffCensored` parameter to `dataProcess`}
+\item{censored_cutoff}{`maxQuantileforCensored` parameter to `dataProcess`}
 }
 \description{
 Handle censored missing values
