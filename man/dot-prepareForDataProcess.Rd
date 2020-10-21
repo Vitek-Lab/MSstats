@@ -4,10 +4,12 @@
 \alias{.prepareForDataProcess}
 \title{Check validity of data already processed by MSstats converter}
 \usage{
-.prepareForDataProcess(input)
+.prepareForDataProcess(input, ...)
 }
 \arguments{
 \item{input}{data.frame of class `MSstatsValidated`}
+
+\item{..}{additional parameters, currently ignored}
 }
 \description{
 Check validity of data already processed by MSstats converter
