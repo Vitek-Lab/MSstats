@@ -74,7 +74,10 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 
-.flagUninformativeSingleLabel = function(input, min_feature_count = 3) {
+.flagUninformativeSingleLabel = function(input, min_feature_count) {
+    
+    min_feature_count = 3
+    
     if (nrow(input) == 0) {
         return(NULL)
     }
