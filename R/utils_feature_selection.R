@@ -37,7 +37,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     mean_by_feature = input[, 
                             list(MeanAbundance = mean(ABUNDANCE, na.rm = TRUE)),
                             by = c("PROTEIN", "FEATURE")]
-    mean_by_feature[, feature_rank := rank(MeanAbundance), by = "PROTEIN"]
+    mean_by_feature[, feature_rank := rank(desc(MeanAbundance)), by = "PROTEIN"]
     mean_by_feature = mean_by_feature[feature_rank <= top_n, ]
     input[, remove := !(FEATURE %in% mean_by_feature$FEATURE)]
     input
