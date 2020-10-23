@@ -46,6 +46,8 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
+    PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = is_censored = NULL
+    
     cols = c("PROTEIN", "PEPTIDE", "FEATURE", "originalRUN", "LABEL", 
              "ABUNDANCE", "censored")
     cols = intersect(cols, colnames(input))
