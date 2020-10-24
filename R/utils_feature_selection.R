@@ -21,7 +21,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
         input$feature_quality = ifelse(is.na(input$feature_quality),
                                                   "Uninformative", input$feature_quality) # is this OK?
         input$is_outlier = ifelse(is.na(input$is_outlier),
-                                             TRUE, input$is_outlier)
+                                             FALSE, input$is_outlier)
     } else if (method %in% c("top3", "topN")) {
         msg = paste0("** Use top", top_n, " features that have highest average of log2(intensity) across runs.")
         input = .selectTopFeatures(input, top_n)
