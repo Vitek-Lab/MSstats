@@ -4523,7 +4523,7 @@ resultsAsLists <- function(x, ...) {
 				## remove run which has no measurement at all
 				subtemp <- sub[!is.na(sub$INTENSITY), ]
 				count <- aggregate(ABUNDANCE~RUN, data=subtemp, length)
-				norun <- setdiff(unique(data$RUN), ount$RUN)
+				norun <- setdiff(unique(data$RUN), count$RUN)
 				
 				if (length(norun) != 0 & length(intersect(norun, as.character(unique(sub$RUN)))) != 0) { 
 				    # removed NA rows already, if there is no overlapped run, error
