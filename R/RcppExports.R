@@ -5,3 +5,7 @@ median_polish_summary <- function(x, eps = 0.01, maxiter = 10L) {
     .Call(`_MSstatsdev_median_polish_summary`, x, eps, maxiter)
 }
 
+get_linear_summary <- function(input, coefs, counts, is_labeled) {
+    .Call(`_MSstatsdev_get_linear_summary`, input, coefs, counts, is_labeled)
+}
+
