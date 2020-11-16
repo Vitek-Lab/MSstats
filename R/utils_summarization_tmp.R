@@ -120,7 +120,25 @@
 .summarizeTukeySingleProtein = function(
     input, impute, cutoff_base, censored_symbol, remove50missing, original_scale,
     n_threads = NULL) {
-    newABUNDANCE = RUN = FEATURE = n_obs_run = NULL
+    newABUNDANCE = RUN = FEATURE = NULL
+    
+    input = .isSummarizable(input, remove50missing)
+    if (is.null(input)) {
+        return(NULL)
+    } else {
+        input[, RUN := factor(RUN)]
+        input[, FEATURE := factor(FEATURE)]
+        input = input[!is.na(newABUNDANCE), ]
+        is_labeled = nlevels(input$LABEL) > 1
+        result = .runTukey(input, is_labeled, censored_symbol, remove50missing,
+                           original_scale, log_base = 2)
+        result
+    }
+}
+
+
+.isSummarizable = function(input, remove50missing) {
+    n_obs_run = RUN = NULL
     
     if (all(is.na(input$newABUNDANCE) | input$newABUNDANCE == 0)) {
         msg = paste("Can't summarize for protein", unique(input$PROTEIN),
@@ -166,16 +184,8 @@
             return(NULL)
         }
     }
-    
-    input[, RUN := factor(RUN)]
-    input[, FEATURE := factor(FEATURE)]
-    input = input[!is.na(newABUNDANCE), ]
-    is_labeled = nlevels(input$LABEL) > 1
-    result = .runTukey(input, is_labeled, censored_symbol, remove50missing,
-                       original_scale, log_base = 2)
-    result
+    input
 }
-
 
 #' Fit Tukey median polish
 #' @param input data.table with data for a single protein
