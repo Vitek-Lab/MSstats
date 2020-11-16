@@ -84,15 +84,22 @@ NumericVector get_run(CharacterVector coef_names,
 
 
 NumericVector get_ref(const CharacterVector& coef_names, const NumericVector& find_ref, 
-                      const NumericVector& contrast_matrix, const DataFrame& input) {
+                      const NumericVector& contrast_matrix, const DataFrame& input,
+                      const bool is_reference) {
     NumericVector ref(0);
     if (find_ref.length() != 0 & !(find_ref[0] == -1)) {
-        CharacterVector temp_ref = coef_names[find_ref];
-        CharacterVector refs = input["ref"];
-        CharacterVector unique_refs = unique(refs);
-        int n_refs = refs.length();
-        ref = contrast_matrix[seq(0, n_refs - 2)];
-        ref.attr("names") = temp_ref;
+        if (is_reference) {
+            CharacterVector temp_ref = coef_names[find_ref];
+            ref = rep(0, find_ref.length());
+            ref.attr("names") = temp_ref;
+        } else {
+            CharacterVector temp_ref = coef_names[find_ref];
+            CharacterVector refs = input["ref"];
+            CharacterVector unique_refs = unique(refs);
+            int n_refs = refs.length();
+            ref = contrast_matrix[seq(0, n_refs - 2)];
+            ref.attr("names") = temp_ref;
+        }
     }
     return(ref);
 }
@@ -145,7 +152,8 @@ NumericVector make_contrast_run_quant(DataFrame input,
                                       NumericVector coefs,
                                       NumericVector contrast_matrix,
                                       NumericMatrix counts,
-                                      bool is_labeled) {
+                                      bool is_labeled,
+                                      bool is_reference = false) {
     CharacterVector all_runs = input["RUN"];
     CharacterVector unique_runs = unique(all_runs);
     int n_runs = unique_runs.length();
@@ -162,18 +170,25 @@ NumericVector make_contrast_run_quant(DataFrame input,
                                           contrast_matrix, counts, input);
     NumericVector runs = get_run(coef_names, find_runs, find_colon, 
                                  contrast_matrix, is_labeled, n_runs);
-    NumericVector refs = get_ref(coef_names, find_ref, contrast_matrix, input);
+    NumericVector refs = get_ref(coef_names, find_ref, contrast_matrix, input,
+                                 is_reference);
     NumericVector run_features = get_feature_run(find_runs, find_features,
                                                  coef_names, counts);
     NumericVector subjects = get_subject_nested(find_subject, coef_names,
                                                 contrast_matrix,
                                                 is_labeled);
     
-    NumericVector contrast = unlist(List::create(intercept, features, runs, 
-                                                 refs, run_features, subjects));
+    if (is_reference) {
+        NumericVector contrast = unlist(List::create(intercept, features, runs, 
+                                                     refs, run_features, subjects));
+    } else {
+        NumericVector contrast = unlist(List::create(intercept, features, runs, 
+                                                     refs));
+    }
     contrast = contrast[!is_na(coefs)];
     return(contrast);
 }
+
 
 // [[Rcpp::export]]
 NumericVector get_linear_summary(const DataFrame& input,
@@ -197,6 +212,15 @@ NumericVector get_linear_summary(const DataFrame& input,
                                                          is_labeled);
         double quantified = get_quant(coefs, contrast);
         log_intensities(run_id) = quantified;
+    }
+    
+    if (is_labeled) {
+        NumericVector contrast_matrix(num_runs);
+        contrast_matrix[num_runs - 1] = 1;
+        NumericVector contrast = make_contrast_run_quant(input, coefs, 
+                                                         contrast_matrix, 
+                                                         counts, true, true)
+            log_intensities.append(get_quant(coefs, contrast));
     }
     
     return(log_intensities);
