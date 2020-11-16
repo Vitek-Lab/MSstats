@@ -13,7 +13,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                                 missing_symbol, censored_cutoff) {
     INTENSITY = LABEL = ABUNDANCE = NULL
     
-    if (summary_method == "TMP" & impute) {
+    if ((summary_method == "TMP" & impute) & !is.null(missing_symbol)) {
         input$censored = FALSE
         ## if intensity = 1, but abundance > cutoff after normalization, it also should be censored.
         if (!is.null(censored_cutoff)) {
@@ -53,7 +53,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                 input$censored = input$LABEL == "L" & is.na(input$ABUNDANCE)
             }
         }
-        input[input$LABEL == 'H', 'censored'] = FALSE
+        input[, censored := ifelse(LABEL == "H", FALSE, censored)]
     } else {
         input$censored = FALSE
     }
