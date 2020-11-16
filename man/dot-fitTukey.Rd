@@ -4,14 +4,10 @@
 \alias{.fitTukey}
 \title{Fit tukey median polish for a data matrix}
 \usage{
-.fitTukey(input, original_scale, log_base)
+.fitTukey(input)
 }
 \arguments{
 \item{input}{data.table with data for a single protein}
-
-\item{original_scale}{if TRUE, data will be summarized on the original scale.}
-
-\item{log_base}{base of the logarithm function used for ABUNDANCE column}
 }
 \value{
 data.table

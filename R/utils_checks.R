@@ -250,30 +250,18 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     PROTEIN = PEPTIDE = TRANSITION = LABEL = GROUP_ORIGINAL = RUN = GROUP = NULL
     SUBJECT_ORIGINAL = SUBJECT_NESTED = FEATURE = originalRUN = SUBJECT = NULL
     
-    input$PROTEIN = factor(input$PROTEIN)
-    input$PEPTIDE = factor(input$PEPTIDE)
-    input$TRANSITION = factor(input$TRANSITION)
-    # input[, PROTEIN := factor(PROTEIN)]
-    # input[, PEPTIDE := factor(PEPTIDE)]
-    # input[, TRANSITION := factor(TRANSITION)]
-    
+    input[, PROTEIN := factor(PROTEIN)]
+    input[, PEPTIDE := factor(PEPTIDE)]
+    input[, TRANSITION := factor(TRANSITION)]
     input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
-    
-    input$GROUP = factor(input$GROUP)
-    input$SUBJECT = factor(input$SUBJECT)
-    input$SUBJECT_NESTED = factor(input$SUBJECT_NESTED)
-    input$FEATURE = factor(input$FEATURE)
-    input$originalRUN = factor(input$RUN)
-    input$RUN = factor(input$RUN, levels = unique(input$RUN),
-                       labels = seq_along(unique(input$RUN)))
-    # input[, GROUP := factor(GROUP)]
-    # input[, SUBJECT := factor(SUBJECT)]
-    # input[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
-    # input[, FEATURE := factor(FEATURE)]
-    # input[, originalRUN := RUN]
-    # input[, RUN := factor(RUN, levels = unique(RUN), 
-    #                       labels = seq_along(unique(RUN)))]
+    input[, GROUP := factor(GROUP)]
+    input[, SUBJECT := factor(SUBJECT)]
+    input[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
+    input[, FEATURE := factor(FEATURE)]
+    input[, originalRUN := factor(as.character(RUN))]
+    input[, RUN := factor(RUN, levels = unique(RUN),
+                          labels = seq_along(unique(RUN)))]
     
     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
                 "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN)",

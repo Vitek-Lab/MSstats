@@ -2,7 +2,8 @@
 #' @inheritParams .summarizeTukey
 #' @return data.table
 #' @keywords internal
-.summarizeLinear = function(input, impute, cutoff_base, censored_symbol) {
+.summarizeLinear = function(input, impute, cutoff_base, censored_symbol,
+                            equal_variances) {
     censored = ABUNDANCE = FEATURE = more50missing = PROTEIN = NULL
     prop_features = RUN = NumImputedFeature = LABEL = INTENSITY = NULL
     
@@ -25,7 +26,8 @@
         single_protein = input[PROTEIN == proteins[protein_id]]
         single_protein[, RUN := factor(RUN)]
         single_protein[, FEATURE := factor(FEATURE)]
-        summarized_result = .summarizeLinearSingleProtein(single_protein)
+        summarized_result = .summarizeLinearSingleProtein(single_protein,
+                                                          equal_variances)
         summarized_results[[protein_id]] = summarized_result
         setTxtProgressBar(pb, protein_id)
     }
@@ -50,6 +52,13 @@
 }
 
 
+#' Linear summarization for a single protein
+#' @param input data.table of feature-level data for a single protein
+#' @param equal_variances if FALSE, fitted model will be adjusted 
+#' for non-homogenous variance. Default is TRUE
+#' @importFrom lme4 fixef
+#' @return data.table
+#' @keywords internal
 .summarizeLinearSingleProtein = function(input, equal_variances = TRUE) {
     ABUNDANCE = NULL
     
@@ -63,8 +72,7 @@
     
     # TODO: message about i of n proteins, after adding n parameter
     fit = try(.fitLinearModel(input, is_single_feature, 
-                              is_single_subject, 
-                              has_techreps, is_labeled = label, 
+                              is_labeled = label, 
                               equal_variances), silent = TRUE)
     
     if (inherits(fit, "try-error")) {
@@ -88,6 +96,14 @@
     result
 }
 
+
+#' Fit a linear model
+#' @param input data.table
+#' @param is_single_feature logical, if TRUE, data has single feature
+#' @param is_labeled logical, if TRUE, data comes from a labeled experiment
+#' @param equal_variances logical, if TRUE, equal variances are assumed
+#' @return lm or merMod
+#' @keywords internal
 .fitLinearModel = function(input, is_single_feature, is_labeled,
                            equal_variances) {
     if (!is_labeled) {
@@ -115,7 +131,14 @@
 }
 
 
-
+#' Adjust model for unequal variances
+#' @param input data.table
+#' @param fit lm
+#' @param num_iter number of iterations
+#' @importFrom lme4 lmer
+#' @importFrom stats loess
+#' @return merMod
+#' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
     for (i in 1:num_iter) {
         if (i == 1) {
@@ -160,6 +183,10 @@
 }
 
 
+#' Check if data has less than two features
+#' @param input data.table
+#' @return logical
+#' @keywords internal
 .checkSingleFeature = function(input) {
     data.table::uniqueN(input$FEATURE) < 2
 }

@@ -147,7 +147,22 @@ double get_quant(const NumericVector& coefs, const NumericVector& contrast) {
     return (result(0, 0));
 }
 
-// [[Rcpp::export]]
+
+NumericVector combine_contrast(bool is_reference, NumericVector intercept, 
+                               NumericVector features, NumericVector runs, 
+                               NumericVector refs, NumericVector run_features,
+                               NumericVector subjects) {
+    if (is_reference) {
+        NumericVector contrast = unlist(List::create(intercept, features, runs, 
+                                                     refs, run_features, subjects));
+        return(contrast);
+    } else {
+        NumericVector contrast = unlist(List::create(intercept, features, runs, 
+                                                     refs));
+        return(contrast);
+    }
+}
+
 NumericVector make_contrast_run_quant(DataFrame input,
                                       NumericVector coefs,
                                       NumericVector contrast_matrix,
@@ -178,13 +193,9 @@ NumericVector make_contrast_run_quant(DataFrame input,
                                                 contrast_matrix,
                                                 is_labeled);
     
-    if (is_reference) {
-        NumericVector contrast = unlist(List::create(intercept, features, runs, 
-                                                     refs, run_features, subjects));
-    } else {
-        NumericVector contrast = unlist(List::create(intercept, features, runs, 
-                                                     refs));
-    }
+    NumericVector contrast = combine_contrast(is_reference,
+                                              intercept, features, runs,
+                                              refs, run_features, subjects);
     contrast = contrast[!is_na(coefs)];
     return(contrast);
 }
@@ -219,8 +230,8 @@ NumericVector get_linear_summary(const DataFrame& input,
         contrast_matrix[num_runs - 1] = 1;
         NumericVector contrast = make_contrast_run_quant(input, coefs, 
                                                          contrast_matrix, 
-                                                         counts, true, true)
-            log_intensities.append(get_quant(coefs, contrast));
+                                                         counts, true, true);
+        log_intensities.push_back(get_quant(coefs, contrast));
     }
     
     return(log_intensities);

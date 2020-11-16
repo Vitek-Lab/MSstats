@@ -4,7 +4,7 @@
 \alias{.summarizeLinear}
 \title{Linear summarization}
 \usage{
-.summarizeLinear(input, impute, cutoff_base, censored_symbol)
+.summarizeLinear(input, impute, cutoff_base, censored_symbol, equal_variances)
 }
 \arguments{
 \item{input}{`data.table` processed by the `MSstatsSelectFeatures` function.}
@@ -14,7 +14,7 @@ TRUE (default) imputes "NA" or "0" (depending on censored_symbol option) by
 Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
 
 \item{cutoff_base}{cutoff value for censoring (with censored_symbol = "NA"
-or censored_symbol = "0"). "minFeature"/"minRun"/"minFeatureNRun".}
+or censored_symbol = "0").}
 
 \item{censored_symbol}{Missing values are censored or at random. 
 "NA" (default) assumes that all NAs in Intensity column are censored. 

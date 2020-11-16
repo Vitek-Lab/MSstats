@@ -4,23 +4,21 @@
 #' TRUE (default) imputes "NA" or "0" (depending on censored_symbol option) by 
 #' Accelated failure model. FALSE uses the values assigned by cutoffCensored.
 #' @param cutoff_base cutoff value for censoring (with censored_symbol = "NA"
-#' or censored_symbol = "0"). "minFeature"/"minRun"/"minFeatureNRun".
+#' or censored_symbol = "0").
 #' @param censored_symbol Missing values are censored or at random. 
 #' "NA" (default) assumes that all NAs in Intensity column are censored. 
 #' "0" uses zero intensities as censored intensity. In this case, NA intensities 
 #' are missing at random. The output from Skyline should use "0". 
 #' Null assumes that all NA intensites are randomly missing.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50% missing values. FALSE is default.
-#' @param original_scale if TRUE, data will be summarized on the original scale.
+#' which have more than 50\% missing values. FALSE is default.
 #' @param n_threads currently ignored. In the future, number of threads used
 #' for parallel processing.
 #' @importFrom utils setTxtProgressBar
 #' @return data.table
 #' @keywords internal
 .summarizeTukey = function(input, impute, cutoff_base, censored_symbol, 
-                           remove50missing, original_scale = FALSE, 
-                           n_threads = NULL) {
+                           remove50missing, n_threads = NULL) {
     cen = censored = ABUNDANCE = FEATURE = LABEL = more50missing = NULL
     INTENSITY = PROTEIN = n_obs = n_obs_run = RUN = NULL
     
@@ -79,7 +77,7 @@
             single_protein[, list(PROTEIN, LABEL, RUN, FEATURE, newABUNDANCE,
                                   n_obs, n_obs_run, prop_features)],
             impute, cutoff_base, censored_symbol,
-            remove50missing, original_scale, n_threads)
+            remove50missing, n_threads)
         setTxtProgressBar(pb, protein_id)
     }
     predicted_survival = data.table::rbindlist(survival_predictions)
@@ -118,25 +116,28 @@
 #' @return data.table
 #' @keywords internal
 .summarizeTukeySingleProtein = function(
-    input, impute, cutoff_base, censored_symbol, remove50missing, original_scale,
+    input, impute, cutoff_base, censored_symbol, remove50missing,
     n_threads = NULL) {
-    newABUNDANCE = RUN = FEATURE = NULL
+    newABUNDANCE = NULL
     
     input = .isSummarizable(input, remove50missing)
     if (is.null(input)) {
         return(NULL)
     } else {
-        input[, RUN := factor(RUN)]
-        input[, FEATURE := factor(FEATURE)]
         input = input[!is.na(newABUNDANCE), ]
         is_labeled = nlevels(input$LABEL) > 1
-        result = .runTukey(input, is_labeled, censored_symbol, remove50missing,
-                           original_scale, log_base = 2)
+        result = .runTukey(input, is_labeled, censored_symbol, remove50missing)
         result
     }
 }
 
 
+#' Check if a protein can be summarized with TMP
+#' @param input data.table
+#' @param remove50missing if TRUE, proteins with more than 50% missing values
+#' in all runs will not be summarized
+#' @return data.table
+#' @keywords internal 
 .isSummarizable = function(input, remove50missing) {
     n_obs_run = RUN = NULL
     
@@ -191,16 +192,13 @@
 #' @param input data.table with data for a single protein
 #' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
 #' @inheritParams .summarizeTukey
-#' @param log_base base of the logarithm function used for ABUNDANCE column
 #' @return data.table
 #' @keywords internal
-.runTukey = function(input, is_labeled, censored_symbol, remove50missing,
-                     original_scale = FALSE, log_base = 2) {
-    features = as.character(unique(input$FEATURE))
+.runTukey = function(input, is_labeled, censored_symbol, remove50missing) {
     Protein = RUN = newABUNDANCE = NULL
     
     if (nlevels(input$FEATURE) > 1) {
-        tmp_result = .fitTukey(input, original_scale, log_base)
+        tmp_result = .fitTukey(input)
     } else { 
         if (is_labeled) {
             tmp_result = .adjustLRuns(input, TRUE)
@@ -218,23 +216,16 @@
 #' @inheritParams .runTukey
 #' @return data.table
 #' @keywords internal
-.fitTukey = function(input, original_scale, log_base) {
-    LABEL = RUN = newABUNDANCE = base_log = NULL
+.fitTukey = function(input) {
+    LABEL = RUN = newABUNDANCE = NULL
     
     features = as.character(unique(input$FEATURE))
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
                              value.var = "newABUNDANCE", keep = TRUE)
-    if (original_scale) {
-        wide[, features] = wide[, lapply(.SD, function(x) log_base^x), 
-                                .SDcols = features]
-    }
     tmp_fitted = median_polish_summary(as.matrix(wide[, features, with = FALSE]))
     wide[, newABUNDANCE := tmp_fitted]
     tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
-    if (original_scale) {
-        tmp_result[, newABUNDANCE := log(newABUNDANCE, base_log)]
-    }
-    
+
     if (data.table::uniqueN(input$LABEL) == 2) {
         tmp_result = .adjustLRuns(tmp_result)
     }

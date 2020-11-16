@@ -6,18 +6,13 @@
 \usage{
 MSstatsSummarize(
   input,
-  summaryMethod,
-  equalFeatureVar,
-  cutoffCensored,
-  censoredInt,
-  remove50missing,
-  MBimpute,
-  original_scale,
-  logsum,
-  featureSubset,
-  remove_uninformative_feature_outlier,
-  message.show,
-  clusters
+  summaryMethod = "TMP",
+  equalFeatureVar = TRUE,
+  cutoffCensored = "minFeature",
+  censoredInt = "NA",
+  remove50missing = FALSE,
+  MBimpute = TRUE,
+  remove_uninformative_feature_outlier = FALSE
 )
 }
 \arguments{
@@ -51,25 +46,12 @@ which have more than 50\% missing values. FALSE is default.}
 TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
 FALSE uses the values assigned by cutoffCensored}
 
-\item{original_scale}{DEPRECATED}
-
-\item{logsum}{DEPRECATED}
-
-\item{featureSubset}{"all" (default) uses all features that the data set has. 
-"top3" uses top 3 features which have highest average of log2(intensity) across runs. 
-"topN" uses top N features which has highest average of log2(intensity) across runs. 
-It needs the input for n_top_feature option. "highQuality" flags uninformative feature and outliers.}
-
 \item{remove_uninformative_feature_outlier}{It only works after users used featureSubset = "highQuality" 
 in dataProcess. TRUE allows to remove 1) the features are flagged in the column, 
 feature_quality = "Uninformative" which are features with bad quality, 
 2) outliers that are flagged in the column, is_outlier = TRUE, 
 for run-level summarization. FALSE (default) uses all features and intensities 
 for run-level summarization.}
-
-\item{message.show}{DEPRECATED}
-
-\item{clusters}{a user specified number of clusters. default is NULL, which does not use cluster}
 }
 \description{
 Feature-level data summarization

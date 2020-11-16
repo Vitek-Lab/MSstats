@@ -4,14 +4,7 @@
 \alias{.runTukey}
 \title{Fit Tukey median polish}
 \usage{
-.runTukey(
-  input,
-  is_labeled,
-  censored_symbol,
-  remove50missing,
-  original_scale = FALSE,
-  log_base = 2
-)
+.runTukey(input, is_labeled, censored_symbol, remove50missing)
 }
 \arguments{
 \item{input}{data.table with data for a single protein}
@@ -25,11 +18,7 @@ are missing at random. The output from Skyline should use "0".
 Null assumes that all NA intensites are randomly missing.}
 
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
-which have more than 50% missing values. FALSE is default.}
-
-\item{original_scale}{if TRUE, data will be summarized on the original scale.}
-
-\item{log_base}{base of the logarithm function used for ABUNDANCE column}
+which have more than 50\% missing values. FALSE is default.}
 }
 \value{
 data.table

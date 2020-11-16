@@ -103,9 +103,7 @@ dataProcess = function(
                             "\n == Start the summarization per subplot...")
     summarization = tryCatch(MSstatsSummarize(
         input, summaryMethod, equalFeatureVar, cutoffCensored, censoredInt,
-        remove50missing, MBimpute, original_scale = FALSE, logsum = FALSE,
-        featureSubset, remove_uninformative_feature_outlier,
-        message.show = FALSE, clusters = clusters),
+        remove50missing, MBimpute, remove_uninformative_feature_outlier),
         error = function(e) {
             print(e)
             NULL

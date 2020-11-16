@@ -6,19 +6,6 @@
 
 using namespace Rcpp;
 
-// median_polish_summary
-NumericVector median_polish_summary(NumericMatrix x, double eps, int maxiter);
-RcppExport SEXP _MSstatsdev_median_polish_summary(SEXP xSEXP, SEXP epsSEXP, SEXP maxiterSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
-    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
-    Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
-    rcpp_result_gen = Rcpp::wrap(median_polish_summary(x, eps, maxiter));
-    return rcpp_result_gen;
-END_RCPP
-}
 // get_linear_summary
 NumericVector get_linear_summary(const DataFrame& input, const NumericVector& coefs, const NumericMatrix& counts, const bool is_labeled);
 RcppExport SEXP _MSstatsdev_get_linear_summary(SEXP inputSEXP, SEXP coefsSEXP, SEXP countsSEXP, SEXP is_labeledSEXP) {
@@ -33,10 +20,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// median_polish_summary
+NumericVector median_polish_summary(NumericMatrix x, double eps, int maxiter);
+RcppExport SEXP _MSstatsdev_median_polish_summary(SEXP xSEXP, SEXP epsSEXP, SEXP maxiterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    Rcpp::traits::input_parameter< int >::type maxiter(maxiterSEXP);
+    rcpp_result_gen = Rcpp::wrap(median_polish_summary(x, eps, maxiter));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_MSstatsdev_median_polish_summary", (DL_FUNC) &_MSstatsdev_median_polish_summary, 3},
     {"_MSstatsdev_get_linear_summary", (DL_FUNC) &_MSstatsdev_get_linear_summary, 4},
+    {"_MSstatsdev_median_polish_summary", (DL_FUNC) &_MSstatsdev_median_polish_summary, 3},
     {NULL, NULL, 0}
 };
 

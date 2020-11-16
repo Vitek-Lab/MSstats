@@ -6,6 +6,9 @@
 \usage{
 .fitHuber(input)
 }
+\value{
+rlm
+}
 \description{
 Wrapper to fit robust linear model for one protein
 }

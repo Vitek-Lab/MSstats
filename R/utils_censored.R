@@ -61,11 +61,6 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 }
 
 
-.getMin = function(abundance, nonmissing) {
-    0.99*min(abundance[nonmissing], na.rm = TRUE)
-}
-
-
 #' Set censored values based on minimum in run/feature/run or feature
 #' @param input `data.table` in MSstats format
 #' @param cutoff_base cutoffCensored parameter to `dataProcess`
@@ -75,7 +70,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' @keywords internal
 .setCensoredByThreshold = function(input, cutoff_base, censored_symbol,
                                    remove50missing) {
-    total_features = n_obs = newABUNDANCE = perc_nm = RUN = FEATURE = NULL
+    total_features = n_obs = newABUNDANCE = n_obs_run = censored = NULL
     
     if (censored_symbol == "NA") {
         input[, nonmissing_all := !is.na(newABUNDANCE)]
@@ -98,44 +93,16 @@ MSstatsHandleMissing = function(input, summary_method, impute,
               by = grouping_vars]
         input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
                                        ABUNDANCE_cut, newABUNDANCE)]
-    } else {
-        feature_cutoffs = input[nonmissing_filter, 
-                                list(ABUNDANCE_cut_fea = 0.99*min(newABUNDANCE)),
-                                by = c("PROTEIN", "FEATURE", "LABEL")]
-        
-        if (remove50missing & censored_symbol == "0") {
-            n_features = data.table::uniqueN(input$FEATURE)
-            missing_runs = input[, list(perc_nm = .N / n_features), 
-                                 by = c("PROTEIN", "RUN")]
-            missing_runs = missing_runs[perc_nm < 0.5, ]
-            if (nrow(missing_runs) > 0) {
-                input = input[!(RUN %in% unique(missing_runs$RUN)), ]
-            }
-        }
-        
-        run_cutoffs = input[nonmissing_filter, 
-                            list(ABUNDANCE_cut_run = 0.99*min(newABUNDANCE)),
-                            by = c("PROTEIN", "RUN", "LABEL")]
-        cutoffs = merge(feature_cutoffs, run_cutoffs,
-                        by = c("PROTEIN", "LABEL"),
-                        allow.cartesian = TRUE, sort = FALSE)
-        cutoffs$final_cutoff = sapply(1:nrow(cutoffs), 
-                                      function(i) min(cutoffs$ABUNDANCE_cut_fea[i],
-                                                      cutoffs$ABUNDANCE_cut_run[i]))
-        # input[, n_feat_run := data.table::uniqueN(.SD), by = "PROTEIN",
-        #       .SDcols = c("FEATURE", "RUN")]
-        # input[, ABUNDANCE := ifelse(n_feat_run > 1,
-        #                             ifelse(nonmissing, ABUNDANCE, ))]
-        # if (data.table::uniqueN(input[, list(FEATURE, RUN)]) > 1) {
-        #     input$ABUNDANCE = ifelse(nonmissing_filter,
-        #                              input$ABUNDANCE, cutoffs$final_cutoff)
-        # } else {
-        #     if (censored_symbol == "0") {
-        #         input$ABUNDANCE = ifelse(nonmissing_filter, input$ABUNDANCE, 
-        #                                  cutoffs$ABUNDANCE_cut_fea)
-        #     }
-        # }
     }
+}
+
+
+#' Utility function: get 0.99 * minimum of non-missing values
+#' @param abundance abundances values
+#' @param nonmissing logical vector
+#' @keywords internal
+.getMin = function(abundance, nonmissing) {
+    0.99*min(abundance[nonmissing], na.rm = TRUE)
 }
 
 

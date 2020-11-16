@@ -9,6 +9,11 @@
     invisible(TRUE)
 }
 
+
+#' Print summary statistics to the log file
+#' @param input data.table
+#' @return TRUE invisibly
+#' @keywords internal
 .logSummaryStatistics = function(input) {
     PEPTIDE = FEATURE = PROTEIN = feature_count = NULL
     
@@ -66,8 +71,14 @@
     samples_msg = paste("", samples_msg, sep = "\n", collapse = "\n")
     getOption("MSstatsLog")("INFO", samples_msg)
     getOption("MSstatsMsg")("INFO", samples_msg)    
+    invisible(TRUE)
 }
 
+
+#' Print a table nicely 
+#' @param string_vector character
+#' @return character
+#' @keywords internal
 .nicePrint = function(string_vector) {
     max_chars = max(nchar(string_vector))   
     string_vector = sapply(string_vector, 
@@ -75,6 +86,12 @@
                            USE.NAMES = FALSE)
 } 
 
+
+#' Print proteins with a single label to the log file
+#' @param input data.table
+#' @param label label ("L" or "H")
+#' @return TRUE invisibly
+#' @keywords internal
 .logSingleLabeledProteins = function(input, label) {
     LABEL = PROTEIN = NULL
     
@@ -90,21 +107,35 @@
         getOption("MSstatsMsg")("WARN", msg)
         getOption("MsstatsLog")("WARN", msg)
     }
-    
+    invisible(TRUE)
 }
 
+
+#' Check if there are proteins with a single label in a labeled dataset
+#' @param input data.table
+#' @return TRUE invisibly
+#' @keywords internal
 .checkSingleLabelProteins = function(input) {
+    LABEL = label_count = NULL
+    
     if (data.table::uniqueN(input$LABEL) == 2) {
-        labels_by_protein = unique(input[, list(LABEL, label_count = data.table::uniqueN(LABEL)),
+        labels_by_protein = unique(input[, 
+                                         list(LABEL, 
+                                              label_count = data.table::uniqueN(LABEL)),
                                          by = "PROTEIN"])
         labels_by_protein = labels_by_protein[label_count == 1L, ]
         
         .logSingleLabeledProteins(labels_by_protein, "L")
         .logSingleLabeledProteins(labels_by_protein, "H")
     }
+    invisible(TRUE)
 }
 
 
+#' Log information about missing data
+#' @param input data.table
+#' @return TRUE invisibly
+#' @keywords internal
 .logMissingness = function(input) {
     missing = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
                            NumTotal = .N), 
@@ -134,5 +165,6 @@
         getOption("MSstatsLog")("INFO", msg)
         getOption("MSstatsMsg")("INFO", msg)
     }
+    invisible(TRUE)
 }
 

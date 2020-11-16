@@ -6,9 +6,11 @@
 #' (`summaryMethod` parameter to `dataProcess`)
 #' 
 #' @return list that consists of the following elements:
-#' \item{ProcessedData - feature-level data after processing,} 
-#' \item{RunlevelData - run-level (summarized) data,}
-#' \item{SummaryMethod (string) - name of summarization method that was used.}
+#' \itemize{
+#' \item{ProcessedData}{ - feature-level data after processing} 
+#' \item{RunlevelData}{ - run-level (summarized) data}
+#' \item{SummaryMethod}{ (string) - name of summarization method that was used}
+#' }
 #' 
 #' @export
 #' 
@@ -31,9 +33,9 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
                          colnames(input))
         merge_col = ifelse(is.element("RUN", colnames(summarized)), "RUN", "SUBJECT_ORIGINAL")
         lab = unique(input[, cols, with = FALSE])
-        # if (nlevels(input$LABEL) > 1) {
-        #     lab = lab[GROUP != 0]
-        # }
+        if (nlevels(input$LABEL) > 1) {
+            lab = lab[GROUP != 0]
+        }
         rqall = merge(summarized, lab, by.x = c(merge_col, "Protein"),
                       by.y = c(merge_col, "PROTEIN"))
         data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),

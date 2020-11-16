@@ -31,6 +31,12 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     input
 }
 
+
+#' Select features with highest average abundance
+#' @param input data.table
+#' @param top_n number of top features to select
+#' @return data.table
+#' @keywords internal
 .selectTopFeatures = function(input, top_n) {
     ABUNDANCE = MeanAbundance = remove = FEATURE = NULL
     
@@ -43,7 +49,10 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     input
 }
 
-
+#' Select features of high quality
+#' @param input data.table
+#' @param min_feature_count minimum number of quality features to consider
+#' @return data.table
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
     PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = is_censored = NULL
@@ -74,7 +83,13 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 
+#' Flag uninformative features
+#' @inheritParams .selectHighQualityFeatures
+#' @return data.table
+#' @keywords internal
 .flagUninformativeSingleLabel = function(input, min_feature_count) {
+    log2inty = is_obs = singleton = few_observed = unrep = NULL
+    label = protein = feature = run = feature_quality = is_outlier = NULL
     
     min_feature_count = 3
     
@@ -108,7 +123,14 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     input
 }
 
+#' Add outlier cutoff
+#' @param input data.table
+#' @param quantile_order quantile used to label outliers
+#' @return data.table
+#' @keywords internal
 .addOutlierCutoff = function(input, quantile_order = 0.01) {
+    min_obs = NULL
+    
     input[, 
           min_obs := .calculateOutlierCutoff(.SD, quantile_order), 
           by = "protein",
@@ -116,7 +138,14 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
                       "unrep", "singleton", "few_observed")]
 }
 
+
+#' Calculate cutoff to label outliers
+#' @inheritParams .addOutlierCutoff
+#' @return numeric
+#' @keywords internal
 .calculateOutlierCutoff = function(input, quantile_order = 0.01) {
+    unrep = few_observed = singleton = is_obs = feature = run = NULL
+    
     n_runs = data.table::uniqueN(input[!unrep & !few_observed & !singleton, run])
     n_features = data.table::uniqueN(input[!unrep & !few_observed & !singleton, feature])
     n = input[!unrep & !few_observed & !singleton, sum(is_obs, na.rm = TRUE)]
@@ -125,35 +154,69 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 
+#' Add coverage information to a data.table
+#' @param input data.table
+#' @return data.table
+#' @keywords internal
 .addCoverageInfo = function(input) {
+    is_lowcvr = NULL
+    
     input[, is_lowcvr := .flagLowCoverage(.SD), by = c("protein", "feature"),
           .SDcols = c("is_obs", "min_obs")]
 }
 
+
+#' Flag for low coverage features
+#' @param input data.table
+#' @return logical
+#' @keywords internal
 .flagLowCoverage = function(input) {
     sum(input$is_obs) < unique(input$min_obs)
 }
 
+
+#' Add information about number of informative features
+#' @inheritParams .selectHighQualityFeatures
+#' @return data.table
+#' @keywords internal
 .addNInformativeInfo = function(input, min_feature_count) {
+    has_three_informative = NULL
+    
     input[, n_informative := .countInformative(.SD), by = "protein",
           .SDcols = c("feature", "is_lowcvr")]
     input[, has_three_informative := n_informative >= min_feature_count]
-    # input[, n_informative := NULL]
 }
 
+#' Count informative features
+#' @param input data.table
+#' @return numeric
+#' @keywords internal
 #' @importFrom data.table uniqueN
 .countInformative = function(input) {
+    is_lowcvr = feature = NULL
+    
     data.table::uniqueN(input[!(is_lowcvr), feature])
 }
 
 
+#' Add model information
+#' @param input data.table
+#' @return data.table
+#' @keywords internal
 .addModelInformation = function(input) {
     input[, c("model_residuals", "df_resid", "var_resid") := .calculateProteinVariance(.SD),
           by = "protein", .SDcols = c("protein", "log2inty", "run", "feature", "is_lowcvr")]
     
 }
 
+
+#' Calculate protein variances
+#' @param input data.table
+#' @return list of residuals, degress of freedom and variances
+#' @keywords internal
 .calculateProteinVariance = function(input) {
+    is_lowcvr = NULL
+    
     robust_model = tryCatch(.fitHuber(input[(!is_lowcvr), ]),
                             error = function(e) NULL,
                             warning = function(w) NULL) 
@@ -171,13 +234,21 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 
 #' Wrapper to fit robust linear model for one protein
 #' @importFrom MASS rlm
+#' @return rlm
 #' @keywords internal
 .fitHuber = function(input) {
     MASS::rlm(log2inty ~ run + feature, data = input, scale.est = "Huber")
 }
 
+
+#' Add model variances
+#' @param input data.table
+#' @keywords internal
+#' @return data.table
 #' @importFrom limma squeezeVar
 .addModelVariances = function(input) {
+    protein = df_resid = var_resid = NULL
+    
     model_variances = unique(input[, list(protein, df_resid, var_resid)])
     model_variances = model_variances[!is.na(df_resid), ]
     
@@ -194,7 +265,14 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     input
 }
 
+
+#' Add flag for noisy features
+#' @param input data.table
+#' @return data.table
+#' @keywords internal
 .addNoisyFlag = function(input) {
+    svar_feature = svar_ref = NULL
+    
     feature_vars = .getFeatureVariances(input)
     if (nrow(feature_vars) > 0) {
         input = merge(input, feature_vars, by = "feature")
@@ -209,6 +287,11 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 
+#' Calculate variances of features
+#' @param input data.table
+#' @param tolerance cutoff for outliers
+#' @return numeric
+#' @keywords internal
 .getFeatureVariances = function(input, tolerance = 3) {
     remove_outliers = unique(input$label) == "L"
     if (remove_outliers) {
@@ -227,7 +310,15 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 
+#' Add flag for outlier
+#' @param input data.table
+#' @param tol cutoff for outliers
+#' @param keep_run if TRUE, completely missing runs will be kept
+#' @return logical
+#' @keywords internal
 .addOutlierInformation = function(input, tol = 3, keep_run = FALSE) {
+    result = NULL
+    
     input$result = abs(input$model_residuals / input$s_resid_eb) > tol
     if (keep_run) {
         input[, all_missing := all(result | is.na(result)), by = "run"]

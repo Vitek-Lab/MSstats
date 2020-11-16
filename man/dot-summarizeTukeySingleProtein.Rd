@@ -10,7 +10,6 @@
   cutoff_base,
   censored_symbol,
   remove50missing,
-  original_scale,
   n_threads = NULL
 )
 }
@@ -22,7 +21,7 @@ TRUE (default) imputes "NA" or "0" (depending on censored_symbol option) by
 Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
 
 \item{cutoff_base}{cutoff value for censoring (with censored_symbol = "NA"
-or censored_symbol = "0"). "minFeature"/"minRun"/"minFeatureNRun".}
+or censored_symbol = "0").}
 
 \item{censored_symbol}{Missing values are censored or at random. 
 "NA" (default) assumes that all NAs in Intensity column are censored. 
@@ -31,9 +30,7 @@ are missing at random. The output from Skyline should use "0".
 Null assumes that all NA intensites are randomly missing.}
 
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
-which have more than 50% missing values. FALSE is default.}
-
-\item{original_scale}{if TRUE, data will be summarized on the original scale.}
+which have more than 50\% missing values. FALSE is default.}
 
 \item{n_threads}{currently ignored. In the future, number of threads used
 for parallel processing.}
