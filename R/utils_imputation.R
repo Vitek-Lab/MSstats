@@ -1,15 +1,13 @@
 #' @importFrom data.table uniqueN
-#' @importFrom survival survreg
-#' @import survival
+#' @importFrom survival survreg Surv
 .fitSurvival = function(input) {
-    input$RUN = factor(input$RUN)
-    input$FEATURE = factor(input$FEATURE)
     missingness_filter = is.finite(input$newABUNDANCE)
     n_total = nrow(input[missingness_filter, ])
     n_features = data.table::uniqueN(input[missingness_filter, FEATURE])
     n_runs = data.table::uniqueN(input[missingness_filter, RUN])
     is_labeled = data.table::uniqueN(input$LABEL) > 1
     countdf = n_total  < n_features + n_runs - 1
+    input = as.data.frame(input)
     
     # TODO: set.seed here?
     set.seed(100)
@@ -17,27 +15,27 @@
         if (length(unique(input$FEATURE)) == 1) {
             # with single feature, not converge, wrong intercept
             # need to check
-            fit = survival::survreg(survival::Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
+            fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
                                     data = input, dist = "gaussian")
         } else {
             if (countdf) {
-                fit = survival::survreg(survival::Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
+                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
                                         data = input, dist = "gaussian")
             } else {
-                fit = survival::survreg(survival::Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref,
+                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref,
                                         data = input, dist = "gaussian")
             }
         }
     } else {
         if (n_features == 1L) {
-            fit = survival::survreg(survival::Surv(newABUNDANCE, cen, type = "left") ~ RUN,
+            fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
                                     data = input, dist = "gaussian")    
         } else {
             if (countdf) {
-                fit = survival::survreg(survival::Surv(newABUNDANCE, cen, type = "left") ~ RUN,
+                fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
                                         data = input, dist = "gaussian")
             } else {
-                fit = survival::survreg(survival::Surv(newABUNDANCE, cen, type = "left") ~ FEATURE + RUN,
+                fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ FEATURE + RUN,
                                         data = input, dist = "gaussian")
             }
         }  
