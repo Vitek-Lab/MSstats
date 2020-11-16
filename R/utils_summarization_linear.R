@@ -23,8 +23,6 @@
     pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
     for (protein_id in seq_along(proteins)) {
         single_protein = input[PROTEIN == proteins[protein_id]]
-        single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
-                                            (n_obs_run > 0 & !is.na(n_obs_run))]
         single_protein[, RUN := factor(RUN)]
         single_protein[, FEATURE := factor(FEATURE)]
         summarized_result = .summarizeLinearSingleProtein(single_protein)
@@ -45,13 +43,16 @@
         input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
         input[, NumImputedFeature := 0]
     }
+    # TODO: add #peaks
     
     summarized_results = data.table::rbindlist(summarized_results)
     list(input, summarized_results)
 }
 
 
-.summarizeLinearSingleProtein = function(input, equalFeatureVar = TRUE) {
+.summarizeLinearSingleProtein = function(input, equal_variances = TRUE) {
+    ABUNDANCE = NULL
+    
     label = data.table::uniqueN(input$LABEL) > 1
     input = input[!is.na(ABUNDANCE)]
     counts = xtabs(~ RUN + FEATURE, 
@@ -59,26 +60,18 @@
     counts = as.matrix(counts)
     
     is_single_feature = .checkSingleFeature(input)
-    is_single_subject = .checkSingleSubject(input)
-    has_techreps = .checkTechReplicate(input) ## use for label-free model
     
     # TODO: message about i of n proteins, after adding n parameter
-    fit = try(.fit.quantification.run(input, is_single_feature, 
-                                      is_single_subject, 
-                                      has_techreps, labeled = label, 
-                                      equalFeatureVar), silent = TRUE)
+    fit = try(.fitLinearModel(input, is_single_feature, 
+                              is_single_subject, 
+                              has_techreps, is_labeled = label, 
+                              equal_variances), silent = TRUE)
     
     if (inherits(fit, "try-error")) {
         msg = paste("*** error : can't fit the model for ", unique(input$PROTEIN))
         getOption("MSstatsLog")("WARN", msg)
         getOption("MSstatsMsg")("WARN", msg)
-        
-        # # TODO: residuals and fitted not needed anymore - no need to return two data.frames
-        # if (nrow(input) != 0) {
-        #     input$residuals = NA
-        #     input$fitted = NA
-        #     result = NULL
-        # }
+        result = NULL
     } else {
         if (class(fit) == "lm") {
             cf = summary(fit)$coefficients[, 1]
@@ -90,31 +83,83 @@
         log_intensities = get_linear_summary(input, cf,
                                              counts, label)
         result[, LogIntensities := log_intensities]
-        # input$residuals = resid(fit)
-        # input$fitted = fitted(fit)
-        # TODO: make sure fitted and residuals are in the output. Labeled is tricky
     }
     
     result
 }
 
-
-## check single subject for both case-control and time-course?
-.checkSingleSubject = function(input) {
-    SUBJECT_ORIGINAL = num_subjects = NULL
+.fitLinearModel = function(input, is_single_feature, is_labeled,
+                           equal_variances) {
+    if (!is_labeled) {
+        if (is_single_feature) {
+            linear_model = lm(ABUNDANCE ~ RUN , data = input)
+        } else {
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN , data = input)
+        }
+    } else {
+        if (is_single_feature) {
+            linear_model = lm(ABUNDANCE ~ RUN + ref , data = input)
+        } else {
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref, data = input)
+        }
+    }
     
-    all(input[, list(num_subjects = data.table::uniqueN(SUBJECT_ORIGINAL)), 
-              by = "GROUP_ORIGINAL"][, num_subjects] == 1)
+    ## make equal variance for feature : need to be updated
+    if (!equal_variances) {
+        linear_model = .updateUnequalVariances(input = input, 
+                                               fit = linear_model,
+                                               num_iter = 1)
+    }
+    
+    linear_model
 }
+
+
+
+.updateUnequalVariances = function(input, fit, num_iter) {
+    for (i in 1:num_iter) {
+        if (i == 1) {
+            if (class(fit) == "lm") {
+                abs.resids = data.frame(abs.resids = abs(fit$residuals))
+                fitted = data.frame(fitted = fit$fitted.values)
+            } else {
+                abs.resids = data.frame(abs.resids = abs(resid(fit)))
+                fitted = data.frame(fitted = fitted(fit))
+            }
+            input = data.frame(input, 
+                               "abs.resids" = abs.resids, 
+                               "fitted" = fitted)
+        }
+        fit.loess = loess(abs.resids ~ fitted, data = input)
+        loess.fitted = data.frame(loess.fitted = fitted(fit.loess))
+        input = data.frame(input, "loess.fitted" = loess.fitted)
+        
+        ## loess fitted valuaes are predicted sd
+        input$weight = 1 / (input$loess.fitted ^ 2)
+        input = input[, -which(colnames(input) %in% "abs.resids")]
+        
+        ## re-fit using weight
+        if (class(fit) == "lm") {
+            wls.fit = lm(formula(fit), data = input, weights = weight)
+        } else {
+            wls.fit = lmer(formula(fit), data = input, weights = weight)
+        }
+        
+        ## lm or lmer
+        if (class(wls.fit) == "lm") {
+            abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
+        } else {
+            abs.resids = data.frame(abs.resids = abs(resid(wls.fit)))
+        }
+        input = data.frame(input, "abs.resids" = abs.resids)
+        
+        input = input[, -which(colnames(input) %in% c("loess.fitted", "weight"))]
+    }
+    
+    return(wls.fit)
+}
+
 
 .checkSingleFeature = function(input) {
     data.table::uniqueN(input$FEATURE) < 2
-}
-
-.checkTechReplicate = function(input) {
-    num_replicates = RUN = NULL
-    
-    all(input[,
-              list(num_replicates = data.table::uniqueN(RUN)),
-              by = "SUBJECT_NESTED"][, num_replicates] != 1)
 }
