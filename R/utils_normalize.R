@@ -27,15 +27,6 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 }
 
 
-#' Get median of protein abundances for a given label
-#' @param df `data.table`
-#' @param label "L" for light isotopes, "H" for heavy isotopes.
-#' @keywords internal
-.getMedian = function(df, label) {
-    median(df$ABUNDANCE[df$LABEL == label], na.rm = TRUE)
-}
-
-
 #' Median normalization
 #' @param input `data.table` in standard MSstats format
 #' @keywords internal
@@ -54,6 +45,15 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
                   with = FALSE]
     getOption("MSstatsLog")("Normalization based on median: OK")
     input
+}
+
+
+#' Get median of protein abundances for a given label
+#' @param df `data.table`
+#' @param label "L" for light isotopes, "H" for heavy isotopes.
+#' @keywords internal
+.getMedian = function(df, label) {
+    median(df$ABUNDANCE[df$LABEL == label], na.rm = TRUE)
 }
 
 
