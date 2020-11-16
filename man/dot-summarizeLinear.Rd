@@ -4,10 +4,14 @@
 \alias{.summarizeLinear}
 \title{Linear summarization}
 \usage{
-.summarizeLinear(input, cutoff_base, censored_symbol, remove50missing)
+.summarizeLinear(input, impute, cutoff_base, censored_symbol)
 }
 \arguments{
 \item{input}{`data.table` processed by the `MSstatsSelectFeatures` function.}
+
+\item{impute}{only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'. 
+TRUE (default) imputes "NA" or "0" (depending on censored_symbol option) by 
+Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
 
 \item{cutoff_base}{cutoff value for censoring (with censored_symbol = "NA"
 or censored_symbol = "0"). "minFeature"/"minRun"/"minFeatureNRun".}
@@ -17,9 +21,6 @@ or censored_symbol = "0"). "minFeature"/"minRun"/"minFeatureNRun".}
 "0" uses zero intensities as censored intensity. In this case, NA intensities 
 are missing at random. The output from Skyline should use "0". 
 Null assumes that all NA intensites are randomly missing.}
-
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
-which have more than 50% missing values. FALSE is default.}
 }
 \value{
 data.table

@@ -69,8 +69,7 @@ MSstatsSummarize = function(
     }
     
     if (summaryMethod == "linear") {
-        result = .summarizeLinear(input, cutoffCensored, censoredInt, 
-                                  remove50missing)
+        result = .summarizeLinear(input, MBimpute, cutoffCensored, censoredInt)
     } else if (summaryMethod == "TMP") {
         result = .summarizeTukey(input, MBimpute, cutoffCensored, censoredInt, 
                                  remove50missing, original_scale, clusters)
