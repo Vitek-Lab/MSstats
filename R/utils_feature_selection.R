@@ -19,9 +19,9 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
                       by.x = c("LABEL", "PROTEIN", "FEATURE", "originalRUN"),
                       by.y = c("label", "protein", "feature", "run"))
         input$feature_quality = ifelse(is.na(input$feature_quality),
-                                                  "Uninformative", input$feature_quality) # is this OK?
+                                       "Informative", input$feature_quality)
         input$is_outlier = ifelse(is.na(input$is_outlier),
-                                             FALSE, input$is_outlier)
+                                  FALSE, input$is_outlier)
     } else if (method %in% c("top3", "topN")) {
         msg = paste0("** Use top", top_n, " features that have highest average of log2(intensity) across runs.")
         input = .selectTopFeatures(input, top_n)
@@ -56,6 +56,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
     PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = is_censored = NULL
+    is_obs = log2inty = NULL
     
     cols = c("PROTEIN", "PEPTIDE", "FEATURE", "originalRUN", "LABEL", 
              "ABUNDANCE", "censored")
@@ -87,11 +88,9 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @inheritParams .selectHighQualityFeatures
 #' @return data.table
 #' @keywords internal
-.flagUninformativeSingleLabel = function(input, min_feature_count) {
-    log2inty = is_obs = singleton = few_observed = unrep = NULL
+.flagUninformativeSingleLabel = function(input, min_feature_count = 2) {
+    log2inty = is_obs = unrep = NULL
     label = protein = feature = run = feature_quality = is_outlier = NULL
-    
-    min_feature_count = 3
     
     if (nrow(input) == 0) {
         return(NULL)
@@ -101,20 +100,17 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     }
     
     input[, n_observed := sum(is_obs), by = c("protein", "feature")]
-    input[, any_observed := any(is_obs), by = c("protein", "run")]
-    input[, singleton := n_observed <= 1]
-    input[, few_observed := n_observed <= min_feature_count, ]
-    input[, unrep := !any_observed, ]
-    
+    input[, unrep := n_observed <= 1, ]
     .addOutlierCutoff(input)
+    .addNInformativeInfo(input, min_feature_count, "unrep")
     .addCoverageInfo(input)
-    .addNInformativeInfo(input, min_feature_count)
+    .addNInformativeInfo(input, min_feature_count, "is_lowcvr")
     .addModelInformation(input)
     input = .addModelVariances(input)
     input = .addNoisyFlag(input)
     
     input$feature_quality = ifelse(
-        !input$unrep & !input$is_lowcvr & !input$is_noisy & !input$few_observed, 
+        !input$unrep & !input$is_lowcvr & !input$is_noisy, 
         "Informative", "Uninformative"
     )
     input$is_outlier = ifelse(input$label == "H" & input$log2inty <= 0,
@@ -134,8 +130,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
     input[, 
           min_obs := .calculateOutlierCutoff(.SD, quantile_order), 
           by = "protein",
-          .SDcols = c("run", "feature", "is_obs",
-                      "unrep", "singleton", "few_observed")]
+          .SDcols = c("run", "feature", "is_obs", "unrep")]
 }
 
 
@@ -144,11 +139,11 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @return numeric
 #' @keywords internal
 .calculateOutlierCutoff = function(input, quantile_order = 0.01) {
-    unrep = few_observed = singleton = is_obs = feature = run = NULL
+    unrep = is_obs = feature = run = NULL
     
-    n_runs = data.table::uniqueN(input[!unrep & !few_observed & !singleton, run])
-    n_features = data.table::uniqueN(input[!unrep & !few_observed & !singleton, feature])
-    n = input[!unrep & !few_observed & !singleton, sum(is_obs, na.rm = TRUE)]
+    n_runs = data.table::uniqueN(input[!(unrep), run])
+    n_features = data.table::uniqueN(input[!(unrep), feature])
+    n = input[!(unrep), sum(is_obs, na.rm = TRUE)]
     qbinom(quantile_order, n_runs,
            n / (n_features * n_runs))
 }
@@ -159,10 +154,12 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @return data.table
 #' @keywords internal
 .addCoverageInfo = function(input) {
-    is_lowcvr = NULL
+    is_lowcvr = unrep = NULL
     
-    input[, is_lowcvr := .flagLowCoverage(.SD), by = c("protein", "feature"),
+    input[, is_lowcvr := .flagLowCoverage(.SD), 
+          by = c("protein", "feature"),
           .SDcols = c("is_obs", "min_obs")]
+    input[, is_lowcvr := ifelse(unrep, FALSE, is_lowcvr)]
 }
 
 
@@ -171,31 +168,36 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @return logical
 #' @keywords internal
 .flagLowCoverage = function(input) {
-    sum(input$is_obs) < unique(input$min_obs)
+    sum(input$is_obs, na.rm = TRUE) < unique(input$min_obs)
 }
 
 
 #' Add information about number of informative features
 #' @inheritParams .selectHighQualityFeatures
+#' @param column name of a column used for filtering
 #' @return data.table
 #' @keywords internal
-.addNInformativeInfo = function(input, min_feature_count) {
+.addNInformativeInfo = function(input, min_feature_count, column) {
     has_three_informative = NULL
     
-    input[, n_informative := .countInformative(.SD), by = "protein",
-          .SDcols = c("feature", "is_lowcvr")]
-    input[, has_three_informative := n_informative >= min_feature_count]
+    input[, n_informative := .countInformative(.SD, column), by = "protein",
+          .SDcols = c("feature", column)]
+    if (is.element("has_three_informative", colnames(input))) {
+        input[, has_three_informative := has_three_informative & n_informative > min_feature_count]
+    } else {
+        input[, has_three_informative := n_informative > min_feature_count]
+    }
 }
 
 #' Count informative features
 #' @param input data.table
+#' @param column name of a column used for filtering
 #' @return numeric
 #' @keywords internal
 #' @importFrom data.table uniqueN
-.countInformative = function(input) {
-    is_lowcvr = feature = NULL
-    
-    data.table::uniqueN(input[!(is_lowcvr), feature])
+.countInformative = function(input, column) {
+    feature = NULL
+    data.table::uniqueN(input[!input[[column]], feature])
 }
 
 
@@ -204,8 +206,13 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @return data.table
 #' @keywords internal
 .addModelInformation = function(input) {
-    input[, c("model_residuals", "df_resid", "var_resid") := .calculateProteinVariance(.SD),
-          by = "protein", .SDcols = c("protein", "log2inty", "run", "feature", "is_lowcvr")]
+    has_three_informative = NULL
+    
+    input[(has_three_informative), 
+          c("model_residuals", "df_resid", "var_resid") := .calculateProteinVariance(.SD),
+          by = "protein",
+          .SDcols = c("protein", "log2inty", "run", 
+                      "feature", "is_lowcvr", "unrep")]
     
 }
 
@@ -217,14 +224,12 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 .calculateProteinVariance = function(input) {
     is_lowcvr = NULL
     
-    robust_model = tryCatch(.fitHuber(input[(!is_lowcvr), ]),
-                            error = function(e) NULL,
-                            warning = function(w) NULL) 
-    if (is.null(robust_model)) {
+    robust_model = try(.fitHuber(input[!(is_lowcvr) & !(unrep), ]), silent = TRUE) 
+    if (inherits(robust_model, "try-error")) {
         list(NA_real_, NA_real_, NA_real_)
     } else {
         model_residuals = rep(NA_real_, nrow(input))
-        model_residuals[!input$is_lowcvr & !is.na(input$log2inty)] = residuals(robust_model)
+        model_residuals[!input$is_lowcvr & !is.na(input$log2inty) & !input$unrep] = residuals(robust_model)
         list(as.numeric(model_residuals),
              rep(summary(robust_model)$df[2], nrow(input)),
              rep(summary(robust_model)$sigma ^ 2, nrow(input)))
@@ -247,7 +252,7 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @return data.table
 #' @importFrom limma squeezeVar
 .addModelVariances = function(input) {
-    protein = df_resid = var_resid = NULL
+    protein = df_resid = var_resid = s_resid_eb = NULL
     
     model_variances = unique(input[, list(protein, df_resid, var_resid)])
     model_variances = model_variances[!is.na(df_resid), ]
@@ -271,13 +276,17 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 #' @return data.table
 #' @keywords internal
 .addNoisyFlag = function(input) {
-    svar_feature = svar_ref = NULL
+    svar_feature = NULL
     
     feature_vars = .getFeatureVariances(input)
     if (nrow(feature_vars) > 0) {
-        input = merge(input, feature_vars, by = "feature")
+        input = merge(input, feature_vars, 
+                      by = c("protein", "feature"), 
+                      all.x = TRUE)
         input[, is_outlier := .addOutlierInformation(.SD), by = "feature"]
-        input[, is_noisy := svar_feature > quantile(svar_ref, 0.05, na.rm = TRUE)]
+        input[, is_noisy := svar_feature > .getQuantileCutoff(.SD),
+              .SDcols = c("feature", "svar_ref")]
+        input[, is_noisy := ifelse(is.na(is_noisy), FALSE, is_noisy)]
         input
     } else {
         input[, is_outlier := NA]
@@ -287,25 +296,36 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 }
 
 
+.getQuantileCutoff = function(input) {
+    feature = svar_ref = NULL
+    
+    quantile(unique(input[, list(feature, svar_ref)])[, svar_ref], 
+             0.05, na.rm = TRUE)
+}
+
+
 #' Calculate variances of features
 #' @param input data.table
 #' @param tolerance cutoff for outliers
 #' @return numeric
 #' @keywords internal
 .getFeatureVariances = function(input, tolerance = 3) {
+    s_resid_eb = NULL
+    
     remove_outliers = unique(input$label) == "L"
     if (remove_outliers) {
         input[, num_filter := abs(model_residuals / s_resid_eb) > tolerance]
     } else {
         input[, num_filter := rep(TRUE, .N)]
     }
-    input = input[!(num_filter) & !is.na(model_residuals)]
-    input[, resid_null := log2inty - mean(log2inty, na.rm = TRUE)]
-    input[, n_runs := data.table::uniqueN(run), by = "feature"]
+    input = input[!(num_filter) & !is.na(model_residuals) & !unrep & !is_lowcvr]
+    input[, resid_null := log2inty - mean(log2inty, na.rm = TRUE), by = "protein"]
+    input[, n_runs := .N, by = "feature"]
     
     sums_of_squares = input[, list(
         svar_feature = sum(model_residuals ^ 2, na.rm = TRUE) / (n_runs - 1) / unique(s_resid_eb ^ 2),
-        svar_ref = sum(resid_null ^ 2, na.rm = TRUE) / (n_runs - 1) / unique(s_resid_eb) ^ 2), by = "feature"]
+        svar_ref = sum(resid_null ^ 2, na.rm = TRUE) / (n_runs - 1) / unique(s_resid_eb) ^ 2),
+        by = c("protein", "feature")]
     unique(sums_of_squares)
 }
 
