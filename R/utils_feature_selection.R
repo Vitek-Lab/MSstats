@@ -141,9 +141,9 @@ MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count 
 .calculateOutlierCutoff = function(input, quantile_order = 0.01) {
     unrep = is_obs = feature = run = NULL
     
-    n_runs = data.table::uniqueN(input[!(unrep), run])
-    n_features = data.table::uniqueN(input[!(unrep), feature])
-    n = input[!(unrep), sum(is_obs, na.rm = TRUE)]
+    n_runs = data.table::uniqueN(input[!(unrep) & (is_obs), run])
+    n_features = data.table::uniqueN(input[!(unrep) & (is_obs), feature])
+    n = input[!(unrep) & (is_obs), sum(is_obs, na.rm = TRUE)]
     qbinom(quantile_order, n_runs,
            n / (n_features * n_runs))
 }
