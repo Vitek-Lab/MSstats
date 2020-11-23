@@ -80,20 +80,13 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     
     # remove feature with 1 measurement
     input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, FALSE, nonmissing_all)] 
+    grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
     
-    if (cutoff_base == "minFeature") {
-        grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
-    } else if (cutoff_base == "minRun") {
-        grouping_vars = c("PROTEIN", "RUN", "LABEL")
-    } 
-    
-    if (cutoff_base %in% c("minFeature", "minRun")) {
-        input[n_obs > 1 & n_obs_run > 0, 
-              ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
-              by = grouping_vars]
-        input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
-                                       ABUNDANCE_cut, newABUNDANCE)]
-    }
+    input[n_obs > 1 & n_obs_run > 0, 
+          ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
+          by = grouping_vars]
+    input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
+                                   ABUNDANCE_cut, newABUNDANCE)]
 }
 
 
