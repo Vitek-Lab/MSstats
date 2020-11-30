@@ -1,0 +1,9 @@
+version: 0.0
+os: linux
+files:
+  - source: ./
+    destination: /home/rstudio/code/deployment
+hooks:
+  AfterInstall:
+    - location: scripts/after_install.sh
+      runas: ubuntu
