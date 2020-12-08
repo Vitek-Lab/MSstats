@@ -1,16 +1,17 @@
 #!/usr/bin/env Rscript
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
+    install.packages("BiocManager")
 
 if (!requireNamespace("devtools", quietly = TRUE))
-  install.packages("devtools")
+    install.packages("devtools")
 
 if (!requireNamespace("paws", quietly = TRUE))
-  install.packages("paws")
+    install.packages("paws")
 
 if (!requireNamespace("xlsx", quietly = TRUE))
-  install.packages("xlsx")
+    install.packages("xlsx")
 
 BiocManager::install("MSstats")
 devtools::install_github("Vitek-Lab/MSstats-dev", ref = "refactoring")
+devtools::install_github("Vitek-Lab/MSstatsTMT", ref = "refactoring")

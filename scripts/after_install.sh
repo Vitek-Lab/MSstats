@@ -9,4 +9,4 @@ yes 1 | ./utils/infra.R
 # make the file executable
 sudo chmod +x dataprocess.R
 #& to run in background
-yes a | ./dataprocess.R &
+yes a | ./dataprocess.R > /dev/null 2> /dev/null < /dev/null &

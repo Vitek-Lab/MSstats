@@ -22,6 +22,7 @@ read_bin_files_s3 <- function(bin_file, file_name){
   # helper functions to read files from s3(paws package streams file as binary)
   writeBin(bin_file, con = file_name)
   rds_file <- readRDS(file_name)
+  unlink(file_name)
   return (rds_file)
 }
 
@@ -34,6 +35,7 @@ write_bin_files_s3 <- function(r_object, file_name, is_rds=TRUE){
   print(file_name)
   read_file <- file(file_name, "rb")
   bin_file <- readBin(read_file, "raw", n = file.size(file_name))
+  unlink(file_name)
   return(bin_file)
 }
 
@@ -62,10 +64,17 @@ store_csv_file_to_s3 <- function(s3_path, local_file_name, upload_file){
 generate_s3_path <- function(s3_path){
   #helper function that appends datetime to the filename(to create unique names)
   s3_file_path <- paste(s3_path, "report-", 
-                       paste(
-                         as.Date(format(Sys.time(), "%D"), format = "%m/%d/%y"), 
-                         format(Sys.time(), "-%H-%M-%S"), ".xlsx",
-                         sep = ""), 
-                       sep = "")
+                        paste(
+                          as.Date(format(Sys.time(), "%D"), format = "%m/%d/%y"), 
+                          format(Sys.time(), "-%H-%M-%S"), ".xlsx",
+                          sep = ""), 
+                        sep = "")
   return(s3_file_path)
+}
+
+store_rds <- function(file_up, local_name, some_path){
+  s3$put_object(
+    Body = write_bin_files_s3(file_up, local_name, is_rds = T), 
+    Bucket = aws_bucket_name, 
+    Key = some_path)
 }
