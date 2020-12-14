@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: ./
-    destination: /home/rstudio/code/deployment
+    destination: /home/rstudio/code/deployment/msstats-dev
 hooks:
   AfterInstall:
     - location: scripts/after_install.sh
