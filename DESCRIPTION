@@ -1,29 +1,46 @@
-Package: MSstats
+Package: MSstatsdev
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
 Version: 3.21.1
 Date: 2020-06-29
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
 Authors@R: c(
-  person("Meena","Choi", , "mnchoi67@gmail.com", c("aut", "cre")),
-  person("Tsung-Heng","Tsai", , "tsai.tsungheng@gmail.com", role="aut"), 
-  person("Cyril","Galitzine", , "cyrildgg@gmail.com", role="aut"), 
-  person("Ting","Huang", , "thuang0703@gmail.com", role="aut"), 
-  person("Olga","Vitek", , "o.vitek@northeastern.edu", role="aut")) 
+  person("Meena", "Choi", email = "mnchoi67@gmail.com", role = c("aut", "cre")),
+  person("Tsung-Heng", "Tsai", email = "tsai.tsungheng@gmail.com", role = "aut"), 
+  person("Cyril", "Galitzine", email = "cyrildgg@gmail.com", role = "aut"), 
+  person("Ting", "Huang", email = "thuang0703@gmail.com", role = "aut"),
+  person("Mateusz", "Staniak", email = "mtst@mstaniak.pl", role = "aut"),
+  person("Olga", "Vitek", email = "o.vitek@northeastern.edu", role = "aut")) 
 License: Artistic-2.0
 Depends: R (>= 3.6)
-Imports: lme4, marray, limma, gplots, ggplot2, methods, grid,
-        ggrepel, preprocessCore, reshape2, survival, statmod,
-        minpack.lm, utils, grDevices, graphics, stats, doSNOW, snow,
-        foreach, data.table, MASS, dplyr, tidyr, broom, purrr, stringr,
-Suggests: BiocStyle, knitr, rmarkdown, MSstatsBioData
+Imports: 
+    MSstatsConvert,
+    data.table,
+    checkmate,
+    MASS,
+    limma,
+    lme4,
+    preprocessCore,
+    survival,
+    utils,
+    Rcpp
+Suggests: 
+    BiocStyle,
+    knitr,
+    rmarkdown,
+    MSstatsBioData,
+    tinytest,
+    covr
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
