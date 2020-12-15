@@ -15,13 +15,13 @@ branches:
 script:
   - zip -r latest *
   - mkdir -p deployment/msstats-dev
-  - mv latest.zip deployment/latest.zip
+  - mv latest.zip deployment/msstats-dev/latest.zip
 
 deploy:
 - provider: s3
   access_key_id: $AWS_MASTER_ACCESS_ID
   secret_access_key: $AWS_MASTER_SECRET_KEY
-  local_dir: deployment
+  local_dir: deployment/msstats-dev
   skip_cleanup: true
   on: &2
     repo: Vitek-Lab/MSstats-dev
