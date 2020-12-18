@@ -165,11 +165,11 @@ run_comparisons <- function(dataprocess_output, master_df, notes, summary_method
     summary_method_type = summary_method,
     data_type = "Processed data",
     parameters=notes,
-    intensity = sum(!compare_processed$match.orgint),
-    abundance = sum(!compare_processed$match.abn),
-    censored = sum(!compare_processed$match.censored),
-    feature_quality = sum(!compare_processed$match.ftrslct),
-    is_outlier = sum(!compare_processed$match.otr),
+    mismatched_intensity = sum(!compare_processed$match.orgint),
+    mismatched_abundance = sum(!compare_processed$match.abn),
+    mismatched_censored = sum(!compare_processed$match.censored),
+    mismatched_feature_quality = sum(!compare_processed$match.ftrslct),
+    mismatched_outlier = sum(!compare_processed$match.otr),
     s3_dataset_path = dataset_path
   )
   
@@ -201,10 +201,10 @@ run_comparisons <- function(dataprocess_output, master_df, notes, summary_method
     summary_method_type = summary_method,
     data_type = "RunLevel data",
     parameters=notes,
-    log_intensity = sum(!summarized_runlevel$match.int),
-    missing_percentage = sum(!summarized_runlevel$match.perc),
-    imputed_feature_count = sum(!summarized_runlevel$match.numimpf),
-    measured_feature_count = sum(!summarized_runlevel$match.nummsrf),
+    mismatched_log_intensity = sum(!summarized_runlevel$match.int),
+    mismatched_missing_percentage = sum(!summarized_runlevel$match.perc),
+    mismatched_imputed_feature_count = sum(!summarized_runlevel$match.numimpf),
+    mismatched_measured_feature_count = sum(!summarized_runlevel$match.nummsrf),
     s3_dataset_path = dataset_path
   )
   master_df$master_run_level_data <-rbind(master_df$master_run_level_data, 

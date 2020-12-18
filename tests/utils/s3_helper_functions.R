@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 
 #############################################################
-#load all the config settings/credentials
+# load all the config settings/credentials
 source("/home/rstudio/code/config.R")
-#set aws session variables
+# set aws session variables
 Sys.setenv(
   AWS_ACCESS_KEY_ID = aws_key,
   AWS_SECRET_ACCESS_KEY = aws_secret,
@@ -13,7 +13,7 @@ Sys.setenv(
 ############################################################
 
 
-#initialise s3 object
+# initialise s3 object
 s3 <- paws::s3()
 # quick smoke test to check bucket contents
 s3$list_buckets()
@@ -46,7 +46,7 @@ get_file_from_s3 <- function(s3_file_path, local_file_name){
 }
 
 store_csv_file_to_s3 <- function(s3_path, local_file_name, upload_file){
-  #helper function to upload csv to s3
+  # helper function to upload csv to s3
   print("uploading results to s3...")
   s3_file_path <- generate_s3_path(s3_path)
   generate_xlsx(upload_file, local_file_name)
@@ -62,7 +62,7 @@ store_csv_file_to_s3 <- function(s3_path, local_file_name, upload_file){
 }
 
 generate_s3_path <- function(s3_path){
-  #helper function that appends datetime to the filename(to create unique names)
+  # helper function that appends datetime to the filename(to create unique names)
   s3_file_path <- paste(s3_path, "report-", 
                         paste(
                           as.Date(format(Sys.time(), "%D"), format = "%m/%d/%y"), 

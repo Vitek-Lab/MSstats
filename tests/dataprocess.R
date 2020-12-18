@@ -1,16 +1,21 @@
 #!/usr/bin/env Rscript
 library(MSstatsTMTdev)
 library(MSstatsdev)
+# Test suite bool variable to execute TMT datasets
+is_tmt <- FALSE
+# To parse command line argument
+args <- toString(commandArgs(trailingOnly = TRUE))
 
-source("/home/rstudio/code/deployment/msstats-dev/tests/utils/s3_helper_functions.R")
-source("/home/rstudio/code/deployment/msstats-dev/tests/utils/dataprocess_helper_functions.R")
-source("/home/rstudio/code/deployment/msstats-dev/tests/utils/constants.R")
-source("/home/rstudio/code/deployment/msstats-dev/tests/utils/generic_utils.R")
+source(paste(args, "/s3_helper_functions.R", sep = ""))
+source(paste(args,"/dataprocess_helper_functions.R", sep = ""))
+source(paste(args,"/constants.R", sep = ""))
+source(paste(args,"/generic_utils.R", sep = ""))
+
 
 ######################## get required files ############################
 
 path_to_datasets = "datasets/"
-#get metadata from s3
+# Fetch metadata from s3
 metadata_s3 <- get_file_from_s3(s3_file_path = datasets$metadata_rds,
                                 local_file_name = "metadata.RDS")
 datasets_s3 <- get_file_from_s3(s3_file_path = datasets$datasets_rds,
@@ -34,7 +39,7 @@ run_dataprocess <- function(data,
                                       notes="summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='All'",
                                       summary_method="TMP", dataset_path)
   
-  # ############### parameterized dataprocess run 2 #########################
+  ################ parameterized dataprocess run 2 #########################
   # summaryMethod='TMP' + MBimpute=T + censoredInt= 'NA' or '0' + featureSub='topN' + n_top_feature=5
   top_n_dataprocess_output <-invoke_dataprocess_feature_subset_topn(data, summary_method="TMP",
                                                                     mb_impute,
@@ -45,8 +50,8 @@ run_dataprocess <- function(data,
                                       notes = "summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='topN' + n_top_feature=5",
                                       summary_method="TMP", dataset_path)
   
-  # # ############### parameterized dataprocess run 3#########################
-  # # # summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='highQuality' + remove_uninformative_feature_outlier = T/ F
+  ################ parameterized dataprocess run 3#########################
+  # summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='highQuality' + remove_uninformative_feature_outlier = T/ F
   hq_dataprocess_output <- invoke_dataprocess_feature_subset_high_quality(
     data, summary_method="TMP", mb_impute, censored_int,
     feature_subset = "highQuality",
@@ -65,7 +70,7 @@ run_dataprocess <- function(data,
                                       summary_method="linear", dataset_path)
   
   # ############### parameterized dataprocess run 5#########################
-  # # summaryMethod='Linear' + MBimpute=F + censoredInt= 'NA' or '0' + featureSub='topN'
+  # summaryMethod='Linear' + MBimpute=F + censoredInt= 'NA' or '0' + featureSub='topN'
   linear_feature_sub_all_dataprocess_output_topn <- invoke_dataprocess_feature_subset_topn(
     data, summary_method="TMP", mb_impute, censored_int, feature_subset="topN",n_top_feature=5)
   master_result_df <- run_comparisons(linear_feature_sub_all_dataprocess_output_topn, master_df=master_result_df,
@@ -114,7 +119,7 @@ run_wider_testing <- function(metadata,
         annotation <- get_file_from_s3(s3_file_path = s3_annotation_path,
                                        local_file_name = "annotation.RDS")
         #######################################################################
-        if (dataset$type == "TMT"){
+        if ((dataset$type == "TMT") & is_tmt){
           max_quant_conv = MSstatsTMTdev::MaxQtoMSstatsTMTFormat(
             evidence, protein_groups, annotation,
             rmPSM_withfewMea_withinRun = remove_few,
@@ -179,7 +184,7 @@ run_wider_testing <- function(metadata,
         input <- get_file_from_s3(s3_file_path = s3_input_path,
                                   local_file_name = "input.RDS")
         #######################################################################
-        if (dataset$type == "TMT") {
+        if ((dataset$type == "TMT") & is_tmt) {
           try({
             open_ms_converter = MSstatsTMTdev::OpenMStoMSstatsTMTFormat(
               input,rmPSM_withfewMea_withinRun = remove_few,
@@ -215,7 +220,7 @@ run_wider_testing <- function(metadata,
         #######################################################################
         
         if (dataset$tool == "PD") {
-          if (dataset$type == "TMT") {
+          if ((dataset$type == "TMT") & is_tmt) {
             pd_converter = MSstatsTMTdev::PDtoMSstatsTMTFormat(
               input, annotation, rmPSM_withfewMea_withinRun = remove_few,
               rmProtein_with1Feature = remove_single_feature)
@@ -294,12 +299,12 @@ run_wider_testing <- function(metadata,
 exceptions <- data.frame()
 result_df <-run_wider_testing(metadata_s3)
 
-#check if exception occured
+# check if exception occured
 is_error <-  F
 if (nrow(exceptions) != 0){
   is_error <-T
 }
-#set the suitable file to upload.
+# set the suitable file to upload.
 if (is_error){
   file_to_s3 <- exceptions
 }else{
@@ -307,7 +312,7 @@ if (is_error){
 }
 
 store_rds(file_to_s3, "temp.RDS", results$code_deploy_results)
-#uploading the results to s3 as csv
+# uploading the results to s3 as csv
 store_csv_file_to_s3(s3_path = results$code_deploy_results,
                      local_file_name = "report.xlsx", upload_file=file_to_s3, is_error)
 ####### ##################### cleaning up #####################################
