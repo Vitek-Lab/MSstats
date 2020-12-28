@@ -1,8 +1,39 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-language: R
+language: r
+os: linux
+dist: xenial
 cache: packages
 warnings_are_errors: false
 
 after_success:
-  - Rscript -e 'covr::codecov()'
+   - Rscript -e 'covr::codecov()'
+branches:
+  only: 
+    - master
+    - develop
+script:
+  - zip -r latest *
+  - mkdir -p deployment/msstats-dev
+  - mv latest.zip deployment/msstats-dev/latest.zip
+
+deploy:
+- provider: s3
+  access_key_id: $AWS_MASTER_ACCESS_ID
+  secret_access_key: $AWS_MASTER_SECRET_KEY
+  local_dir: deployment/msstats-dev
+  skip_cleanup: true
+  on: &2
+    repo: Vitek-Lab/MSstats-dev
+  bucket: $AWS_MASTER_S3_BUCKET
+  region: $AWS_REGION
+- provider: codedeploy
+  access_key_id: $AWS_MASTER_ACCESS_ID
+  secret_access_key: $AWS_MASTER_SECRET_KEY
+  bucket: $AWS_MASTER_S3_BUCKET
+  key: latest.zip
+  bundle_type: zip
+  application: $AWS_MASTER_DEPLOYMENT_APPLICATION_NAME
+  deployment_group: $AWS_MASTER_DEPLOYMENT_GROUP_NAME
+  region: $AWS_REGION
+  on: *1
