@@ -13,5 +13,5 @@ if (!requireNamespace("xlsx", quietly = TRUE))
     install.packages("xlsx")
 
 BiocManager::install("MSstats")
-devtools::install_github("Vitek-Lab/MSstats-dev", ref = "refactoring")
-devtools::install_github("Vitek-Lab/MSstatsTMT", ref = "refactoring")
+devtools::install_github("Vitek-Lab/MSstats-dev", ref = "develop")
+devtools::install_github("Vitek-Lab/MSstatsTMT", ref = "develop")
