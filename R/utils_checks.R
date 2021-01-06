@@ -23,6 +23,7 @@ MSstatsPrepareForDataProcess = function(input, log_base,
     file_name = paste0("msstats_sessionInfo_", 
                        gsub(" " , "T", as.character(Sys.time())), 
                        ".txt")
+    file_name = gsub(":", "_", file_name, fixed = TRUE)
     session_info = utils::sessionInfo()
     sink(file_name)
     print(session_info)
