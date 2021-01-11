@@ -14,8 +14,8 @@ if (!requireNamespace("xlsx", quietly = TRUE))
 
 BiocManager::install("MSstats", ask = FALSE)
 devtools::install_github("Vitek-Lab/MSstats-dev", ref = "develop", 
-                         dependencies = TRUE, quiet = TRUE,
+                         dependencies = NA, quiet = TRUE,
                          upgrade = "always")
 devtools::install_github("Vitek-Lab/MSstatsTMT", ref = "develop", 
-                         dependencies = TRUE, quiet = TRUE,
+                         dependencies = NA, quiet = TRUE,
                          upgrade = "always")
