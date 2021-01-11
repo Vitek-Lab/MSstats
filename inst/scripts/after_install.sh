@@ -3,6 +3,7 @@ source_path="/home/rstudio"
 code_deploy_path="code/deployment/msstats-dev"
 test_folder="tests"
 test_utils_folder="utils"
+export R_LIBS_USER="~/R/x86_64-pc-linux-gnu-library/4.0"
 # move into the test folder
 cd $source_path/$code_deploy_path/$test_folder
 # # execute infra and config files
