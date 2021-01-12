@@ -18,16 +18,13 @@ if (!requireNamespace("xlsx", quietly = TRUE))
 
 # BiocManager::install("MSstats", ask = FALSE,
 #                      lib = "~/R/x86_64-pc-linux-gnu-library/4.0")
+.libPaths("/home/rstudio/R/x86_64-pc-linux-gnu-library/4.0")
 devtools::install_github("MeenaChoi/MSstats", ref = "master", 
                          dependencies = NA, quiet = TRUE,
-                         upgrade = "never",
-                         lib = "/home/rstudio/R/x86_64-pc-linux-gnu-library/4.0")
-
+                         upgrade = "never")
 devtools::install_github("Vitek-Lab/MSstats-dev", ref = "develop", 
                          dependencies = NA, quiet = TRUE,
-                         upgrade = "never",
-                         lib = "/home/rstudio/R/x86_64-pc-linux-gnu-library/4.0")
+                         upgrade = "never")
 devtools::install_github("Vitek-Lab/MSstatsTMT", ref = "develop", 
                          dependencies = NA, quiet = TRUE,
-                         upgrade = "never",
-                         lib = "/home/rstudio/R/x86_64-pc-linux-gnu-library/4.0")
+                         upgrade = "never")
