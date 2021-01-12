@@ -10,7 +10,7 @@ source(paste(args, "/s3_helper_functions.R", sep = ""))
 source(paste(args,"/dataprocess_helper_functions.R", sep = ""))
 source(paste(args,"/constants.R", sep = ""))
 source(paste(args,"/generic_utils.R", sep = ""))
-
+setwd("/home/rstudio/code/deployment/tests")
 
 ######################## get required files ############################
 
