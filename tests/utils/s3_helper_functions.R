@@ -16,7 +16,8 @@ Sys.setenv(
 # initialise s3 object
 s3 <- paws::s3()
 # quick smoke test to check bucket contents
-s3$list_buckets()
+print(s3$list_buckets())
+print(getwd())
 
 read_bin_files_s3 <- function(bin_file, file_name){
   # helper functions to read files from s3(paws package streams file as binary)
