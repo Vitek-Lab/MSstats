@@ -14,6 +14,13 @@ source(paste(args,"/generic_utils.R", sep = ""))
 
 ######################## get required files ############################
 
+
+print("Using the following info for auth:")
+print(Sys.getenv("AWS_ACCESS_KEY_ID"))
+print(Sys.getenv("AWS_SECRET_ACCESS_KEY"))
+print(Sys.getenv("AWS_REGION"))
+print(Sys.getenv("AWS_S3_BUCKET"))
+
 path_to_datasets = "datasets/"
 # Fetch metadata from s3
 metadata_s3 <- get_file_from_s3(s3_file_path = datasets$metadata_rds,
