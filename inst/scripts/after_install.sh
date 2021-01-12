@@ -18,4 +18,4 @@ sudo chmod +x dataprocess.R
 # yes a | Rscript ./dataprocess.R > /dev/null 2> /dev/null < /dev/null &
 # tmux new-session -d -s "msstatstest" Rscript ./dataprocess.R
 sudo chmod 777 /home/rstudio/code/deployment/mssstats-dev/tests
-Rscript ./dataprocess.R |& tee /home/rstudio/code/deployment/logs/dataprocess.log
+sudo Rscript ./dataprocess.R |& tee /home/rstudio/code/deployment/logs/dataprocess.log
