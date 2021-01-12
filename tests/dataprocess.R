@@ -4,7 +4,7 @@ library(MSstatsdev)
 # Test suite bool variable to execute TMT datasets
 is_tmt <- FALSE
 # To parse command line argument
-args <- "/home/rstudio/code/deployment/msstats-dev/tests/scripts"
+args <- "/home/rstudio/code/deployment/msstats-dev/tests/utils/"
 
 source(paste(args, "/s3_helper_functions.R", sep = ""))
 source(paste(args,"/dataprocess_helper_functions.R", sep = ""))
