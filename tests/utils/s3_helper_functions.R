@@ -50,8 +50,8 @@ store_csv_file_to_s3 <- function(s3_path, local_file_name, upload_file){
   # helper function to upload csv to s3
   print("uploading results to s3...")
   s3_file_path <- generate_s3_path(s3_path)
-  generate_xlsx(upload_file, local_file_name)
-  # write.csv(upload_file, file=local_file_name)
+  # generate_xlsx(upload_file, local_file_name)
+  write.csv(upload_file, file=local_file_name)
   s3$put_object(
     Body = write_bin_files_s3(local_file_name, local_file_name, is_rds = FALSE), 
     Bucket = aws_bucket_name, 
