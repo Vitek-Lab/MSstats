@@ -297,12 +297,12 @@ run_wider_testing <- function(metadata,
 }
 
 exceptions <- data.frame()
-result_df <-run_wider_testing(metadata_s3)
+result_df <-run_wider_testing(metadata_s3[1])
 
 # check if exception occured
 is_error <-  F
 if (nrow(exceptions) != 0){
-  is_error <-T
+  is_error <- T
 }
 # set the suitable file to upload.
 if (is_error){
