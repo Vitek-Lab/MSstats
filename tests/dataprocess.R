@@ -100,6 +100,7 @@ run_wider_testing <- function(metadata,
   remove_few_lf = ifelse(remove_few, "remove", "keep")
   
   for (dataset in metadata) {
+    print(paste("Processing", dataset$folder_path))
     tryCatch({
       names = names(dataset)
       dataset = lapply(dataset, function(x) gsub(path_to_datasets, "", x))
