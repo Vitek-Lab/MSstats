@@ -315,12 +315,12 @@ print(head(result_df))
 # }else{
 #   file_to_s3 <- result_df
 # }
-file_to_s3 <- result_df
+file_to_s3 <- rbindlist(result_df, fill = TRUE)
 
 store_rds(file_to_s3, "temp.RDS", results$code_deploy_results)
 # uploading the results to s3 as csv
 store_csv_file_to_s3(s3_path = results$code_deploy_results,
-                     local_file_name = "report.xlsx", upload_file=file_to_s3)
+                     local_file_name = "report.csv", upload_file=file_to_s3)
 ####### ##################### cleaning up #####################################
 closeAllConnections()
 rm(list=ls(all=TRUE))
