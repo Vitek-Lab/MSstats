@@ -16,7 +16,8 @@ sudo chmod +x dataprocess.R
 # pointing output to dev/null so that code deploy doesn't stall
 # cmd_arg=$source_path/$code_deploy_path/$test_folder/$test_utils_folder
 sudo chmod 777 /home/rstudio/code/deployment/msstats-dev/tests/
-yes a | Rscript ./dataprocess.R |& tee /home/rstudio/code/deployment/logs/dataprocess.log > /dev/null 2> /dev/null < /dev/null &
+# yes a | Rscript ./dataprocess.R |& tee /home/rstudio/code/deployment/logs/dataprocess.log > /dev/null 2> /dev/null < /dev/null &
 # 
+sudo Rscript ./dataprocess.R
 # sudo Rscript ./dataprocess.R |& tee /home/rstudio/code/deployment/logs/dataprocess.log
 # tmux new-session -d -s "msstatstest" sudo Rscript ./dataprocess.R |& tee /home/rstudio/code/deployment/logs/dataprocess.log

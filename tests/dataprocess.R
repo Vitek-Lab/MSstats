@@ -302,7 +302,7 @@ run_wider_testing <- function(metadata,
 }
 
 exceptions <- data.frame()
-result_df <-run_wider_testing(metadata_s3[1])
+result_df <-run_wider_testing(metadata_s3)
 print(head(result_df))
 # # check if exception occured
 # is_error <-  F
