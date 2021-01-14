@@ -59,6 +59,9 @@
         single_protein = input[PROTEIN == proteins[protein_id]]
         single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
                                             (n_obs_run > 0 & !is.na(n_obs_run))]
+        if (nrow(single_protein) == 0) {
+            next()
+        }
         single_protein[, RUN := factor(RUN)]
         single_protein[, FEATURE := factor(FEATURE)]
         if (impute) {
