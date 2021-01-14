@@ -54,8 +54,9 @@ MSstatsSummarize = function(
     
     if (remove_uninformative_feature_outlier & 
         is.element("feature_quality", colnames(input))) {
-        input[feature_quality == "Uninformative", ABUNDANCE] = NA
-        input[(is_outlier), ABUNDANCE] = NA
+        input[, ABUNDANCE := ifelse(feature_quality == "Uninformative", 
+                                    NA, ABUNDANCE)]
+        input[, ABUNDANCE := ifelse(is_outlier, NA, ABUNDANCE)]
         msg = "** Filtered out uninformative feature and outliers."
         getOption("MSstatsLog")("INFO", msg)
         getOption("MSstatsMsg")("INFO", msg)
