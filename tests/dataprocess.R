@@ -56,13 +56,13 @@ run_dataprocess <- function(data,
   
   # ################ parameterized dataprocess run 3#########################
   # # summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='highQuality' + remove_uninformative_feature_outlier = T/ F
-  # hq_dataprocess_output <- invoke_dataprocess_feature_subset_high_quality(
-  #   data, summary_method="TMP", mb_impute, censored_int,
-  #   feature_subset = "highQuality",
-  #   remove_uninformative_feature_outlier=TRUE)
-  # master_result_df <- run_comparisons(hq_dataprocess_output, master_df=master_result_df,
-  #                                     notes = "summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='highQuality' + remove_uninformative_feature_outlier = T/ F",
-  #                                     summary_method="TMP", dataset_path)
+  hq_dataprocess_output <- invoke_dataprocess_feature_subset_high_quality(
+    data, summary_method="TMP", mb_impute, censored_int,
+    feature_subset = "highQuality",
+    remove_uninformative_feature_outlier=TRUE)
+  master_result_df <- run_comparisons(hq_dataprocess_output, master_df=master_result_df,
+                                      notes = "summaryMethod='TMP' + MBimpute=T/F + censoredInt= 'NA'/'0' + featureSub='highQuality' + remove_uninformative_feature_outlier = T/ F",
+                                      summary_method="TMP", dataset_path)
   # 
   # # ############### parameterized dataprocess run 4#########################
   # # summaryMethod='Linear' + MBimpute=F + censoredInt= 'NA' or '0' + featureSub='All'
@@ -75,11 +75,11 @@ run_dataprocess <- function(data,
   
   # ############### parameterized dataprocess run 5#########################
   # summaryMethod='Linear' + MBimpute=F + censoredInt= 'NA' or '0' + featureSub='topN'
-  linear_feature_sub_all_dataprocess_output_topn <- invoke_dataprocess_feature_subset_topn(
-    data, summary_method="TMP", mb_impute, censored_int, feature_subset="topN",n_top_feature=5)
-  master_result_df <- run_comparisons(linear_feature_sub_all_dataprocess_output_topn, master_df=master_result_df,
-                                      notes = "parameterized on remove_uninformative_feature_outlier = FALSE",
-                                      summary_method="linear", dataset_path)
+  # linear_feature_sub_all_dataprocess_output_topn <- invoke_dataprocess_feature_subset_topn(
+  #   data, summary_method="TMP", mb_impute, censored_int, feature_subset="topN",n_top_feature=5)
+  # master_result_df <- run_comparisons(linear_feature_sub_all_dataprocess_output_topn, master_df=master_result_df,
+  #                                     notes = "parameterized on remove_uninformative_feature_outlier = FALSE",
+  #                                     summary_method="linear", dataset_path)
   
   return(master_result_df)
 }

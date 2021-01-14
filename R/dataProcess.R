@@ -95,7 +95,8 @@ dataProcess = function(
     input = MSstatsMergeFractions(input)
     input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
                                  censoredInt, maxQuantileforCensored)
-    input = MSstatsSelectFeatures(input, featureSubset, n_top_feature)
+    input = MSstatsSelectFeatures(input, featureSubset, n_top_feature,
+                                  min_feature_count = 2)
     # Record statistics about the dataset
     .logDatasetInformation(input)
     # Summarization per subplot (per RUN) ----
