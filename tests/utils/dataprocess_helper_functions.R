@@ -82,8 +82,8 @@ compare_values_processed_data <- function(input_df){
 
 compare_values_runlevel_data <- function(input_df){
   #this logic is overkilled for now. Need to handle columns more flexibly
-  input_df$match.int <- abs(input_df$LogIntensities.x - input_df$LogIntensities.y) > 1e-6
-  input_df$match.perc <- abs(input_df$MissingPercentage.x - input_df$MissingPercentage.y) > 1e-2
+  input_df$match.int <- abs(input_df$LogIntensities.x - input_df$LogIntensities.y) < 1e-6
+  input_df$match.perc <- abs(input_df$MissingPercentage.x - input_df$MissingPercentage.y) < 1e-2
   input_df$match.numimpf <- input_df$NumImputedFeature.x == input_df$NumImputedFeature.y
   input_df$match.nummsrf <- input_df$NumMeasuredFeature.x == input_df$NumMeasuredFeature.y
   return(input_df)
