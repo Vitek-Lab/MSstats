@@ -259,7 +259,7 @@ flag_noninf_data <- function(processedData) {
         list_var <- vector("list", nrow(nested_prot))
         for (i in seq_along(list_var)) {
             s_eb <- nested_prot$s_resid_eb[i]
-            if (!is.na(s_eb)) {
+            if (!is.na(s_eb) & !all(is.na(nested_prot$rlm_fit[[i]]$residuals))) {
                 augdata <- nested_prot$rlm_fit[[i]] %>% augment()
                 if (lab == "L") {
                     list_var[[i]] <- calc_fvar(augdata, s_eb, rm_olr = TRUE)
