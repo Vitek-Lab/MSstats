@@ -9,7 +9,7 @@
 #' 
 #' @export
 #' 
-MSstatsSelectFeatures = function(input, method, top_n = NULL, min_feature_count = NULL) {
+MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2) {
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
     } else if (method == "highQuality") {
