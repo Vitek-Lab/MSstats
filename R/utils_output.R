@@ -55,7 +55,7 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
     output_cols = intersect(c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
                     "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
                     "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
-                    "newABUNDANCE", "predicted"), colnames(input))
+                    "newABUNDANCE", "predicted", "feature_quality", "is_outlier"), colnames(input))
     list(ProcessedData = as.data.frame(input)[, output_cols], 
          RunlevelData = as.data.frame(rqall), 
          SummaryMethod = summary_method, 
