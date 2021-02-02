@@ -228,11 +228,15 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     if (inherits(robust_model, "try-error")) {
         list(NA_real_, NA_real_, NA_real_)
     } else {
-        model_residuals = rep(NA_real_, nrow(input))
-        model_residuals[!input$is_lowcvr & !is.na(input$log2inty) & !input$unrep] = residuals(robust_model)
-        list(as.numeric(model_residuals),
-             rep(summary(robust_model)$df[2], nrow(input)),
-             rep(summary(robust_model)$sigma ^ 2, nrow(input)))
+        if (robust_model$converged) {
+            model_residuals = rep(NA_real_, nrow(input))
+            model_residuals[!input$is_lowcvr & !is.na(input$log2inty) & !input$unrep] = residuals(robust_model)
+            list(as.numeric(model_residuals),
+                 rep(summary(robust_model)$df[2], nrow(input)),
+                 rep(summary(robust_model)$sigma ^ 2, nrow(input)))
+        } else {
+            list(NA_real_, NA_real_, NA_real_)
+        }
     }
 }
 
