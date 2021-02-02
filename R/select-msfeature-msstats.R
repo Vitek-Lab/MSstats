@@ -505,7 +505,11 @@ flag_noninf_data_nbftr <- function(processedData) {
         fit <- fit[!is_failed] %>% transpose()
         is_warned <- !map_lgl(fit$warnings, is_empty)
         nested_prot$rlm_fit <- fit$result
+        nested_prot <- nested_prot[!is_warned, ] 
         nested_prot <- nested_prot %>% 
+            mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
+            mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
+nested_prot %>% 
             slice(which(!(is_warned))) %>% 
             mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
             mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
