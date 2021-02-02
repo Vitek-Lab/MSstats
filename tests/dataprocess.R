@@ -21,6 +21,7 @@ metadata_s3 <- get_file_from_s3(s3_file_path = datasets$metadata_rds,
 datasets_s3 <- get_file_from_s3(s3_file_path = datasets$datasets_rds,
                                 local_file_name = "datasets.RDS")
 metadata_s3 = metadata_s3[!(sapply(metadata_s3, function(x) x$name) %in% c("Azimifa2014"))]
+metadata_s3 = metadata_s3[sapply(metadata_s3, function(x) x$type) == "DDA"]
 if (!is_tmt) {
   metadata_s3 = metadata_s3[!(sapply(metadata_s3, function(x) x$type) == "TMT")]
 } else {
