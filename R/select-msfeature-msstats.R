@@ -509,10 +509,10 @@ flag_noninf_data_nbftr <- function(processedData) {
         nested_prot <- nested_prot %>% 
             mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
             mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
-nested_prot %>% 
-            slice(which(!(is_warned))) %>% 
-            mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
-            mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
+# nested_prot %>% 
+#             slice(which(!(is_warned))) %>% 
+#             mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
+#             mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
         rm(list = c("list_sdata", "fit", "is_failed", "is_warned"))
         
         # Extract variances and degrees of freedom
