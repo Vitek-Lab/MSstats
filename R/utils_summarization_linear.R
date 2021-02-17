@@ -24,8 +24,6 @@
     pb = utils::txtProgressBar(min = 0, max = n_proteins, style = 3)
     for (protein_id in seq_along(proteins)) {
         single_protein = input[PROTEIN == proteins[protein_id]]
-        single_protein[, RUN := factor(RUN)]
-        single_protein[, FEATURE := factor(FEATURE)]
         summarized_result = .summarizeLinearSingleProtein(single_protein,
                                                           equal_variances)
         summarized_results[[protein_id]] = summarized_result
@@ -60,10 +58,13 @@
 #' @return data.table
 #' @keywords internal
 .summarizeLinearSingleProtein = function(input, equal_variances = TRUE) {
-    ABUNDANCE = NULL
+    ABUNDANCE = RUN = FEATURE = NULL
     
     label = data.table::uniqueN(input$LABEL) > 1
     input = input[!is.na(ABUNDANCE)]
+    input[, RUN := factor(RUN)]
+    input[, FEATURE := factor(FEATURE)]
+    
     counts = xtabs(~ RUN + FEATURE, 
                    data = unique(input[, .(FEATURE, RUN)]))
     counts = as.matrix(counts)
