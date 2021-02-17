@@ -7,8 +7,7 @@
     n_runs = data.table::uniqueN(input[missingness_filter, RUN])
     is_labeled = data.table::uniqueN(input$LABEL) > 1
     countdf = n_total  < n_features + n_runs - 1
-    input = as.data.frame(input)
-    
+
     # TODO: set.seed here?
     set.seed(100)
     if (is_labeled) {
