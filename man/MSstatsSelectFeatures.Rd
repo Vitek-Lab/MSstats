@@ -4,7 +4,7 @@
 \alias{MSstatsSelectFeatures}
 \title{Feature selection before feature-level data summarization}
 \usage{
-MSstatsSelectFeatures(input, method, top_n = NULL, min_feature_count = NULL)
+MSstatsSelectFeatures(input, method, top_n = 3, min_feature_count = 2)
 }
 \arguments{
 \item{input}{data.table}

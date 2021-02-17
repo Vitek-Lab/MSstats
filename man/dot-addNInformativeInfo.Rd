@@ -4,12 +4,14 @@
 \alias{.addNInformativeInfo}
 \title{Add information about number of informative features}
 \usage{
-.addNInformativeInfo(input, min_feature_count)
+.addNInformativeInfo(input, min_feature_count, column)
 }
 \arguments{
 \item{input}{data.table}
 
 \item{min_feature_count}{minimum number of quality features to consider}
+
+\item{column}{name of a column used for filtering}
 }
 \value{
 data.table

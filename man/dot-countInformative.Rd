@@ -4,10 +4,12 @@
 \alias{.countInformative}
 \title{Count informative features}
 \usage{
-.countInformative(input)
+.countInformative(input, column)
 }
 \arguments{
 \item{input}{data.table}
+
+\item{column}{name of a column used for filtering}
 }
 \value{
 numeric

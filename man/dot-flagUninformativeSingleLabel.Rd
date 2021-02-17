@@ -4,7 +4,7 @@
 \alias{.flagUninformativeSingleLabel}
 \title{Flag uninformative features}
 \usage{
-.flagUninformativeSingleLabel(input, min_feature_count)
+.flagUninformativeSingleLabel(input, min_feature_count = 2)
 }
 \arguments{
 \item{input}{data.table}
