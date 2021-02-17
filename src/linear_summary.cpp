@@ -163,6 +163,7 @@ NumericVector combine_contrast(bool is_reference, NumericVector intercept,
     }
 }
 
+// [[Rcpp::export]]
 NumericVector make_contrast_run_quant(DataFrame input,
                                       NumericVector coefs,
                                       NumericVector contrast_matrix,
@@ -196,7 +197,12 @@ NumericVector make_contrast_run_quant(DataFrame input,
     NumericVector contrast = combine_contrast(is_reference,
                                               intercept, features, runs,
                                               refs, run_features, subjects);
-    contrast = contrast[!is_na(coefs)];
+    if (contrast.length() == coefs.length()) {
+        contrast = contrast[!is_na(coefs)];
+    } else {
+        CharacterVector names = contrast.attr("names");
+        contrast = contrast[!is_na(names)];
+    }
     return(contrast);
 }
 
