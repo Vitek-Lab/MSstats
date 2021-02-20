@@ -6,6 +6,88 @@
 
 using namespace Rcpp;
 
+// get_patient_seq
+NumericVector get_patient_seq(const DataFrame& patients, const NumericVector& patient_counts, const CharacterVector& coef_names);
+RcppExport SEXP _MSstatsdev_get_patient_seq(SEXP patientsSEXP, SEXP patient_countsSEXP, SEXP coef_namesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const DataFrame& >::type patients(patientsSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type patient_counts(patient_countsSEXP);
+    Rcpp::traits::input_parameter< const CharacterVector& >::type coef_names(coef_namesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_patient_seq(patients, patient_counts, coef_names));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_group
+NumericVector get_group(const IntegerVector groups, const NumericMatrix& contrast_matrix, const CharacterVector& coef_names);
+RcppExport SEXP _MSstatsdev_get_group(SEXP groupsSEXP, SEXP contrast_matrixSEXP, SEXP coef_namesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerVector >::type groups(groupsSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type contrast_matrix(contrast_matrixSEXP);
+    Rcpp::traits::input_parameter< const CharacterVector& >::type coef_names(coef_namesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_group(groups, contrast_matrix, coef_names));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_interaction_seq
+NumericVector get_interaction_seq(const DataFrame& patients, const NumericVector& patient_counts, const CharacterVector& coef_names);
+RcppExport SEXP _MSstatsdev_get_interaction_seq(SEXP patientsSEXP, SEXP patient_countsSEXP, SEXP coef_namesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const DataFrame& >::type patients(patientsSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type patient_counts(patient_countsSEXP);
+    Rcpp::traits::input_parameter< const CharacterVector& >::type coef_names(coef_namesSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_interaction_seq(patients, patient_counts, coef_names));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_contrast_free
+NumericVector get_contrast_free(const DataFrame& input, const DataFrame& patients, const NumericVector& patient_counts, const NumericMatrix& contrast_matrix, const NumericVector& coefs);
+RcppExport SEXP _MSstatsdev_get_contrast_free(SEXP inputSEXP, SEXP patientsSEXP, SEXP patient_countsSEXP, SEXP contrast_matrixSEXP, SEXP coefsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const DataFrame& >::type input(inputSEXP);
+    Rcpp::traits::input_parameter< const DataFrame& >::type patients(patientsSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type patient_counts(patient_countsSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type contrast_matrix(contrast_matrixSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type coefs(coefsSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_contrast_free(input, patients, patient_counts, contrast_matrix, coefs));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_estimable_fixed_random
+List get_estimable_fixed_random(const List& parameters, const arma::vec& contrast);
+RcppExport SEXP _MSstatsdev_get_estimable_fixed_random(SEXP parametersSEXP, SEXP contrastSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const List& >::type parameters(parametersSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type contrast(contrastSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_estimable_fixed_random(parameters, contrast));
+    return rcpp_result_gen;
+END_RCPP
+}
+// make_contrast_run_quant
+NumericVector make_contrast_run_quant(DataFrame input, NumericVector coefs, NumericVector contrast_matrix, NumericMatrix counts, bool is_labeled, bool is_reference);
+RcppExport SEXP _MSstatsdev_make_contrast_run_quant(SEXP inputSEXP, SEXP coefsSEXP, SEXP contrast_matrixSEXP, SEXP countsSEXP, SEXP is_labeledSEXP, SEXP is_referenceSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type input(inputSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type coefs(coefsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type contrast_matrix(contrast_matrixSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< bool >::type is_labeled(is_labeledSEXP);
+    Rcpp::traits::input_parameter< bool >::type is_reference(is_referenceSEXP);
+    rcpp_result_gen = Rcpp::wrap(make_contrast_run_quant(input, coefs, contrast_matrix, counts, is_labeled, is_reference));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_linear_summary
 NumericVector get_linear_summary(const DataFrame& input, const NumericVector& coefs, const NumericMatrix& counts, const bool is_labeled);
 RcppExport SEXP _MSstatsdev_get_linear_summary(SEXP inputSEXP, SEXP coefsSEXP, SEXP countsSEXP, SEXP is_labeledSEXP) {
@@ -35,6 +117,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_MSstatsdev_get_patient_seq", (DL_FUNC) &_MSstatsdev_get_patient_seq, 3},
+    {"_MSstatsdev_get_group", (DL_FUNC) &_MSstatsdev_get_group, 3},
+    {"_MSstatsdev_get_interaction_seq", (DL_FUNC) &_MSstatsdev_get_interaction_seq, 3},
+    {"_MSstatsdev_get_contrast_free", (DL_FUNC) &_MSstatsdev_get_contrast_free, 5},
+    {"_MSstatsdev_get_estimable_fixed_random", (DL_FUNC) &_MSstatsdev_get_estimable_fixed_random, 2},
+    {"_MSstatsdev_make_contrast_run_quant", (DL_FUNC) &_MSstatsdev_make_contrast_run_quant, 6},
     {"_MSstatsdev_get_linear_summary", (DL_FUNC) &_MSstatsdev_get_linear_summary, 4},
     {"_MSstatsdev_median_polish_summary", (DL_FUNC) &_MSstatsdev_median_polish_summary, 3},
     {NULL, NULL, 0}
