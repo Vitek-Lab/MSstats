@@ -1,31 +1,6 @@
 #include <RcppArmadillo.h>
+#include "common.hpp"
 using namespace Rcpp;
-
-
-//[[Rcpp::depends(RcppArmadillo)]]
-arma::mat mult(const arma::mat& A, const arma::mat& B) {
-    return A * B;
-}
-
-
-NumericVector unlist(List l) {
-    Rcpp::Environment base("package:base"); 
-    Rcpp::Function unlist = base["unlist"];    
-    return(unlist(l));
-} 
-
-NumericVector grep(String pattern, CharacterVector character_vector) {
-    Rcpp::Environment base("package:base"); 
-    Rcpp::Function grep = base["grep"];    
-    Rcpp::NumericVector result = grep(Rcpp::_["pattern"] = pattern,
-                                      Rcpp::_["x"]  = character_vector); 
-    if (result.length() > 0 && !is_true(all(is_na(result)))) {
-        result = result - 1;
-    } else {
-        result = -1;
-    }
-    return result;
-} 
 
 
 NumericVector get_feature_props(DataFrame input, NumericVector contrast_matrix,
@@ -41,7 +16,7 @@ NumericVector get_feature_props(DataFrame input, NumericVector contrast_matrix,
 NumericVector get_intercept(CharacterVector coef_names) {
     NumericVector intercept_name = grep("Intercept", coef_names);
     CharacterVector temp_intercept = coef_names[intercept_name];
-    // 
+
     NumericVector intercept(temp_intercept.length(), 1);
     if (is_true(all(is_na(temp_intercept))) || (temp_intercept.length() == 0)) {
         intercept = NumericVector(0);
