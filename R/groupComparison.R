@@ -35,7 +35,6 @@ groupComparison <- function(contrast.matrix, data, save_fitted_models = TRUE) {
     getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
     getOption("MSstatsLog")("INFO", paste0("scopeOfBioReplication = ",
                                            scopeOfBioReplication))
-    
     getOption("MSstatsLog")("INFO",
                             "** Start to test and get inference in whole plot")
     

@@ -116,8 +116,8 @@
         cf = model_summary[["coefficients"]]
         vcv = model_summary[["cov.unscaled"]] * (model_summary[["sigma"]] ^ 2)
     } else {
-        cf = as.matrix(fixef(fitted_model))
-        vcv = as.matrix(vcov(fitted_model))
+        cf = as.matrix(fixef(fitted_model[["full_fit"]]))
+        vcv = as.matrix(vcov(fitted_model[["full_fit"]]))
     }
     list(cf = cf, vcv = vcv, df = fitted_model[["df_full"]])
 }
@@ -157,7 +157,7 @@
                  issue = "completeMissing")
         }
     })
-    empty_result = data.table::rbindlist(all_comparisons)
+    empty_result = data.table::rbindlist(all_comparisons, fill = TRUE)
     empty_result = cbind(empty_result,
                          data.table::data.table(
                              Protein = protein, SE = NA, Tvalue = NA,
@@ -172,8 +172,7 @@
     empty_conditions = setdiff(groups, unique(input$GROUP))
     parameters = .getModelParameters(fitted_model)
     fit = fitted_model[["full_fit"]]
-    coefs = coef(fit)
-    model_data = fit$model
+    coefs = parameters$cf[, 1]
 
     all_comparisons = vector("list", nrow(contrast_matrix))
     for (row_id in 1:nrow(contrast_matrix)) {
@@ -181,20 +180,20 @@
         if (length(empty_conditions) != 0) {
             result = .handleEmptyConditions(input, fit, ith_contrast,
                                             groups, parameters, protein,
-                                            empty_conditions)
+                                            empty_conditions, coefs)
         } else {
             result = .handleSingleContrast(input, fit, ith_contrast, groups,
-                                           parameters, protein, coefs, model_data)
+                                           parameters, protein, coefs)
         }
         all_comparisons[[row_id]] = result
     }
-    data.table::rbindlist(all_comparisons)
+    data.table::rbindlist(all_comparisons, fill = TRUE)
 }
 
 
 .handleEmptyConditions = function(input, fit, ith_contrast,
                                   groups, parameters, protein,
-                                  empty_conditions) {
+                                  empty_conditions, coefs) {
     count_diff_pos = intersect(groups[ith_contrast != 0 & ith_contrast > 0],
                                empty_conditions)
     count_diff_neg = intersect(groups[ith_contrast != 0 & ith_contrast < 0],
@@ -221,15 +220,15 @@
                       SE = NA, Tvalue = NA, DF = NA, pvalue = NA)
     } else {
         result = .handleSingleContrast(input, fit, ith_contrast, groups,
-                                       parameters, protein, coefs, model_data)
+                                       parameters, protein, coefs)
     }
     result
 }
 
 
 .handleSingleContrast = function(input, fit, contrast_matrix, groups,
-                                 parameters, protein, coefs, model_data) {
-    contrast = .getContrast(input, fit, contrast_matrix, coefs, model_data)
+                                 parameters, protein, coefs) {
+    contrast = .getContrast(input, contrast_matrix, coefs)
     result = get_estimable_fixed_random(parameters, contrast)
     if (is.null(result)) {
         result = list(Protein = protein,
