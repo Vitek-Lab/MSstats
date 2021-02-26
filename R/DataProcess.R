@@ -3131,7 +3131,8 @@ resultsAsLists <- function(x, ...) {
     						}
     
     						for(j in 1:length(unique(cut$feature.label))) {
-    							sub[is.na(sub$ABUNDANCE) & sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
+    							sub[is.na(sub$ABUNDANCE) & sub$censored &
+    							        sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
     						}
     					}
     					
@@ -3173,7 +3174,7 @@ resultsAsLists <- function(x, ...) {
     						cut$ABUNDANCE <- 0.99*cut$ABUNDANCE
     
     						for(j in 1:length(unique(cut$run.label))) {
-    							sub[is.na(sub$ABUNDANCE) & 
+    							sub[is.na(sub$ABUNDANCE) & sub$censored &
     							        sub$run.label == cut$run.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
     						}
     					}
@@ -3220,7 +3221,7 @@ resultsAsLists <- function(x, ...) {
     									# get smaller value for min Run and min Feature
     									finalcut <- min(cut.fea$ABUNDANCE[j],cut.run$ABUNDANCE[k])
     								
-    									sub[is.na(sub$ABUNDANCE) & 
+    									sub[is.na(sub$ABUNDANCE) & sub$censored &
     									        sub$feature.label == cut.fea$feature.label[j] & 
     									        sub$run.label == cut.run$run.label[k], "ABUNDANCE"] <- finalcut
     								}
@@ -3291,8 +3292,8 @@ resultsAsLists <- function(x, ...) {
     						    }
     					
     						    # get predicted value from survival
-    						    sub <- data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
-    					
+    						    predicted <- predict(fittest, newdata=sub, type="response")
+    						    sub <- data.frame(sub, pred=ifelse(sub$censored & sub$LABEL == "L", predicted, NA))
     						    # the replace censored value with predicted value
     						    sub[sub$cen == 0, "ABUNDANCE"] <- sub[sub$cen == 0, "pred"]	
     					
@@ -3326,7 +3327,9 @@ resultsAsLists <- function(x, ...) {
     				            }
     				            
     				            # get predicted value from survival
-    				            sub.l <- data.frame(sub.l, pred=predict(fittest, newdata=sub.l, type="response"))
+    				            # sub.l <- data.frame(sub.l, pred=predict(fittest, newdata=sub.l, type="response"))
+    				            predicted <- predict(fittest, newdata=sub.l, type="response")
+    				            sub.l <- data.frame(sub.l, pred=ifelse(sub.l$censored & sub.l$LABEL == "L", predicted, NA))
     				            
     				            # predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))
     				            #predAbundance <- c(predict(fittest, newdata=sub.l, type="response"))
@@ -3781,7 +3784,8 @@ resultsAsLists <- function(x, ...) {
                             }
                               
                             for(j in 1:length(unique(cut$feature.label))) {
-                                sub[is.na(sub$ABUNDANCE) & sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
+                                sub[is.na(sub$ABUNDANCE) & sub$censored &
+                                        sub$feature.label == cut$feature.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
                             }
                         }
                           
@@ -3823,8 +3827,10 @@ resultsAsLists <- function(x, ...) {
                             cut$ABUNDANCE <- 0.99*cut$ABUNDANCE
                               
                             for(j in 1:length(unique(cut$run.label))) {
-                                sub[is.na(sub$ABUNDANCE) & 
+                                sub[is.na(sub$ABUNDANCE) & sub$censored &
                                         sub$run.label == cut$run.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
+                                # sub[is.na(sub$ABUNDANCE) & 
+                                #         sub$run.label == cut$run.label[j], "ABUNDANCE"] <- cut$ABUNDANCE[j]
                             }
                         }
                           
@@ -3870,9 +3876,10 @@ resultsAsLists <- function(x, ...) {
                                         # get smaller value for min Run and min Feature
                                         finalcut <- min(cut.fea$ABUNDANCE[j],cut.run$ABUNDANCE[k])
                                           
-                                        sub[is.na(sub$ABUNDANCE) & 
+                                        sub[is.na(sub$ABUNDANCE) & sub$censored &
                                                 sub$feature.label == cut.fea$feature.label[j] & 
                                                 sub$run.label == cut.run$run.label[k], "ABUNDANCE"] <- finalcut
+                                        
                                     }
                                 }
                             }
@@ -3941,8 +3948,10 @@ resultsAsLists <- function(x, ...) {
                                 }
                                   
                                 # get predicted value from survival
-                                sub <- data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
-                                  
+                                #sub <- data.frame(sub, pred=predict(fittest, newdata=sub, type="response"))
+                                predicted <- predict(fittest, newdata=sub, type="response")
+                                sub <- data.frame(sub, pred=ifelse(sub$censored & sub$LABEL == "L", predicted, NA))
+                                
                                 # the replace censored value with predicted value
                                 sub[sub$cen == 0, "ABUNDANCE"] <- sub[sub$cen == 0, "pred"]	
                                   
@@ -3976,7 +3985,10 @@ resultsAsLists <- function(x, ...) {
                                 }
                                   
                                 # get predicted value from survival
-                                sub.l <- data.frame(sub.l, pred=predict(fittest, newdata=sub.l, type="response"))
+                                # sub.l <- data.frame(sub.l, pred=predict(fittest, newdata=sub.l, type="response"))
+                                
+                                predicted <- predict(fittest, newdata=sub.l, type="response")
+                                sub.l <- data.frame(sub.l, pred=ifelse(sub.l$censored & sub.l$LABEL == "L", predicted, NA))
                                   
                                 # predAbundance <- c(predAbundance,predict(fittest, newdata=sub, type="response"))
                                 #predAbundance <- c(predict(fittest, newdata=sub.l, type="response"))
@@ -4523,7 +4535,7 @@ resultsAsLists <- function(x, ...) {
 				## remove run which has no measurement at all
 				subtemp <- sub[!is.na(sub$INTENSITY), ]
 				count <- aggregate(ABUNDANCE~RUN, data=subtemp, length)
-				norun <- setdiff(unique(data$RUN), ount$RUN)
+				norun <- setdiff(unique(data$RUN), count$RUN)
 				
 				if (length(norun) != 0 & length(intersect(norun, as.character(unique(sub$RUN)))) != 0) { 
 				    # removed NA rows already, if there is no overlapped run, error

@@ -259,7 +259,7 @@ flag_noninf_data <- function(processedData) {
         list_var <- vector("list", nrow(nested_prot))
         for (i in seq_along(list_var)) {
             s_eb <- nested_prot$s_resid_eb[i]
-            if (!is.na(s_eb)) {
+            if (!is.na(s_eb) & !all(is.na(nested_prot$rlm_fit[[i]]$residuals))) {
                 augdata <- nested_prot$rlm_fit[[i]] %>% augment()
                 if (lab == "L") {
                     list_var[[i]] <- calc_fvar(augdata, s_eb, rm_olr = TRUE)
@@ -505,10 +505,14 @@ flag_noninf_data_nbftr <- function(processedData) {
         fit <- fit[!is_failed] %>% transpose()
         is_warned <- !map_lgl(fit$warnings, is_empty)
         nested_prot$rlm_fit <- fit$result
+        nested_prot <- nested_prot[!is_warned, ] 
         nested_prot <- nested_prot %>% 
-            slice(which(!(is_warned))) %>% 
             mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
             mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
+# nested_prot %>% 
+#             slice(which(!(is_warned))) %>% 
+#             mutate(df_resid = map_dbl(rlm_fit, ~summary(.)$df[2])) %>% 
+#             mutate(s_resid = map_dbl(rlm_fit, ~summary(.)$sigma))
         rm(list = c("list_sdata", "fit", "is_failed", "is_warned"))
         
         # Extract variances and degrees of freedom
