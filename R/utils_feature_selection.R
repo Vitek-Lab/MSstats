@@ -159,7 +159,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     input[(has_three_informative), is_lowcvr := .flagLowCoverage(.SD), 
           by = c("protein", "feature"),
           .SDcols = c("is_obs", "min_obs")]
-    input[, is_lowcvr := ifelse(unrep, FALSE, is_lowcvr)]
+    input[, is_lowcvr := ifelse(unrep, TRUE, is_lowcvr)]
     input[, is_lowcvr := ifelse(is.na(is_lowcvr), FALSE, is_lowcvr)]
 }
 
