@@ -2,6 +2,12 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 3.21.4 (2021-02-25)}{
+    \itemize{
+        \item Fix the bug for feature selection
+    }
+}
+
 \section{Version 3.21.2 (2020-08-19)}{
     \itemize{
         \item Fix the bugs for converter.(dcast updated)
