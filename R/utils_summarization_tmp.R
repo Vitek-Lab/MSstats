@@ -23,6 +23,10 @@
     INTENSITY = PROTEIN = n_obs = n_obs_run = RUN = NULL
     
     if (impute & !is.null(censored_symbol)) {
+        if (is.element("feature_quality", colnames(input))) {
+            input[, censored := ifelse(feature_quality == "Informative",
+                                       censored, FALSE)]
+        }
         if (censored_symbol == "0") {
             input[, newABUNDANCE := ifelse(censored, 0, ABUNDANCE)]
         } else if (censored_symbol == "NA") {
