@@ -20,7 +20,7 @@
 .summarizeTukey = function(input, impute, cutoff_base, censored_symbol, 
                            remove50missing, n_threads = NULL) {
     cen = censored = ABUNDANCE = FEATURE = LABEL = more50missing = NULL
-    INTENSITY = PROTEIN = n_obs = n_obs_run = RUN = NULL
+    INTENSITY = PROTEIN = n_obs = n_obs_run = RUN = feature_quality = NULL
     
     if (impute & !is.null(censored_symbol)) {
         if (is.element("feature_quality", colnames(input))) {
