@@ -1,17 +1,4 @@
-#' Create a contrast matrix for groupComparison function
-#' 
-#' @param contrast list of lists. Each sub-list consists of two vectors that 
-#' name conditions that will be compared. See the details section for more 
-#' information
-#' @param conditions unique condition labels  
-#' @param labels labels for contrasts (row.names of the contrast matrix)
-#' 
 #' @export
-#' 
-MSstatsContrastMatrix = function(contrasts, conditions, labels = NULL) {
-    UseMethod("MSstatsContrastMatrix", contrasts)
-}
-
 MSstatsContrastMatrix.list = function(contrasts, conditions, labels = NULL) {
     num_conditions = length(conditions)
     contrast_matrix = matrix(0, nrow = length(contrasts),
@@ -34,7 +21,7 @@ MSstatsContrastMatrix.list = function(contrasts, conditions, labels = NULL) {
     contrast_matrix
 }
 
-
+#' @export
 MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL) {
     if (contrasts == "pairwise") {
         contrast_combinations = combn(conditions, 2)
@@ -45,6 +32,21 @@ MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL)
     } else {
         stop(paste("Contrast matrix of type", contrasts, "not implemented"))
     }
+}
+
+
+#' Create a contrast matrix for groupComparison function
+#' 
+#' @param contrast list of lists. Each sub-list consists of two vectors that 
+#' name conditions that will be compared. See the details section for more 
+#' information
+#' @param conditions unique condition labels  
+#' @param labels labels for contrasts (row.names of the contrast matrix)
+#' 
+#' @export
+#' 
+MSstatsContrastMatrix = function(contrasts, conditions, labels = NULL) {
+    UseMethod("MSstatsContrastMatrix", contrasts)
 }
 
 
