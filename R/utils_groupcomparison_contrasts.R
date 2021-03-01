@@ -9,6 +9,10 @@
 #' @export
 #' 
 MSstatsContrastMatrix = function(contrasts, conditions, labels = NULL) {
+    UseMethod("MSstatsContrastMatrix", contrasts)
+}
+
+MSstatsContrastMatrix.list = function(contrasts, conditions, labels = NULL) {
     num_conditions = length(conditions)
     contrast_matrix = matrix(0, nrow = length(contrasts),
                              ncol = num_conditions)
@@ -31,6 +35,19 @@ MSstatsContrastMatrix = function(contrasts, conditions, labels = NULL) {
 }
 
 
+MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL) {
+    if (contrasts == "pairwise") {
+        contrast_combinations = combn(conditions, 2)
+        contrasts_list = lapply(1:ncol(contrast_combinations),
+                                function(x) list(contrast_combinations[1, x],
+                                                 contrast_combinations[2, x]))
+        MSstatsContrastMatrix.list(contrasts_list, conditions)
+    } else {
+        stop(paste("Contrast matrix of type", contrasts, "not implemented"))
+    }
+}
+
+
 #' Get labels for contrasts 
 #' @param contrasts list of lists of condition labels
 #' @keywords internal
@@ -46,31 +63,3 @@ MSstatsContrastMatrix = function(contrasts, conditions, labels = NULL) {
 }
 
 
-#' Create a contrast for a model with only group as a fixed effect
-#' @param input summarized data for a single protein
-#' @param contrast_matrix row of a contrast_matrix
-#' @param coefs coefficients of a linear model (named vector)
-#' @keywords internal
-.getContrast = function(input, contrast_matrix, coefs) {
-    coef_names = names(coefs)
-    intercept = grep("Intercept", coef_names, value = TRUE)
-    if (length(intercept) > 0) {
-        intercept_term = rep(0, length(intercept))
-        names(intercept_term) = intercept
-    } else {
-        intercept_term = NULL
-    }
-    group = grep("GROUP", coef_names, value = TRUE)
-    interaction = grep(":", coef_names, value = TRUE)
-    group = setdiff(group, interaction)
-    if (length(group) > 0) {
-        # THE LINE BELOW WILL REQUIRE CHANGE WHEN SWITCHING TO V4
-        group_term = contrast_matrix[, as.numeric(levels(input$GROUP))]
-        group_term = group_term[-1]
-        names(group_term) = group
-    } else {
-        group_term = NULL
-    }
-    contrast = c(intercept_term, group_term)
-    contrast[!is.na(coefs)]
-}
