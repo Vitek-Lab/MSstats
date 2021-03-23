@@ -114,10 +114,11 @@ MSstatsPrepareForDataProcess = function(input, log_base,
         stop(msg)
     }    
     
+    balanced_cols = intersect(c("PeptideModifiedSequence", "PeptideSequence",
+                                "PrecursorCharge", "FragmentIon", "ProductCharge"), 
+                              colnames(input))
     input = MSstatsConvert::MSstatsBalancedDesign(
-        input, c("PeptideSequence", "PrecursorCharge",
-                 "FragmentIon", "ProductCharge"), 
-        fill_incomplete, TRUE, fix_missing)
+        input, balanced_cols, fill_incomplete, TRUE, fix_missing)
     input = data.table::as.data.table(unclass(input))
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
 
