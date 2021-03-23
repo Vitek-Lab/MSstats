@@ -120,11 +120,7 @@ MSstatsPrepareForDataProcess = function(input, log_base,
         input, balanced_cols, fill_incomplete, TRUE, fix_missing)
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
 
-    if (is.element("PEPTIDEMODIFIEDSEQUENCE", provided_cols)) {
-        data.table::setnames(
-            input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
-    }
-    
+
     if (!is.numeric(input$INTENSITY)) {	
         suppressWarnings({
             input$INTENSITY = as.numeric(as.character(input$INTENSITY))
