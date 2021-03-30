@@ -113,7 +113,7 @@ MSstatsPrepareForDataProcess = function(input, log_base,
         getOption("MSstatsLog")("ERROR", msg)
         stop(msg)
     }
-    data.table::setnames(input, "PeptideModifiedSequence", "PeptideSequence")
+    data.table::setnames(input, "PeptideModifiedSequence", "PeptideSequence", skip_absent = TRUE)
     
     balanced_cols = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsBalancedDesign(
