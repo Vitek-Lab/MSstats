@@ -279,8 +279,10 @@
                                    summarized, result, has_imputed) {
     counts = processed[LABEL == "L", 
                        .(totalN = .N,
-                         NumMeasuredFeature = sum(!is.na(ABUNDANCE) & ABUNDANCE > 0),
-                         NumImputedFeature = sum(censored)), 
+                         NumMeasuredFeature = sum(!is.na(ABUNDANCE) & ABUNDANCE > 0,
+                                                  na.rm = TRUE),
+                         NumImputedFeature = sum(censored & (!is.na(ABUNDANCE) & ABUNDANCE > 0),
+                                                 na.rm=  TRUE)), 
                        by = "GROUP_ORIGINAL"]
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))

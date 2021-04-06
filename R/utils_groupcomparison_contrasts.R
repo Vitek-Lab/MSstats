@@ -63,5 +63,3 @@ MSstatsContrastMatrix = function(contrasts, conditions, labels = NULL) {
                                                  collapse = " vs "))
     labels
 }
-
-
