@@ -26,10 +26,12 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         rqmodelqc = NULL
         workpred = NULL
     } else {
+        input[, TotalGroupMeasurements := uniqueN(.SD),
+              by = c("PROTEIN", "GROUP"), .SDcols = c("FEATURE", "originalRUN")]
         cols = intersect(c("PROTEIN", "originalRUN", "RUN", "GROUP_ORIGINAL", 
-                           "SUBJECT_ORIGINAL", "NumMeasuredFeature", 
-                           "MissingPercentage", "more50missing", 
-                           "NumImputedFeature"),
+                           "SUBJECT_ORIGINAL", "TotalGroupMeasurements",
+                           "NumMeasuredFeature", "MissingPercentage", 
+                           "more50missing", "NumImputedFeature"),
                          colnames(input))
         merge_col = ifelse(is.element("RUN", colnames(summarized)), "RUN", "SUBJECT_ORIGINAL")
         lab = unique(input[, cols, with = FALSE])
