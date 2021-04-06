@@ -217,7 +217,8 @@
         result = list(Protein = protein,
                       logFC = logFC,
                       Label = row.names(ith_contrast),
-                      SE = NA, Tvalue = NA, DF = NA, pvalue = NA)
+                      SE = NA, Tvalue = NA, DF = NA, pvalue = NA,
+                      issue = issue)
     } else {
         result = .handleSingleContrast(input, fit, ith_contrast, groups,
                                        parameters, protein, coefs)
