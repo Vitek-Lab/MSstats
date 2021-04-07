@@ -1,3 +1,6 @@
+#' Prepare data for a single protein for group comparison
+#' @param single_protein data.table
+#' @keywords internal
 .prepareSingleProteinForGC = function(single_protein) {
     ABUNDANCE = GROUP = SUBJECT = SUBJECT_NESTED = RUN = NULL
     
@@ -14,6 +17,18 @@
 }
 
 
+#' Fit model and perform group comparison for a single protein
+#' @param input data.table of summarized data
+#' @param contrast_matrix contrast matrix
+#' @param has_tech_replicates if TRUE, there are technical replicates
+#' @param is_single_subject if TRUE, experiment consists of a single subject
+#' @param repeated if TRUE, experiment consists of repeated measurements
+#' @param groups unique labels for experimental conditions
+#' @param save_fitted_models if TRUE, fitted model will be saved. If FALSE,
+#' it will be replaced by NULL
+#' @param processed data.table of processed data
+#' @param has_imputed if TRUE, missing values have been imputed by dataProcess
+#' @keywords internal
 .fitModelSingleProtein = function(input, contrast_matrix, has_tech_replicates,
                                   is_single_subject, repeated, groups,
                                   save_fitted_models, processed, has_imputed) {
@@ -59,6 +74,9 @@
 }
 
 
+#' Choose a model type (fixed/mixed effects) and fit it for a single protein
+#' @inheritParams .fitModelSingleProtein
+#' @keywords internal
 .fitModelForGroupComparison = function(input, repeated, is_single_subject,
                                        has_tech_replicates) {
     if (!repeated) {
@@ -110,6 +128,9 @@
 }
 
 
+#' Get params (coefficients, covariance matrix, degrees of freedom) from a model
+#' @param fitted_model object of class lm or lmerMod
+#' @keywords internal
 .getModelParameters = function(fitted_model) {
     if (class(fitted_model[["full_fit"]]) == "lm") {
         model_summary = summary(fitted_model[["full_fit"]])
@@ -123,6 +144,12 @@
 }
 
 
+#' Comparison output when there are measurements only in a single condition
+#' @param input summarized data
+#' @param contrast_matrix contrast matrix
+#' @param groups unique labels of experimental conditions
+#' @param protein name of a protein
+#' @keywords internal
 .getEmptyComparison = function(input, contrast_matrix, groups, protein) {
     all_comparisons = lapply(1:nrow(contrast_matrix), function(row_id) {
         ith_comparison = contrast_matrix[row_id, , drop = FALSE]
@@ -169,6 +196,13 @@
 }
 
 
+#' Get all comparisons for a single protein and a contrast matrix
+#' @param input summarized data
+#' @param fitted_model model fitted by the .fitModelForGroupComparison function
+#' @param contrast_matrix contrast matrix
+#' @param groups unique labels of experimental conditions
+#' @param protein name of a protein
+#' @keywords internal
 .getAllComparisons = function(input, fitted_model, contrast_matrix,
                               groups, protein) {
     empty_conditions = setdiff(groups, unique(input$GROUP))
@@ -193,6 +227,15 @@
 }
 
 
+#' Handle contrast when some of the conditions are missing
+#' @param input summarized data
+#' @param ith_contrast single row of a contrast matrix
+#' @param groups unique labels of experimental conditions
+#' @param parameters parameters extracted from the model 
+#' @param protein name of a protein
+#' @param empty_conditions labels of empty conditions
+#' @param coefs coefficient of the fitted model
+#' @keywords internal
 .handleEmptyConditions = function(input, fit, ith_contrast,
                                   groups, parameters, protein,
                                   empty_conditions, coefs) {
@@ -229,6 +272,9 @@
 }
 
 
+#' Group comparison for a single contrast
+#' @inheritParams .handleEmptyConditions
+#' @keywords internal
 .handleSingleContrast = function(input, fit, contrast_matrix, groups,
                                  parameters, protein, coefs) {
     contrast = .getContrast(input, contrast_matrix, coefs)
@@ -277,6 +323,13 @@
 }
 
 
+#' Count percentage of missing values in given conditions
+#' @param contrast_matrix contrast matrix
+#' @param processed data.table processed by the dataProcess function
+#' @param summarized data.table summarized by the dataProcess function
+#' @param result result of groupComparison
+#' @param has_imputed if TRUE, missing values have been imputed by dataProcess
+#' @keywords internal
 .countMissingPercentage = function(contrast_matrix, processed, 
                                    summarized, result, has_imputed) {
     counts = processed[LABEL == "L", 

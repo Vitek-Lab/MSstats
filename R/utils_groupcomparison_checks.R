@@ -1,3 +1,6 @@
+#' Check if groupComparison input was processed by the dataProcess function
+#' @param input data.table
+#' @keywords internal
 .checkGroupComparisonInput = function(input) {
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
              "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION", "originalRUN",
@@ -13,6 +16,10 @@
 }
 
 
+#' Check if contrast matrix includes all conditions
+#' @param contrast_matrix contrast matrix
+#' @param input data.table of summarized data
+#' @keywords internal
 .checkContrastMatrix = function(contrast_matrix, input) {
     if (ncol(contrast_matrix) != nlevels(input$GROUP)) {
         msg = paste("Number of columns of the contrast.matrix parameter must be",
@@ -31,6 +38,9 @@
 }
 
 
+#' Check if the experiment consist of repeated measurements (time course)
+#' @param input data.table
+#' @keywords internal
 .checkRepeated = function(input) {
     subject_by_group = table(input[LABEL == "L", list(SUBJECT, GROUP)])
     subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 0))
@@ -45,6 +55,9 @@
 }
 
 
+#' Check if there is only single subject
+#' @param input data.table
+#' @keywords internal
 .checkSingleSubject = function(input) {
     SUBJECT = NULL
     
@@ -55,6 +68,9 @@
 }
 
 
+#' Check if there are technical replicates
+#' @param input data.table
+#' @keywords internal
 .checkTechReplicate = function(input) {
     GROUP = RUN = SUBJECT = NULL
     
@@ -68,6 +84,9 @@
 }
 
 
+#' Check if logarithm with base 2 or 10 was used
+#' @param processed data.table
+#' @keywords internal
 .getLogBaseName = function(processed) {
     tmp = head(processed[!is.na(ABUNDANCE) & !is.na(INTENSITY) & ABUNDANCE > 2], 
                1)

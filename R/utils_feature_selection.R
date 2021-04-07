@@ -354,4 +354,3 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     }
     input$result
 }
-

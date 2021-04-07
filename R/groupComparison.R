@@ -83,6 +83,16 @@ groupComparison <- function(contrast.matrix, data, save_fitted_models = TRUE) {
 }
 
 
+#' Group comparison for a single protein
+#' @param single_protein data.table with summarized data for a single protein
+#' @param contrast_matrix contrast matrix
+#' @param repeated if TRUE, repeated measurements will be modeled
+#' @param groups unique labels of experimental conditions
+#' @param save_fitted_models if TRUE, fitted model will be saved.
+#' If not, it will be replaced with NULL
+#' @param processed data.table with processed data for a single protein
+#' @param has_imputed TRUE if missing values have been imputed
+#' @keywords internal
 .groupComparisonSingleProtein = function(single_protein, contrast_matrix,
                                          repeated, groups, save_fitted_models,
                                          processed, has_imputed) {
