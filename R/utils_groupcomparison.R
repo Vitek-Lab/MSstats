@@ -160,7 +160,9 @@
     empty_result = data.table::rbindlist(all_comparisons, fill = TRUE)
     empty_result = cbind(empty_result,
                          data.table::data.table(
-                             Protein = protein, SE = NA, Tvalue = NA,
+                             Protein = protein, 
+                             Label = row.names(contrast_matrix),
+                             SE = NA, Tvalue = NA,
                              DF = NA, pvalue = NA
                          ))
     empty_result
