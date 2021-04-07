@@ -127,7 +127,7 @@
     all_comparisons = lapply(1:nrow(contrast_matrix), function(row_id) {
         ith_comparison = contrast_matrix[row_id, , drop = FALSE]
 
-        if (any(groups[ith_comparison != 0] == unique(input$GROUP))) {
+        if (any(groups[ith_comparison != 0] %in% unique(input$GROUP))) {
             msg = paste("*** error: results of protein", protein,
                         "for comparison", row.names(ith_comparison),
                         "are NA because there are measurements",
