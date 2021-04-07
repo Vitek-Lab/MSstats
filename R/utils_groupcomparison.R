@@ -135,7 +135,7 @@
             getOption("MSstatsLog")("INFO", msg)
 
             if (ith_comparison[ith_comparison != 0 &
-                               (groups == unique(input$GROUP))] > 0) {
+                               (groups %in% unique(input$GROUP))] > 0) {
                 list(
                     logFC = Inf,
                     issue = "oneConditionMissing"
