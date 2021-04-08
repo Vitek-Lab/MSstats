@@ -26,12 +26,11 @@
 #' @param groups unique labels for experimental conditions
 #' @param save_fitted_models if TRUE, fitted model will be saved. If FALSE,
 #' it will be replaced by NULL
-#' @param processed data.table of processed data
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
 #' @keywords internal
 .fitModelSingleProtein = function(input, contrast_matrix, has_tech_replicates,
                                   is_single_subject, repeated, groups,
-                                  save_fitted_models, processed, has_imputed) {
+                                  save_fitted_models, has_imputed) {
     GROUP = SUBJECT = NULL
     
     input[, GROUP := factor(GROUP)]
@@ -51,7 +50,7 @@
                                                    has_tech_replicates)
         result = .getAllComparisons(input, fitted_model, contrast_matrix,
                                     groups, protein)
-        result = .countMissingPercentage(contrast_matrix, processed,
+        result = .countMissingPercentage(contrast_matrix,
                                          input, result, has_imputed)
         
         if (inherits(fitted_model[["full_fit"]], "lm")) {
@@ -229,19 +228,19 @@
 
 #' Handle contrast when some of the conditions are missing
 #' @param input summarized data
-#' @param ith_contrast single row of a contrast matrix
+#' @param contrast single row of a contrast matrix
 #' @param groups unique labels of experimental conditions
 #' @param parameters parameters extracted from the model 
 #' @param protein name of a protein
 #' @param empty_conditions labels of empty conditions
 #' @param coefs coefficient of the fitted model
 #' @keywords internal
-.handleEmptyConditions = function(input, fit, ith_contrast,
+.handleEmptyConditions = function(input, fit, contrast,
                                   groups, parameters, protein,
                                   empty_conditions, coefs) {
-    count_diff_pos = intersect(groups[ith_contrast != 0 & ith_contrast > 0],
+    count_diff_pos = intersect(groups[contrast != 0 & contrast > 0],
                                empty_conditions)
-    count_diff_neg = intersect(groups[ith_contrast != 0 & ith_contrast < 0],
+    count_diff_neg = intersect(groups[contrast != 0 & contrast < 0],
                                empty_conditions)
     flag_issue_pos = length(count_diff_pos) != 0
     flag_issue_neg = length(count_diff_neg) != 0
@@ -261,11 +260,11 @@
         }
         result = list(Protein = protein,
                       logFC = logFC,
-                      Label = row.names(ith_contrast),
+                      Label = row.names(contrast),
                       SE = NA, Tvalue = NA, DF = NA, pvalue = NA,
                       issue = issue)
     } else {
-        result = .handleSingleContrast(input, fit, ith_contrast, groups,
+        result = .handleSingleContrast(input, fit, contrast, groups,
                                        parameters, protein, coefs)
     }
     result
@@ -275,18 +274,18 @@
 #' Group comparison for a single contrast
 #' @inheritParams .handleEmptyConditions
 #' @keywords internal
-.handleSingleContrast = function(input, fit, contrast_matrix, groups,
+.handleSingleContrast = function(input, fit, contrast, groups,
                                  parameters, protein, coefs) {
-    contrast = .getContrast(input, contrast_matrix, coefs)
-    result = get_estimable_fixed_random(parameters, contrast)
+    contrast_values = .getContrast(input, contrast, coefs)
+    result = get_estimable_fixed_random(parameters, contrast_values)
     if (is.null(result)) {
         result = list(Protein = protein,
-                      Label = row.names(contrast_matrix),
+                      Label = row.names(contrast),
                       logFC = NA, SE = NA, Tvalue = NA,
                       DF = NA, pvalue = NA, issue = NA)
     } else {
         result$Protein = protein
-        result$Label = row.names(contrast_matrix)
+        result$Label = row.names(contrast)
         result$issue = NA
     }
     result
@@ -298,7 +297,7 @@
 #' @param contrast_matrix row of a contrast_matrix
 #' @param coefs coefficients of a linear model (named vector)
 #' @keywords internal
-.getContrast = function(input, contrast_matrix, coefs) {
+.getContrast = function(input, contrast, coefs) {
     coef_names = names(coefs)
     intercept = grep("Intercept", coef_names, value = TRUE)
     if (length(intercept) > 0) {
@@ -311,8 +310,7 @@
     interaction = grep(":", coef_names, value = TRUE)
     group = setdiff(group, interaction)
     if (length(group) > 0) {
-        # THE LINE BELOW WILL REQUIRE CHANGE WHEN SWITCHING TO V4
-        group_term = contrast_matrix[, as.numeric(levels(input$GROUP))]
+        group_term = contrast[, as.numeric(unique(input$GROUP))]
         group_term = group_term[-1]
         names(group_term) = group
     } else {
@@ -325,20 +323,17 @@
 
 #' Count percentage of missing values in given conditions
 #' @param contrast_matrix contrast matrix
-#' @param processed data.table processed by the dataProcess function
 #' @param summarized data.table summarized by the dataProcess function
 #' @param result result of groupComparison
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
 #' @keywords internal
-.countMissingPercentage = function(contrast_matrix, processed, 
-                                   summarized, result, has_imputed) {
-    counts = processed[LABEL == "L", 
-                       .(totalN = .N,
-                         NumMeasuredFeature = sum(!is.na(ABUNDANCE) & ABUNDANCE > 0,
-                                                  na.rm = TRUE),
-                         NumImputedFeature = sum(censored & (!is.na(ABUNDANCE) & ABUNDANCE > 0),
-                                                 na.rm=  TRUE)), 
-                       by = "GROUP_ORIGINAL"]
+.countMissingPercentage = function(contrast_matrix, summarized, 
+                                   result, has_imputed) {
+    counts = summarized[,
+                  .(totalN = unique(TotalGroupMeasurements),
+                    NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
+                    NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
+                  by = "GROUP"]
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))
     for (i in 1:nrow(contrast_matrix)) {

@@ -10,7 +10,6 @@
   repeated,
   groups,
   save_fitted_models,
-  processed,
   has_imputed
 )
 }
@@ -25,8 +24,6 @@
 
 \item{save_fitted_models}{if TRUE, fitted model will be saved.
 If not, it will be replaced with NULL}
-
-\item{processed}{data.table with processed data for a single protein}
 
 \item{has_imputed}{TRUE if missing values have been imputed}
 }

@@ -7,7 +7,7 @@
 .handleEmptyConditions(
   input,
   fit,
-  ith_contrast,
+  contrast,
   groups,
   parameters,
   protein,
@@ -18,7 +18,7 @@
 \arguments{
 \item{input}{summarized data}
 
-\item{ith_contrast}{single row of a contrast matrix}
+\item{contrast}{single row of a contrast matrix}
 
 \item{groups}{unique labels of experimental conditions}
 

@@ -4,18 +4,10 @@
 \alias{.countMissingPercentage}
 \title{Count percentage of missing values in given conditions}
 \usage{
-.countMissingPercentage(
-  contrast_matrix,
-  processed,
-  summarized,
-  result,
-  has_imputed
-)
+.countMissingPercentage(contrast_matrix, summarized, result, has_imputed)
 }
 \arguments{
 \item{contrast_matrix}{contrast matrix}
-
-\item{processed}{data.table processed by the dataProcess function}
 
 \item{summarized}{data.table summarized by the dataProcess function}
 

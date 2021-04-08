@@ -4,7 +4,7 @@
 \alias{groupComparison}
 \title{Whole plot testing}
 \usage{
-groupComparison(contrast.matrix, data, save_fitted_models = TRUE)
+groupComparison(contrast.matrix, data, save_fitted_models = TRUE, log_base = 2)
 }
 \arguments{
 \item{contrast.matrix}{comparison between conditions of interests.}
@@ -13,6 +13,8 @@ groupComparison(contrast.matrix, data, save_fitted_models = TRUE)
 
 \item{save_fitted_models}{logical, if TRUE, fitted models will be added to
 the output.}
+
+\item{logBase}{base of the logarithm used in dataProcess.}
 }
 \value{
 list that consists of the following elements: (TODO)

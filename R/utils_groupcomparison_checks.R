@@ -2,11 +2,10 @@
 #' @param input data.table
 #' @keywords internal
 .checkGroupComparisonInput = function(input) {
-    cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
-             "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION", "originalRUN",
-             "INTENSITY", "ABUNDANCE")
+    cols = c("RUN", "Protein", "LogIntensities", "originalRUN",
+             "GROUP", "SUBJECT", "more50missing", "NumMeasuredFeature")
     
-    if (length(setdiff(toupper(cols), toupper(colnames(input$ProcessedData)))) > 0) {
+    if (length(setdiff(toupper(cols), toupper(colnames(input)))) > 0) {
         msg = paste("The `data` input was not processed by the dataProcess function.",
                     "Please use the dataProcess function first.")
         getOption("MSstatsLog")("INFO", msg)
@@ -42,7 +41,7 @@
 #' @param input data.table
 #' @keywords internal
 .checkRepeated = function(input) {
-    subject_by_group = table(input[LABEL == "L", list(SUBJECT, GROUP)])
+    subject_by_group = table(input[, list(SUBJECT, GROUP)])
     subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 0))
     repeated = any(subject_appearances > 1)
     if (repeated) {
@@ -81,20 +80,4 @@
     run_counts = unique_annot[, list(NumRuns = data.table::uniqueN(RUN)),
                               by = "SUBJECT_NESTED"]
     all(run_counts$NumRuns != 1)
-}
-
-
-#' Check if logarithm with base 2 or 10 was used
-#' @param processed data.table
-#' @keywords internal
-.getLogBaseName = function(processed) {
-    tmp = head(processed[!is.na(ABUNDANCE) & !is.na(INTENSITY) & ABUNDANCE > 2], 
-               1)
-    log_2_diff = abs(log(tmp$INTENSITY, 2) - tmp$ABUNDANCE)
-    log_10_diff = abs(log(tmp$INTENSITY, 10) - tmp$ABUNDANCE)
-    if (log_2_diff < log_10_diff) {
-        "log2FC"
-    } else {
-        "log10FC"
-    }
 }

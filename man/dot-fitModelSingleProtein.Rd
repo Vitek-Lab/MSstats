@@ -12,7 +12,6 @@
   repeated,
   groups,
   save_fitted_models,
-  processed,
   has_imputed
 )
 }
@@ -31,8 +30,6 @@
 
 \item{save_fitted_models}{if TRUE, fitted model will be saved. If FALSE,
 it will be replaced by NULL}
-
-\item{processed}{data.table of processed data}
 
 \item{has_imputed}{if TRUE, missing values have been imputed by dataProcess}
 }

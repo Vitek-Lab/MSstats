@@ -4,18 +4,12 @@
 \alias{.handleSingleContrast}
 \title{Group comparison for a single contrast}
 \usage{
-.handleSingleContrast(
-  input,
-  fit,
-  contrast_matrix,
-  groups,
-  parameters,
-  protein,
-  coefs
-)
+.handleSingleContrast(input, fit, contrast, groups, parameters, protein, coefs)
 }
 \arguments{
 \item{input}{summarized data}
+
+\item{contrast}{single row of a contrast matrix}
 
 \item{groups}{unique labels of experimental conditions}
 
