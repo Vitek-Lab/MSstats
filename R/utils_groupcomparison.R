@@ -276,7 +276,7 @@
 #' @keywords internal
 .handleSingleContrast = function(input, fit, contrast, groups,
                                  parameters, protein, coefs) {
-    contrast_values = .getContrast(input, contrast, coefs)
+    contrast_values = .getContrast(input, contrast, coefs, groups)
     result = get_estimable_fixed_random(parameters, contrast_values)
     if (is.null(result)) {
         result = list(Protein = protein,
@@ -296,8 +296,9 @@
 #' @param input summarized data for a single protein
 #' @param contrast_matrix row of a contrast_matrix
 #' @param coefs coefficients of a linear model (named vector)
+#' @param groups unique group labels
 #' @keywords internal
-.getContrast = function(input, contrast, coefs) {
+.getContrast = function(input, contrast, coefs, groups) {
     coef_names = names(coefs)
     intercept = grep("Intercept", coef_names, value = TRUE)
     if (length(intercept) > 0) {
@@ -310,7 +311,7 @@
     interaction = grep(":", coef_names, value = TRUE)
     group = setdiff(group, interaction)
     if (length(group) > 0) {
-        group_term = contrast[, as.numeric(unique(input$GROUP))]
+        group_term = contrast[, as.numeric(unique(groups[groups %in% levels(input$GROUP)]))]
         group_term = group_term[-1]
         names(group_term) = group
     } else {
