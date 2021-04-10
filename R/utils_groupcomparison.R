@@ -277,6 +277,7 @@
 .handleSingleContrast = function(input, fit, contrast, groups,
                                  parameters, protein, coefs) {
     contrast_values = .getContrast(input, contrast, coefs, groups)
+    parameters$cf = parameters$cf[names(contrast_values), ]
     result = get_estimable_fixed_random(parameters, contrast_values)
     if (is.null(result)) {
         result = list(Protein = protein,
@@ -311,9 +312,9 @@
     interaction = grep(":", coef_names, value = TRUE)
     group = setdiff(group, interaction)
     if (length(group) > 0) {
-        group_term = contrast[, as.numeric(unique(groups[groups %in% levels(input$GROUP)]))]
+        group_term = contrast[, as.numeric(groups[groups %in% unique(input$GROUP)])]
         group_term = group_term[-1]
-        names(group_term) = group
+        names(group_term) = paste0("GROUP", names(group_term))
     } else {
         group_term = NULL
     }
@@ -331,10 +332,10 @@
 .countMissingPercentage = function(contrast_matrix, summarized, 
                                    result, has_imputed) {
     counts = summarized[,
-                  .(totalN = unique(TotalGroupMeasurements),
-                    NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
-                    NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
-                  by = "GROUP"]
+                        .(totalN = unique(TotalGroupMeasurements),
+                          NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
+                          NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
+                        by = "GROUP"]
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))
     for (i in 1:nrow(contrast_matrix)) {
