@@ -84,7 +84,7 @@
             df_full = full_fit[["df.residual"]]
         } else {
             full_fit = suppressMessages(try(
-                lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
+                lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
                 TRUE
             ))
             df_full = suppressMessages(try(
@@ -102,7 +102,7 @@
             ## no single subject
             if (!has_tech_replicates) {
                 full_fit = suppressMessages(try(
-                    lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
+                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
@@ -110,7 +110,7 @@
                     TRUE))
             } else {
                 full_fit = suppressMessages(try(
-                    lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
+                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
                          data = input),
                     TRUE
                 ))
@@ -136,7 +136,7 @@
         cf = model_summary[["coefficients"]]
         vcv = model_summary[["cov.unscaled"]] * (model_summary[["sigma"]] ^ 2)
     } else {
-        cf = as.matrix(fixef(fitted_model[["full_fit"]]))
+        cf = as.matrix(lme4::fixef(fitted_model[["full_fit"]]))
         vcv = as.matrix(vcov(fitted_model[["full_fit"]]))
     }
     list(cf = cf, vcv = vcv, df = fitted_model[["df_full"]])
@@ -314,8 +314,8 @@
     group = setdiff(group, interaction)
     if (length(group) > 0) {
         group_term = contrast[, as.character(groups[groups %in% unique(input$GROUP)])]
-        group_term = group_term[-1]
         names(group_term) = paste0("GROUP", names(group_term))
+        group_term = group_term[-1]
     } else {
         group_term = NULL
     }
