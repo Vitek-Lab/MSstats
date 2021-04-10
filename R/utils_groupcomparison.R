@@ -238,9 +238,9 @@
 .handleEmptyConditions = function(input, fit, contrast,
                                   groups, parameters, protein,
                                   empty_conditions, coefs) {
-    count_diff_pos = intersect(groups[contrast != 0 & contrast > 0],
+    count_diff_pos = intersect(colnames(contrast)[contrast != 0 & contrast > 0],
                                empty_conditions)
-    count_diff_neg = intersect(groups[contrast != 0 & contrast < 0],
+    count_diff_neg = intersect(colnames(contrast)[contrast != 0 & contrast < 0],
                                empty_conditions)
     flag_issue_pos = length(count_diff_pos) != 0
     flag_issue_neg = length(count_diff_neg) != 0
