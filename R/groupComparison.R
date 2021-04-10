@@ -37,7 +37,7 @@ groupComparison <- function(contrast.matrix, data,
     getOption("MSstatsLog")("INFO",
                             "** Start to test and get inference in whole plot")
     
-    groups = unique(summarized$GROUP)
+    groups = sort(unique(summarized$GROUP))
     all_proteins = unique(summarized$Protein)
     group_comparison = vector("list", length(all_proteins))
     model_qc_data = vector("list", length(all_proteins))
