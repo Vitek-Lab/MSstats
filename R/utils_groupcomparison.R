@@ -277,7 +277,7 @@
 .handleSingleContrast = function(input, fit, contrast, groups,
                                  parameters, protein, coefs) {
     contrast_values = .getContrast(input, contrast, coefs, groups)
-    parameters$cf = parameters$cf[names(contrast_values), ]
+    parameters$cf = parameters$cf[names(contrast_values), , drop = FALSE]
     parameters$vcv = parameters$vcv[names(contrast_values), names(contrast_values)]
     result = get_estimable_fixed_random(parameters, contrast_values)
     if (is.null(result)) {
@@ -313,7 +313,7 @@
     interaction = grep(":", coef_names, value = TRUE)
     group = setdiff(group, interaction)
     if (length(group) > 0) {
-        group_term = contrast[, as.numeric(groups[groups %in% unique(input$GROUP)])]
+        group_term = contrast[, sort(as.numeric(groups[groups %in% unique(input$GROUP)]))]
         group_term = group_term[-1]
         names(group_term) = paste0("GROUP", names(group_term))
     } else {
