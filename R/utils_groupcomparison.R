@@ -313,7 +313,7 @@
     interaction = grep(":", coef_names, value = TRUE)
     group = setdiff(group, interaction)
     if (length(group) > 0) {
-        group_term = contrast[, sort(as.numeric(groups[groups %in% unique(input$GROUP)]))]
+        group_term = contrast[, as.character(groups[groups %in% unique(input$GROUP)])]
         group_term = group_term[-1]
         names(group_term) = paste0("GROUP", names(group_term))
     } else {
