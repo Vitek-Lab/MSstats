@@ -278,6 +278,7 @@
                                  parameters, protein, coefs) {
     contrast_values = .getContrast(input, contrast, coefs, groups)
     parameters$cf = parameters$cf[names(contrast_values), ]
+    parameters$vcv = parameters$vcv[names(contrast_values), names(contrast_values)]
     result = get_estimable_fixed_random(parameters, contrast_values)
     if (is.null(result)) {
         result = list(Protein = protein,
