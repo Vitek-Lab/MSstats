@@ -4,12 +4,14 @@
 \alias{.getContrast}
 \title{Create a contrast for a model with only group as a fixed effect}
 \usage{
-.getContrast(input, contrast, coefs)
+.getContrast(input, contrast, coefs, groups)
 }
 \arguments{
 \item{input}{summarized data for a single protein}
 
 \item{coefs}{coefficients of a linear model (named vector)}
+
+\item{groups}{unique group labels}
 
 \item{contrast_matrix}{row of a contrast_matrix}
 }
