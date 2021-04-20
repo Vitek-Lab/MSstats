@@ -1,0 +1,286 @@
+#' Visualization for model-based analysis and summarizing differentially abundant proteins
+#' 
+#' @description To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, 
+#' groupComparisonPlots takes testing results from function (\code{\link{groupComparison}}) as input and 
+#' automatically generate three types of figures in pdf files as output : 
+#' (1) volcano plot (specify "VolcanoPlot" in option type) for each comparison separately; 
+#' (2) heatmap (specify "Heatmap" in option type) for multiple comparisons ; 
+#' (3) comparison plot (specify "ComparisonPlot" in option type) for multiple comparisons per protein.
+#' 
+#' @param data 'ComparisonResult' in testing output from function groupComparison.
+#' @param type choice of visualization. "VolcanoPlot" represents volcano plot of log fold changes and adjusted p-values for each comparison separately. "Heatmap" represents heatmap of adjusted p-values for multiple comparisons. "ComparisonPlot" represents comparison plot of log fold changes for multiple comparisons per protein.
+#' @param sig FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.
+#' @param FCcutoff for volcano plot or heatmap, whether involve fold change cutoff or not. FALSE (default) means no fold change cutoff is applied for significance analysis. FCcutoff = specific value means specific fold change cutoff is applied.
+#' @param logBase.pvalue for volcano plot or heatmap, (-) logarithm transformation of adjusted p-value with base 2 or 10(default).
+#' @param ylimUpfor all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.
+#' @param ylimDownfor all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.
+#' @param xlimUp for Volcano plot, the limit for x-axis. FALSE (default) for  use maximum for absolute value of log-fold change or 3 as default if maximum for absolute value of log-fold change is less than 3.
+#' @param x.axis.size size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.
+#' @param y.axis.sizesize of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.
+#' @param dot.size size of dots in volcano plot and comparison plot. Default is 3.
+#' @param text.size size of ProteinName label in the graph for Volcano Plot. Default is 4.
+#' @param text.angleangle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.
+#' @param legend.size size of legend for color at the bottom of volcano plot.  Default is 7.
+#' @param ProteinName for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.
+#' @param colorkey TRUE(default) shows colorkey.
+#' @param numProtein The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
+#' @param clustering Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.
+#' @param width width of the saved file. Default is 10.
+#' @param height height of the saved file. Default is 10.
+#' @param which.Comparison list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.
+#' @param which.Protein Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.
+#' @param address the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.
+#' 
+#' 
+#' @details 
+#' \itemize{
+#' \item{Volcano plot : illustrate actual log-fold changes and adjusted p-values for each comparison separately with all proteins. The x-axis is the log fold change. The base of logarithm transformation is the same as specified in "logTrans" from \code{\link{dataProcess}}. The y-axis is the negative log2 or log10 adjusted p-values. The horizontal dashed line represents the FDR cutoff. The points below the FDR cutoff line are non-significantly abundant proteins (colored in black). The points above the FDR cutoff line are significantly abundant proteins (colored in red/blue for up-/down-regulated). If fold change cutoff is specified (FCcutoff = specific value), the points above the FDR cutoff line but within the FC cutoff line are non-significantly abundant proteins (colored in black)/}
+#' \item{Heatmap : illustrate up-/down-regulated proteins for multiple comparisons with all proteins. Each column represents each comparison of interest. Each row represents each protein. Color red/blue represents proteins in that specific comparison are significantly up-regulated/down-regulated proteins with FDR cutoff and/or FC cutoff. The color scheme shows the evidences of significance. The darker color it is, the stronger evidence of significance it has. Color gold represents proteins are not significantly different in abundance.}
+#' \item{Comparison plot : illustrate log-fold change and its variation of multiple comparisons for single protein. X-axis is comparison of interest. Y-axis is the log fold change. The red points are the estimated log fold change from the model. The blue error bars are the confidence interval with 0.95 significant level for log fold change. This interval is only based on the standard error, which is estimated from the model. }
+#' }
+#' 
+#' @importFrom gplots heatmap.2
+#' @importFrom stats hclust
+#' @importFrom ggrepel geom_text_repel
+#' @importFrom marray maPalette
+#' 
+#' @export
+#' 
+
+groupComparisonPlots = function(
+    data, type, sig = 0.05, FCcutoff = FALSE, logBase.pvalue = 10, ylimUp = FALSE,
+    ylimDown = FALSE, xlimUp = FALSE, x.axis.size = 10, y.axis.size = 10, 
+    dot.size = 3, text.size = 4, text.angle = 0, legend.size = 13, 
+    ProteinName = TRUE, colorkey = TRUE, numProtein = 100, clustering = "both", 
+    width = 10, height = 10, which.Comparison = "all", which.Protein = "all",
+    address = ""
+) {
+    # TODO: initialize LOGS here
+    type = toupper(type)
+    input = data.table::as.data.table(data)
+    all_labels = as.character(unique(data$Label))
+    log_base_FC = ifelse(is.element("log2FC", colnames(data)), 2, 10)
+    
+    getOption("MSstatsLog")("MSstats - groupComparisonPlots function")
+    chosen_labels = .checkGCPlotsInput(type, logBase.pvalue, which.Comparison,
+                                       all_labels)
+    input = input[Label %in% chosen_labels]
+    input[, Protein := factor(Protein)]
+    input[, Label := factor(Label)]
+    
+    if (type == "HEATMAP") {
+        .plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
+                     numProtein, colorkey, width, height, log_base_FC,
+                     x.axis.size, y.axis.size, address)
+    }
+    if (type == "VOLCANOPLOT") {
+        .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
+                     ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
+                     text.size, legend.size, x.axis.size, y.axis.size, log_base_FC)
+    }
+    if (type == "COMPARISONPLOT") {
+        .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
+                        ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
+                        log_base_FC)
+    }
+}
+
+
+#' Prepare data for heatmaps and plot them
+#' @inheritParams groupComparisonPlots
+#' @param input data.table
+#' @param log_base_pval log base for p-values
+#' @param log_base_FC log base for log-fold changes - 2 or 10
+.plotHeatmap = function(
+    input, log_base_pval, ylimUp, FCcutoff, sig, clustering, numProtein, colorkey, 
+    width, height, log_base_FC, x.axis.size, y.axis.size, address
+) {
+    if (length(unique(input$Protein)) <= 1) {
+        stop("At least two proteins are needed for heatmaps.")
+    }
+    if (length(unique(input$Label)) <= 1) {
+        stop("At least two comparisons are needed for heatmaps.")
+    }
+    
+    if (is.numeric(ylimUp)) {
+        y.limUp = ylimUp 
+    } else {
+        y.limUp = ifelse(log_base_pval == 2, 30, 10)
+        input[adj.pvalue < log_base_pval ^ (-y.limUp), adj.pvalue := log_base_pval ^ (-y.limUp)]
+    }  
+    
+    if (is.numeric(FCcutoff)) {
+        input$adj.pvalue = ifelse(input[, 3] < log(FCcutoff, log_base_FC) & input[, 3] > -log(FCcutoff, log_base_FC), 
+                                  1, input$adj.pvalue)
+    }
+    
+    input[, heat_val := -log(adj.pvalue, log_base_pval) * sign(input[, 3])]
+    wide = data.table::dcast(input, Protein ~ Label,
+                             value.var = "heat_val")
+    proteins = wide$Protein
+    wide = as.matrix(wide[, -1])
+    rownames(wide) = proteins
+    wide = wide[rowSums(!is.na(wide)) != 0, colSums(!is.na(wide)) != 0]
+    wide = .getOrderedMatrix(wide, clustering)
+    
+    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    my.colors = blue.red.18
+    my.colors = c(my.colors, "grey") # for NA
+    up = 10 
+    temp = 10 ^ (-sort(ceiling(seq(2, up, length = 10)[c(1, 2, 3, 5, 10)]), decreasing = TRUE))
+    breaks = c(temp, sig)
+    neg.breaks = log(breaks, log_base_pval)
+    my.breaks = c(neg.breaks, 0, -neg.breaks[6:1], 101)
+    blocks = c(-breaks, 1, breaks[6:1])
+    x.at = seq(-0.05, 1.05, length.out = 13)
+    namepro = rownames(wide)
+    totalpro = length(namepro)
+    numheatmap = totalpro %/% numProtein + 1
+    if (colorkey) {
+        par(mar = c(3, 3, 3, 3), mfrow = c(3, 1), oma = c(3, 0, 3, 0))
+        plot.new()
+        image(z = matrix(seq(1:(length(my.colors) - 1)), ncol = 1), 
+              col = my.colors[-length(my.colors)], 
+              xaxt = "n", 
+              yaxt = "n")
+        mtext("Color Key", side = 3,line = 1, cex = 3)
+        mtext("(sign) Adjusted p-value", side = 1, line = 3, at = 0.5, cex = 1.7)
+        mtext(blocks, side = 1, line = 1, at = x.at, cex = 1)
+    }
+    
+    .savePlot(address, "Heatmap", width, height)
+    for (j in 1:numheatmap) {
+        if (j != numheatmap) {
+            partial_wide = wide[((j - 1) * numProtein + 1):(j * numProtein), ]
+        } else {
+            partial_wide = wide[((j - 1) * numProtein + 1):nrow(wide), ]
+        }
+        heatmap  = .makeHeatmap(partial_wide, my.colors, my.breaks, x.axis.size, y.axis.size)
+    } 
+    if (address != FALSE) {
+        dev.off()
+    }
+} 
+
+
+#' Preprocess data for volcano plots and create them
+#' @inheritParams groupComparisonPlots
+#' @keywords internal
+.plotVolcano = function(
+    input, which.Comparison, address, width, height, log_base_pval,
+    ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
+    text.size, legend.size, x.axis.size, y.axis.size, log_base_FC
+) {
+    log_adjp = paste0("log", log_base_pval, "adjp")
+    all_labels = unique(input$Label)
+    input = input[!is.na(adj.pvalue), ]
+    colname_log_fc = intersect(colnames(input), c("log2FC", "log10FC"))
+    data.table::setnames(input, colname_log_fc, c("logFC"))
+    
+    if (address == FALSE) {
+        if (which.Comparison == 'all') {
+            if (length(unique(input$Label)) > 1) {
+                stop('** Cannnot generate all volcano plots in a screen. Please set one comparison at a time.')
+            }
+        } else if (length(which.Comparison) > 1) {
+            stop( '** Cannnot generate multiple volcano plots in a screen. Please set one comparison at a time.' )
+        }
+    }
+    
+    if (is.numeric(ylimUp)) {
+        y.limUp = ylimUp 
+    } else {
+        y.limUp = ifelse(log_base_pval == 2, 30, 10)
+    }
+    input[, adj.pvalue := ifelse(adj.pvalue < log_base_pval ^ (-y.limUp),
+                                 log_base_pval ^ (-y.limUp), adj.pvalue)]
+    
+    if (!FCcutoff) { 
+        logFC_cutoff = 0
+    } else {
+        logFC_cutoff = log(FCcutoff, log_base_FC)
+    }
+    input[, colgroup := ifelse(adj.pvalue >= sig, "black",
+                               ifelse(logFC > logFC_cutoff,
+                                      "red", "blue"))]
+    input[, colgroup := factor(colgroup, levels = c("black", "blue", "red"))]
+    input[, Protein := as.character(Protein)]
+    input[!is.na(issue) & issue == "oneConditionMissing", 
+          Protein := paste0("*", Protein)]
+    
+    .savePlot(address, "VolcanoPlot", width, height)
+    for (i in seq_along(all_labels)) {
+        label_name = all_labels[i]
+        single_label = input[Label == label_name, ]
+        
+        y.limup = ceiling(max(-log(single_label[!is.na(single_label$adj.pvalue), "adj.pvalue"], log_base_pval)))
+        if (y.limup < (-log(sig, log_base_pval))) {
+            y.limup = (-log(sig, log_base_pval) + 1) ## for too small y.lim
+        }
+        y.limdown = ifelse(is.numeric(ylimDown), ylimDown, 0)
+        x_ceiling = ceiling(max(abs(single_label[!is.na(single_label$logFC) & is.finite(single_label$logFC), logFC])))
+        x.lim = ifelse(is.numeric(xlimUp), xlimUp, ifelse((x_ceiling < 3), 3, x_ceiling))
+        
+        single_label[[log_adjp]] = -log(single_label$adj.pvalue, log_base_pval)
+        single_label$newlogFC = single_label$logFC
+        single_label[!is.na(issue) &
+                         issue == "oneConditionMissing" & 
+                         logFC == Inf, newlogFC := (x.lim - 0.2)]
+        single_label[!is.na(issue) & 
+                         issue == "oneConditionMissing" & 
+                         logFC == (-Inf), newlogFC := (x.lim - 0.2) * (-1)]
+        plot = .makeVolcano(single_label, label_name, log_base_FC, log_base_pval, x.lim, ProteinName, dot.size,
+                            y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
+                            legend.size, log_adjp)
+        print(plot)
+    }
+    if (address != FALSE) {
+        dev.off()
+    }
+}
+
+
+#' Preprocess data for comparison plots and create them
+#' @inheritParams groupComparisonPlots
+#' @param input data.table
+#' @param log_base_FC log base for log-fold changes - 2 or 10
+#' @keywords internal
+.plotComparison = function(
+    input, proteins, address, width, height, sig, ylimUp, ylimDown,
+    text.angle, dot.size, x.axis.size, y.axis.size, log_base_FC
+) {
+    input = input[!is.na(adj.pvalue), ]
+    all_proteins = unique(input$Protein)
+    
+    if (address == FALSE) {
+        if (proteins == "all" | length(proteins) > 1) {
+            stop("** Cannnot generate all comparison plots in a screen. Please set one protein at a time.")
+        }
+    }
+    if (proteins != "all") {
+        selected_proteins = .getSelectedProteins(proteins, all_proteins)
+        input = input[Protein %in% selected_proteins, ]
+    }
+    
+    all_proteins = unique(input$Protein)
+    input$Protein = factor(input$Protein)
+    .savePlot(address, "ComparisonPlot", width, height)
+    log_fc_column = intersect(colnames(input), c("log2FC", "log10FC"))
+    for (i in seq_along(all_proteins)) {
+        single_protein = input[Protein == all_proteins[i], ] 		
+        single_protein[, ciw := qt(1 - sig / (2 * nrow(single_protein)), single_protein$DF) * single_protein$SE]
+        data.table::setnames(single_protein, log_fc_column, "logFC")
+        y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(single_protein$logFC + single_protein$ciw)))
+        y.limdown = ifelse(is.numeric(ylimDown), ylimDown, floor(min(single_protein$logFC - single_protein$ciw)))
+        hjust = ifelse(text.angle != 0, 1, 0.5)
+        vjust = ifelse(text.angle != 0, 1, 0.5)
+        
+        plot = .makeComparison(single_protein, log_base_FC, dot.size, x.axis.size,
+                               y.axis.size, text.angle, hjust, vjust, y.limdown, 
+                               y.limup)
+        print(plot)
+    }
+    if (address != FALSE) {
+        dev.off()
+    }
+}
