@@ -28,7 +28,7 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
     } else {
         input[, TotalGroupMeasurements := uniqueN(.SD),
               by = c("PROTEIN", "GROUP"), .SDcols = c("FEATURE", "originalRUN")]
-        cols = intersect(c("PROTEIN", "originalRUN", "RUN", "GROUP_ORIGINAL", 
+        cols = intersect(c("PROTEIN", "originalRUN", "RUN", "GROUP", "GROUP_ORIGINAL", 
                            "SUBJECT_ORIGINAL", "TotalGroupMeasurements",
                            "NumMeasuredFeature", "MissingPercentage", 
                            "more50missing", "NumImputedFeature"),
@@ -38,10 +38,11 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         if (nlevels(input$LABEL) > 1) {
             lab = lab[GROUP != 0]
         }
+        lab = lab[, colnames(lab) != "GROUP", with = FALSE]
         rqall = merge(summarized, lab, by.x = c(merge_col, "Protein"),
                       by.y = c(merge_col, "PROTEIN"))
         data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
-                             c("GROUP", "SUBJECT"))
+                             c("GROUP", "SUBJECT"), skip_absent = TRUE)
         
         rqall$GROUP = factor(as.character(rqall$GROUP))
         rqall$Protein = factor(rqall$Protein)
