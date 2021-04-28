@@ -196,9 +196,11 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 .preProcessIntensities = function(input, log_base) {
     INTENSITY = ABUNDANCE = NULL
     
-    if (any(input$INTENSITY < 1, na.rm = TRUE)) {
-        n_smaller_than_1 = sum(input$INTENSITY < 1, na.rm = T)
-        input[, INTENSITY := ifelse(INTENSITY < 1, 1, INTENSITY)]
+    if (any(!is.na(input$INTENSITY) & input$INTENSITY < 1, na.rm = TRUE)) {
+        n_smaller_than_1 = sum(!is.na(input$INTENSITY) & input$INTENSITY < 1, 
+                               na.rm = T)
+        input[, INTENSITY := ifelse(!is.na(INTENSITY) & INTENSITY < 1, 
+                                    1, INTENSITY)]
         msg = paste("** There are", n_smaller_than_1, 
                     "intensities which are zero or less than 1.",
                     "These intensities are replaced with 1",
