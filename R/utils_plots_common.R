@@ -18,7 +18,7 @@
 theme_msstats = function(
     type, x.axis.size = 10, y.axis.size = 10, legend_size = 13, 
     strip_background = element_rect(fill = "gray95"),
-    strip_text_x = element_text(colour = c("#00B0F6"), size = 14),
+    strip_text_x = element_text(colour = c("black"), size = 14),
     legend_position = "top", text_angle = 0, text_hjust = NULL, text_vjust = NULL, 
     ...
 ) {
