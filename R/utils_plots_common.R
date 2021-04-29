@@ -19,7 +19,7 @@ theme_msstats = function(
     type, x.axis.size = 10, y.axis.size = 10, legend_size = 13, 
     strip_background = element_rect(fill = "gray95"),
     strip_text_x = element_text(colour = c("black"), size = 14),
-    legend_position = "top", text_angle = 0, text_hjust = NULL, text_vjust = NULL, 
+    legend_position = "top", legend_box = "vertical", text_angle = 0, text_hjust = NULL, text_vjust = NULL, 
     ...
 ) {
     if (type %in% c("CONDITIONPLOT", "COMPARISONPLOT")) {
@@ -51,6 +51,7 @@ theme_msstats = function(
             title = element_text(size = x.axis.size + 8, vjust = 1.5),
             strip.text.x = strip_text_x,
             legend.position = legend_position,
+            legend.box = legend_box,
             legend.text = element_text(size = legend_size),
             ...
         )

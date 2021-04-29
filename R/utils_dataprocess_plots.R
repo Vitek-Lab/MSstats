@@ -71,11 +71,11 @@
         }
     }
     
-    if (featureName == "TRANSITION") {
-        profile_plot = profile_plot + scale_linetype_manual(values = ss)
-    } else if (featureName %in% c("PEPTIDE", "NA")) {
+    #if (featureName == "TRANSITION") {
+    #    profile_plot = profile_plot + scale_linetype_manual(values = ss)
+    #} else if (featureName %in% c("PEPTIDE", "NA")) {
         profile_plot = profile_plot + scale_linetype_manual(values = ss, guide = "none") 
-    }
+    #}
     
     profile_plot = profile_plot +
         scale_x_continuous('MS runs', breaks = cumGroupAxis) +
@@ -87,44 +87,49 @@
                   angle = text.angle, 
                   color = "black") +
         theme_msstats("PROFILEPLOT", x.axis.size, y.axis.size, legend.size)
-    color_guide = guide_legend(title = paste("# peptide:", nlevels(input$PEPTIDE)), 
-                               title.theme = element_text(size = 13, angle = 0),
-                               keywidth = 0.1,
-                               keyheight = 0.1,
-                               default.unit = 'inch',
-                               ncol = 3)
-    linetype_guide = guide_legend(title = paste("# peptide:", nlevels(input$PEPTIDE)), 
-                                  title.theme = element_text(size = 13, angle = 0),
-                                  keywidth = 0.1,
-                                  keyheight = 0.1,
-                                  default.unit = 'inch',
-                                  ncol = 3)
-    shape_guide = guide_legend(title = NULL,
+    
+    if (featureName == "TRANSITION") {
+        color_guide = guide_legend(order=1,
+                                override.aes = list(size=1.2,
+                                                    linetype = ss),
+                                   title = paste("# peptide:", nlevels(input$PEPTIDE)), 
+                                   title.theme = element_text(size = 13, angle = 0),
+                                   keywidth = 0.25,
+                                   keyheight = 0.1,
+                                   default.unit = 'inch',
+                                   ncol = 3)
+    } else if (featureName == "PEPTIDE") {
+        color_guide = guide_legend(order=1,
+                                   title = paste("# peptide:", nlevels(input$PEPTIDE)), 
+                                   title.theme = element_text(size = 13, angle = 0),
+                                   keywidth = 0.25,
+                                   keyheight = 0.1,
+                                   default.unit = 'inch',
+                                   ncol = 3)
+    }
+    # linetype_guide = guide_legend(order=2,
+    #                               title = paste("# peptide:", nlevels(input$PEPTIDE)), 
+    #                               title.theme = element_text(size = 13, angle = 0),
+    #                               keywidth = 0.1,
+    #                               keyheight = 0.1,
+    #                               default.unit = 'inch',
+    #                               ncol = 3)
+    shape_guide = guide_legend(order=2,
+                               title = NULL,
                                label.theme = element_text(size = 11, angle = 0),
                                keywidth = 0.1,
                                keyheight = 0.1,
                                default.unit = 'inch')
     if (is_censored) {
-        if (featureName == "TRANSITION") {
-            profile_plot = profile_plot +
-                guides(color = color_guide,
-                       linetype = linetype_guide,
-                       shape = shape_guide)
-        } else if (featureName == "PEPTIDE") {
+        if (featureName == "NA") {
+            profile_plot = profile_plot + guides(color = FALSE,
+                                                 shape = shape_guide)
+        } else {
             profile_plot = profile_plot + guides(color = color_guide,
                                                  shape = shape_guide)
-        } else if (featureName == "NA") {
-            profile_plot = profile_plot + guides(shape = shape_guide)
-        }
+        } 
     } else {
-        if (featureName == "TRANSITION") {
-            profile_plot = profile_plot +
-                guides(color = color_guide, 
-                       linetype = linetype_guide)
-        } else if (featureName == "PEPTIDE") {
-            profile_plot = profile_plot + 
-                guides(color = color_guide, shape = shape_guide)
-        }
+            profile_plot = profile_plot + guides(color = color_guide)
     }
     profile_plot    
 }

@@ -162,13 +162,22 @@ dataProcessPlots = function(
                             labels = seq(1, length(unique(RUN))))]
   processed[, RUN := as.numeric(processed$RUN)]
   
+  ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, c("GROUP", "RUN")])
+  if (length(unique(processed$LABEL)) == 2) {
+    tempGroupName = tempGroupName[GROUP != '0']
+  } 
+  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  level.group = as.character(unique(tempGroupName$GROUP))
+  tempGroupName$GROUP <- factor(tempGroupName$GROUP,
+                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
-  lineNameAxis = cumGroupAxis[-nlevels(processed$GROUP)]
+  lineNameAxis = cumGroupAxis[-nlevels(tempGroupName$GROUP)]
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
-                         Name = levels(processed$GROUP))
+                         Name = levels(tempGroupName$GROUP))
   
   if (length(unique(processed$LABEL)) == 2) {
     processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
@@ -302,15 +311,25 @@ dataProcessPlots = function(
     }
   }
   
-  tempGroupName = unique(processed[, .(GROUP, RUN)])
   processed = processed[order(LABEL, GROUP, SUBJECT)]
+  
+  ## Meena :due to GROUP=0 for labeled.. extra care required.
+  tempGroupName = unique(processed[, .(GROUP, RUN)])
+  if (length(unique(processed$LABEL)) == 2) {
+    tempGroupName = tempGroupName[GROUP != '0']
+  } 
+  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  level.group = as.character(unique(tempGroupName$GROUP))
+  tempGroupName$GROUP <- factor(tempGroupName$GROUP,
+                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
-  lineNameAxis = cumGroupAxis[-nlevels(processed$GROUP)]
-  groupName = data.frame("RUN" = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
-                         "ABUNDANCE" = rep(y.limup - 1, length(groupAxis)),
-                         "Name" = levels(processed$GROUP))
-  
+  lineNameAxis = cumGroupAxis[-nlevels(tempGroupName$GROUP)]
+  groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
+                         ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
+                         Name = levels(tempGroupName$GROUP))
+
   .savePlot(address, "QCPlot", width, height)
   if (protein %in% c("all", "allonly")) {
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
