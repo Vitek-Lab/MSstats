@@ -321,8 +321,9 @@ dataProcessPlots = function(
   } 
   
   if (protein != 'allonly') {
+    all_proteins = as.character(unique(processed$PROTEIN))
+    
     if (protein != "all") {
-      all_proteins = as.character(unique(processed$PROTEIN))
       selected_proteins = .getSelectedProteins(protein, all_proteins)
       processed = processed[PROTEIN %in% selected_proteins]
       processed[, PROTEIN := factor(PROTEIN)]
