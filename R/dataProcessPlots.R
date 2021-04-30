@@ -196,7 +196,7 @@ dataProcessPlots = function(
     processed[, is_outlier := NULL]
   }
   
-  all_proteins = unique(processed$PROTEIN)
+  all_proteins = levels(processed$PROTEIN)
   if (originalPlot) {
     .savePlot(address, "ProfilePlot", width, height)
     for (i in seq_along(all_proteins)) {
@@ -298,7 +298,7 @@ dataProcessPlots = function(
   processed[, RUN := factor(RUN, levels = unique(processed$RUN),
                             labels = seq(1, data.table::uniqueN(processed$RUN)))]
   
-  if (nlevels(processed$LABEL) == 2) {
+  if (length(unique(processed$LABEL)) == 2) {
     processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
     label.color = c("darkseagreen1", "lightblue")
   } else {
@@ -340,7 +340,7 @@ dataProcessPlots = function(
   } 
   
   if (protein != 'allonly') {
-    all_proteins = as.character(unique(processed$PROTEIN))
+    all_proteins = as.character(levels(processed$PROTEIN))
     
     if (protein != "all") {
       selected_proteins = .getSelectedProteins(protein, all_proteins)
@@ -372,7 +372,7 @@ dataProcessPlots = function(
 ) {
   data.table::setnames(summarized, c("Protein", "LogIntensities"),
                        c("PROTEIN", "ABUNDANCE"))
-  all_proteins = unique(summarized$PROTEIN)
+  all_proteins = levels(summarized$PROTEIN)
   if (protein != "all") {
     proteins = .getSelectedProteins(protein, all_proteins)
     summarized = summarized[PROTEIN %in% proteins, ]
