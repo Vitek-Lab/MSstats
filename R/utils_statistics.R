@@ -33,7 +33,7 @@
                              paste(pep_per_prot, sep = "-", collapse = "-")),
                        paste("# features per peptide:",
                              paste(feat_per_pept, sep = "-", collapse = "-")),
-                       sep = "\n", collapse = "\n")
+                       sep = "\n ", collapse = "\n ")
     getOption("MSstatsMsg")("INFO", counts_msg)
     getOption("MSstatsLog")("INFO", counts_msg)
     
@@ -42,7 +42,7 @@
         n_feat = min(length(single_features), 5)
         msg = paste("Five or more proteins have only one feature:", "\n",
                     paste(unique(as.character(features_per_protein))[1:n_feat],
-                          sep = ",\n ", collapse = ",\n"),
+                          sep = ",\n ", collapse = ",\n "),
                     "...")
         getOption("MSstatsLog")("INFO", msg)
         getOption("MSstatsMsg")("INFO", msg)
@@ -68,7 +68,7 @@
                          samples_info, use.names = FALSE)
     samples_msg = apply(samples_info, 2, .nicePrint)
     samples_msg = apply(samples_msg, 1, function(x) paste0(x, collapse = ""))
-    samples_msg = paste("", samples_msg, sep = "\n", collapse = "\n")
+    samples_msg = paste("", samples_msg, sep = "\n")
     getOption("MSstatsLog")("INFO", samples_msg)
     getOption("MSstatsMsg")("INFO", samples_msg)    
     invisible(TRUE)
@@ -152,9 +152,9 @@
     
     if (length(missing_in_any) > 0) {
         msg = paste("Five or more features are completely",
-                          "missing in at least one condition,\n",
+                          "missing in at least one condition: ", "\n",
                           paste(missing_in_any[1:5], sep = ",\n ", 
-                                collapse = ",\n "))
+                                collapse = ",\n "), "...")
         getOption("MSstatsLog")("INFO", msg)
         getOption("MSstatsMsg")("INFO", msg)
     }
