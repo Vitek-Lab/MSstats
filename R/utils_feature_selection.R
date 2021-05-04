@@ -288,7 +288,11 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
         input = merge(input, feature_vars, 
                       by = c("protein", "feature"), 
                       all.x = TRUE)
-        input[, is_outlier := .addOutlierInformation(.SD), by = "feature"]
+        if (unique(input$label) == "H") {
+            input[, is_outlier := FALSE]
+        } else {
+            input[, is_outlier := .addOutlierInformation(.SD), by = "feature"]
+        }
         input[, is_noisy := svar_feature > .getQuantileCutoff(.SD),
               .SDcols = c("feature", "svar_ref")]
         input[, is_noisy := ifelse(is.na(is_noisy), FALSE, is_noisy)]
