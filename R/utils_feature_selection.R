@@ -96,7 +96,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
         return(NULL)
     }
     if (unique(input$label) == "H") {
-        input = input[log2inty > 0, ] # Alternatively, filter them out in the next steps
+        input = input[log2inty > 0, ]
     }
     
     input[, n_observed := sum(is_obs), by = c("protein", "feature")]
@@ -321,7 +321,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     if (remove_outliers) {
         input[, num_filter := abs(model_residuals / s_resid_eb) > tolerance]
     } else {
-        input[, num_filter := rep(TRUE, .N)]
+        input[, num_filter := rep(FALSE, .N)]
     }
     input = input[!(num_filter) & !is.na(model_residuals) & !unrep & !is_lowcvr]
     input[, resid_null := log2inty - mean(log2inty, na.rm = TRUE), by = "protein"]
