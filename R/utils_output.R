@@ -2,6 +2,7 @@
 #' 
 #' @param input `data.table` in MSstats format
 #' @param summarized output of the `MSstatsSummarize` function
+#' @param processed output of MSstatsSelectFeatures
 #' @param summary_method name of the summarization method
 #' (`summaryMethod` parameter to `dataProcess`)
 #' 
@@ -14,7 +15,8 @@
 #' 
 #' @export
 #' 
-MSstatsSummarizationOutput = function(input, summarized, summary_method) {
+MSstatsSummarizationOutput = function(input, summarized, processed, 
+                                      summary_method) {
     GROUP = Protein = RUN = NULL
     
     if (inherits(summarized, "try-error")) {
@@ -47,19 +49,26 @@ MSstatsSummarizationOutput = function(input, summarized, summary_method) {
         rqall$GROUP = factor(as.character(rqall$GROUP))
         rqall$Protein = factor(rqall$Protein)
         rqmodelqc = summarized$ModelQC
-        workpred <- NULL
     }
     
     if (is.element("RUN", colnames(rqall)) & !is.null(rqall)) {
         rqall = rqall[order(Protein, as.numeric(as.character(RUN))), ]
         rownames(rqall) = NULL
     }
-    
     output_cols = intersect(c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
-                    "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
-                    "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
-                    "newABUNDANCE", "predicted", "feature_quality", "is_outlier"), colnames(input))
-    list(ProcessedData = as.data.frame(input)[, output_cols], 
+                              "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
+                              "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
+                              "newABUNDANCE", "predicted", "feature_quality", 
+                              "is_outlier", "remove"), colnames(input))
+    input = input[, output_cols, with = FALSE]
+    
+    if (is.element("remove", colnames(processed))) {
+        processed = processed[(remove), 
+                              intersect(output_cols, 
+                                        colnames(processed)), with = FALSE]
+        input = rbind(input, processed, fill = TRUE)
+    }
+    list(ProcessedData = as.data.frame(input), 
          RunlevelData = as.data.frame(rqall), 
          SummaryMethod = summary_method, 
          ModelQC = NULL, 

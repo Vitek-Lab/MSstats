@@ -109,6 +109,6 @@ dataProcess = function(
             print(e)
             NULL
         })
-    MSstatsSummarizationOutput(summarization[[1]], summarization[[2]], 
+    MSstatsSummarizationOutput(summarization[[1]], summarization[[2]], input, 
                                summaryMethod)
 }

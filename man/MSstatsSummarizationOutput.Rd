@@ -4,12 +4,14 @@
 \alias{MSstatsSummarizationOutput}
 \title{Post-processing output from MSstats summarization}
 \usage{
-MSstatsSummarizationOutput(input, summarized, summary_method)
+MSstatsSummarizationOutput(input, summarized, processed, summary_method)
 }
 \arguments{
 \item{input}{`data.table` in MSstats format}
 
 \item{summarized}{output of the `MSstatsSummarize` function}
+
+\item{processed}{output of MSstatsSelectFeatures}
 
 \item{summary_method}{name of the summarization method
 (`summaryMethod` parameter to `dataProcess`)}
