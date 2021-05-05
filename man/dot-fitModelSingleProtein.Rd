@@ -11,6 +11,7 @@
   is_single_subject,
   repeated,
   groups,
+  samples_info,
   save_fitted_models,
   has_imputed
 )
@@ -27,6 +28,8 @@
 \item{repeated}{if TRUE, experiment consists of repeated measurements}
 
 \item{groups}{unique labels for experimental conditions}
+
+\item{samples_info}{number of runs per group}
 
 \item{save_fitted_models}{if TRUE, fitted model will be saved. If FALSE,
 it will be replaced by NULL}

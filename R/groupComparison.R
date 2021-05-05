@@ -18,8 +18,8 @@
 #' @importFrom data.table rbindlist
 #'
 
-groupComparison <- function(contrast.matrix, data, 
-                            save_fitted_models = TRUE, log_base = 2) {
+groupComparison = function(contrast.matrix, data, 
+                           save_fitted_models = TRUE, log_base = 2) {
     Protein = issue = pvalue = PROTEIN = NULL
     # Save session information here
     # Initialize groupComparison log here
@@ -40,7 +40,7 @@ groupComparison <- function(contrast.matrix, data,
     groups = sort(unique(summarized$GROUP))
     ## Meena: maybe here we need to ha
     samples_info = summarized[, list(NumRuns = data.table::uniqueN(RUN)),
-                         by = "GROUP"]
+                              by = "GROUP"]
     ## Meena: end
     all_proteins = unique(summarized$Protein)
     group_comparison = vector("list", length(all_proteins))
@@ -49,7 +49,7 @@ groupComparison <- function(contrast.matrix, data,
     pb = txtProgressBar(max = nlevels(all_proteins), style = 3)
     for (i in 1:nlevels(all_proteins)) {
         single_protein = summarized[Protein == all_proteins[i]]
-        comparison_outputs = .groupComparisonSingleProtein(
+        comparison_outputs = MSstatsGroupComparisonSingleProtein(
             single_protein, contrast_matrix, repeated, 
             groups, samples_info, save_fitted_models, has_imputed
         )
@@ -93,11 +93,12 @@ groupComparison <- function(contrast.matrix, data,
 #' @param save_fitted_models if TRUE, fitted model will be saved.
 #' If not, it will be replaced with NULL
 #' @param has_imputed TRUE if missing values have been imputed
-#' @keywords internal
-.groupComparisonSingleProtein = function(single_protein, contrast_matrix,
-                                         repeated, groups, samples_info,
-                                         save_fitted_models,
-                                         has_imputed) {
+#' @export
+#' 
+MSstatsGroupComparisonSingleProtein = function(single_protein, contrast_matrix,
+                                               repeated, groups, samples_info,
+                                               save_fitted_models,
+                                               has_imputed) {
     single_protein = .prepareSingleProteinForGC(single_protein)
     is_single_subject = .checkSingleSubject(single_protein)
     has_tech_reps = .checkTechReplicate(single_protein)
