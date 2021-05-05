@@ -342,18 +342,16 @@
                           NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
                         by = "GROUP"]
     
-    ## Meena : please check from here
     empty_conditions = setdiff(samples_info$GROUP, unique(counts$GROUP))
-    if(length(empty_conditions) !=0){
-        counts = merge(samples_info, counts, by='GROUP', all.x = TRUE)
-        counts[, NumFea := totalN/NumRuns ] ## calculate number of features, to get the expected number of measurements in missing conditions
+    if (length(empty_conditions) !=0) {
+        counts = merge(samples_info, counts, by = "GROUP", all.x = TRUE)
+        counts[, NumFea := totalN / NumRuns ] # calculate number of features, to get the expected number of measurements in missing conditions
         nofea = max(ceiling(counts$NumFea), na.rm = TRUE) # it should be integer, just in case of double, use ceiling to get interger
         counts[is.na(totalN), NumMeasuredFeature := 0]
         counts[is.na(totalN), NumImputedFeature := 0]
         counts[is.na(totalN), totalN := NumRuns * nofea]
     }
-    ## Meena : end
-    
+
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))
     for (i in 1:nrow(contrast_matrix)) {
