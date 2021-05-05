@@ -48,7 +48,7 @@ MSstatsSummarize = function(
                                   input$RUN[input$LABEL == "L"], 0))
     }
     
-    if (is.element("remove", colnames(input))) { # todo: always have "remove" column
+    if (is.element("remove", colnames(input))) {
         input = input[!(remove), ]
     }
     
