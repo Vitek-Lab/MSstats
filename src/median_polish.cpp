@@ -17,8 +17,7 @@ NumericVector median_polish_summary(NumericMatrix x, double eps = 0.01,
     double overall_change = 0.0;
     double row_change = 0.0;
     double new_sum = 0.0;
-    bool converged = false;
-    
+
     for (int iter = 0; iter < maxiter; ++iter) {
         for (int row_id = 0; row_id < num_rows; ++row_id) {
             current_row_medians[row_id] = median(NumericVector(y(row_id, _)), true);
