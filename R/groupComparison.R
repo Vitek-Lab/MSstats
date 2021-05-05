@@ -38,6 +38,10 @@ groupComparison <- function(contrast.matrix, data,
                             "** Start to test and get inference in whole plot")
     
     groups = sort(unique(summarized$GROUP))
+    ## Meena: maybe here we need to ha
+    samples_info = summarized[, list(NumRuns = data.table::uniqueN(RUN)),
+                         by = "GROUP"]
+    ## Meena: end
     all_proteins = unique(summarized$Protein)
     group_comparison = vector("list", length(all_proteins))
     model_qc_data = vector("list", length(all_proteins))
@@ -47,7 +51,7 @@ groupComparison <- function(contrast.matrix, data,
         single_protein = summarized[Protein == all_proteins[i]]
         comparison_outputs = .groupComparisonSingleProtein(
             single_protein, contrast_matrix, repeated, 
-            groups, save_fitted_models, has_imputed
+            groups, samples_info, save_fitted_models, has_imputed
         )
         model_qc_data[[i]] = comparison_outputs[[1]]
         group_comparison[[i]] = comparison_outputs[[2]]
@@ -85,12 +89,14 @@ groupComparison <- function(contrast.matrix, data,
 #' @param contrast_matrix contrast matrix
 #' @param repeated if TRUE, repeated measurements will be modeled
 #' @param groups unique labels of experimental conditions
+#' @param samples_info number of runs per group
 #' @param save_fitted_models if TRUE, fitted model will be saved.
 #' If not, it will be replaced with NULL
 #' @param has_imputed TRUE if missing values have been imputed
 #' @keywords internal
 .groupComparisonSingleProtein = function(single_protein, contrast_matrix,
-                                         repeated, groups, save_fitted_models,
+                                         repeated, groups, samples_info,
+                                         save_fitted_models,
                                          has_imputed) {
     single_protein = .prepareSingleProteinForGC(single_protein)
     is_single_subject = .checkSingleSubject(single_protein)
@@ -98,7 +104,7 @@ groupComparison <- function(contrast.matrix, data,
     
     fitted_model = try(.fitModelSingleProtein(single_protein, contrast_matrix,
                                               has_tech_reps, is_single_subject,
-                                              repeated, groups, 
+                                              repeated, groups, samples_info,
                                               save_fitted_models, has_imputed),
                        silent = TRUE)
     if (inherits(fitted_model, "try-error")) {

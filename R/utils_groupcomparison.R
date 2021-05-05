@@ -24,12 +24,14 @@
 #' @param is_single_subject if TRUE, experiment consists of a single subject
 #' @param repeated if TRUE, experiment consists of repeated measurements
 #' @param groups unique labels for experimental conditions
+#' @param samples_info number of runs per group
 #' @param save_fitted_models if TRUE, fitted model will be saved. If FALSE,
 #' it will be replaced by NULL
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
 #' @keywords internal
 .fitModelSingleProtein = function(input, contrast_matrix, has_tech_replicates,
                                   is_single_subject, repeated, groups,
+                                  samples_info,
                                   save_fitted_models, has_imputed) {
     GROUP = SUBJECT = NULL
     
@@ -51,7 +53,8 @@
         result = .getAllComparisons(input, fitted_model, contrast_matrix,
                                     groups, protein)
         result = .countMissingPercentage(contrast_matrix,
-                                         input, result, has_imputed)
+                                         input, result, samples_info,
+                                         has_imputed)
         
         if (inherits(fitted_model[["full_fit"]], "lm")) {
             residuals = fitted_model[["full_fit"]][["residuals"]]
@@ -328,15 +331,29 @@
 #' @param contrast_matrix contrast matrix
 #' @param summarized data.table summarized by the dataProcess function
 #' @param result result of groupComparison
+#' @param samples_info number of runs per group
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
 #' @keywords internal
 .countMissingPercentage = function(contrast_matrix, summarized, 
-                                   result, has_imputed) {
+                                   result, samples_info, has_imputed) {
     counts = summarized[,
                         .(totalN = unique(TotalGroupMeasurements),
                           NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
                           NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
                         by = "GROUP"]
+    
+    ## Meena : please check from here
+    empty_conditions = setdiff(samples_info$GROUP, unique(counts$GROUP))
+    if(length(empty_conditions) !=0){
+        counts = merge(samples_info, counts, by='GROUP', all.x = TRUE)
+        counts[, NumFea := totalN/NumRuns ] ## calculate number of features, to get the expected number of measurements in missing conditions
+        nofea = max(ceiling(counts$NumFea), na.rm = TRUE) # it should be integer, just in case of double, use ceiling to get interger
+        counts[is.na(totalN), NumMeasuredFeature := 0]
+        counts[is.na(totalN), NumImputedFeature := 0]
+        counts[is.na(totalN), totalN := NumRuns * nofea]
+    }
+    ## Meena : end
+    
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))
     for (i in 1:nrow(contrast_matrix)) {
@@ -358,3 +375,4 @@
     }
     result
 }
+
