@@ -192,6 +192,9 @@ dataProcessPlots = function(
   if ("feature_quality" %in% colnames(processed)) {
     processed[, feature_quality := NULL]
   }
+  if ("suggestToFilter" %in% colnames(processed)) {
+      processed[, suggestToFilter := NULL]
+  }
   if ("is_outlier" %in% colnames(processed)) {
     processed[, is_outlier := NULL]
   }
