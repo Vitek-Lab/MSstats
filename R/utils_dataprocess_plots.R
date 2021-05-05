@@ -71,12 +71,7 @@
         }
     }
     
-    #if (featureName == "TRANSITION") {
-    #    profile_plot = profile_plot + scale_linetype_manual(values = ss)
-    #} else if (featureName %in% c("PEPTIDE", "NA")) {
-        profile_plot = profile_plot + scale_linetype_manual(values = ss, guide = "none") 
-    #}
-    
+    profile_plot = profile_plot + scale_linetype_manual(values = ss, guide = "none") 
     profile_plot = profile_plot +
         scale_x_continuous('MS runs', breaks = cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
@@ -90,8 +85,8 @@
     
     if (featureName == "TRANSITION") {
         color_guide = guide_legend(order=1,
-                                override.aes = list(size=1.2,
-                                                    linetype = ss),
+                                   override.aes = list(size=1.2,
+                                                       linetype = ss),
                                    title = paste("# peptide:", nlevels(input$PEPTIDE)), 
                                    title.theme = element_text(size = 13, angle = 0),
                                    keywidth = 0.25,
@@ -107,13 +102,6 @@
                                    default.unit = 'inch',
                                    ncol = 3)
     }
-    # linetype_guide = guide_legend(order=2,
-    #                               title = paste("# peptide:", nlevels(input$PEPTIDE)), 
-    #                               title.theme = element_text(size = 13, angle = 0),
-    #                               keywidth = 0.1,
-    #                               keyheight = 0.1,
-    #                               default.unit = 'inch',
-    #                               ncol = 3)
     shape_guide = guide_legend(order=2,
                                title = NULL,
                                label.theme = element_text(size = 11, angle = 0),
@@ -129,7 +117,7 @@
                                                  shape = shape_guide)
         } 
     } else {
-            profile_plot = profile_plot + guides(color = color_guide)
+        profile_plot = profile_plot + guides(color = color_guide)
     }
     profile_plot    
 }
