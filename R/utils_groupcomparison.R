@@ -1,3 +1,28 @@
+#' @export
+checkRepeatedDesign = function(summarization_output) {
+    input = as.data.table(summarization_output$RunlevelData)
+    subject_by_group = table(input[, list(SUBJECT, GROUP)])
+    subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 
+                                                                         0))
+    repeated = any(subject_appearances > 1)
+    if (repeated) {
+        msg = "Time course design of experiment - okay"
+    }
+    else {
+        msg = "Case control design of experiment - okay"
+    }
+    getOption("MSstatsLog")("INFO", msg)
+    repeated
+}
+
+#' @export
+getSamplesInfo = function(summarization_output) {
+    summarized = as.data.table(summarization_output$RunlevelData)
+    summarized[, list(NumRuns = data.table::uniqueN(RUN)),
+               by = "GROUP"]
+}
+
+
 #' Prepare data for a single protein for group comparison
 #' @param single_protein data.table
 #' @keywords internal

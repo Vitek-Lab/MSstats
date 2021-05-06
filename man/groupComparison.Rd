@@ -4,15 +4,38 @@
 \alias{groupComparison}
 \title{Whole plot testing}
 \usage{
-groupComparison(contrast.matrix, data, save_fitted_models = TRUE, log_base = 2)
+groupComparison(
+  contrast_matrix,
+  data,
+  save_fitted_models = TRUE,
+  log_base = 2,
+  use_log_file = TRUE,
+  append = FALSE,
+  verbose = TRUE,
+  log_file_path = NULL
+)
 }
 \arguments{
-\item{contrast.matrix}{comparison between conditions of interests.}
-
 \item{data}{name of the (output of dataProcess function) data set.}
 
 \item{save_fitted_models}{logical, if TRUE, fitted models will be added to
 the output.}
+
+\item{use_log_file}{logical. If TRUE, information about data processing
+will be saved to a file.}
+
+\item{append}{logical. If TRUE, information about data processing will be added
+to an existing log file.}
+
+\item{verbose}{logical. If TRUE, information about data processing wil be printed
+to the console.}
+
+\item{log_file_path}{character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.}
+
+\item{contrast.matrix}{comparison between conditions of interests.}
 
 \item{logBase}{base of the logarithm used in dataProcess.}
 }

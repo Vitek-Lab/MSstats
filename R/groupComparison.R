@@ -5,6 +5,7 @@
 #' @param save_fitted_models logical, if TRUE, fitted models will be added to
 #' the output.
 #' @param logBase base of the logarithm used in dataProcess.
+#' @inheritParams .documentFunction
 #'
 #' @details
 #' contrast.matrix : comparison of interest. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command levels(QuantData$ProcessedData$GROUP_ORIGINAL) can illustrate the actual order of the levels of conditions.
@@ -17,57 +18,101 @@
 #' @import limma
 #' @importFrom data.table rbindlist
 #'
-
-groupComparison = function(contrast.matrix, data, 
-                           save_fitted_models = TRUE, log_base = 2) {
-    Protein = issue = pvalue = PROTEIN = NULL
-    # Save session information here
-    # Initialize groupComparison log here
+groupComparison = function(contrast_matrix, data, 
+                           save_fitted_models = TRUE, log_base = 2,
+                           use_log_file = TRUE, append = FALSE, 
+                           verbose = TRUE, log_file_path = NULL
+) {
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path, 
+                                        "MSstats_groupComparison_log_")
     getOption("MSstatsLog")("INFO", "MSstats - groupComparison function")
-    
-    summarized = data.table::as.data.table(data$RunlevelData)
-    summarized = .checkGroupComparisonInput(summarized)
-    contrast_matrix = .checkContrastMatrix(contrast.matrix, summarized)
-    labeled = nlevels(data$ProcessedData$LABEL) > 1
-    repeated = .checkRepeated(summarized)
-    has_imputed = is.element("NumImputedFeature", colnames(summarized))
-    
+    labeled = data.table::uniqueN(data$ProcessedData$Label) > 1
+    split_summarized = MSstatsPrepareForGroupComparison(data)
+    repeated = checkRepeatedDesign(data)
+    samples_info = getSamplesInfo(data)
     getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
     getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
     getOption("MSstatsLog")("INFO",
                             "== Start to test and get inference in whole plot")
     getOption("MSstatsMsg")("INFO",
                             " == Start to test and get inference in whole plot ...")
-    
-    groups = sort(unique(summarized$GROUP))
-    ## Meena: maybe here we need to ha
-    samples_info = summarized[, list(NumRuns = data.table::uniqueN(RUN)),
-                              by = "GROUP"]
-    ## Meena: end
-    all_proteins = unique(summarized$Protein)
-    group_comparison = vector("list", length(all_proteins))
-    model_qc_data = vector("list", length(all_proteins))
-    fitted_models = vector("list", length(all_proteins))
-    pb = txtProgressBar(max = nlevels(all_proteins), style = 3)
-    for (i in 1:nlevels(all_proteins)) {
-        single_protein = summarized[Protein == all_proteins[i]]
-        comparison_outputs = MSstatsGroupComparisonSingleProtein(
-            single_protein, contrast_matrix, repeated, 
-            groups, samples_info, save_fitted_models, has_imputed
-        )
-        model_qc_data[[i]] = comparison_outputs[[1]]
-        group_comparison[[i]] = comparison_outputs[[2]]
-        fitted_models[[i]] = comparison_outputs[[3]]
-        setTxtProgressBar(pb, i)
-    }
-    close(pb)
-    
+    testing_results = MSstatsGroupComparison(split_summarized, contrast_matrix,
+                                             save_fitted_models, repeated, samples_info)
     getOption("MSstatsLog")("INFO",
                             "== Comparisons for all proteins are done.")
     getOption("MSstatsMsg")("INFO",
                             " == Comparisons for all proteins are done.")
+    MSstatsGroupComparisonOutput(testing_results, data, log_base)
+}
+
+
+#' Prepare output for dataProcess for group comparison
+#' 
+#' @param summarization_output output of dataProcess
+#' 
+#' @export
+#' 
+MSstatsPrepareForGroupComparison = function(summarization_output) {
+    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunlevelData))
+    summarized = data.table::as.data.table(summarization_output$RunlevelData)
+    summarized = .checkGroupComparisonInput(summarized)
+    labeled = nlevels(summarization_output$ProcessedData$LABEL) > 1
     
-    comparisons = data.table::rbindlist(group_comparison, fill = TRUE)
+    getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
+    getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
+    getOption("MSstatsLog")("INFO",
+                            "** Start to test and get inference in whole plot")
+    output = split(summarized, summarized$Protein)
+    attr(output, "has_imputed") = has_imputed
+    output
+}
+
+
+#' Group comparison
+#' 
+#' @param summarized_list output of MSstatsPrepareForGroupComparison
+#' @param contrast_matrix contrast matrix
+#' @param save_fitted_model if TRUE, fitted models will be included in the output
+#' @param repeated logical, output of checkRepeatedDesign function
+#' @param samples_info data.table, output of getSamplesInfo function
+#' 
+#' @export
+#' 
+MSstatsGroupComparison = function(summarized_list, contrast_matrix,
+                                  save_fitted_models, repeated, samples_info) {
+    groups = sort(colnames(contrast_matrix))
+    has_imputed = attr(summarized_list, "has_imputed")
+    all_proteins_id = seq_along(summarized_list)
+    test_results = vector("list", length(all_proteins_id))
+    pb = txtProgressBar(max = length(all_proteins_id), style = 3)
+    for (i in all_proteins_id) {
+        comparison_outputs = MSstatsGroupComparisonSingleProtein(
+            summarized_list[[i]], contrast_matrix, repeated, 
+            groups, samples_info, save_fitted_models, has_imputed
+        )
+        test_results[[i]] = comparison_outputs
+        setTxtProgressBar(pb, i)
+    }
+    close(pb)
+    test_results
+}
+
+
+#' Create output of group comparison based on results for individual proteins
+#' 
+#' @param input output of MSstatsGroupComparison function
+#' @param summarization_output output of dataProcess function
+#' @param log_base base of the logarithm used in fold-change calculation
+#' 
+#' @export
+#' 
+MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 2) {
+    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunlevelData))
+    model_qc_data = lapply(input, function(x) x[[1]])
+    comparisons = lapply(input, function(x) x[[2]])
+    fitted_models = lapply(input, function(x) x[[3]])
+    comparisons = data.table::rbindlist(comparisons, fill = TRUE)
     comparisons[, adj.pvalue := p.adjust(pvalue, method = "BH"),
                 by = "Label"]
     logFC_colname = paste0("log", log_base, "FC")
@@ -90,6 +135,7 @@ groupComparison = function(contrast.matrix, data,
 
 
 #' Group comparison for a single protein
+#' 
 #' @param single_protein data.table with summarized data for a single protein
 #' @param contrast_matrix contrast matrix
 #' @param repeated if TRUE, repeated measurements will be modeled
@@ -98,6 +144,7 @@ groupComparison = function(contrast.matrix, data,
 #' @param save_fitted_models if TRUE, fitted model will be saved.
 #' If not, it will be replaced with NULL
 #' @param has_imputed TRUE if missing values have been imputed
+#' 
 #' @export
 #' 
 MSstatsGroupComparisonSingleProtein = function(single_protein, contrast_matrix,
