@@ -107,7 +107,7 @@
         }
         input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
         if (impute) {
-            input[, NumImputedFeature := sum(!nonmissing_orig),
+            input[, NumImputedFeature := sum(LABEL == "L" & !nonmissing_orig),
                   by = c("PROTEIN", "RUN")]
         } else {
             input[, NumImputedFeature := 0]
