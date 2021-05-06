@@ -35,7 +35,9 @@ groupComparison = function(contrast.matrix, data,
     getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
     getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
     getOption("MSstatsLog")("INFO",
-                            "** Start to test and get inference in whole plot")
+                            "== Start to test and get inference in whole plot")
+    getOption("MSstatsMsg")("INFO",
+                            " == Start to test and get inference in whole plot ...")
     
     groups = sort(unique(summarized$GROUP))
     ## Meena: maybe here we need to ha
@@ -61,7 +63,10 @@ groupComparison = function(contrast.matrix, data,
     close(pb)
     
     getOption("MSstatsLog")("INFO",
-                            "Comparisons for all proteins are done.- okay")
+                            "== Comparisons for all proteins are done.")
+    getOption("MSstatsMsg")("INFO",
+                            " == Comparisons for all proteins are done.")
+    
     comparisons = data.table::rbindlist(group_comparison, fill = TRUE)
     comparisons[, adj.pvalue := p.adjust(pvalue, method = "BH"),
                 by = "Label"]
