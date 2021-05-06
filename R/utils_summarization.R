@@ -71,6 +71,6 @@ MSstatsSummarize = function(
     }
     msg = " == the summarization per subplot is done."
     getOption("MSstatsLog")("INFO", msg)
-    getOption("MSstatsMsg")("INFO", msg)
+    getOption("MSstatsMsg")("\nINFO ", msg)
     result
 }

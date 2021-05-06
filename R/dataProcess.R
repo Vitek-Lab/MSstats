@@ -101,7 +101,7 @@ dataProcess = function(
     .logDatasetInformation(input)
     # Summarization per subplot (per RUN) ----
     getOption("MSstatsMsg")("INFO",
-                            "\n == Start the summarization per subplot...")
+                            " == Start the summarization per subplot...")
     summarization = tryCatch(MSstatsSummarize(
         input, summaryMethod, equalFeatureVar, cutoffCensored, censoredInt,
         remove50missing, MBimpute, remove_uninformative_feature_outlier),
