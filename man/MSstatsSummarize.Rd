@@ -5,34 +5,22 @@
 \title{Feature-level data summarization}
 \usage{
 MSstatsSummarize(
-  input,
-  summaryMethod = "TMP",
-  equalFeatureVar = TRUE,
-  cutoffCensored = "minFeature",
-  censoredInt = "NA",
-  remove50missing = FALSE,
-  MBimpute = TRUE,
-  remove_uninformative_feature_outlier = FALSE
+  proteins_list,
+  method,
+  impute,
+  censored_symbol,
+  remove50missing,
+  equal_variance
 )
 }
 \arguments{
-\item{input}{`data.table` in MSstats standard format}
+\item{method}{summarization method: "linear" or "TMP"}
 
-\item{summaryMethod}{summarization method: "linear" or "TMP"}
+\item{impute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
+TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
+FALSE uses the values assigned by cutoffCensored}
 
-\item{equalFeatureVar}{only for summaryMethod = "linear". Default is TRUE. 
-Logical variable for whether the model should account for heterogeneous variation 
-among intensities from different features. Default is TRUE, which assume equal
-variance among intensities from features. FALSE means that we cannot assume 
-equal variance among intensities from features, then we will account for
-heterogeneous variation from different features.}
-
-\item{cutoffCensored}{Cutoff value for censoring. only with censoredInt = 'NA' or '0'. 
-Default is 'minFeature', which uses minimum value for each feature. 
-'minFeatureNRun' uses the smallest between minimum value of corresponding 
-feature and minimum value of corresponding run. 'minRun' uses minimum value for each run.}
-
-\item{censoredInt}{Missing values are censored or at random. 
+\item{censored_symbol}{Missing values are censored or at random. 
 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
 '0' uses zero intensities as censored intensity. 
 In this case, NA intensities are missing at random. 
@@ -42,9 +30,14 @@ Null assumes that all NA intensites are randomly missing.}
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
 which have more than 50\% missing values. FALSE is default.}
 
-\item{MBimpute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
-FALSE uses the values assigned by cutoffCensored}
+\item{equal_variance}{only for summaryMethod = "linear". Default is TRUE. 
+Logical variable for whether the model should account for heterogeneous variation 
+among intensities from different features. Default is TRUE, which assume equal
+variance among intensities from features. FALSE means that we cannot assume 
+equal variance among intensities from features, then we will account for
+heterogeneous variation from different features.}
+
+\item{input}{list of processed feature-level data}
 
 \item{remove_uninformative_feature_outlier}{It only works after users used featureSubset = "highQuality" 
 in dataProcess. TRUE allows to remove 1) the features are flagged in the column, 

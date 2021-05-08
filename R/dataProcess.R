@@ -11,15 +11,6 @@
 #' If FALSE, no normalization is performed.
 #' @param nameStandards optional vector of global standard peptide names. 
 #' Required only for normalization with global standard peptides.
-#' @param address the name of folder that will store the results. Default folder 
-#' is the current working directory. The other assigned folder has to be existed 
-#' under the current working directory. An output csv file is automatically created 
-#' with the default name of "BetweenRunInterferenceFile.csv". 
-#' The command address can help to specify where to store the file as well as how 
-#' to modify the beginning of the file name.
-#' @param fillIncompleteRows If the input dataset has incomplete rows, 
-#' TRUE (default) adds the rows with intensity value = NA for missing peaks. 
-#' FALSE reports error message with list of features which have incomplete rows.
 #' @param featureSubset "all" (default) uses all features that the data set has. 
 #' "top3" uses top 3 features which have highest average of log-intensity across runs. 
 #' "topN" uses top N features which has highest average of log-intensity across runs. 
@@ -48,18 +39,13 @@
 #' In this case, NA intensities are missing at random. 
 #' The output from Skyline should use '0'. 
 #' Null assumes that all NA intensites are randomly missing.
-#' @param cutoffCensored Cutoff value for censoring with censoredInt = 'NA' or '0'. 
-#' Default is 'minFeature', which uses minimum value for each feature.
-#' 'minFeatureNRun' uses the smallest between minimum value of corresponding feature 
-#' and minimum value of corresponding run. 'minRun' uses minumum value for each run
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
 #' by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
 #' which have more than 50\% missing values. FALSE is default.
 #' @param maxQuantileforCensored Maximum quantile for deciding censored missing values, default is 0.999
-#' @param clusters a user specified number of clusters for parallel computing. 
-#' Default is NULL, which does not use cluster.
+#' @inheritParams .documentFunction
 #' 
 #' @importFrom utils sessionInfo
 #' @importFrom data.table as.data.table 
@@ -69,27 +55,25 @@
 
 dataProcess = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-    address = "", fillIncompleteRows = TRUE, featureSubset = "all", 
-    remove_uninformative_feature_outlier = FALSE, n_top_feature = 3, 
-    summaryMethod = "TMP", equalFeatureVar = TRUE, censoredInt = "NA", 
-    cutoffCensored = "minFeature", MBimpute = TRUE, remove50missing = FALSE,
-    fix_missing = NULL, maxQuantileforCensored = 0.999, clusters = NULL
+    featureSubset = "all", remove_uninformative_feature_outlier = FALSE, 
+    n_top_feature = 3, summaryMethod = "TMP", equalFeatureVar = TRUE, 
+    censoredInt = "NA", MBimpute = TRUE, remove50missing = FALSE,
+    fix_missing = NULL, maxQuantileforCensored = 0.999, 
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
-    .saveSessionInfo()
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path,
+                                        base = "MSstats_dataProcess_log_")
     getOption("MSstatsLog")("INFO", "MSstats - dataProcess function")
     .checkDataProcessParams(
-        logTrans, normalization, nameStandards, address, fillIncompleteRows,
+        logTrans, normalization, nameStandards,
         list(method = featureSubset, n_top = n_top_feature,
              remove_uninformative = remove_uninformative_feature_outlier),
         list(method = summaryMethod, equal_var = equalFeatureVar),
-        list(symbol = censoredInt,
-             cutoff = cutoffCensored,
-             MB = MBimpute),
-        clusters)
+        list(symbol = censoredInt, MB = MBimpute))
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
-    input = MSstatsPrepareForDataProcess(raw, logTrans, 
-                                         fix_missing, fillIncompleteRows)
+    input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
     # Normalization, Imputation and feature selection ----
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
     input = MSstatsMergeFractions(input)
@@ -102,13 +86,18 @@ dataProcess = function(
     # Summarization per subplot (per RUN) ----
     getOption("MSstatsMsg")("INFO",
                             " == Start the summarization per subplot...")
-    summarization = tryCatch(MSstatsSummarize(
-        input, summaryMethod, equalFeatureVar, cutoffCensored, censoredInt,
-        remove50missing, MBimpute, remove_uninformative_feature_outlier),
-        error = function(e) {
-            print(e)
-            NULL
-        })
-    MSstatsSummarizationOutput(summarization[[1]], summarization[[2]], input, 
-                               summaryMethod)
+    processed = getProcessed(input)
+    input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
+                                           remove_uninformative_feature_outlier)
+    input_split = split(input, input$PROTEIN)
+    summarized = tryCatch(MSstatsSummarize(input_split, summaryMethod,
+                                           MBimpute, censoredInt, 
+                                           remove50missing, equalFeatureVar),
+                          error = function(e) {
+                              print(e)
+                              NULL
+                          })
+    output = MSstatsSummarizationOutput(input, summarized, processed,
+                                        summaryMethod, MBimpute, censoredInt)
+    output
 }

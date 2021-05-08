@@ -13,9 +13,6 @@
 If not NULL, must be one of the options: "zero_to_na" or "na_to_zero".
 If "zero_to_na", Intensity values equal exactly to 0 will be converted to NA.
 If "na_to_zero", missing values will be replaced by zeros.}
-
-\item{fill_incomplete}{if TRUE (default), Intensity values for missing runs
-will be added as NA}
 }
 \description{
 Check validity of data that were not processed by MSstats converter

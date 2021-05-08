@@ -4,7 +4,7 @@
 \alias{MSstatsPrepareForDataProcess}
 \title{Prepare data for processing by `dataProcess` function}
 \usage{
-MSstatsPrepareForDataProcess(input, log_base, fix_missing, fill_incomplete)
+MSstatsPrepareForDataProcess(input, log_base, fix_missing)
 }
 \arguments{
 \item{input}{`data.table` in MSstats format}
@@ -15,9 +15,6 @@ MSstatsPrepareForDataProcess(input, log_base, fix_missing, fill_incomplete)
 If not NULL, must be one of the options: "zero_to_na" or "na_to_zero".
 If "zero_to_na", Intensity values equal exactly to 0 will be converted to NA.
 If "na_to_zero", missing values will be replaced by zeros.}
-
-\item{fill_incomplete}{if TRUE (default), Intensity values for missing runs
-will be added as NA}
 }
 \description{
 Prepare data for processing by `dataProcess` function

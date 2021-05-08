@@ -4,7 +4,14 @@
 \alias{MSstatsSummarizationOutput}
 \title{Post-processing output from MSstats summarization}
 \usage{
-MSstatsSummarizationOutput(input, summarized, processed, summary_method)
+MSstatsSummarizationOutput(
+  input,
+  summarized,
+  processed,
+  method,
+  impute,
+  censored_symbol
+)
 }
 \arguments{
 \item{input}{`data.table` in MSstats format}
@@ -13,8 +20,14 @@ MSstatsSummarizationOutput(input, summarized, processed, summary_method)
 
 \item{processed}{output of MSstatsSelectFeatures}
 
-\item{summary_method}{name of the summarization method
+\item{method}{name of the summarization method
 (`summaryMethod` parameter to `dataProcess`)}
+
+\item{impute}{if TRUE, censored missing values were imputed
+(`MBimpute` parameter to `dataProcess`)}
+
+\item{censored_symbol}{censored missing value indicator 
+(`censoredInt` parameter to `dataProcess`)}
 }
 \value{
 list that consists of the following elements:

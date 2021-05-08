@@ -4,12 +4,10 @@
 \alias{.setCensoredByThreshold}
 \title{Set censored values based on minimum in run/feature/run or feature}
 \usage{
-.setCensoredByThreshold(input, cutoff_base, censored_symbol, remove50missing)
+.setCensoredByThreshold(input, censored_symbol, remove50missing)
 }
 \arguments{
 \item{input}{`data.table` in MSstats format}
-
-\item{cutoff_base}{cutoffCensored parameter to `dataProcess`}
 
 \item{censored_symbol}{censoredInt parameter to `dataProcess`}
 

@@ -63,13 +63,11 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 
 #' Set censored values based on minimum in run/feature/run or feature
 #' @param input `data.table` in MSstats format
-#' @param cutoff_base cutoffCensored parameter to `dataProcess`
 #' @param censored_symbol censoredInt parameter to `dataProcess`
 #' @param remove50missing if TRUE, features with at least 50% missing values
 #' will be removed
 #' @keywords internal
-.setCensoredByThreshold = function(input, cutoff_base, censored_symbol,
-                                   remove50missing) {
+.setCensoredByThreshold = function(input, censored_symbol, remove50missing) {
     total_features = n_obs = newABUNDANCE = n_obs_run = censored = NULL
     
     if (censored_symbol == "NA") {
@@ -78,10 +76,9 @@ MSstatsHandleMissing = function(input, summary_method, impute,
         input[, nonmissing_all := !is.na(newABUNDANCE) & input$newABUNDANCE != 0]
     }
     
-    # remove feature with 1 measurement
-    input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, FALSE, nonmissing_all)] 
+    input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, 
+                                     FALSE, nonmissing_all)] 
     grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
-    
     input[n_obs > 1 & n_obs_run > 0, 
           ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
           by = grouping_vars]
@@ -95,7 +92,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' @param nonmissing logical vector
 #' @keywords internal
 .getMin = function(abundance, nonmissing) {
-    0.99*min(abundance[nonmissing], na.rm = TRUE)
+    0.99 * min(abundance[nonmissing], na.rm = TRUE)
 }
 
 

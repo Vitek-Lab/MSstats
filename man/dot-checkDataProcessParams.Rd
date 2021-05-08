@@ -8,12 +8,9 @@
   log_base,
   normalization_method,
   standards_names,
-  address,
-  fill_rows,
   feature_selection,
   summarization,
-  imputation,
-  n_clusters
+  imputation
 )
 }
 \arguments{
@@ -22,18 +19,11 @@
 \item{normalization_method}{string: "quantile", "equalizemedians", "FALSE",
 "NONE" or "globalStandards"}
 
-\item{address}{string}
-
-\item{fill_rows}{logical, if TRUE, missing run observations for each feature
-will be added with INTENSITY = NA}
-
 \item{feature_selection}{list with elements: remove_uninformative}
 
 \item{summarization}{list with elements: method.}
 
 \item{imputation}{list with elements: cutoff, symbol.}
-
-\item{n_clusters}{integer}
 }
 \description{
 Check validity of parameters to dataProcess function
