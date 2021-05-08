@@ -27,7 +27,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param single_protein data.table
 #' @keywords internal
 .prepareSingleProteinForGC = function(single_protein) {
-    ABUNDANCE = GROUP = SUBJECT = SUBJECT_NESTED = RUN = NULL
+    ABUNDANCE = GROUP = SUBJECT = RUN = NULL
     
     data.table::setnames(single_protein,
                          c("LogIntensities"),
@@ -36,7 +36,6 @@ getSamplesInfo = function(summarization_output) {
     single_protein = single_protein[!is.na(ABUNDANCE)]
     single_protein[, GROUP := factor(GROUP)]
     single_protein[, SUBJECT := factor(SUBJECT)]
-    single_protein[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
     single_protein[, RUN := factor(RUN)]
     single_protein
 }

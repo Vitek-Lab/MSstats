@@ -5,10 +5,8 @@
 #' @inheritParams MSstatsConvert::MSstatsBalancedDesign
 #' @export
 #' 
-MSstatsPrepareForDataProcess = function(input, log_base,
-                                        fix_missing, fill_incomplete) {
-    input = .checkDataValidity(input, fix_missing = fix_missing,
-                               fill_incomplete = fill_incomplete)
+MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
+    input = .checkDataValidity(input, fix_missing = fix_missing)
     input = .updateColumnsForProcessing(input)
     .preProcessIntensities(input, log_base)
     input = .makeFactorColumns(input)
@@ -34,28 +32,18 @@ MSstatsPrepareForDataProcess = function(input, log_base,
 #' @param log_base of logarithmic transformation
 #' @param normalization_method string: "quantile", "equalizemedians", "FALSE",
 #' "NONE" or "globalStandards"
-#' @param address string
-#' @param fill_rows logical, if TRUE, missing run observations for each feature
-#' will be added with INTENSITY = NA
 #' @param feature_selection list with elements: remove_uninformative
 #' @param summarization list with elements: method.
 #' @param imputation list with elements: cutoff, symbol.
-#' @param n_clusters integer
 #' @keywords internal
 .checkDataProcessParams = function(log_base, normalization_method,
-                                   standards_names, address, fill_rows,
-                                   feature_selection, summarization,
-                                   imputation, n_clusters) {
+                                   standards_names, feature_selection, 
+                                   summarization, imputation) {
     checkmate::assertChoice(log_base, c(2, 10), .var.name = "logTrans")
-    checkmate::assertLogical(fill_rows, .var.name = "fillIncompleteRows")
     checkmate::assertChoice(summarization$method, c("linear", "TMP"),
                             .var.name = "summaryMethod") 
     getOption("MSstatsLog")("INFO", paste("Summary method:", 
                                           summarization$method))
-    checkmate::assertChoice(imputation$cutoff, c("minFeature", "minRun", 
-                                                 "minFeatureNRun"),
-                            .var.name = "cutoffCensored")
-    getOption("MSstatsLog")("INFO", paste("cutOffCensored:", imputation$cutoff))
     checkmate::assertChoice(imputation$symbol, c("0", "NA"), 
                             null.ok = TRUE, .var.name = "censoredInt")
     getOption("MSstatsLog")("INFO", paste("censoredInt:", imputation$symbol))
@@ -103,8 +91,8 @@ MSstatsPrepareForDataProcess = function(input, log_base,
 .checkUnProcessedDataValidity = function(input, fix_missing, fill_incomplete) {
     input = data.table::as.data.table(unclass(input))
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
-             "PrecursorCharge", "FragmentIon", "ProductCharge", "IsotopeLabelType", 
-             "Condition", "BioReplicate", "Run", "Intensity")
+             "PrecursorCharge", "FragmentIon", "ProductCharge", 
+             "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
     provided_cols = intersect(cols, colnames(input))
     
     if (length(provided_cols) < 10) {
@@ -113,15 +101,17 @@ MSstatsPrepareForDataProcess = function(input, log_base,
         getOption("MSstatsLog")("ERROR", msg)
         stop(msg)
     }
-    data.table::setnames(input, "PeptideModifiedSequence", "PeptideSequence", skip_absent = TRUE)
+    data.table::setnames(input, "PeptideModifiedSequence", "PeptideSequence", 
+                         skip_absent = TRUE)
     
-    balanced_cols = c("PeptideSequence", "PrecursorCharge", "FragmentIon", "ProductCharge")
+    balanced_cols = c("PeptideSequence", "PrecursorCharge", 
+                      "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsBalancedDesign(
-        input, balanced_cols, fill_incomplete, TRUE, fix_missing)
+        input, balanced_cols, TRUE, TRUE, fix_missing)
     input = data.table::as.data.table(unclass(input))
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
-
-
+    
+    
     if (!is.numeric(input$INTENSITY)) {	
         suppressWarnings({
             input$INTENSITY = as.numeric(as.character(input$INTENSITY))
@@ -139,11 +129,11 @@ MSstatsPrepareForDataProcess = function(input, log_base,
     
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
-    # TODO: := ?
     
     if (data.table::uniqueN(input$ISOTOPELABELTYPE) > 2) {
-        getOption("MSstatsLog")("ERROR",  paste("There are more than two levels of labeling.",
-                                                "So far, only label-free or reference-labeled experiment are supported. - stop"))
+        getOption("MSstatsLog")("ERROR",  
+                                paste("There are more than two levels of labeling.",
+                                      "So far, only label-free or reference-labeled experiment are supported. - stop"))
         stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
     }
     
@@ -164,16 +154,12 @@ MSstatsPrepareForDataProcess = function(input, log_base,
 .prepareForDataProcess = function(input, ...) {
     input = as.data.table(unclass(input))
     colnames(input) = toupper(colnames(input))
-    
     if (is.element("PEPTIDEMODIFIEDSEQUENCE", colnames(input))) {
         data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-    
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
-    # TODO: := ?
-    
     input$ISOTOPELABELTYPE = factor(input$ISOTOPELABELTYPE)
     if (data.table::uniqueN(input$ISOTOPELABELTYPE) == 2) {
         levels(input$ISOTOPELABELTYPE) = c("H", "L")
@@ -222,7 +208,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 #' @keywords internal
 .updateColumnsForProcessing = function(input) {
     FEATURE = PEPTIDE = TRANSITION = GROUP = LABEL = GROUP_ORIGINAL = NULL
-    SUBJECT = SUBJECT_ORIGINAL = SUBJECT_NESTED = PROTEIN = NULL
+    SUBJECT = SUBJECT_ORIGINAL = PROTEIN = NULL
     
     data.table::setnames(
         input, c("PROTEINNAME", "ISOTOPELABELTYPE", "CONDITION", "BIOREPLICATE"), 
@@ -232,12 +218,10 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
     input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, "0")]
     input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, "0")]
-    input[, SUBJECT_NESTED := paste(GROUP, SUBJECT, sep = ".")]
-    # as.factor() / factor() everywhere?
-    
+
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
-             "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", "SUBJECT", 
-             "SUBJECT_NESTED", "FRACTION", "INTENSITY")
+             "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", 
+             "SUBJECT", "FRACTION", "INTENSITY")
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
@@ -247,7 +231,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 #' @keywords internal
 .makeFactorColumns = function(input) {
     PROTEIN = PEPTIDE = TRANSITION = LABEL = GROUP_ORIGINAL = RUN = GROUP = NULL
-    SUBJECT_ORIGINAL = SUBJECT_NESTED = FEATURE = originalRUN = SUBJECT = NULL
+    SUBJECT_ORIGINAL = FEATURE = originalRUN = SUBJECT = NULL
     
     input[, PROTEIN := factor(PROTEIN)]
     input[, PEPTIDE := factor(PEPTIDE)]
@@ -256,15 +240,13 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
                         RUN, PROTEIN, PEPTIDE, TRANSITION), ]
     input[, GROUP := factor(GROUP)]
     input[, SUBJECT := factor(SUBJECT)]
-    input[, SUBJECT_NESTED := factor(SUBJECT_NESTED)]
     input[, FEATURE := factor(FEATURE)]
     input[, originalRUN := factor(as.character(RUN))]
     input[, RUN := factor(RUN, levels = unique(RUN),
                           labels = seq_along(unique(RUN)))]
     
     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
-                "SUBJECT_ORIGINAL, SUBJECT_ORIGINAL_NESTED, FEATURE, RUN)",
-                "- okay.")
+                "SUBJECT_ORIGINAL, FEATURE, RUN)", "- okay.")
     getOption("MSstatsLog")("INFO", msg)
     input
 }

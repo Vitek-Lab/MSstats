@@ -94,25 +94,6 @@ NumericVector get_feature_run(NumericVector find_runs, NumericVector find_featur
 }
 
 
-NumericVector get_subject_nested(NumericVector find_subject, 
-                                 CharacterVector coef_names,
-                                 NumericVector contrast_matrix,
-                                 bool is_labeled) {
-    
-    NumericVector subject(0);
-    if (find_subject.length() != 0 & !(find_subject[0] == -1)) {
-        CharacterVector temp_subject = coef_names[find_subject];
-        if (is_labeled) {
-            subject = contrast_matrix;
-        } else {
-            subject = contrast_matrix[seq(1, subject.length() - 1)];
-        }
-        subject.attr("names") = temp_subject;
-    }
-    return(subject);
-}
-
-
 double get_quant(const NumericVector& coefs, const NumericVector& contrast) {
     NumericMatrix coefs_tmp(coefs.length(), 1, coefs.begin());
     NumericMatrix contrast_tmp(1, contrast.length(), contrast.begin());
@@ -125,11 +106,10 @@ double get_quant(const NumericVector& coefs, const NumericVector& contrast) {
 
 NumericVector combine_contrast(bool is_reference, NumericVector intercept, 
                                NumericVector features, NumericVector runs, 
-                               NumericVector refs, NumericVector run_features,
-                               NumericVector subjects) {
+                               NumericVector refs, NumericVector run_features) {
     if (is_reference) {
         NumericVector contrast = unlist(List::create(intercept, features, runs, 
-                                                     refs, run_features, subjects));
+                                                     refs, run_features));
         return(contrast);
     } else {
         NumericVector contrast = unlist(List::create(intercept, features, runs, 
@@ -154,8 +134,7 @@ NumericVector make_contrast_run_quant(DataFrame input,
     NumericVector find_colon = grep(":", coef_names);
     NumericVector find_runs = grep("RUN", coef_names);
     NumericVector find_ref = grep("ref", coef_names);
-    NumericVector find_subject = grep("SUBJECT_NESTED", coef_names);
-    
+
     NumericVector intercept = get_intercept(coef_names);
     NumericVector features = get_features(coef_names, find_features, find_colon,
                                           contrast_matrix, counts, input);
@@ -165,13 +144,10 @@ NumericVector make_contrast_run_quant(DataFrame input,
                                  is_reference);
     NumericVector run_features = get_feature_run(find_runs, find_features,
                                                  coef_names, counts);
-    NumericVector subjects = get_subject_nested(find_subject, coef_names,
-                                                contrast_matrix,
-                                                is_labeled);
-    
+
     NumericVector contrast = combine_contrast(is_reference,
                                               intercept, features, runs,
-                                              refs, run_features, subjects);
+                                              refs, run_features);
     if (contrast.length() == coefs.length()) {
         contrast = contrast[!is_na(coefs)];
     } else {
