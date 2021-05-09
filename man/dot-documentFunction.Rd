@@ -35,9 +35,6 @@ to the console.}
 data processing will be saved. 
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
-
-\item{sesion_info_path}{character. Optional path to a file to which session 
-information will be saved.}
 }
 \description{
 A dummy function to store shared documentation items.

@@ -23,8 +23,6 @@
 #' data processing will be saved. 
 #' If not provided, such a file will be created automatically.
 #' If `append = TRUE`, has to be a valid path to a file.
-#' @param sesion_info_path character. Optional path to a file to which session 
-#' information will be saved.
 #' 
 #' @keywords internal
 #' 
@@ -54,13 +52,11 @@ DIAUmpiretoMSstatsFormat = function(
     raw.frag, raw.pep, raw.pro, annotation, useSelectedFrag = TRUE,
     useSelectedPep = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(Fragments = raw.frag, 
                                                Peptides = raw.pep, 
                                                Proteins = raw.pro), 
@@ -117,13 +113,11 @@ MaxQtoMSstatsFormat = function(
     useUniquePeptide = TRUE, summaryforMultipleRows = max, 
     removeFewMeasurements = TRUE, removeMpeptides = FALSE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(evidence = evidence, 
                                                protein_groups = proteinGroups), 
                                           type = "MSstats",
@@ -188,13 +182,11 @@ MaxQtoMSstatsFormat = function(
 OpenMStoMSstatsFormat = function(
     input, annotation = NULL, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "OpenMS", ...)
     input = MSstatsConvert::MSstatsClean(input)
@@ -242,13 +234,11 @@ OpenSWATHtoMSstatsFormat = function(
     input, annotation, filter_with_mscore = TRUE, mscore_cutoff = 0.01,
     useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "OpenSWATH", ...)
     input = MSstatsConvert::MSstatsClean(input)
@@ -313,13 +303,11 @@ ProgenesistoMSstatsFormat = function(
     input, annotation, useUniquePeptide = TRUE, summaryforMultipleRows = max,
     removeFewMeasurements = TRUE, removeOxidationMpeptides = FALSE, 
     removeProtein_with1Peptide = FALSE, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "Progenesis", ...)
     input = MSstatsConvert::MSstatsClean(input, 
@@ -383,13 +371,11 @@ PDtoMSstatsFormat = function(
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE,
     which.quantification = 'Precursor.Area', 
     which.proteinid = 'Protein.Group.Accessions', which.sequence = 'Sequence',
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "ProteomeDiscoverer", ...)
     input = MSstatsConvert::MSstatsClean(
@@ -452,13 +438,11 @@ SkylinetoMSstatsFormat = function(
     input, annotation = NULL, removeiRT = TRUE, filter_with_Qvalue = TRUE,
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Feature = FALSE,
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "Skyline", ...)
     input = MSstatsConvert::MSstatsClean(input)
@@ -547,13 +531,11 @@ SpectronauttoMSstatsFormat = function(
     input, annotation = NULL, intensity = 'PeakArea', filter_with_Qvalue = TRUE,
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements=TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    session_info_path = NULL, ...
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-    MSstatsConvert::MSstatsSaveSessionInfo(session_info_path, append = TRUE)
-    
+
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "Spectronaut", ...)
     input = MSstatsConvert::MSstatsClean(input, intensity = intensity)
