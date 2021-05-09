@@ -1,4 +1,5 @@
 .getYaxis = function(temp) {
+    temp = temp[!is.na(INTENSITY) & !is.na(ABUNDANCE),]
     temp_abund = temp[1, "ABUNDANCE"]
     temp_inten = temp[1, "INTENSITY"]
     log2_diff = abs(log(temp_inten, 2) - temp_abund)
