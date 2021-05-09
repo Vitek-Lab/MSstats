@@ -5,7 +5,7 @@
 \title{Whole plot testing}
 \usage{
 groupComparison(
-  contrast_matrix,
+  contrast.matrix,
   data,
   save_fitted_models = TRUE,
   log_base = 2,
@@ -16,6 +16,8 @@ groupComparison(
 )
 }
 \arguments{
+\item{contrast.matrix}{comparison between conditions of interests.}
+
 \item{data}{name of the (output of dataProcess function) data set.}
 
 \item{save_fitted_models}{logical, if TRUE, fitted models will be added to
@@ -34,8 +36,6 @@ to the console.}
 data processing will be saved. 
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
-
-\item{contrast.matrix}{comparison between conditions of interests.}
 
 \item{logBase}{base of the logarithm used in dataProcess.}
 }

@@ -18,7 +18,7 @@
 #' @import limma
 #' @importFrom data.table rbindlist
 #'
-groupComparison = function(contrast_matrix, data, 
+groupComparison = function(contrast.matrix, data, 
                            save_fitted_models = TRUE, log_base = 2,
                            use_log_file = TRUE, append = FALSE, 
                            verbose = TRUE, log_file_path = NULL
@@ -31,6 +31,8 @@ groupComparison = function(contrast_matrix, data,
     split_summarized = MSstatsPrepareForGroupComparison(data)
     repeated = checkRepeatedDesign(data)
     samples_info = getSamplesInfo(data)
+    groups = unique(data$RunlevelData$GROUP)
+    contrast_matrix = MSstatsContrastMatrix(contrast.matrix, groups)
     getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
     getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
     getOption("MSstatsLog")("INFO",
