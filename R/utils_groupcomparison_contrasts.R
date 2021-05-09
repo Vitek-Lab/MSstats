@@ -35,6 +35,30 @@ MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL)
 }
 
 
+#' @export
+MSstatsContrastMatrix.matrix = function(contrasts, conditions, labels = NULL) {
+    groups_matrix = colnames(contrasts)
+    checkmate::assertSetEqual(groups_matrix, conditions, 
+                              .var.name = "colnames of contrast matrix")
+    if (is.null(row.names(contrasts))) {
+        stop("Row names of the contrast matrix must be the contrast labels")
+    }
+    contrasts
+}
+
+
+#' @export
+MSstatsContrastMatrix.data.frame = function(contrasts, conditions, labels) {
+    groups_matrix = colnames(contrasts)
+    checkmate::assertSetEqual(groups_matrix, conditions, 
+                              .var.name = "colnames of contrast matrix")
+    if (is.null(row.names(contrasts))) {
+        stop("Row names of the contrast matrix must be the contrast labels")
+    }
+    as.matrix(contrasts)
+}
+
+
 #' Create a contrast matrix for groupComparison function
 #' 
 #' @param contrast list of lists. Each sub-list consists of two vectors that 
