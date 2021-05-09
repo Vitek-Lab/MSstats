@@ -38,7 +38,7 @@ MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL)
 #' @export
 MSstatsContrastMatrix.matrix = function(contrasts, conditions, labels = NULL) {
     groups_matrix = colnames(contrasts)
-    checkmate::assertSetEqual(groups_matrix, conditions, 
+    checkmate::assertSetEqual(groups_matrix, as.character(conditions), 
                               .var.name = "colnames of contrast matrix")
     if (is.null(row.names(contrasts))) {
         stop("Row names of the contrast matrix must be the contrast labels")
@@ -50,7 +50,7 @@ MSstatsContrastMatrix.matrix = function(contrasts, conditions, labels = NULL) {
 #' @export
 MSstatsContrastMatrix.data.frame = function(contrasts, conditions, labels) {
     groups_matrix = colnames(contrasts)
-    checkmate::assertSetEqual(groups_matrix, conditions, 
+    checkmate::assertSetEqual(groups_matrix, as.character(conditions), 
                               .var.name = "colnames of contrast matrix")
     if (is.null(row.names(contrasts))) {
         stop("Row names of the contrast matrix must be the contrast labels")

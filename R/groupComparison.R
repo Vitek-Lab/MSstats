@@ -33,8 +33,6 @@ groupComparison = function(contrast.matrix, data,
     samples_info = getSamplesInfo(data)
     groups = unique(data$RunlevelData$GROUP)
     contrast_matrix = MSstatsContrastMatrix(contrast.matrix, groups)
-    getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
-    getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
     getOption("MSstatsLog")("INFO",
                             "== Start to test and get inference in whole plot")
     getOption("MSstatsMsg")("INFO",
@@ -63,8 +61,6 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
     
     getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
     getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
-    getOption("MSstatsLog")("INFO",
-                            "** Start to test and get inference in whole plot")
     output = split(summarized, summarized$Protein)
     attr(output, "has_imputed") = has_imputed
     output
@@ -129,7 +125,7 @@ MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 
     if (!has_imputed) {
         cols = cols[1:10]
     }
-    getOption("MSstatsLog")("INFO", "Group comparison is done. - okay")
+    getOption("MSstatsLog")("INFO", "The output for groupComparison is ready.")
     list(ComparisonResult = as.data.frame(comparisons)[, cols],
          ModelQC = as.data.frame(qc),
          fittedmodel = fitted_models)   

@@ -45,9 +45,9 @@
     subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 0))
     repeated = any(subject_appearances > 1)
     if (repeated) {
-        msg = "Time course design of experiment - okay"
+        msg = "Time course design of experiment"
     } else {
-        msg = "Case control design of experiment - okay"
+        msg = "Case control design of experiment"
     }
     getOption("MSstatsLog")("INFO", msg)
     repeated

@@ -198,7 +198,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     getOption("MSstatsLog")("INFO",
                             paste("Logarithm transformation with base",
                                   log_base,
-                                  "is done - okay",
+                                  "is done",
                                   collapse = " "))
 }
 
@@ -246,7 +246,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
                           labels = seq_along(unique(RUN)))]
     
     msg = paste("Factorize in columns(GROUP, SUBJECT, GROUP_ORIGINAL,",
-                "SUBJECT_ORIGINAL, FEATURE, RUN)", "- okay.")
+                "SUBJECT_ORIGINAL, FEATURE, RUN)")
     getOption("MSstatsLog")("INFO", msg)
     input
 }
