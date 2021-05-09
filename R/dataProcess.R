@@ -22,6 +22,9 @@
 #' 2) outliers (flagged in the column, is_outlier with TRUE, 
 #' before run-level summarization. FALSE (default) uses all features and intensities 
 #' for run-level summarization.
+#' @param min_feature_count optional. Only required if featureSubset = "highQuality".
+#' Defines a minimum number of informative features a protein needs to be considered
+#' in the feature selection algorithm.
 #' @param n_top_feature optional. Only required if featureSubset = 'topN'.  
 #' It that case, it specifies number of top features that will be used.
 #' Default is 3, which means to use top 3 features.
@@ -56,9 +59,9 @@
 dataProcess = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
     featureSubset = "all", remove_uninformative_feature_outlier = FALSE, 
-    n_top_feature = 3, summaryMethod = "TMP", equalFeatureVar = TRUE, 
-    censoredInt = "NA", MBimpute = TRUE, remove50missing = FALSE,
-    fix_missing = NULL, maxQuantileforCensored = 0.999, 
+    min_feature_count = 2, n_top_feature = 3, summaryMethod = "TMP", 
+    equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
+    remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
@@ -74,16 +77,13 @@ dataProcess = function(
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
-    # Normalization, Imputation and feature selection ----
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards) # MSstatsNormalize
     input = MSstatsMergeFractions(input)
     input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
                                  censoredInt, maxQuantileforCensored)
     input = MSstatsSelectFeatures(input, featureSubset, n_top_feature,
-                                  min_feature_count = 2)
-    # Record statistics about the dataset
+                                  min_feature_count)
     .logDatasetInformation(input)
-    # Summarization per subplot (per RUN) ----
     getOption("MSstatsMsg")("INFO",
                             " == Start the summarization per subplot...")
     processed = getProcessed(input)
