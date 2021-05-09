@@ -84,8 +84,11 @@ dataProcess = function(
     input = MSstatsSelectFeatures(input, featureSubset, n_top_feature,
                                   min_feature_count)
     .logDatasetInformation(input)
+    getOption("MSstatsLog")("INFO",
+                            "== Start the summarization per subplot...")
     getOption("MSstatsMsg")("INFO",
                             " == Start the summarization per subplot...")
+
     processed = getProcessed(input)
     input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
                                            remove_uninformative_feature_outlier)
@@ -97,6 +100,10 @@ dataProcess = function(
                               print(e)
                               NULL
                           })
+    getOption("MSstatsLog")("INFO",
+                            "== Summarization is done.")
+    getOption("MSstatsMsg")("INFO",
+                            " == Summarization is done.")
     output = MSstatsSummarizationOutput(input, summarized, processed,
                                         summaryMethod, MBimpute, censoredInt)
     output

@@ -11,6 +11,7 @@
         msg = paste("Can't summarize for protein", unique(input$PROTEIN),
                     "because all measurements are missing or censored.")
         getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
         return(NULL)
     }
     
@@ -18,6 +19,7 @@
         msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
                     "because all measurements are missing or censored.")
         getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
         return(NULL)
     } 
     
@@ -25,6 +27,7 @@
         msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
                     "because features have only one measurement across MS runs.")
         getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
         return(NULL)
     }
     
@@ -33,6 +36,7 @@
                     "Can't summarize for protein", unique(input$PROTEIN), 
                     "because all measurements are missing or censored.")
         getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
         return(NULL)
     }
     
@@ -48,6 +52,7 @@
                         "because all runs have more than 50% missing values and",
                         "are removed with the option, remove50missing=TRUE.")
             getOption("MSstatsMsg")("INFO", msg)
+            getOption("MSstatsLog")("INFO", msg)
             return(NULL)
         }
     }

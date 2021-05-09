@@ -139,7 +139,7 @@
 .logMissingness = function(input) {
     missing = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
                            NumTotal = .N), 
-                    by = c("LABEL", "GROUP_ORIGINAL", "FEATURE")]
+                    by = c("LABEL", "GROUP", "FEATURE")]
     missing[, AllMissing := NumMissing == NumTotal]
     missing[, AnyAllMissing := any(AllMissing), by = c("LABEL", "FEATURE")]
     missing_in_any = as.character(missing[(AnyAllMissing), FEATURE])
@@ -153,7 +153,7 @@
     if (length(missing_in_any) > 0) {
         msg = paste("Five or more features are completely",
                           "missing in at least one condition: ", "\n",
-                          paste(missing_in_any[1:5], sep = ",\n ", 
+                          paste(unique(as.character(missing_in_any))[1:5], sep = ",\n ", 
                                 collapse = ",\n "), "...")
         getOption("MSstatsLog")("INFO", msg)
         getOption("MSstatsMsg")("INFO", msg)
