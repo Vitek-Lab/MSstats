@@ -89,19 +89,14 @@ theme_msstats = function(
 #' @param height height of a plot
 #' @return NULL
 #' @keywords internal
-.savePlot = function(folder_path, file_name, width, height) {
-    if (folder_path != FALSE) {
-        all_files = list.files(ifelse(folder_path == "", ".", folder_path))
-        num_same_name = sum(grepl(paste0("^", file_name), all_files))
+.savePlot = function(name_base, file_name, width, height) {
+    if (name_base != FALSE) {
+        all_files = list.files(".")
+        num_same_name = sum(grepl(paste0("^", file_name, "_[0-9]?"), all_files))
         if (num_same_name > 0) {
             file_name = paste(file_name, num_same_name + 1, sep = "_")
         }
-        if (folder_path == "") {
-            file_path = paste0(folder_path, file_name, ".pdf")
-        } else {
-            file_path = paste0(paste0(folder_path, "/"), file_name, ".pdf")
-            
-        }
+        file_path = paste0(name_base, file_name, ".pdf")
         pdf(file_path, width = width, height = height)
     }
     NULL
@@ -115,18 +110,14 @@ theme_msstats = function(
 #' an integer will be appended to this name
 #' @return NULL
 #' @keywords internal
-.saveTable = function(input, folder_path, file_name) {
-    if (folder_path != FALSE) {
-        all_files = list.files(ifelse(folder_path == "", ".", folder_path))
-        num_same_name = sum(grepl(paste0("^", file_name), all_files))
+.saveTable = function(input, name_base, file_name) {
+    if (name_base != FALSE) {
+        all_files = list.files(".")
+        num_same_name = sum(grepl(paste0("^", file_name, "_[0-9]?"), all_files))
         if (num_same_name > 0) {
             file_name = paste(file_name, num_same_name + 1, sep = "_")
         }
-        if (folder_path == "") {
-            file_path = paste0(folder_path, file_name, ".pdf")
-        } else {
-            file_path = paste0(paste0(folder_path, "/"), file_name, ".pdf")
-        }
+        file_path = paste0(paste0(name_base, "/"), file_name, ".pdf")
         data.table::fwrite(input, file = file_path)
     }
     NULL

@@ -4,15 +4,15 @@
 \alias{.saveTable}
 \title{Save a data table to a file}
 \usage{
-.saveTable(input, folder_path, file_name)
+.saveTable(input, name_base, file_name)
 }
 \arguments{
 \item{input}{data.table}
 
-\item{folder_path}{path to a folder (or "" for working directory)}
-
 \item{file_name}{name of a file to save. If this file already exists,
 an integer will be appended to this name}
+
+\item{folder_path}{path to a folder (or "" for working directory)}
 }
 \description{
 Save a data table to a file

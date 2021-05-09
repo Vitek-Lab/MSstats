@@ -4,11 +4,9 @@
 \alias{.savePlot}
 \title{Save a plot to pdf file}
 \usage{
-.savePlot(folder_path, file_name, width, height)
+.savePlot(name_base, file_name, width, height)
 }
 \arguments{
-\item{folder_path}{path to a folder (or "" for working directory)}
-
 \item{file_name}{name of a file to save. If this file already exists,
 an integer will be appended to this name}
 
