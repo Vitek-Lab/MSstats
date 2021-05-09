@@ -57,7 +57,7 @@
 #' Fit Tukey median polish
 #' @param input data.table with data for a single protein
 #' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
-#' @inheritParams .summarizeTukey
+#' @inheritParams MSstatsSummarize
 #' @return data.table
 #' @keywords internal
 .runTukey = function(input, is_labeled, censored_symbol, remove50missing) {

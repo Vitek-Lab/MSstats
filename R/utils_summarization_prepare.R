@@ -1,4 +1,19 @@
-
+#' Prepare feature-level data for protein-level summarization
+#' 
+#' @param input feature-level data processed by dataProcess subfunctions
+#' @param method summarization method - `summaryMethod` parameter of the dataProcess function
+#' @param impute if TRUE, censored missing values will be imputed - `MBimpute`
+#' parameter of the dataProcess function
+#' @param censored_symbol censored missing value indicator - `censoredInt` 
+#' parameter of the dataProcess function
+#' @param remove_uninformative_feature_outlier if TRUE, features labeled as 
+#' outlier of uninformative by the MSstatsSelectFeatures function will not be 
+#' used in summarization
+#' 
+#' @return data.table
+#' 
+#' @export
+#' 
 MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol,
                                           remove_uninformative_feature_outlier) {
     ABUNDANCE = feature_quality = is_outlier = NULL
@@ -30,15 +45,30 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
 }
 
 
+#' Get feature-level data to be used in the MSstatsSummarizationOutput function
+#' 
+#' @param input data.table processed by dataProcess subfunctions
+#' 
+#' @return data.table processed by dataProcess subfunctions
+#' 
+#' @export
+#' 
 getProcessed = function(input) {
     if (is.element("remove", colnames(input))) {
-        input(remove)
+        input[(remove)]
     } else {
         NULL
     }
 }
 
 
+#' Prepare feature-level data for summarization
+#' @param input data.table
+#' @param method "TMP" / "linear"
+#' @param impute logical
+#' @param censored_symbol "0"/"NA"
+#' @return data.table
+#' @keywords internal
 .prepareSummary = function(input, method, impute, censored_symbol) {
     if (method == "TMP") {
         input = .prepareTMP(input, impute, censored_symbol)
@@ -49,6 +79,10 @@ getProcessed = function(input) {
 }
 
 
+#' Prepare feature-level data for linear summarization
+#' @inheritParams .prepareSummary
+#' @return data.table
+#' @keywords internal
 .prepareLinear = function(input, impute, censored_symbol) {
     input[, newABUNDANCE := ABUNDANCE]
     input[, nonmissing := .getNonMissingFilter(.SD, impute, censored_symbol)]
@@ -62,6 +96,12 @@ getProcessed = function(input) {
           by = c("PROTEIN", "RUN")] 
     input
 }
+
+
+#' Prepare feature-level data for TMP summarization
+#' @inheritParams .prepareSummary
+#' @return data.table
+#' @keywords internal
 .prepareTMP = function(input, impute, censored_symbol) {
     if (impute & !is.null(censored_symbol)) {
         if (is.element("feature_quality", colnames(input))) {

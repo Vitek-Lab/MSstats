@@ -58,25 +58,34 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 }
 
 
-MSstatsSummarizeSingleLinear = function(input, equal_variances = TRUE) {
+#' Linear model-based summarization for a single protein
+#' 
+#' @param single_protein feature-level data for a single protein
+#' @param equal_variances if TRUE, observation are assumed to be homoskedastic
+#' 
+#' @return list with protein-level data
+#' 
+#' @export
+#' 
+MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = NULL
     
-    label = data.table::uniqueN(input$LABEL) > 1
-    input = input[!is.na(ABUNDANCE)]
-    input[, RUN := factor(RUN)]
-    input[, FEATURE := factor(FEATURE)]
+    label = data.table::uniqueN(single_protein$LABEL) > 1
+    single_protein = single_protein[!is.na(ABUNDANCE)]
+    single_protein[, RUN := factor(RUN)]
+    single_protein[, FEATURE := factor(FEATURE)]
     
     counts = xtabs(~ RUN + FEATURE, 
-                   data = unique(input[, .(FEATURE, RUN)]))
+                   data = unique(single_protein[, .(FEATURE, RUN)]))
     counts = as.matrix(counts)
-    is_single_feature = .checkSingleFeature(input)
+    is_single_feature = .checkSingleFeature(single_protein)
     
     # TODO: message about i of n proteins, after adding n parameter
-    fit = try(.fitLinearModel(input, is_single_feature, is_labeled = label, 
+    fit = try(.fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
                               equal_variances), silent = TRUE)
     
     if (inherits(fit, "try-error")) {
-        msg = paste("*** error : can't fit the model for ", unique(input$PROTEIN))
+        msg = paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))
         getOption("MSstatsLog")("WARN", msg)
         getOption("MSstatsMsg")("WARN", msg)
         result = NULL
@@ -87,8 +96,8 @@ MSstatsSummarizeSingleLinear = function(input, equal_variances = TRUE) {
             cf = fixef(fit)
         }
         
-        result = unique(input[, .(Protein = PROTEIN, RUN = RUN)])
-        log_intensities = get_linear_summary(input, cf,
+        result = unique(single_protein[, .(Protein = PROTEIN, RUN = RUN)])
+        log_intensities = get_linear_summary(single_protein, cf,
                                              counts, label)
         result[, LogIntensities := log_intensities]
     }
@@ -96,6 +105,16 @@ MSstatsSummarizeSingleLinear = function(input, equal_variances = TRUE) {
 }
 
 
+#' Tukey Median Polish summarization for a single protein
+#' 
+#' @param single_protein feature-level data for a single protein
+#' @inheritParams MSstatsSummarize
+#' 
+#' @return list of two data.tables: one with fitted survival model,
+#' the other with protein-level data
+#' 
+#' @export
+#' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
                                      remove50missing) {
     newABUNDANCE = NULL

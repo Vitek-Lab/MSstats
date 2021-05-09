@@ -43,6 +43,10 @@
 }
 
 
+#' Get predicted values from a survival model
+#' @param input data.table
+#' @return numeric vector of predictions
+#' @keywords internal
 .addSurvivalPredictions = function(input) {
     survival_fit = .fitSurvival(input[LABEL == "L", ])
     predict(survival_fit, newdata = input)

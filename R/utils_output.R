@@ -85,6 +85,13 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 }
 
 
+#' Add summary statistics to dataProcess output
+#' @param input feature-level data
+#' @param summarized protein-level data (list)
+#' @param method summary method
+#' @param impute if TRUE, censored missing values were imputed
+#' @param censored_symbol censored missing value indicator
+#' @keywords internal
 .finalizeInput = function(input, summarized, method, impute, censored_symbol) {
     if (method == "TMP") {
         input = .finalizeTMP(input, censored_symbol, impute, summarized)
@@ -95,6 +102,9 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 }
 
 
+#' Summary statistics for output of TMP-based summarization
+#' @inheritParams .finalizeInput
+#' @keywords internal
 .finalizeTMP = function(input, censored_symbol, impute, summarized) {
     survival_predictions = lapply(summarized, function(x) x[[2]])
     predicted_survival = data.table::rbindlist(survival_predictions)
@@ -130,6 +140,9 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 }
 
 
+#' Summary statistics for linear model-based summarization
+#' @inheritParams .finalizeInput
+#' @keywords internal
 .finalizeLinear = function(input, censored_symbol) {
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 

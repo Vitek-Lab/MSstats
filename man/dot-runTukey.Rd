@@ -10,6 +10,16 @@
 \item{input}{data.table with data for a single protein}
 
 \item{is_labeled}{logical, if TRUE, data is coming from an SRM experiment}
+
+\item{censored_symbol}{Missing values are censored or at random. 
+'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
+'0' uses zero intensities as censored intensity. 
+In this case, NA intensities are missing at random. 
+The output from Skyline should use '0'. 
+Null assumes that all NA intensites are randomly missing.}
+
+\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
+which have more than 50\% missing values. FALSE is default.}
 }
 \value{
 data.table
