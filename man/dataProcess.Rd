@@ -11,6 +11,7 @@ dataProcess(
   nameStandards = NULL,
   featureSubset = "all",
   remove_uninformative_feature_outlier = FALSE,
+  min_feature_count = 2,
   n_top_feature = 3,
   summaryMethod = "TMP",
   equalFeatureVar = TRUE,
@@ -53,6 +54,10 @@ featureSubset = "highQuality". TRUE allows to remove
 2) outliers (flagged in the column, is_outlier with TRUE, 
 before run-level summarization. FALSE (default) uses all features and intensities 
 for run-level summarization.}
+
+\item{min_feature_count}{optional. Only required if featureSubset = "highQuality".
+Defines a minimum number of informative features a protein needs to be considered
+in the feature selection algorithm.}
 
 \item{n_top_feature}{optional. Only required if featureSubset = 'topN'.
 It that case, it specifies number of top features that will be used.
