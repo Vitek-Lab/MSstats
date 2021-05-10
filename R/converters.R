@@ -52,7 +52,8 @@ DIAUmpiretoMSstatsFormat = function(
     raw.frag, raw.pep, raw.pro, annotation, useSelectedFrag = TRUE,
     useSelectedPep = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
@@ -113,7 +114,8 @@ MaxQtoMSstatsFormat = function(
     useUniquePeptide = TRUE, summaryforMultipleRows = max, 
     removeFewMeasurements = TRUE, removeMpeptides = FALSE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
@@ -182,7 +184,8 @@ MaxQtoMSstatsFormat = function(
 OpenMStoMSstatsFormat = function(
     input, annotation = NULL, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
@@ -234,7 +237,8 @@ OpenSWATHtoMSstatsFormat = function(
     input, annotation, filter_with_mscore = TRUE, mscore_cutoff = 0.01,
     useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
@@ -303,7 +307,8 @@ ProgenesistoMSstatsFormat = function(
     input, annotation, useUniquePeptide = TRUE, summaryforMultipleRows = max,
     removeFewMeasurements = TRUE, removeOxidationMpeptides = FALSE, 
     removeProtein_with1Peptide = FALSE, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
                                         log_file_path)
@@ -371,7 +376,8 @@ PDtoMSstatsFormat = function(
     removeOxidationMpeptides = FALSE, removeProtein_with1Peptide = FALSE,
     which.quantification = 'Precursor.Area', 
     which.proteinid = 'Protein.Group.Accessions', which.sequence = 'Sequence',
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
@@ -438,7 +444,8 @@ SkylinetoMSstatsFormat = function(
     input, annotation = NULL, removeiRT = TRUE, filter_with_Qvalue = TRUE,
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeOxidationMpeptides = FALSE, removeProtein_with1Feature = FALSE,
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
@@ -531,7 +538,8 @@ SpectronauttoMSstatsFormat = function(
     input, annotation = NULL, intensity = 'PeakArea', filter_with_Qvalue = TRUE,
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements=TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    ...
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
