@@ -1,6 +1,6 @@
 #' @export
 checkRepeatedDesign = function(summarization_output) {
-    input = as.data.table(summarization_output$RunlevelData)
+    input = as.data.table(summarization_output$RunLevelData)
     subject_by_group = table(input[, list(SUBJECT, GROUP)])
     subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 
                                                                          0))
@@ -17,7 +17,7 @@ checkRepeatedDesign = function(summarization_output) {
 
 #' @export
 getSamplesInfo = function(summarization_output) {
-    summarized = as.data.table(summarization_output$RunlevelData)
+    summarized = as.data.table(summarization_output$RunLevelData)
     summarized[, list(NumRuns = data.table::uniqueN(RUN)),
                by = "GROUP"]
 }

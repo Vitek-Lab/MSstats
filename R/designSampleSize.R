@@ -6,7 +6,7 @@
 #' (1) number of biological replicates per condition, 
 #' (2) power.
 #' 
-#' @param data 'fittedmodel' in testing output from function groupComparison.
+#' @param data 'FittedModel' in testing output from function groupComparison.
 #' @param desiredFC the range of a desired fold change which includes the lower 
 #' and upper values of the desired fold change.
 #' @param FDR a pre-specified false discovery ratio (FDR) to control the overall 
@@ -47,10 +47,10 @@
 #' 
 #' ## Calculate sample size for future experiments:
 #' #(1) Minimal number of biological replicates per condition
-#' designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+#' designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=TRUE,
 #'                  desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
 #' #(2) Power calculation
-#' designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+#' designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=2,
 #'                  desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
 #'                  
 designSampleSize = function(
@@ -101,7 +101,7 @@ designSampleSize = function(
 
 
 #' Get variances from models fitted by the groupComparison function
-#' @param fitted_models fittedmodels element of groupComparison output
+#' @param fitted_models FittedModels element of groupComparison output
 #' @keywords internal
 .getVarComponent = function(fitted_models) {
     result = data.table::rbindlist(
@@ -217,7 +217,7 @@ designSampleSize = function(
 #' comparison<-rbind(comparison1,comparison2, comparison3)
 #' row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
 #' 
-#' testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
+#' testResultMultiComparisons<-groupComparison(contrast.matrix=comparison, data=QuantData)
 #' 
 #' # plot the calculated sample sizes for future experiments:
 #' # (1) Minimal number of biological replicates per condition

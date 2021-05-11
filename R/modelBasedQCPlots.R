@@ -64,7 +64,7 @@ modelBasedQCPlots = function(
         }
     }
     
-    fitted_models = data[["fittedmodel"]]
+    fitted_models = data[["FittedModel"]]
     all_proteins = levels(data$ComparisonResult$Protein)
     if (all(which.Protein != "all")) {
         selected_proteins = .getSelectedProteins(which.Protein, all_proteins)

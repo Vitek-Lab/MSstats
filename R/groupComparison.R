@@ -8,7 +8,7 @@
 #' @inheritParams .documentFunction
 #'
 #' @details
-#' contrast.matrix : comparison of interest. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command levels(QuantData$ProcessedData$GROUP_ORIGINAL) can illustrate the actual order of the levels of conditions.
+#' contrast.matrix : comparison of interest. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command levels(QuantData$FeatureLevelData$GROUP_ORIGINAL) can illustrate the actual order of the levels of conditions.
 #' The underlying model fitting functions are lm and lmer for the fixed effects model and mixed effects model, respectively.
 #' The input of this function is the quantitative data from function (dataProcess).
 #'
@@ -27,11 +27,11 @@ groupComparison = function(contrast.matrix, data,
                                         log_file_path, 
                                         "MSstats_groupComparison_log_")
     getOption("MSstatsLog")("INFO", "MSstats - groupComparison function")
-    labeled = data.table::uniqueN(data$ProcessedData$Label) > 1
+    labeled = data.table::uniqueN(data$FeatureLevelData$Label) > 1
     split_summarized = MSstatsPrepareForGroupComparison(data)
     repeated = checkRepeatedDesign(data)
     samples_info = getSamplesInfo(data)
-    groups = unique(data$RunlevelData$GROUP)
+    groups = unique(data$RunLevelData$GROUP)
     contrast_matrix = MSstatsContrastMatrix(contrast.matrix, groups)
     getOption("MSstatsLog")("INFO",
                             "== Start to test and get inference in whole plot")
@@ -54,10 +54,10 @@ groupComparison = function(contrast.matrix, data,
 #' @export
 #' 
 MSstatsPrepareForGroupComparison = function(summarization_output) {
-    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunlevelData))
-    summarized = data.table::as.data.table(summarization_output$RunlevelData)
+    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunLevelData))
+    summarized = data.table::as.data.table(summarization_output$RunLevelData)
     summarized = .checkGroupComparisonInput(summarized)
-    labeled = nlevels(summarization_output$ProcessedData$LABEL) > 1
+    labeled = nlevels(summarization_output$FeatureLevelData$LABEL) > 1
     
     getOption("MSstatsLog")("INFO", paste0("labeled = ", labeled))
     getOption("MSstatsLog")("INFO", "scopeOfBioReplication = expanded")
@@ -106,7 +106,7 @@ MSstatsGroupComparison = function(summarized_list, contrast_matrix,
 #' @export
 #' 
 MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 2) {
-    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunlevelData))
+    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunLevelData))
     model_qc_data = lapply(input, function(x) x[[1]])
     comparisons = lapply(input, function(x) x[[2]])
     fitted_models = lapply(input, function(x) x[[3]])
@@ -128,7 +128,7 @@ MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 
     getOption("MSstatsLog")("INFO", "The output for groupComparison is ready.")
     list(ComparisonResult = as.data.frame(comparisons)[, cols],
          ModelQC = as.data.frame(qc),
-         fittedmodel = fitted_models)   
+         FittedModel = fitted_models)   
 }
 
 

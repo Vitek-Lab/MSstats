@@ -48,7 +48,7 @@
 #' @param width width of the saved file. Default is 10.
 #' @param height height of the saved file. Default is 10.
 #' @param which.Protein Protein list to draw plots. List can be names of Proteins
-#' or order numbers of Proteins from levels(data$ProcessedData$PROTEIN).
+#' or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).
 #' Default is "all", which generates all plots for each protein. 
 #' For QC plot, "allonly" will generate one QC plot with all proteins.
 #' @param originalPlot TRUE(default) draws original profile plots.
@@ -73,9 +73,9 @@
 #' 
 #' @details
 #' \itemize{
-#' \item{Profile Plot : identify the potential sources of variation of each protein. QuantData$ProcessedData is used for plots. X-axis is run. Y-axis is log-intensities of transitions. Reference/endogenous signals are in the left/right panel. Line colors indicate peptides and line types indicate transitions. In summarization plots, gray dots and lines are the same as original profile plots with QuantData$ProcessedData. Dark dots and lines are for summarized intensities from QuantData$RunlevelData.}
-#' \item{QC Plot : illustrate the systematic bias between MS runs. After normalization, the reference signals for all proteins should be stable across MS runs. QuantData$ProcessedData is used for plots. X-axis is run. Y-axis is log-intensities of transition. Reference/endogenous signals are in the left/right panel. The pdf file contains (1) QC plot for all proteins and (2) QC plots for each protein separately.}
-#' \item{Condition Plot : illustrate the systematic difference between conditions. Summarized intensnties from QuantData$RunlevelData are used for plots. X-axis is condition. Y-axis is summarized log transformed intensity. If scale is TRUE, the levels of conditions is scaled according to its actual values at x-axis. Red points indicate the mean for each condition. If interval is "CI", blue error bars indicate the confidence interval with 0.95 significant level for each condition. If interval is "SD", blue error bars indicate the standard deviation for each condition.The interval is not related with model-based analysis.}
+#' \item{Profile Plot : identify the potential sources of variation of each protein. QuantData$FeatureLevelData is used for plots. X-axis is run. Y-axis is log-intensities of transitions. Reference/endogenous signals are in the left/right panel. Line colors indicate peptides and line types indicate transitions. In summarization plots, gray dots and lines are the same as original profile plots with QuantData$FeatureLevelData. Dark dots and lines are for summarized intensities from QuantData$RunLevelData.}
+#' \item{QC Plot : illustrate the systematic bias between MS runs. After normalization, the reference signals for all proteins should be stable across MS runs. QuantData$FeatureLevelData is used for plots. X-axis is run. Y-axis is log-intensities of transition. Reference/endogenous signals are in the left/right panel. The pdf file contains (1) QC plot for all proteins and (2) QC plots for each protein separately.}
+#' \item{Condition Plot : illustrate the systematic difference between conditions. Summarized intensnties from QuantData$RunLevelData are used for plots. X-axis is condition. Y-axis is summarized log transformed intensity. If scale is TRUE, the levels of conditions is scaled according to its actual values at x-axis. Red points indicate the mean for each condition. If interval is "CI", blue error bars indicate the confidence interval with 0.95 significant level for each condition. If interval is "SD", blue error bars indicate the standard deviation for each condition.The interval is not related with model-based analysis.}
 #' }
 #' The input of this function is the quantitative data from function \code{\link{dataProcess}}. 
 #' 
@@ -96,8 +96,8 @@ dataProcessPlots = function(
   remove_uninformative_feature_outlier = FALSE, address = ""
 ) {
   type = toupper(type)
-  processed = data.table::as.data.table(data$ProcessedData)
-  summarized = data.table::as.data.table(data$RunlevelData)
+  processed = data.table::as.data.table(data$FeatureLevelData)
+  summarized = data.table::as.data.table(data$RunLevelData)
   processed[, PROTEIN := factor(PROTEIN)]
   summarized[, Protein := factor(Protein)]
   
@@ -202,6 +202,7 @@ dataProcessPlots = function(
   all_proteins = levels(processed$PROTEIN)
   if (originalPlot) {
     .savePlot(address, "ProfilePlot", width, height)
+    pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
       if (all(is.na(single_protein$ABUNDANCE))) {
@@ -230,7 +231,10 @@ dataProcessPlots = function(
                                       ss, s, cumGroupAxis, yaxis.name,
                                       lineNameAxis, groupNametemp, dot_colors)
       print(profile_plot)
+      setTxtProgressBar(pb, i)
     }
+    close(pb)
+    
     if (address != FALSE) {
       dev.off()
     } 
@@ -242,6 +246,7 @@ dataProcessPlots = function(
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
     .savePlot(address, "ProfilePlot_wSummarization", width, height)
+    pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
       if (all(is.na(single_protein$ABUNDANCE))) {
@@ -282,7 +287,10 @@ dataProcessPlots = function(
         yaxis.name, lineNameAxis, groupNametemp
       )
       print(profile_plot)
+      setTxtProgressBar(pb, i)
     }
+    close(pb)
+    
     if (address != FALSE) {
       dev.off()
     } 
@@ -350,6 +358,7 @@ dataProcessPlots = function(
       processed = processed[PROTEIN %in% selected_proteins]
       processed[, PROTEIN := factor(PROTEIN)]
     }
+    pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {	
       single_protein = processed[processed$PROTEIN == all_proteins[i], ]
       single_protein = single_protein[order(LABEL, RUN)]
@@ -361,7 +370,9 @@ dataProcessPlots = function(
                             legend.size, label.color, cumGroupAxis, groupName,
                             lineNameAxis, yaxis.name)
       print(qc_plot)
+      setTxtProgressBar(pb, i)
     } 
+    close(pb)
   } 
   if (address != FALSE) {
     dev.off()
@@ -385,6 +396,7 @@ dataProcessPlots = function(
   
   results = vector("list", length(all_proteins))
   .savePlot(address, "ConditionPlot", width, height)
+  pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
   for (i in seq_along(all_proteins)) {
     single_protein = summarized[PROTEIN == all_proteins[i], ]
     single_protein = na.omit(single_protein)
@@ -420,7 +432,10 @@ dataProcessPlots = function(
                                   text.size, text.angle, legend.size, 
                                   dot.size.condition, yaxis.name)
     print(con_plot)
+    setTxtProgressBar(pb, i)
   }
+  close(pb)
+  
   if (address != FALSE) {
     dev.off()
   }

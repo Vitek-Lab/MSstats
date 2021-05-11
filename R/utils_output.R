@@ -12,8 +12,8 @@
 #' 
 #' @return list that consists of the following elements:
 #' \itemize{
-#' \item{ProcessedData}{ - feature-level data after processing} 
-#' \item{RunlevelData}{ - run-level (summarized) data}
+#' \item{FeatureLevelData}{ - feature-level data after processing} 
+#' \item{ProteinLevelData}{ - protein-level (summarized) data}
 #' \item{SummaryMethod}{ (string) - name of summarization method that was used}
 #' }
 #' 
@@ -76,8 +76,8 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                                         colnames(processed)), with = FALSE]
         input = rbind(input, processed, fill = TRUE)
     }
-    list(ProcessedData = as.data.frame(input), 
-         RunlevelData = as.data.frame(rqall), 
+    list(FeatureLevelData = as.data.frame(input), 
+         ProteinLevelData = as.data.frame(rqall), 
          SummaryMethod = method, 
          ModelQC = NULL, 
          PredictBySurvival = NULL)
