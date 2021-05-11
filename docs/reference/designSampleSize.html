@@ -187,24 +187,24 @@ calculation (numSample, numPep, numTran, power) at the same time.</p>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Consider quantitative data (i.e. QuantData) from yeast study.</span>
 <span class='co'># A time course study with ten time points of interests and three biological replicates.</span>
-<span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-11 02:03:49] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-11 02:03:49] ** Fractionation handled.
-#&gt; INFO  [2021-05-11 02:03:49] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-11 02:03:49] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-11 02:03:49] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-11 02:03:49] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-11 02:03:49] 
+<span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-11 02:46:28] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-11 02:46:28] ** Fractionation handled.
+#&gt; INFO  [2021-05-11 02:46:28] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-11 02:46:28] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-11 02:46:28] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-11 02:46:28] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-11 02:46:28] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-11 02:03:49] 
+#&gt; INFO  [2021-05-11 02:46:28] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-11 02:03:49]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-11 02:46:28]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-11 02:03:50]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProcessedData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
+#&gt; INFO  [2021-05-11 02:46:28]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProcessedData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
 #&gt; 1    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   1
 #&gt; 2    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   1
 #&gt; 3    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   2

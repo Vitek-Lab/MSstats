@@ -1,7 +1,56 @@
+#' Visualization for model-based quality control in fitting model
+#' 
+#' @description To check the assumption of linear model for whole plot inference, 
+#' modelBasedQCPlots takes the results after fitting models from function 
+#' (\code{\link{groupComparison}}) as input and automatically generate two types 
+#' of figures in pdf files as output: 
+#' (1) normal quantile-quantile plot (specify "QQPlot" in option type) for checking
+#' normally distributed errors.; 
+#' (2) residual plot (specify "ResidualPlot" in option type).
+#'  
+#' @param data output from function groupComparison.
+#' @param type choice of visualization. "QQPlots" represents normal quantile-quantile 
+#' plot for each protein after fitting models. "ResidualPlots" represents a plot
+#' of residuals versus fitted values for each protein in the dataset.
+#' @param axis.size size of axes labels. Default is 10.
+#' @param dot.size size of points in the graph for residual plots and QQ plots. Default is 3.
+#' @param width width of the saved file. Default is 10.
+#' @param height height of the saved file. Default is 10.
+#' @param which.Protein Protein list to draw plots. List can be names of Proteins 
+#' or order numbers of Proteins from levels(testResultOneComparison$ComparisonResult$Protein). 
+#' Default is "all", which generates all plots for each protein.
+#' @param address name that will serve as a prefix to the name of output file.
+#' 
+#' @details Results based on statistical models for whole plot level inference are 
+#' accurate as long as the assumptions of the model are met. The model assumes that 
+#' the measurement errors are normally distributed with mean 0 and constant variance. 
+#' The assumption of a constant variance can be checked by examining the residuals from the model.
+#' \itemize{
+#' \item{QQPlots : a normal quantile-quantile plot for each protein is generated in order to check whether the errors are well approximated by a normal distribution. If points fall approximately along a straight line, then the assumption is appropriate for that protein. Only large deviations from the line are problematic.}
+#' \item{ResidualPlots : The plots of residuals against predicted(fitted) values. If it shows a random scatter, then the assumption is appropriate.}
+#' }
+#' 
+#' @return produce a pdf file
+#' 
 #' @export
+#' 
+#' @examples
+#' QuantData <- dataProcess(SRMRawData)
+#' head(QuantData$ProcessedData)
+#' levels(QuantData$ProcessedData$GROUP_ORIGINAL)
+#' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' row.names(comparison) <- "T7-T1"
+#' # Tests for differentially abundant proteins with models:
+#' # label-based SRM experiment with expanded scope of biological replication.
+#' testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
+#' # normal quantile-quantile plots
+#' modelBasedQCPlots(data=testResultOneComparison, type="QQPlots", address="")
+#' # residual plots
+#' modelBasedQCPlots(data=testResultOneComparison, type="ResidualPlots", address="")
+#' 
 modelBasedQCPlots = function(
-    data, type, axis.size = 10, dot.size = 3, text.size = 7, legend.size = 7,
-    width = 10, height = 10, which.Protein = "all", address = ""
+    data, type, axis.size = 10, dot.size = 3, width = 10, height = 10, 
+    which.Protein = "all", address = ""
 ) {
     if (length(setdiff(toupper(type), c("QQPLOTS","RESIDUALPLOTS"))) != 0) {
         stop(paste0("Input for type=", type, 
@@ -64,15 +113,15 @@ modelBasedQCPlots = function(
             scale_x_continuous("Theoretical Quantiles") +
             labs(title=paste("Normal Q-Q Plot (", all_proteins[i], ")")) +
             theme(
-                panel.background = element_rect(fill="white", colour="black"),
-                panel.grid.major = element_line(colour="grey95"),
+                panel.background = element_rect(fill = "white", colour = "black"),
+                panel.grid.major = element_line(colour = "grey95"),
                 panel.grid.minor = element_blank(),
-                axis.text.x = element_text(size=axis.size, colour="black"),
-                axis.text.y = element_text(size=axis.size, colour="black"),
-                axis.ticks = element_line(colour="black"),
-                axis.title.x = element_text(size=axis.size+5, vjust=-0.4),
-                axis.title.y = element_text(size=axis.size+5, vjust=0.3),
-                title = element_text(size=axis.size+8, vjust=1.5),
+                axis.text.x = element_text(size = axis.size, colour = "black"),
+                axis.text.y = element_text(size = axis.size, colour = "black"),
+                axis.ticks = element_line(colour = "black"),
+                axis.title.x = element_text(size = axis.size+5, vjust = -0.4),
+                axis.title.y = element_text(size = axis.size+5, vjust = 0.3),
+                title = element_text(size = axis.size + 8, vjust = 1.5),
                 legend.position = "none"
             )
         print(plot)
