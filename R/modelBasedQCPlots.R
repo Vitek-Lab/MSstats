@@ -77,7 +77,7 @@ modelBasedQCPlots = function(
                 dot.size, axis.size)
     } else if (toupper(type) == "RESIDUALPLOTS") {
         .plotResiduals(fitted_models, all_proteins, width, height,
-                       address, axis.size)
+                       address, dot.size, axis.size)
     }
 }
 
@@ -85,7 +85,7 @@ modelBasedQCPlots = function(
                    dot.size, axis.size) {
     # normality
     .savePlot(address, "QQPlot", width, height)
-    pb = txtProgressBar(1, length(fitted_models))
+    pb = utils::txtProgressBar(min = 0, max = length(fitted_models), style = 3)
     for (i in seq_along(fitted_models)) {	
         sub = fitted_models[[i]]
         if(is.null(sub)){
@@ -135,9 +135,9 @@ modelBasedQCPlots = function(
 
 
 .plotResiduals = function(fitted_models, all_proteins, width, height, 
-                          address, axis.size) {
+                          address, dot.size, axis.size) {
     .savePlot(address, "ResidualPlot", width, height)
-    pb = txtProgressBar(0, length(fitted_models))
+    pb = utils::txtProgressBar(min = 0, max = length(fitted_models), style = 3)
     for (i in seq_along(fitted_models)) {	
         sub = fitted_models[[i]]
         if(is.null(sub)) {
