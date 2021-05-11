@@ -92,7 +92,11 @@ theme_msstats = function(
 .savePlot = function(name_base, file_name, width, height) {
     if (name_base != FALSE) {
         all_files = list.files(".")
-        num_same_name = sum(grepl(paste0("^", file_name, "_[0-9]?"), all_files))
+        if(file_name == 'ProfilePlot'){
+            num_same_name = sum(grepl(paste0("^", name_base, file_name, "_[0-9]?"), all_files))
+        } else {
+            num_same_name = sum(grepl(paste0("^", name_base, file_name, "[0-9]?"), all_files))
+        }
         if (num_same_name > 0) {
             file_name = paste(file_name, num_same_name + 1, sep = "_")
         }
