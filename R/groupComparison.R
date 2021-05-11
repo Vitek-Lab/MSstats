@@ -31,7 +31,7 @@ groupComparison = function(contrast.matrix, data,
     split_summarized = MSstatsPrepareForGroupComparison(data)
     repeated = checkRepeatedDesign(data)
     samples_info = getSamplesInfo(data)
-    groups = unique(data$RunLevelData$GROUP)
+    groups = unique(data$ProteinLevelData$GROUP)
     contrast_matrix = MSstatsContrastMatrix(contrast.matrix, groups)
     getOption("MSstatsLog")("INFO",
                             "== Start to test and get inference in whole plot")
@@ -54,8 +54,8 @@ groupComparison = function(contrast.matrix, data,
 #' @export
 #' 
 MSstatsPrepareForGroupComparison = function(summarization_output) {
-    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunLevelData))
-    summarized = data.table::as.data.table(summarization_output$RunLevelData)
+    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$ProteinLevelData))
+    summarized = data.table::as.data.table(summarization_output$ProteinLevelData)
     summarized = .checkGroupComparisonInput(summarized)
     labeled = nlevels(summarization_output$FeatureLevelData$LABEL) > 1
     
@@ -106,7 +106,7 @@ MSstatsGroupComparison = function(summarized_list, contrast_matrix,
 #' @export
 #' 
 MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 2) {
-    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$RunLevelData))
+    has_imputed = is.element("NumImputedFeature", colnames(summarization_output$ProteinLevelData))
     model_qc_data = lapply(input, function(x) x[[1]])
     comparisons = lapply(input, function(x) x[[2]])
     fitted_models = lapply(input, function(x) x[[3]])
