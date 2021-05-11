@@ -109,6 +109,8 @@ designSampleSize = function(
             if (!is.null(fit)) {
                 if (class(fit) != "lmerMod") {
                     error = summary(fit)$sigma^2
+                    subject <- NA
+                    group_subject <- NA
                 } else {
                     stddev = c(sapply(lme4::VarCorr(fit), function(el) attr(el, "stddev")), 
                                attr(lme4::VarCorr(fit), "sc"))
@@ -221,11 +223,11 @@ designSampleSize = function(
 #' 
 #' # plot the calculated sample sizes for future experiments:
 #' # (1) Minimal number of biological replicates per condition
-#' result.sample<-designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+#' result.sample<-designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=TRUE,
 #'                                 desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
 #' designSampleSizePlots(data=result.sample)
 #' # (2) Power
-#' result.power<-designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+#' result.power<-designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=2,
 #'                                desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
 #' designSampleSizePlots(data=result.power)
 #' 
