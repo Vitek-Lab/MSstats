@@ -78,9 +78,7 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     }
     list(FeatureLevelData = as.data.frame(input), 
          ProteinLevelData = as.data.frame(rqall), 
-         SummaryMethod = method, 
-         ModelQC = NULL, 
-         PredictBySurvival = NULL)
+         SummaryMethod = method)
     
 }
 
