@@ -10,27 +10,23 @@
 
 
 <!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" crossorigin="anonymous" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
-
-<!-- bootstrap-toc -->
-<link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -41,6 +37,7 @@
 
 <meta property="og:title" content="Process MS data: clean, normalize and summarize before differential analysis — dataProcess" />
 <meta property="og:description" content="Process MS data: clean, normalize and summarize before differential analysis" />
+<meta name="twitter:card" content="summary" />
 
 
 
@@ -58,7 +55,7 @@
 
   </head>
 
-  <body data-spy="scroll" data-target="#toc">
+  <body>
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -124,26 +121,27 @@
     <p>Process MS data: clean, normalize and summarize before differential analysis</p>
     </div>
 
-    <pre class="usage"><span class='fu'>dataProcess</span><span class='op'>(</span>
-  <span class='va'>raw</span>,
-  logTrans <span class='op'>=</span> <span class='fl'>2</span>,
-  normalization <span class='op'>=</span> <span class='st'>"equalizeMedians"</span>,
-  nameStandards <span class='op'>=</span> <span class='cn'>NULL</span>,
-  address <span class='op'>=</span> <span class='st'>""</span>,
-  fillIncompleteRows <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  featureSubset <span class='op'>=</span> <span class='st'>"all"</span>,
-  remove_uninformative_feature_outlier <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  n_top_feature <span class='op'>=</span> <span class='fl'>3</span>,
-  summaryMethod <span class='op'>=</span> <span class='st'>"TMP"</span>,
-  equalFeatureVar <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  censoredInt <span class='op'>=</span> <span class='st'>"NA"</span>,
-  cutoffCensored <span class='op'>=</span> <span class='st'>"minFeature"</span>,
-  MBimpute <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  remove50missing <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  fix_missing <span class='op'>=</span> <span class='cn'>NULL</span>,
-  maxQuantileforCensored <span class='op'>=</span> <span class='fl'>0.999</span>,
-  clusters <span class='op'>=</span> <span class='cn'>NULL</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>dataProcess</span>(
+  <span class='no'>raw</span>,
+  <span class='kw'>logTrans</span> <span class='kw'>=</span> <span class='fl'>2</span>,
+  <span class='kw'>normalization</span> <span class='kw'>=</span> <span class='st'>"equalizeMedians"</span>,
+  <span class='kw'>nameStandards</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>featureSubset</span> <span class='kw'>=</span> <span class='st'>"all"</span>,
+  <span class='kw'>remove_uninformative_feature_outlier</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>min_feature_count</span> <span class='kw'>=</span> <span class='fl'>2</span>,
+  <span class='kw'>n_top_feature</span> <span class='kw'>=</span> <span class='fl'>3</span>,
+  <span class='kw'>summaryMethod</span> <span class='kw'>=</span> <span class='st'>"TMP"</span>,
+  <span class='kw'>equalFeatureVar</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>censoredInt</span> <span class='kw'>=</span> <span class='st'>"NA"</span>,
+  <span class='kw'>MBimpute</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>remove50missing</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>fix_missing</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>maxQuantileforCensored</span> <span class='kw'>=</span> <span class='fl'>0.999</span>,
+  <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>append</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>log_file_path</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
+)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -172,21 +170,6 @@ If FALSE, no normalization is performed.</p></td>
 Required only for normalization with global standard peptides.</p></td>
     </tr>
     <tr>
-      <th>address</th>
-      <td><p>the name of folder that will store the results. Default folder 
-is the current working directory. The other assigned folder has to be existed 
-under the current working directory. An output csv file is automatically created 
-with the default name of "BetweenRunInterferenceFile.csv". 
-The command address can help to specify where to store the file as well as how 
-to modify the beginning of the file name.</p></td>
-    </tr>
-    <tr>
-      <th>fillIncompleteRows</th>
-      <td><p>If the input dataset has incomplete rows, 
-TRUE (default) adds the rows with intensity value = NA for missing peaks. 
-FALSE reports error message with list of features which have incomplete rows.</p></td>
-    </tr>
-    <tr>
       <th>featureSubset</th>
       <td><p>"all" (default) uses all features that the data set has. 
 "top3" uses top 3 features which have highest average of log-intensity across runs. 
@@ -202,6 +185,12 @@ featureSubset = "highQuality". TRUE allows to remove
 2) outliers (flagged in the column, is_outlier with TRUE, 
 before run-level summarization. FALSE (default) uses all features and intensities 
 for run-level summarization.</p></td>
+    </tr>
+    <tr>
+      <th>min_feature_count</th>
+      <td><p>optional. Only required if featureSubset = "highQuality".
+Defines a minimum number of informative features a protein needs to be considered
+in the feature selection algorithm.</p></td>
     </tr>
     <tr>
       <th>n_top_feature</th>
@@ -233,13 +222,6 @@ The output from Skyline should use '0'.
 Null assumes that all NA intensites are randomly missing.</p></td>
     </tr>
     <tr>
-      <th>cutoffCensored</th>
-      <td><p>Cutoff value for censoring with censoredInt = 'NA' or '0'. 
-Default is 'minFeature', which uses minimum value for each feature.
-'minFeatureNRun' uses the smallest between minimum value of corresponding feature 
-and minimum value of corresponding run. 'minRun' uses minumum value for each run</p></td>
-    </tr>
-    <tr>
       <th>MBimpute</th>
       <td><p>only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
@@ -255,18 +237,37 @@ which have more than 50% missing values. FALSE is default.</p></td>
       <td><p>Maximum quantile for deciding censored missing values, default is 0.999</p></td>
     </tr>
     <tr>
-      <th>clusters</th>
-      <td><p>a user specified number of clusters for parallel computing. 
-Default is NULL, which does not use cluster.</p></td>
+      <th>use_log_file</th>
+      <td><p>logical. If TRUE, information about data processing
+will be saved to a file.</p></td>
+    </tr>
+    <tr>
+      <th>append</th>
+      <td><p>logical. If TRUE, information about data processing will be added
+to an existing log file.</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>logical. If TRUE, information about data processing wil be printed
+to the console.</p></td>
+    </tr>
+    <tr>
+      <th>log_file_path</th>
+      <td><p>character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.</p></td>
     </tr>
     </table>
 
 
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-    <nav id="toc" data-toggle="toc" class="sticky-top">
-      <h2 data-toc-skip>Contents</h2>
-    </nav>
+  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
+    <h2>Contents</h2>
+    <ul class="nav nav-pills nav-stacked">
+      <li><a href="#arguments">Arguments</a></li>
+    </ul>
+
   </div>
 </div>
 
@@ -277,7 +278,7 @@ Default is NULL, which does not use cluster.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
 </div>
 
       </footer>

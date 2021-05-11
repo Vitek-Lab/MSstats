@@ -14,7 +14,8 @@ OpenMStoMSstatsFormat(
   use_log_file = TRUE,
   append = FALSE,
   verbose = TRUE,
-  log_file_path = NULL
+  log_file_path = NULL,
+  ...
 )
 }
 \arguments{

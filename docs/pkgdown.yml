@@ -1,7 +1,6 @@
-pandoc: 2.7.3
-pkgdown: 1.6.1
+pandoc: 2.3.1
+pkgdown: 1.4.1
 pkgdown_sha: ~
 articles:
   MSstats: MSstats.html
-last_built: 2021-05-05T02:37Z
 
