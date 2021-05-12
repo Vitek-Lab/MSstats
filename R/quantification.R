@@ -1,0 +1,125 @@
+#' #' Protein sample quantification or group quantification
+#' #' 
+#' #' @description Model-based quantification for each condition or for each biological
+#' #' sample per protein in a targeted Selected Reaction Monitoring (SRM), 
+#' #' Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition
+#' #' (DIA or SWATH-MS) experiment. Quantification takes the processed data set 
+#' #' by \code{\link{dataProcess}} as input and automatically generate the quantification 
+#' #' results (data.frame) in a long or matrix format.
+#' #' 
+#' #' @param data name of the (processed) data set.
+#' #' @param type choice of quantification. "Sample" or "Group" for protein sample
+#' #' quantification or group quantification.
+#' #' @param format choice of returned format. "long" for long format which has 
+#' #' the columns named Protein, Condition, LogIntensities (and BioReplicate if it is 
+#' #' subject quantification), NumFeature for number of transitions for a protein, 
+#' #' and NumPeaks for number of observed peak intensities for a protein. 
+#' #' "matrix" for data matrix format which has the rows for Protein and the columns, 
+#' #' which are Groups(or Conditions) for group quantification or the combinations 
+#' #' of BioReplicate and Condition (labeled by "BioReplicate"_"Condition") 
+#' #' for sample quantification. Default is "matrix"
+#' #' 
+#' #' @details
+#' #' \itemize{
+#' #' \item{Sample quantification : individual biological sample quantification for each protein. The label of each biological sample is a combination of the corresponding group and the sample ID. If there are no technical replicates or experimental replicates per sample, sample quantification is the same as run summarization from dataProcess. If there are technical replicates or experimental replicates, sample quantification is median among run quantification corresponding MS runs.}
+#' #' \item{Group quantification : quantification for individual group or individual condition per protein. It is median among sample quantification.}
+#' #' \item{The quantification for endogenous samples is based on run summarization from subplot model, with TMP robust estimation.}
+#' #' }
+#' #' 
+#' #' @return data.frame as described in details.
+#' #' 
+#' #' @export
+#' #' 
+#' #' @examples
+#' #' # Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of
+#' #' # interests, three biological replicates, and no technical replicates which is 
+#' #' # a time-course experiment. 
+#' #' # Sample quantification shows model-based estimation of protein abundance in each biological 
+#' #' # replicate within each time point.
+#' #' # Group quantification shows model-based estimation of protein abundance in each time point.
+#' #' QuantData<-dataProcess(SRMRawData)
+#' #' head(QuantData$ProcessedData)
+#' #' # Sample quantification
+#' #' sampleQuant<-quantification(QuantData)
+#' #' head(sampleQuant)
+#' #' # Group quantification
+#' #' groupQuant<-quantification(QuantData, type="Group")
+#' #' head(groupQuant)
+#' #' 
+#' quantification = function(
+#'     data, type = "Sample", format="matrix", use_log_file = TRUE, append = FALSE, 
+#'     verbose = TRUE, log_file_path = NULL
+#' ) {
+#'     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+#'                                         log_file_path, base = "MSstats_quant_log_")
+#'     getOption("MSstatsLog")("INFO", "MSstats - quantification function")
+#'     
+#'     if (!(toupper(type) == "SAMPLE" | toupper(type) == "GROUP")) {
+#'         processout = rbind(processout, 
+#'                            "The required input - type : 'type' value is wrong. - stop")
+#'         write.table(processout, file=finalfile, row.names=FALSE)
+#'         
+#'         stop("'type' must be one of \"Sample\" or \"Group\". ")
+#'     } 
+#'     if (!(toupper(format) == "MATRIX" | toupper(format) == "LONG")) {
+#'         processout = rbind(processout, 
+#'                            "The required input - format : 'format' value is wrong. - stop")
+#'         write.table(processout, file=finalfile, row.names=FALSE)
+#'         
+#'         stop("'format' must be one of \"matrix\" or \"long\". ")
+#'     } 
+#'     
+#'     getOption("MSstatsLog")("INFO", paste0("type of quantification = ", type))
+#'     getOption("MSstatsLog")("INFO", paste0("format of output = ", format))
+#'     
+#'     ## sample quantification	
+#'     if (toupper(type) == "SAMPLE") {
+#'         datarun = data$RunlevelData
+#'         datarun$Protein = factor(datarun$Protein)
+#'         
+#'         datarun = datarun[!is.na(datarun$LogIntensities), ]
+#'         
+#'         datam = dcast(Protein ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, data=datarun, 
+#'                       value.var='LogIntensities', 
+#'                       fun.aggregate=median)
+#'         
+#'         if (format == "long") {
+#'             data_l = melt(datam, id.vars=c('Protein'))
+#'             colnames(data_l)[colnames(data_l) %in% c("variable", "value")] = c('Group_Subject', 'LogIntensity')
+#'         }
+#'         getOption("MSstatsLog")("INFO", "Finish sample quantificiation - okay.")
+#'         if (format == "long") {
+#'             return(data_l)
+#'         }
+#'         if (format == "matrix") {
+#'             return(datam)
+#'         }
+#'     } ## end sample quantification	
+#'     
+#'     if (toupper(type) == "GROUP") {
+#'         datarun = data$RunlevelData
+#'         datarun$Protein = factor(datarun$Protein)
+#'         datarun = datarun[!is.na(datarun$LogIntensities), ]
+#'         datam = dcast(Protein + GROUP_ORIGINAL ~ SUBJECT_ORIGINAL, 
+#'                       data=datarun, 
+#'                       value.var='LogIntensities', 
+#'                       fun.aggregate=median)
+#'         datam2  = melt(datam, id.vars=c('Protein', "GROUP_ORIGINAL"))
+#'         colnames(datam2)[colnames(datam2) %in% c("variable", "value")] = c('Subject', 'LogIntensity')
+#'         datam3 = dcast(Protein ~ GROUP_ORIGINAL, 
+#'                        data=datam2, 
+#'                        value.var='LogIntensity', 
+#'                        fun.aggregate=function(x) median(x, na.rm=TRUE))
+#'         if (format == "long") {
+#'             data_l = melt(datam3, id.vars=c('Protein'))
+#'             colnames(data_l)[colnames(data_l) %in% c("variable", "value")] = c('Group', 'LogIntensity')
+#'         }
+#'         getOption("MSstatsLog")("INFO", "Finish group quantificiation - okay.")
+#'         if (format == "long") {
+#'             return(data_l)
+#'         }
+#'         if (format == "matrix") {
+#'             return(datam3)
+#'         }
+#'     }
+#' }
