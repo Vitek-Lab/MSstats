@@ -3,7 +3,7 @@
 #' @param input data.table
 #' @param method "all" / "highQuality", "topN"
 #' @param top_n number of features to use for "topN" method
-#' @param minimum number of quality features for "highQuality" method
+#' @param min_feature_count number of quality features for "highQuality" method
 #' 
 #' @return data.table
 #' 

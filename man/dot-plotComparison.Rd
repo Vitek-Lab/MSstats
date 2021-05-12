@@ -31,9 +31,15 @@
 
 \item{sig}{FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.}
 
+\item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.}
+
+\item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.}
+
 \item{dot.size}{size of dots in volcano plot and comparison plot. Default is 3.}
 
 \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}
+
+\item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
 
 \item{log_base_FC}{log base for log-fold changes - 2 or 10}
 }

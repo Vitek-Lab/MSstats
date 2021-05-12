@@ -12,11 +12,11 @@
 #' @param sig FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.
 #' @param FCcutoff for volcano plot or heatmap, whether involve fold change cutoff or not. FALSE (default) means no fold change cutoff is applied for significance analysis. FCcutoff = specific value means specific fold change cutoff is applied.
 #' @param logBase.pvalue for volcano plot or heatmap, (-) logarithm transformation of adjusted p-value with base 2 or 10(default).
-#' @param ylimUpfor all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.
-#' @param ylimDownfor all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.
+#' @param ylimUp for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.
+#' @param ylimDown for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.
 #' @param xlimUp for Volcano plot, the limit for x-axis. FALSE (default) for  use maximum for absolute value of log-fold change or 3 as default if maximum for absolute value of log-fold change is less than 3.
 #' @param x.axis.size size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.
-#' @param y.axis.sizesize of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.
+#' @param y.axis.size size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.
 #' @param dot.size size of dots in volcano plot and comparison plot. Default is 3.
 #' @param text.size size of ProteinName label in the graph for Volcano Plot. Default is 4.
 #' @param text.angleangle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.
@@ -91,6 +91,7 @@ groupComparisonPlots = function(
 #' @param input data.table
 #' @param log_base_pval log base for p-values
 #' @param log_base_FC log base for log-fold changes - 2 or 10
+#' @keywords internal
 .plotHeatmap = function(
     input, log_base_pval, ylimUp, FCcutoff, sig, clustering, numProtein, colorkey, 
     width, height, log_base_FC, x.axis.size, y.axis.size, address

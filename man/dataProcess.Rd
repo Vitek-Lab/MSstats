@@ -87,6 +87,8 @@ by Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
 which have more than 50\% missing values. FALSE is default.}
 
+\item{fix_missing}{Optional, same as the `fix_missing` parameter in MSstatsConvert::MSstatsBalancedDesign function}
+
 \item{maxQuantileforCensored}{Maximum quantile for deciding censored missing values, default is 0.999}
 
 \item{use_log_file}{logical. If TRUE, information about data processing

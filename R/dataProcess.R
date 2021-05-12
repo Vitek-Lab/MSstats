@@ -48,6 +48,7 @@
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
 #' which have more than 50\% missing values. FALSE is default.
 #' @param maxQuantileforCensored Maximum quantile for deciding censored missing values, default is 0.999
+#' @param fix_missing Optional, same as the `fix_missing` parameter in MSstatsConvert::MSstatsBalancedDesign function
 #' @inheritParams .documentFunction
 #' 
 #' @importFrom utils sessionInfo
@@ -112,7 +113,7 @@ dataProcess = function(
 
 #' Feature-level data summarization
 #' 
-#' @param input list of processed feature-level data
+#' @param proteins_list list of processed feature-level data
 #' @param method summarization method: "linear" or "TMP" 
 #' @param equal_variance only for summaryMethod = "linear". Default is TRUE. 
 #' Logical variable for whether the model should account for heterogeneous variation 
@@ -131,12 +132,6 @@ dataProcess = function(
 #' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
 #' FALSE uses the values assigned by cutoffCensored
-#' @param remove_uninformative_feature_outlier It only works after users used featureSubset = "highQuality" 
-#' in dataProcess. TRUE allows to remove 1) the features are flagged in the column, 
-#' feature_quality = "Uninformative" which are features with bad quality, 
-#' 2) outliers that are flagged in the column, is_outlier = TRUE, 
-#' for run-level summarization. FALSE (default) uses all features and intensities 
-#' for run-level summarization.
 #' 
 #' @importFrom data.table uniqueN
 #' 

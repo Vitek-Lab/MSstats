@@ -14,6 +14,8 @@ MSstatsSummarize(
 )
 }
 \arguments{
+\item{proteins_list}{list of processed feature-level data}
+
 \item{method}{summarization method: "linear" or "TMP"}
 
 \item{impute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
@@ -36,15 +38,6 @@ among intensities from different features. Default is TRUE, which assume equal
 variance among intensities from features. FALSE means that we cannot assume 
 equal variance among intensities from features, then we will account for
 heterogeneous variation from different features.}
-
-\item{input}{list of processed feature-level data}
-
-\item{remove_uninformative_feature_outlier}{It only works after users used featureSubset = "highQuality" 
-in dataProcess. TRUE allows to remove 1) the features are flagged in the column, 
-feature_quality = "Uninformative" which are features with bad quality, 
-2) outliers that are flagged in the column, is_outlier = TRUE, 
-for run-level summarization. FALSE (default) uses all features and intensities 
-for run-level summarization.}
 }
 \description{
 Feature-level data summarization

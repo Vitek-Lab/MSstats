@@ -18,6 +18,7 @@
 #' which are Groups(or Conditions) for group quantification or the combinations
 #' of BioReplicate and Condition (labeled by "BioReplicate"_"Condition")
 #' for sample quantification. Default is "matrix"
+#' @inheritParams .documentFunction
 #'
 #' @details
 #' \itemize{

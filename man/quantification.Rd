@@ -28,6 +28,20 @@ and NumPeaks for number of observed peak intensities for a protein.
 which are Groups(or Conditions) for group quantification or the combinations
 of BioReplicate and Condition (labeled by "BioReplicate"_"Condition")
 for sample quantification. Default is "matrix"}
+
+\item{use_log_file}{logical. If TRUE, information about data processing
+will be saved to a file.}
+
+\item{append}{logical. If TRUE, information about data processing will be added
+to an existing log file.}
+
+\item{verbose}{logical. If TRUE, information about data processing wil be printed
+to the console.}
+
+\item{log_file_path}{character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.}
 }
 \value{
 data.frame as described in details.

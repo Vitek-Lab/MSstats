@@ -4,7 +4,7 @@
 #' @param data name of the (output of dataProcess function) data set.
 #' @param save_fitted_models logical, if TRUE, fitted models will be added to
 #' the output.
-#' @param logBase base of the logarithm used in dataProcess.
+#' @param log_base base of the logarithm used in dataProcess.
 #' @inheritParams .documentFunction
 #'
 #' @details
@@ -71,7 +71,7 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' 
 #' @param summarized_list output of MSstatsPrepareForGroupComparison
 #' @param contrast_matrix contrast matrix
-#' @param save_fitted_model if TRUE, fitted models will be included in the output
+#' @param save_fitted_models if TRUE, fitted models will be included in the output
 #' @param repeated logical, output of checkRepeatedDesign function
 #' @param samples_info data.table, output of getSamplesInfo function
 #' 

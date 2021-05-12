@@ -61,9 +61,12 @@ MSstatsContrastMatrix.data.frame = function(contrasts, conditions, labels) {
 
 #' Create a contrast matrix for groupComparison function
 #' 
-#' @param contrast list of lists. Each sub-list consists of two vectors that 
-#' name conditions that will be compared. See the details section for more 
-#' information
+#' @param contrasts One of the following:
+#' i) list of lists. Each sub-list consists of two vectors that name 
+#' conditions that will be compared. See the details section for more information
+#' ii) matrix. In this case, it's correctness will be checked
+#' iii) "pairwise". In this case, pairwise comparison matrix will be generated
+#' iv) data.frame. In this case, input will be converted to matrix
 #' @param conditions unique condition labels  
 #' @param labels labels for contrasts (row.names of the contrast matrix)
 #' 

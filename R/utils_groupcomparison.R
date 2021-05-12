@@ -1,4 +1,11 @@
+#' Check if data represents repeated measurements design
+#' 
+#' @param summarization_object output of the dataProcess function
+#' 
+#' @return logical, TRUE if data represent repeated measurements design
+#' 
 #' @export
+#' 
 checkRepeatedDesign = function(summarization_output) {
     input = as.data.table(summarization_output$ProteinLevelData)
     subject_by_group = table(input[, list(SUBJECT, GROUP)])
@@ -15,7 +22,14 @@ checkRepeatedDesign = function(summarization_output) {
     repeated
 }
 
+#' Get information about number of measurements for each group
+#' 
+#' @param summarization_output output of the dataProcess function
+#' 
+#' @return data.table
+#' 
 #' @export
+#' 
 getSamplesInfo = function(summarization_output) {
     summarized = as.data.table(summarization_output$ProteinLevelData)
     summarized[, list(NumRuns = data.table::uniqueN(RUN)),

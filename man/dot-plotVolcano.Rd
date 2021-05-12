@@ -34,6 +34,10 @@
 
 \item{height}{height of the saved file. Default is 10.}
 
+\item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.}
+
+\item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.}
+
 \item{FCcutoff}{for volcano plot or heatmap, whether involve fold change cutoff or not. FALSE (default) means no fold change cutoff is applied for significance analysis. FCcutoff = specific value means specific fold change cutoff is applied.}
 
 \item{sig}{FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.}
@@ -49,6 +53,8 @@
 \item{legend.size}{size of legend for color at the bottom of volcano plot.  Default is 7.}
 
 \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}
+
+\item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
 }
 \description{
 Preprocess data for volcano plots and create them

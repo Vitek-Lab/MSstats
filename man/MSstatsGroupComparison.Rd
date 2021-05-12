@@ -17,11 +17,11 @@ MSstatsGroupComparison(
 
 \item{contrast_matrix}{contrast matrix}
 
+\item{save_fitted_models}{if TRUE, fitted models will be included in the output}
+
 \item{repeated}{logical, output of checkRepeatedDesign function}
 
 \item{samples_info}{data.table, output of getSamplesInfo function}
-
-\item{save_fitted_model}{if TRUE, fitted models will be included in the output}
 }
 \description{
 Group comparison

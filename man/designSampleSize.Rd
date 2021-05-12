@@ -32,6 +32,20 @@ else you should input the exact number of biological replicates.}
 \item{power}{a pre-specified statistical power which defined as the probability 
 of detecting a true fold change. TRUE represent you require to calculate the power 
 for this category, else you should input the average of power you expect. Default is 0.9}
+
+\item{use_log_file}{logical. If TRUE, information about data processing
+will be saved to a file.}
+
+\item{append}{logical. If TRUE, information about data processing will be added
+to an existing log file.}
+
+\item{verbose}{logical. If TRUE, information about data processing wil be printed
+to the console.}
+
+\item{log_file_path}{character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.}
 }
 \value{
 data.frame - sample size calculation results including varibles:

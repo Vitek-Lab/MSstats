@@ -13,7 +13,7 @@ MSstatsSelectFeatures(input, method, top_n = 3, min_feature_count = 2)
 
 \item{top_n}{number of features to use for "topN" method}
 
-\item{minimum}{number of quality features for "highQuality" method}
+\item{min_feature_count}{number of quality features for "highQuality" method}
 }
 \value{
 data.table

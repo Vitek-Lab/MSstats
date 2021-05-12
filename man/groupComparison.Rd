@@ -23,6 +23,8 @@ groupComparison(
 \item{save_fitted_models}{logical, if TRUE, fitted models will be added to
 the output.}
 
+\item{log_base}{base of the logarithm used in dataProcess.}
+
 \item{use_log_file}{logical. If TRUE, information about data processing
 will be saved to a file.}
 
@@ -36,8 +38,6 @@ to the console.}
 data processing will be saved. 
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
-
-\item{logBase}{base of the logarithm used in dataProcess.}
 }
 \value{
 list that consists of the following elements: (TODO)

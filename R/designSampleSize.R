@@ -17,6 +17,7 @@
 #' @param power a pre-specified statistical power which defined as the probability 
 #' of detecting a true fold change. TRUE represent you require to calculate the power 
 #' for this category, else you should input the average of power you expect. Default is 0.9
+#' @inheritParams .documentFunction
 #' 
 #' @details The function fits the model and uses variance components to calculate 
 #' sample size. The underlying model fitting with intensity-based linear model with 
