@@ -1,5 +1,5 @@
 #include <RcppArmadillo.h>
-#include "common.hpp"
+#include "common.h"
 using namespace Rcpp;
 
 // [[Rcpp::export]]
