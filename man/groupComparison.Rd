@@ -46,7 +46,7 @@ list that consists of the following elements: (TODO)
 Whole plot testing
 }
 \details{
-contrast.matrix : comparison of interest. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command levels(QuantData$ProcessedData$GROUP_ORIGINAL) can illustrate the actual order of the levels of conditions.
+contrast.matrix : comparison of interest. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command levels(QuantData$FeatureLevelData$GROUP_ORIGINAL) can illustrate the actual order of the levels of conditions.
 The underlying model fitting functions are lm and lmer for the fixed effects model and mixed effects model, respectively.
 The input of this function is the quantitative data from function (dataProcess).
 }

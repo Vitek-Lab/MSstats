@@ -13,7 +13,7 @@
 #' The input of this function is the quantitative data from function (dataProcess).
 #'
 #' @return list that consists of the following elements: (TODO)
-#' @export groupComparison
+#' @export 
 #' @import lme4
 #' @import limma
 #' @importFrom data.table rbindlist

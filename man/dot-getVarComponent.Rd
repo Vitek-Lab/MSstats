@@ -7,7 +7,7 @@
 .getVarComponent(fitted_models)
 }
 \arguments{
-\item{fitted_models}{fittedmodels element of groupComparison output}
+\item{fitted_models}{FittedModels element of groupComparison output}
 }
 \description{
 Get variances from models fitted by the groupComparison function

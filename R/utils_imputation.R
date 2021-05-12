@@ -1,5 +1,6 @@
 #' @importFrom data.table uniqueN
 #' @importFrom survival survreg Surv
+#' @keywords internal
 .fitSurvival = function(input) {
     missingness_filter = is.finite(input$newABUNDANCE)
     n_total = nrow(input[missingness_filter, ])

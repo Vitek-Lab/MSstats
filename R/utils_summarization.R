@@ -1,153 +1,237 @@
-#' Feature-level data summarization
-#' 
-#' @param input list of processed feature-level data
-#' @param method summarization method: "linear" or "TMP" 
-#' @param equal_variance only for summaryMethod = "linear". Default is TRUE. 
-#' Logical variable for whether the model should account for heterogeneous variation 
-#' among intensities from different features. Default is TRUE, which assume equal
-#' variance among intensities from features. FALSE means that we cannot assume 
-#' equal variance among intensities from features, then we will account for
-#' heterogeneous variation from different features.
-#' @param censored_symbol Missing values are censored or at random. 
-#' 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-#' '0' uses zero intensities as censored intensity. 
-#' In this case, NA intensities are missing at random. 
-#' The output from Skyline should use '0'. 
-#' Null assumes that all NA intensites are randomly missing.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
-#' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-#' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
-#' FALSE uses the values assigned by cutoffCensored
-#' @param remove_uninformative_feature_outlier It only works after users used featureSubset = "highQuality" 
-#' in dataProcess. TRUE allows to remove 1) the features are flagged in the column, 
-#' feature_quality = "Uninformative" which are features with bad quality, 
-#' 2) outliers that are flagged in the column, is_outlier = TRUE, 
-#' for run-level summarization. FALSE (default) uses all features and intensities 
-#' for run-level summarization.
-#' 
-#' @importFrom data.table uniqueN
-#' 
-#' @export
-#' 
-MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
-                            remove50missing, equal_variance) {
-    num_proteins = length(proteins_list)
-    summarized_results = vector("list", num_proteins)
-    if (method == "TMP") {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in 1:num_proteins) {
-            single_protein = proteins_list[[protein_id]]
-            summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
-                single_protein, impute, censored_symbol, remove50missing)
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
-    } else {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in 1:num_proteins) {
-            single_protein = proteins_list[[protein_id]]
-            summarized_result = MSstatsSummarizeSingleLinear(single_protein,
-                                                             equal_variances)
-            summarized_results[[protein_id]] = summarized_result
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
+#' Check if a protein can be summarized with TMP
+#' @param input data.table
+#' @param remove50missing if TRUE, proteins with more than 50% missing values
+#' in all runs will not be summarized
+#' @return data.table
+#' @keywords internal 
+.isSummarizable = function(input, remove50missing) {
+    n_obs_run = RUN = NULL
+    
+    if (all(is.na(input$newABUNDANCE) | input$newABUNDANCE == 0)) {
+        msg = paste("Can't summarize for protein", unique(input$PROTEIN),
+                    "because all measurements are missing or censored.")
+        getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
+        return(NULL)
     }
-    summarized_results
+    
+    if (all(is.na(input$n_obs) | input$n_obs == 0)) {
+        msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
+                    "because all measurements are missing or censored.")
+        getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
+        return(NULL)
+    } 
+    
+    if (all(input$n_obs == 1 | is.na(input$n_obs))) {
+        msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
+                    "because features have only one measurement across MS runs.")
+        getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
+        return(NULL)
+    }
+    
+    if (all(is.na(input$newABUNDANCE) | input$newABUNDANCE == 0) | nrow(input) == 0) {
+        msg = paste("After removing features which has only 1 measurement,",
+                    "Can't summarize for protein", unique(input$PROTEIN), 
+                    "because all measurements are missing or censored.")
+        getOption("MSstatsMsg")("INFO", msg)
+        getOption("MSstatsLog")("INFO", msg)
+        return(NULL)
+    }
+    
+    missing_runs = setdiff(unique(input$RUN), 
+                           unique(input[n_obs_run == 0 | is.na(n_obs_run), RUN]))
+    if (length(missing_runs) > 0 & length(intersect(missing_runs, as.character(unique(input$RUN))))) { 
+        input = input[n_obs_run > 0 & !is.na(n_obs_run), ]
+    }
+    
+    if (remove50missing) {
+        if (all(input$prop_features <= 0.5 | is.na(input$prop_features))) {
+            msg = paste("Can't summarize for protein", unique(input$PROTEIN), 
+                        "because all runs have more than 50% missing values and",
+                        "are removed with the option, remove50missing=TRUE.")
+            getOption("MSstatsMsg")("INFO", msg)
+            getOption("MSstatsLog")("INFO", msg)
+            return(NULL)
+        }
+    }
+    input
 }
 
 
-#' Linear model-based summarization for a single protein
-#' 
-#' @param single_protein feature-level data for a single protein
-#' @param equal_variances if TRUE, observation are assumed to be homoskedastic
-#' 
-#' @return list with protein-level data
-#' 
-#' @export
-#' 
-MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) {
-    ABUNDANCE = RUN = FEATURE = NULL
+#' Fit Tukey median polish
+#' @param input data.table with data for a single protein
+#' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
+#' @inheritParams MSstatsSummarize
+#' @return data.table
+#' @keywords internal
+.runTukey = function(input, is_labeled, censored_symbol, remove50missing) {
+    Protein = RUN = newABUNDANCE = NULL
     
-    label = data.table::uniqueN(single_protein$LABEL) > 1
-    single_protein = single_protein[!is.na(ABUNDANCE)]
-    single_protein[, RUN := factor(RUN)]
-    single_protein[, FEATURE := factor(FEATURE)]
+    if (nlevels(input$FEATURE) > 1) {
+        tmp_result = .fitTukey(input)
+    } else { 
+        if (is_labeled) {
+            tmp_result = .adjustLRuns(input, TRUE)
+        } else {
+            tmp_result = input[input$LABEL == "L", 
+                               list(RUN, LogIntensities = newABUNDANCE)]
+        }
+    }
+    tmp_result[, Protein := unique(input$PROTEIN)]
+    tmp_result
+}
+
+
+#' Fit tukey median polish for a data matrix
+#' @inheritParams .runTukey
+#' @return data.table
+#' @keywords internal
+.fitTukey = function(input) {
+    LABEL = RUN = newABUNDANCE = NULL
     
-    counts = xtabs(~ RUN + FEATURE, 
-                   data = unique(single_protein[, .(FEATURE, RUN)]))
-    counts = as.matrix(counts)
-    is_single_feature = .checkSingleFeature(single_protein)
+    features = as.character(unique(input$FEATURE))
+    wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
+                             value.var = "newABUNDANCE", keep = TRUE)
+    tmp_fitted = median_polish_summary(as.matrix(wide[, features, with = FALSE]))
+    wide[, newABUNDANCE := tmp_fitted]
+    tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
     
-    # TODO: message about i of n proteins, after adding n parameter
-    fit = try(.fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
-                              equal_variances), silent = TRUE)
+    if (data.table::uniqueN(input$LABEL) == 2) {
+        tmp_result = .adjustLRuns(tmp_result)
+    }
+    tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
+}
+
+
+#' Adjust summarized abundance based on the heavy channel
+#' @param input data.table
+#' @param rename if TRUE, rename the output column to LogIntensities
+#' @return data.table
+#' @keywords internal
+.adjustLRuns = function(input, rename = FALSE) {
+    LABEL = newABUNDANCE = RUN = newABUNDANCE.h = NULL
     
-    if (inherits(fit, "try-error")) {
-        msg = paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))
-        getOption("MSstatsLog")("WARN", msg)
-        getOption("MSstatsMsg")("WARN", msg)
-        result = NULL
+    h_runs = input[LABEL == "H", list(RUN, newABUNDANCE)]
+    h_median = median(input[LABEL == "H", newABUNDANCE], na.rm = TRUE)
+    input = input[LABEL == "L"]
+    input = merge(input[, list(RUN, newABUNDANCE)], h_runs, by = "RUN", suffixes = c("", ".h"))
+    input[, newABUNDANCE := newABUNDANCE - newABUNDANCE.h + h_median]
+    if (rename) {
+        input[, list(RUN, LogIntensities = newABUNDANCE)]
     } else {
+        input[, list(RUN, newABUNDANCE)]
+    }
+}
+
+
+#' Get a logical vector for non-missing values to calculate summary statistics
+#' @inheritParams .runTukey
+#' @return data.table
+#' @keywords internal
+.getNonMissingFilterStats = function(input, censored_symbol) {
+    if (!is.null(censored_symbol)) {
+        if (censored_symbol == "NA") {
+            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored
+        } else {
+            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored 
+        }
+    } else {
+        nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+    }
+    nonmissing_filter = nonmissing_filter & input$n_obs_run > 0 & input$n_obs > 1
+    nonmissing_filter
+}
+
+
+#' Fit a linear model
+#' @param input data.table
+#' @param is_single_feature logical, if TRUE, data has single feature
+#' @param is_labeled logical, if TRUE, data comes from a labeled experiment
+#' @param equal_variances logical, if TRUE, equal variances are assumed
+#' @return lm or merMod
+#' @keywords internal
+.fitLinearModel = function(input, is_single_feature, is_labeled,
+                           equal_variances) {
+    if (!is_labeled) {
+        if (is_single_feature) {
+            linear_model = lm(ABUNDANCE ~ RUN , data = input)
+        } else {
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN , data = input)
+        }
+    } else {
+        if (is_single_feature) {
+            linear_model = lm(ABUNDANCE ~ RUN + ref , data = input)
+        } else {
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref, data = input)
+        }
+    }
+    if (!equal_variances) {
+        linear_model = .updateUnequalVariances(input = input, 
+                                               fit = linear_model,
+                                               num_iter = 1)
+    }
+    linear_model
+}
+
+
+#' Adjust model for unequal variances
+#' @param input data.table
+#' @param fit lm
+#' @param num_iter number of iterations
+#' @importFrom lme4 lmer
+#' @importFrom stats loess
+#' @return merMod
+#' @keywords internal
+.updateUnequalVariances = function(input, fit, num_iter) {
+    for (i in 1:num_iter) {
+        if (i == 1) {
+            if (class(fit) == "lm") {
+                abs.resids = data.frame(abs.resids = abs(fit$residuals))
+                fitted = data.frame(fitted = fit$fitted.values)
+            } else {
+                abs.resids = data.frame(abs.resids = abs(resid(fit)))
+                fitted = data.frame(fitted = fitted(fit))
+            }
+            input = data.frame(input, 
+                               "abs.resids" = abs.resids, 
+                               "fitted" = fitted)
+        }
+        fit.loess = loess(abs.resids ~ fitted, data = input)
+        loess.fitted = data.frame(loess.fitted = fitted(fit.loess))
+        input = data.frame(input, "loess.fitted" = loess.fitted)
+        
+        ## loess fitted valuaes are predicted sd
+        input$weight = 1 / (input$loess.fitted ^ 2)
+        input = input[, -which(colnames(input) %in% "abs.resids")]
+        
+        ## re-fit using weight
         if (class(fit) == "lm") {
-            cf = summary(fit)$coefficients[, 1]
-        } else{
-            cf = fixef(fit)
+            wls.fit = lm(formula(fit), data = input, weights = weight)
+        } else {
+            wls.fit = lmer(formula(fit), data = input, weights = weight)
         }
         
-        result = unique(single_protein[, .(Protein = PROTEIN, RUN = RUN)])
-        log_intensities = get_linear_summary(single_protein, cf,
-                                             counts, label)
-        result[, LogIntensities := log_intensities]
+        ## lm or lmer
+        if (class(wls.fit) == "lm") {
+            abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
+        } else {
+            abs.resids = data.frame(abs.resids = abs(resid(wls.fit)))
+        }
+        input = data.frame(input, "abs.resids" = abs.resids)
+        
+        input = input[, -which(colnames(input) %in% c("loess.fitted", "weight"))]
     }
-    list(result)
+    
+    return(wls.fit)
 }
 
 
-#' Tukey Median Polish summarization for a single protein
-#' 
-#' @param single_protein feature-level data for a single protein
-#' @inheritParams MSstatsSummarize
-#' 
-#' @return list of two data.tables: one with fitted survival model,
-#' the other with protein-level data
-#' 
-#' @export
-#' 
-MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
-                                     remove50missing) {
-    newABUNDANCE = NULL
-    cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
-                                                 "FEATURE", "ref"))
-    single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
-                                        (n_obs_run > 0 & !is.na(n_obs_run))]
-    if (nrow(single_protein) == 0) {
-        return(list(NULL, NULL))
-    }
-    single_protein[, RUN := factor(RUN)]
-    single_protein[, FEATURE := factor(FEATURE)]
-    if (impute) {
-        survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
-                                                   with = FALSE])
-        single_protein[, predicted := predict(survival_fit,
-                                              newdata = .SD)]
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                                predicted, newABUNDANCE)]
-        survival = single_protein[, c(cols, "predicted"), with = FALSE]
-    } else {
-        survival = NULL
-    }
-    
-    single_protein = .isSummarizable(single_protein, remove50missing)
-    if (is.null(single_protein)) {
-        return(list(NULL, NULL))
-    } else {
-        single_protein = single_protein[!is.na(newABUNDANCE), ]
-        is_labeled = nlevels(single_protein$LABEL) > 1
-        result = .runTukey(single_protein, is_labeled, censored_symbol, 
-                           remove50missing)
-    }
-    list(result, survival)
+#' Check if data has less than two features
+#' @param input data.table
+#' @return logical
+#' @keywords internal
+.checkSingleFeature = function(input) {
+    data.table::uniqueN(input$FEATURE) < 2
 }

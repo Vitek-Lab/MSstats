@@ -18,7 +18,6 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
                                           remove_uninformative_feature_outlier) {
     ABUNDANCE = feature_quality = is_outlier = NULL
     
-    input = .removeSingleLabelFeatures(input)
     label = data.table::uniqueN(input$LABEL) == 2
     if (label) {
         input$ref = factor(ifelse(input$LABEL == "L", 
@@ -120,7 +119,6 @@ getProcessed = function(input) {
     
     input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
     input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
-    # remove feature with 1 measurement
     input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)] 
     input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
     

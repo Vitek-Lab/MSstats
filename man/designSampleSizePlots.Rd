@@ -35,15 +35,15 @@ comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
 comparison<-rbind(comparison1,comparison2, comparison3)
 row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
 
-testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
+testResultMultiComparisons<-groupComparison(contrast.matrix=comparison, data=QuantData)
 
 # plot the calculated sample sizes for future experiments:
 # (1) Minimal number of biological replicates per condition
-result.sample<-designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
+result.sample<-designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=TRUE,
                                 desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
 designSampleSizePlots(data=result.sample)
 # (2) Power
-result.power<-designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
+result.power<-designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=2,
                                desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
 designSampleSizePlots(data=result.power)
 

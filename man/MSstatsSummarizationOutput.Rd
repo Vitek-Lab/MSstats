@@ -32,8 +32,8 @@ MSstatsSummarizationOutput(
 \value{
 list that consists of the following elements:
 \itemize{
-\item{ProcessedData}{ - feature-level data after processing} 
-\item{RunlevelData}{ - run-level (summarized) data}
+\item{FeatureLevelData}{ - feature-level data after processing} 
+\item{ProteinLevelData}{ - protein-level (summarized) data}
 \item{SummaryMethod}{ (string) - name of summarization method that was used}
 }
 }
