@@ -35,6 +35,8 @@
 
 \item{ylimDown}{for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.}
 
+\item{text.angle}{angle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.}
+
 \item{dot.size}{size of dots in volcano plot and comparison plot. Default is 3.}
 
 \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}

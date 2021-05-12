@@ -55,6 +55,8 @@ groupComparisonPlots(
 
 \item{text.size}{size of ProteinName label in the graph for Volcano Plot. Default is 4.}
 
+\item{text.angle}{angle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.}
+
 \item{legend.size}{size of legend for color at the bottom of volcano plot.  Default is 7.}
 
 \item{ProteinName}{for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.}
@@ -74,8 +76,6 @@ groupComparisonPlots(
 \item{which.Protein}{Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.}
 
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
-
-\item{text.angleangle}{of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.}
 }
 \description{
 To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, 

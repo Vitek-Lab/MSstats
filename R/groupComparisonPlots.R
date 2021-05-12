@@ -19,7 +19,7 @@
 #' @param y.axis.size size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.
 #' @param dot.size size of dots in volcano plot and comparison plot. Default is 3.
 #' @param text.size size of ProteinName label in the graph for Volcano Plot. Default is 4.
-#' @param text.angleangle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.
+#' @param text.angle angle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.
 #' @param legend.size size of legend for color at the bottom of volcano plot.  Default is 7.
 #' @param ProteinName for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.
 #' @param colorkey TRUE(default) shows colorkey.

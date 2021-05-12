@@ -1,6 +1,6 @@
 #' Check if data represents repeated measurements design
 #' 
-#' @param summarization_object output of the dataProcess function
+#' @param summarization_output output of the dataProcess function
 #' 
 #' @return logical, TRUE if data represent repeated measurements design
 #' 

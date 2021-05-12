@@ -7,7 +7,7 @@
 checkRepeatedDesign(summarization_output)
 }
 \arguments{
-\item{summarization_object}{output of the dataProcess function}
+\item{summarization_output}{output of the dataProcess function}
 }
 \value{
 logical, TRUE if data represent repeated measurements design
