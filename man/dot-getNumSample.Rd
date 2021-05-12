@@ -4,7 +4,14 @@
 \alias{.getNumSample}
 \title{Get sample size}
 \usage{
-.getNumSample(desiredFC, power, median_sigma_error, median_sigma_subject)
+.getNumSample(
+  desiredFC,
+  power,
+  alpha,
+  delta,
+  median_sigma_error,
+  median_sigma_subject
+)
 }
 \arguments{
 \item{desiredFC}{the range of a desired fold change which includes the lower 
@@ -13,6 +20,10 @@ and upper values of the desired fold change.}
 \item{power}{a pre-specified statistical power which defined as the probability 
 of detecting a true fold change. TRUE represent you require to calculate the power 
 for this category, else you should input the average of power you expect. Default is 0.9}
+
+\item{alpha}{significance level}
+
+\item{delta}{difference between means (?)}
 
 \item{median_sigma_error}{median of error standard deviation}
 

@@ -35,13 +35,14 @@
 #' # Consider quantitative data (i.e. QuantData) from yeast study.
 #' # A time course study with ten time points of interests and three biological replicates.
 #' QuantData <- dataProcess(SRMRawData)
-#' head(QuantData$ProcessedData)
+#' head(QuantData$FeatureLevelData)
 #' ## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
 #' comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
 #' comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
 #' comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
 #' comparison<-rbind(comparison1,comparison2, comparison3)
 #' row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
+#' colnames(comparison) = unique(QuantData$ProteinLevelData$GROUP)
 #' 
 #' testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
 #' 
@@ -75,7 +76,8 @@ designSampleSize = function(
     if (isTRUE(power)) {
         delta = log2(seq(desiredFC[1], desiredFC[2], 0.025))
         desiredFC = 2 ^ delta
-        power_output = .calculatePower(desiredFC, median_sigma_error, numSample)        
+        power_output = .calculatePower(desiredFC, FDR, delta, median_sigma_error, 
+                                       median_sigma_subject, numSample)        
         CV = round( (2 * (median_sigma_error / numSample + median_sigma_subject / numSample)) / desiredFC, 3)
         getOption("MSstatsLog")("INFO", "Power is calculated. - okay")
         sample_size = data.frame(desiredFC, numSample, FDR, 
@@ -89,8 +91,8 @@ designSampleSize = function(
         m0_m1 = 99 ## it means m0/m1=99, m0/(m0+m1)=0.99
         alpha = power * FDR / (1 + (1 - FDR) * m0_m1)
         if (isTRUE(numSample)) {
-            numSample = .getNumSample(desiredFC, power, median_sigma_error,
-                                      median_sigma_subject)
+            numSample = .getNumSample(desiredFC, power, alpha, delta,
+                                      median_sigma_error, median_sigma_subject)
             CV = round(2 * (median_sigma_error / numSample + median_sigma_subject / numSample) / desiredFC, 3)
             getOption("MSstatsLog")("INFO", "The number of sample is calculated. - okay")
             sample_size = data.frame(desiredFC, numSample, FDR, power, CV)
@@ -158,9 +160,12 @@ designSampleSize = function(
 
 #' Power calculation
 #' @inheritParams designSampleSize
+#' @param delta difference between means (?)
 #' @param median_sigma_error median of error standard deviation
+#' @param median_sigma_subject median standard deviation per subject
 #' @keywords internal
-.calculatePower = function(desiredFC, median_sigma_error, numSample) {
+.calculatePower = function(desiredFC, FDR, delta, median_sigma_error, 
+                           median_sigma_subject, numSample) {
     m0_m1 = 99
     t = delta / sqrt(2 * (median_sigma_error / numSample + median_sigma_subject / numSample))
     powerTemp = seq(0, 1, 0.01)
@@ -177,9 +182,10 @@ designSampleSize = function(
 #' Get sample size
 #' @inheritParams designSampleSize
 #' @inheritParams .calculatePower
-#' @param median_sigma_subject median standard deviation per subject
+#' @param alpha significance level
+#' @param delta difference between means (?)
 #' @keywords internal
-.getNumSample = function(desiredFC, power, median_sigma_error, 
+.getNumSample = function(desiredFC, power, alpha, delta, median_sigma_error, 
                          median_sigma_subject){
     z_alpha = qnorm(1 - alpha / 2)
     z_beta = qnorm(power)

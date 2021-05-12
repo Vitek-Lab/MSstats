@@ -55,13 +55,14 @@ calculation (numSample, numPep, numTran, power) at the same time.
 # Consider quantitative data (i.e. QuantData) from yeast study.
 # A time course study with ten time points of interests and three biological replicates.
 QuantData <- dataProcess(SRMRawData)
-head(QuantData$ProcessedData)
+head(QuantData$FeatureLevelData)
 ## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
 comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
 comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
 comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
 comparison<-rbind(comparison1,comparison2, comparison3)
 row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
+colnames(comparison) = unique(QuantData$ProteinLevelData$GROUP)
 
 testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
 
