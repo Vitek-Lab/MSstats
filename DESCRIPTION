@@ -26,7 +26,8 @@ Imports:
     ggplot2,
     ggrepel,
     gplots,
-    marray
+    marray,
+    methods
 Suggests: 
     BiocStyle,
     knitr,
