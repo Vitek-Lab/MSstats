@@ -7,6 +7,7 @@
 #' @param strip_background background of facet
 #' @param strip_text_x size of text on facets
 #' @param legend_position position of the legend
+#' @param legend_box legend.box
 #' @param text_angle angle of text on the x axis (for condition and comparison plots)
 #' @param text_hjust hjust parameter for x axis text (for condition and comparison plots)
 #' @param text_vjust vjust parameter for x axis text (for condition and comparison plots)

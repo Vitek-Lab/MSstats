@@ -34,6 +34,8 @@ theme_msstats(
 
 \item{legend_position}{position of the legend}
 
+\item{legend_box}{legend.box}
+
 \item{text_angle}{angle of text on the x axis (for condition and comparison plots)}
 
 \item{text_hjust}{hjust parameter for x axis text (for condition and comparison plots)}
