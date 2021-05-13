@@ -69,7 +69,7 @@ results (data.frame) in a long or matrix format.
 # replicate within each time point.
 # Group quantification shows model-based estimation of protein abundance in each time point.
 QuantData<-dataProcess(SRMRawData)
-head(QuantData$ProcessedData)
+head(QuantData$FeatureLevelData)
 # Sample quantification
 sampleQuant<-quantification(QuantData)
 head(sampleQuant)

@@ -39,7 +39,7 @@
 #' # replicate within each time point.
 #' # Group quantification shows model-based estimation of protein abundance in each time point.
 #' QuantData<-dataProcess(SRMRawData)
-#' head(QuantData$ProcessedData)
+#' head(QuantData$FeatureLevelData)
 #' # Sample quantification
 #' sampleQuant<-quantification(QuantData)
 #' head(sampleQuant)
@@ -65,7 +65,7 @@ quantification = function(
         datarun = data.table::as.data.table(data$ProteinLevelData)
         datarun$Protein = factor(datarun$Protein)
         datarun = datarun[!is.na(LogIntensities), ]
-        datam = data.table::dcast(Protein ~ GROUP_ORIGINAL + SUBJECT_ORIGINAL, 
+        datam = data.table::dcast(Protein ~ GROUP + SUBJECT, 
                                   data = datarun,
                                   value.var = 'LogIntensities',
                                   fun.aggregate = median)
@@ -86,14 +86,14 @@ quantification = function(
         datarun = data.table::as.data.table(data$ProteinLevelData)
         datarun$Protein = factor(datarun$Protein)
         datarun = datarun[!is.na(LogIntensities), ]
-        datam = data.table::dcast(Protein + GROUP_ORIGINAL ~ SUBJECT_ORIGINAL,
+        datam = data.table::dcast(Protein + GROUP ~ SUBJECT,
                       data = datarun,
                       value.var = 'LogIntensities',
                       fun.aggregate = median)
-        datam2 = data.table::melt(datam, id.vars = c('Protein', "GROUP_ORIGINAL"))
+        datam2 = data.table::melt(datam, id.vars = c('Protein', "GROUP"))
         data.table::setnames(datam2, c("variable", "value"),
                              c("Subject", "LogIntensity"))
-        datam3 = data.table::dcast(Protein ~ GROUP_ORIGINAL,
+        datam3 = data.table::dcast(Protein ~ GROUP,
                        data = datam2,
                        value.var = 'LogIntensity',
                        fun.aggregate = function(x) median(x, na.rm=TRUE))
