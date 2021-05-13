@@ -43,7 +43,7 @@
 #' comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
 #' comparison<-rbind(comparison1,comparison2, comparison3)
 #' row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
-#' colnames(comparison) = unique(QuantData$ProteinLevelData$GROUP)
+#' colnames(comparison)<-unique(QuantData$ProteinLevelData$GROUP)
 #' 
 #' testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,data=QuantData)
 #' 
