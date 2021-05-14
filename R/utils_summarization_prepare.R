@@ -14,6 +14,15 @@
 #' 
 #' @export
 #' 
+#' @examples 
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' head(input)
+#' 
 MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol,
                                           remove_uninformative_feature_outlier) {
     ABUNDANCE = feature_quality = is_outlier = PROTEIN = NULL

@@ -1,3 +1,9 @@
+#' Check groupComparisonPlots parameters
+#' @param type type of a plot: HEATMAP/VOLCANOPLOT/COMPARISONPLOT
+#' @param log_base 2 or 10
+#' @param selected_labels character vector of contrast labels
+#' @param all_labels character vector of all contrast labels
+#' @keywords internal
 .checkGCPlotsInput = function(type, log_base, selected_labels, all_labels) {
     checkmate::assertChoice(type, c("HEATMAP", "VOLCANOPLOT", "COMPARISONPLOT"))
     checkmate::assertChoice(log_base, c(2, 10))
@@ -49,8 +55,11 @@
 }
 
 
-.makeHeatmap = function(input, my.colors, my.breaks, 
-                        x.axis.size, y.axis.size) {
+#' Create heatmap
+#' @param input data.table
+#' @inheritParams groupComparisonPlots
+#' @keywords internal
+.makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size) {
     par(oma = c(3, 0, 0, 4))
     heatmap.2(as.matrix(input),
               col = my.colors,
@@ -63,6 +72,14 @@
               lhei = c(0.1, 0.9), lwid = c(0.1, 0.9)) 
 }
 
+
+#' Create a volcano plot
+#' @inheritParams groupComparisonPlots
+#' @param input data.table
+#' @param label_name contrast label
+#' @param log_base_FC 2 or 10
+#' @param log_base_pval 2 or 10
+#' @keywords internal
 .makeVolcano = function(
     input, label_name, log_base_FC, log_base_pval, x.lim, ProteinName, dot.size,
     y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
@@ -157,7 +174,11 @@
 }
 
 
-
+#' Create comparison plot
+#' @param input data.table
+#' @param log_base 2 or 10
+#' @inheritParams groupComparisonPlots
+#' @keywords internal
 .makeComparison = function(
     input, log_base, dot.size, x.axis.size, y.axis.size, 
     text.angle, hjust, vjust, y.limdown, y.limup

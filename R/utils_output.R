@@ -19,6 +19,24 @@
 #' 
 #' @export
 #' 
+#' @examples
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input = MSstatsSelectFeatures(input, "all")
+#' processed = getProcessed(input)
+#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+#' input_split = split(input, input$PROTEIN)
+#' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
+#' output = output = MSstatsSummarizationOutput(input, summarized, processed,
+#' method, impute, ces)
+#' 
 MSstatsSummarizationOutput = function(input, summarized, processed, 
                                       method, impute, censored_symbol) {
     LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL

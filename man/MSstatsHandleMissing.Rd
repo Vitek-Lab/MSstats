@@ -30,3 +30,16 @@ data.table
 \description{
 Handle censored missing values
 }
+\examples{
+raw = DDARawData 
+method = "TMP"
+cens = "NA"
+impute = TRUE
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input = MSstatsMergeFractions(input)
+input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+head(input)
+ 
+}

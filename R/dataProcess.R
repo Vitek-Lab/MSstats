@@ -171,7 +171,7 @@ dataProcess = function(
 #' input_split = split(input, input$PROTEIN)
 #' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
 #' length(summarized) # list of summarization outputs for each protein
-#' head(summarized[[1]][[1]]) # run-level summaru
+#' head(summarized[[1]][[1]]) # run-level summary
 #' 
 MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
                             remove50missing, equal_variance) {

@@ -13,7 +13,7 @@
 #' 
 #' @return data.table
 #' 
-#' @example 
+#' @examples
 #' raw = DDARawData 
 #' method = "TMP"
 #' cens = "NA"

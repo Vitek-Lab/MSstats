@@ -9,6 +9,21 @@ MSstatsMergeFractions(input)
 \arguments{
 \item{input}{`data.table` in MSstats format}
 }
+\value{
+data.table
+}
 \description{
 Re-format the data before feature selection
+}
+\examples{
+raw = DDARawData 
+method = "TMP"
+cens = "NA"
+impute = TRUE
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input = MSstatsMergeFractions(input)
+head(input)
+
 }

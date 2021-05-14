@@ -33,3 +33,13 @@ data.table
 \description{
 Prepare feature-level data for protein-level summarization
 }
+\examples{
+raw = DDARawData 
+method = "TMP"
+cens = "NA"
+impute = TRUE
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+head(input)
+
+}

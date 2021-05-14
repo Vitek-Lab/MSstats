@@ -12,6 +12,18 @@
 #' 
 #' @export
 #' 
+#' @return data.table
+#' 
+#' @examples
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS") # median normalization
+#' head(input)
+#' 
 MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, standards = NULL) {
     normalization_method = toupper(normalization_method)
     if (normalization_method == "NONE" | normalization_method == "FALSE") {
@@ -231,9 +243,26 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 
 
 #' Re-format the data before feature selection
+#' 
 #' @param input `data.table` in MSstats format
+#' 
 #' @importFrom data.table uniqueN
+#' 
 #' @export
+#' 
+#' @return data.table
+#' 
+#' @examples 
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' head(input)
+#' 
 MSstatsMergeFractions = function(input) {
     ABUNDANCE = INTENSITY = GROUP_ORIGINAL = SUBJECT_ORIGINAL = RUN = NULL
     originalRUN = FRACTION = TECHREPLICATE = tmp = merged = newRun = NULL

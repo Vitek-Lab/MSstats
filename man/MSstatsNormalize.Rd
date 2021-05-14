@@ -25,6 +25,20 @@ features.}
 \item{standards}{character vector with names of standards, required if 
 "GLOBALSTANDARDS" method was selected.}
 }
+\value{
+data.table
+}
 \description{
 Normalize MS data
+}
+\examples{
+raw = DDARawData 
+method = "TMP"
+cens = "NA"
+impute = TRUE
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input = MSstatsNormalize(input, "EQUALIZEMEDIANS") # median normalization
+head(input)
+
 }
