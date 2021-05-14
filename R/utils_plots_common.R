@@ -60,11 +60,14 @@ theme_msstats = function(
 }
 
 #' Get proteins based on names or integer IDs
+#' 
 #' @param chosen_proteins protein names or integers IDs
 #' @param all_proteins all unique proteins
+#' 
 #' @return character
-#' @keywords internal
-.getSelectedProteins = function(chosen_proteins, all_proteins) {
+#' 
+#' @export
+getSelectedProteins = function(chosen_proteins, all_proteins) {
     if (is.character(chosen_proteins)) {
         selected_proteins = chosen_proteins
         missing_proteins = setdiff(selected_proteins, all_proteins)
@@ -85,12 +88,16 @@ theme_msstats = function(
 
 
 #' Save a plot to pdf file
+#' 
 #' @inheritParams .saveTable
 #' @param width width of a plot
 #' @param height height of a plot
+#' 
 #' @return NULL
-#' @keywords internal
-.savePlot = function(name_base, file_name, width, height) {
+#' 
+#' @export
+#' 
+savePlot = function(name_base, file_name, width, height) {
     if (name_base != FALSE) {
         all_files = list.files(".")
         if(file_name == 'ProfilePlot'){

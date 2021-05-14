@@ -197,7 +197,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param protein name of a protein
 #' @keywords internal
 .getEmptyComparison = function(input, contrast_matrix, groups, protein) {
-    all_comparisons = lapply(1:nrow(contrast_matrix), function(row_id) {
+    all_comparisons = lapply(seq_len(nrow(contrast_matrix)), function(row_id) {
         ith_comparison = contrast_matrix[row_id, , drop = FALSE]
         
         if (any(groups[ith_comparison != 0] %in% unique(input$GROUP))) {
@@ -257,7 +257,7 @@ getSamplesInfo = function(summarization_output) {
     coefs = parameters$cf[, 1]
     
     all_comparisons = vector("list", nrow(contrast_matrix))
-    for (row_id in 1:nrow(contrast_matrix)) {
+    for (row_id in seq_len(nrow(contrast_matrix))) {
         ith_contrast = contrast_matrix[row_id, , drop = FALSE]
         if (length(empty_conditions) != 0) {
             result = .handleEmptyConditions(input, fit, ith_contrast,
@@ -401,7 +401,7 @@ getSamplesInfo = function(summarization_output) {
     
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))
-    for (i in 1:nrow(contrast_matrix)) {
+    for (i in seq_len(nrow(contrast_matrix))) {
         conditions = contrast_matrix[i, ] != 0
         missing_percentage = 1 - sum(counts$NumMeasuredFeature[conditions],
                                      na.rm = TRUE) / sum(counts$totalN[conditions],

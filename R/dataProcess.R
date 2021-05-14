@@ -56,7 +56,14 @@
 #' 
 #' @export
 #' 
-
+#' @examples 
+#' data(DDARawData)
+#' head(DDARawData)
+#' 
+#' processed = dataProcess(DDARawData, use_log_file = FALSE)
+#' head(processed[["FeatureLevelData"]])
+#' head(processed[["ProteinLevelData"]])
+#' 
 dataProcess = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
     featureSubset = "all", remove_uninformative_feature_outlier = FALSE, 
@@ -145,7 +152,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in 1:num_proteins) {
+        for (protein_id in seq_len(num_proteins)) {
             single_protein = proteins_list[[protein_id]]
             summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
                 single_protein, impute, censored_symbol, remove50missing)
@@ -154,7 +161,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
         close(pb)
     } else {
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in 1:num_proteins) {
+        for (protein_id in seq_len(num_proteins)) {
             single_protein = proteins_list[[protein_id]]
             summarized_result = MSstatsSummarizeSingleLinear(single_protein,
                                                              equal_variance)

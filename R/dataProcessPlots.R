@@ -86,7 +86,23 @@
 #' 
 #' @export
 #' 
-
+#' @examples 
+#' # Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, 
+#' three biological replicates, and no technical replicates which is a time-course experiment. 
+#' The goal is to provide pre-analysis visualization by automatically generate two types of figures 
+#' in two separate pdf files. 
+#' Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, 
+#' whereas, Protein PMG2 (gene name GPM2) is not.
+#' 
+#' QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+#' head(QuantData$FeatureLevelData)
+#' # Profile plot
+#' dataProcessPlots(data=QuantData,type="ProfilePlot")
+#' # Quality control plot 
+#' dataProcessPlots(data=QuantData,type="QCPlot")	
+#' # Quantification plot for conditions
+#' dataProcessPlots(data=QuantData,type="ConditionPlot")
+#' 
 dataProcessPlots = function(
   data, type, featureName = "Transition", ylimUp = FALSE, ylimDown = FALSE,
   scale = FALSE, interval = "CI", x.axis.size = 10, y.axis.size = 10,
@@ -156,7 +172,7 @@ dataProcessPlots = function(
     getOption("MSstatsMsg")("INFO", msg)
   }
   if (proteins != "all") {
-    selected_proteins = .getSelectedProteins(proteins, all_proteins)
+    selected_proteins = getSelectedProteins(proteins, all_proteins)
     processed = processed[PROTEIN %in% selected_proteins]
     summarized = summarized[Protein %in% selected_proteins]
     processed[, PROTEIN := factor(PROTEIN)]
@@ -207,7 +223,7 @@ dataProcessPlots = function(
   
   all_proteins = levels(processed$PROTEIN)
   if (originalPlot) {
-    .savePlot(address, "ProfilePlot", width, height)
+    savePlot(address, "ProfilePlot", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
@@ -251,7 +267,7 @@ dataProcessPlots = function(
                                  RUN = unique(summarized$RUN))
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
-    .savePlot(address, "ProfilePlot_wSummarization", width, height)
+    savePlot(address, "ProfilePlot_wSummarization", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
@@ -352,7 +368,7 @@ dataProcessPlots = function(
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
                          Name = levels(tempGroupName$GROUP))
   
-  .savePlot(address, "QCPlot", width, height)
+  savePlot(address, "QCPlot", width, height)
   if (protein %in% c("all", "allonly")) {
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
@@ -365,7 +381,7 @@ dataProcessPlots = function(
     all_proteins = as.character(levels(processed$PROTEIN))
     
     if (protein != "all") {
-      selected_proteins = .getSelectedProteins(protein, all_proteins)
+      selected_proteins = getSelectedProteins(protein, all_proteins)
       processed = processed[PROTEIN %in% selected_proteins]
       processed[, PROTEIN := factor(PROTEIN)]
     }
@@ -405,14 +421,14 @@ dataProcessPlots = function(
                        c("PROTEIN", "ABUNDANCE"))
   all_proteins = levels(summarized$PROTEIN)
   if (protein != "all") {
-    proteins = .getSelectedProteins(protein, all_proteins)
+    proteins = getSelectedProteins(protein, all_proteins)
     summarized = summarized[PROTEIN %in% proteins, ]
     summarized[, PROTEIN := factor(PROTEIN)]
   }
   yaxis.name = .getYaxis(processed)
   
   results = vector("list", length(all_proteins))
-  .savePlot(address, "ConditionPlot", width, height)
+  savePlot(address, "ConditionPlot", width, height)
   pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
   for (i in seq_along(all_proteins)) {
     single_protein = summarized[PROTEIN == all_proteins[i], ]

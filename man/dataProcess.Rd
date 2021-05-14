@@ -108,3 +108,12 @@ If `append = TRUE`, has to be a valid path to a file.}
 \description{
 Process MS data: clean, normalize and summarize before differential analysis
 }
+\examples{
+data(DDARawData)
+head(DDARawData)
+
+processed = dataProcess(DDARawData, use_log_file = FALSE)
+head(processed[["FeatureLevelData"]])
+head(processed[["ProteinLevelData"]])
+
+}

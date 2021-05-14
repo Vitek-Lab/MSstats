@@ -68,7 +68,7 @@ modelBasedQCPlots = function(
     fitted_models = data[["FittedModel"]]
     all_proteins = levels(data$ComparisonResult$Protein)
     if (all(which.Protein != "all")) {
-        selected_proteins = .getSelectedProteins(which.Protein, all_proteins)
+        selected_proteins = getSelectedProteins(which.Protein, all_proteins)
         fitted_models = fitted_models[all_proteins %in% selected_proteins]
         all_proteins = all_proteins[all_proteins %in% selected_proteins]
     }
@@ -88,7 +88,7 @@ modelBasedQCPlots = function(
 .plotQQ = function(fitted_models, all_proteins, width, height, address,
                    dot.size, axis.size) {
     residual = NULL
-    .savePlot(address, "QQPlot", width, height)
+    savePlot(address, "QQPlot", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(fitted_models), style = 3)
     for (i in seq_along(fitted_models)) {	
         sub = fitted_models[[i]]
@@ -142,7 +142,7 @@ modelBasedQCPlots = function(
 #' @importFrom utils setTxtProgressBar
 .plotResiduals = function(fitted_models, all_proteins, width, height, 
                           address, dot.size, axis.size) {
-    .savePlot(address, "ResidualPlot", width, height)
+    savePlot(address, "ResidualPlot", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(fitted_models), style = 3)
     for (i in seq_along(fitted_models)) {	
         sub = fitted_models[[i]]

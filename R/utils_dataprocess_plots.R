@@ -67,11 +67,11 @@
             scale_colour_manual(values = dot_colors[s])
     } else if (featureName == "PEPTIDE") {
         profile_plot = profile_plot +
-            scale_colour_manual(values = dot_colors[1:length(unique(s))])
+            scale_colour_manual(values = dot_colors[seq_along(unique(s))])
     } else if (featureName == "NA") {
         if (is_censored) {
             profile_plot = profile_plot +
-                scale_colour_manual(values = dot_colors[1:length(unique(s))])
+                scale_colour_manual(values = dot_colors[seq_along(unique(s))])
         } else {
             profile_plot = profile_plot +
                 scale_colour_manual(values = dot_colors[s])

@@ -41,7 +41,7 @@
 #' @param useSelectedPep TRUE will use the selected peptide for each protein. 'Selected_peptides' column is required.
 #' @param ... additional parameters to `data.table::fread`.
 #' 
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #'
 #' @author Meena Choi, Olga Vitek 
 #'
@@ -100,8 +100,8 @@ DIAUmpiretoMSstatsFormat = function(
 #' @param proteinID 'Proteins'(default) or 'Leading.razor.protein' for Protein ID.
 #' @param ... additional parameters to `data.table::fread`.
 #' 
-#' @return data.frame with the required format of MSstats.
-#' 
+#' @return data.frame in the MSstats required format.
+#'  
 #' @note Warning: MSstats does not support for metabolic labeling or iTRAQ experiments.
 #' 
 #' @author Meena Choi, Olga Vitek. 
@@ -174,7 +174,7 @@ MaxQtoMSstatsFormat = function(
 #' Run should be the same as filename.
 #' @param ... additional parameters to `data.table::fread`.
 #' 
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #' 
 #' @author Meena Choi, Olga Vitek. 
 #' 
@@ -226,7 +226,7 @@ OpenMStoMSstatsFormat = function(
 #' @param mscore_cutoff Cutoff for m_score. Default is 0.01.
 #' @param ... additional parameters to `data.table::fread`.
 #'  
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #' 
 #' @author Meena Choi, Olga Vitek. 
 #' 
@@ -296,7 +296,7 @@ OpenSWATHtoMSstatsFormat = function(
 #' @param annotation name of 'annotation.txt' or 'annotation.csv' data which includes Condition, BioReplicate, Run information. It will be matched with the column name of input for MS runs.
 #' @param ... additional parameters to `data.table::fread`.
 #'
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #' 
 #' @author Meena Choi, Olga Vitek, Ulrich Omasits
 #' 
@@ -363,7 +363,7 @@ ProgenesistoMSstatsFormat = function(
 #' @param which.sequence Use 'Sequence'(default) column for peptide sequence. 'Annotated.Sequence' can be used instead.
 #' @param ... additional parameters to `data.table::fread`.
 #' 
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #' 
 #' @author Meena Choi, Olga Vitek
 #' 
@@ -433,7 +433,7 @@ PDtoMSstatsFormat = function(
 #' @param qvalue_cutoff Cutoff for DetectionQValue. default is 0.01.
 #' @param ... additional parameters to `data.table::fread`.
 #' 
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #' 
 #' @author Meena Choi, Olga Vitek
 #' 
@@ -527,7 +527,7 @@ SkylinetoMSstatsFormat = function(
 #' @param ... additional parameters to `data.table::fread`.
 #' @inheritParams .documentFunction
 #' 
-#' @return data.frame with the required format of MSstats.
+#' @return data.frame in the MSstats required format.
 #' 
 #' @author Meena Choi, Olga Vitek
 #' 

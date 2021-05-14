@@ -152,8 +152,8 @@ groupComparisonPlots = function(
         mtext(blocks, side = 1, line = 1, at = x.at, cex = 1)
     }
     
-    .savePlot(address, "Heatmap", width, height)
-    for (j in 1:numheatmap) {
+    savePlot(address, "Heatmap", width, height)
+    for (j in seq_len(numheatmap)) {
         if (j != numheatmap) {
             partial_wide = wide[((j - 1) * numProtein + 1):(j * numProtein), ]
         } else {
@@ -214,7 +214,7 @@ groupComparisonPlots = function(
     input[!is.na(issue) & issue == "oneConditionMissing", 
           Protein := paste0("*", Protein)]
     
-    .savePlot(address, "VolcanoPlot", width, height)
+    savePlot(address, "VolcanoPlot", width, height)
     for (i in seq_along(all_labels)) {
         label_name = all_labels[i]
         single_label = input[Label == label_name, ]
@@ -266,13 +266,13 @@ groupComparisonPlots = function(
         }
     }
     if (proteins != "all") {
-        selected_proteins = .getSelectedProteins(proteins, all_proteins)
+        selected_proteins = getSelectedProteins(proteins, all_proteins)
         input = input[Protein %in% selected_proteins, ]
     }
     
     all_proteins = unique(input$Protein)
     input$Protein = factor(input$Protein)
-    .savePlot(address, "ComparisonPlot", width, height)
+    savePlot(address, "ComparisonPlot", width, height)
     log_fc_column = intersect(colnames(input), c("log2FC", "log10FC"))
     for (i in seq_along(all_proteins)) {
         single_protein = input[Protein == all_proteins[i], ] 		

@@ -189,7 +189,7 @@
 .updateUnequalVariances = function(input, fit, num_iter) {
     weight = NULL
     
-    for (i in 1:num_iter) {
+    for (i in seq_len(num_iter)) {
         if (i == 1) {
             if (class(fit) == "lm") {
                 abs.resids = data.frame(abs.resids = abs(fit$residuals))

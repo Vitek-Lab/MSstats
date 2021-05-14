@@ -184,7 +184,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     
     if (any(!is.na(input$INTENSITY) & input$INTENSITY < 1, na.rm = TRUE)) {
         n_smaller_than_1 = sum(!is.na(input$INTENSITY) & input$INTENSITY < 1, 
-                               na.rm = T)
+                               na.rm = TRUE)
         input[, INTENSITY := ifelse(!is.na(INTENSITY) & INTENSITY < 1, 
                                     1, INTENSITY)]
         msg = paste("** There are", n_smaller_than_1, 

@@ -52,7 +52,7 @@ If `append = TRUE`, has to be a valid path to a file.}
 \item{...}{additional parameters to `data.table::fread`.}
 }
 \value{
-data.frame with the required format of MSstats.
+data.frame in the MSstats required format.
 }
 \description{
 Import Progenesis files

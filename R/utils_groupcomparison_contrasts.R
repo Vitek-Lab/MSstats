@@ -27,7 +27,8 @@ MSstatsContrastMatrix.list = function(contrasts, conditions, labels = NULL) {
 MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL) {
     if (contrasts == "pairwise") {
         contrast_combinations = combn(conditions, 2)
-        contrasts_list = lapply(1:ncol(contrast_combinations),
+        num_combinations = ncol(contrast_combinations)
+        contrasts_list = lapply(seq_len(num_combinations),
                                 function(x) list(contrast_combinations[1, x],
                                                  contrast_combinations[2, x]))
         MSstatsContrastMatrix.list(contrasts_list, conditions)

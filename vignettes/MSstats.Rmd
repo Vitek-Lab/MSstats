@@ -93,7 +93,7 @@ Convert Progenesis output into the required input format for MSstats.
 
 ### Example
 ```{r, eval=FALSE}
-input <- read.csv("output_progenesis.csv", stringsAsFactors=F) 
+input <- read.csv("output_progenesis.csv", stringsAsFactors=FALSE) 
 
 # Read in annotation including condition and biological replicates per run.
 # Users should make this annotation file. It is not the output from Progenesis.
@@ -113,7 +113,7 @@ Convert Spectronaut output into the required input format for MSstats.
 
 ### Example
 ```{r, eval=FALSE}
-input <- read.csv("output_spectronaut.csv", stringsAsFactors=F) 
+input <- read.csv("output_spectronaut.csv", stringsAsFactors=FALSE) 
 
 quant <- SpectronauttoMSstatsFormat(input)
 ```
