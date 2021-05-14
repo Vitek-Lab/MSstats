@@ -136,12 +136,30 @@
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
+    <p>This function extracts information required to perform normalization
+with global standards. It is useful for running the summarization workflow
+outside of the dataProcess function.</p>
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/as.data.table.html'>as.data.table</a></span>(<span class='no'>DDARawData</span>)
+<span class='no'>peptides_dict</span> <span class='kw'>=</span> <span class='fu'>makePeptidesDictionary</span>(<span class='no'>input</span>, <span class='st'>"GLOBALSTANDARDS"</span>)
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>peptides_dict</span>) <span class='co'># ready to be passed to the MSstatsNormalize function</span></div><div class='output co'>#&gt;      PeptideSequence PrecursorCharge              PEPTIDE
+#&gt; 1:       S.PVDIDTK_5               5        S.PVDIDTK_5_5
+#&gt; 2:       G.PLTGTYR_8               8        G.PLTGTYR_8_8
+#&gt; 3:     K.KDGADFAK_16              16     K.KDGADFAK_16_16
+#&gt; 4:     D.GPLTGTYR_23              23     D.GPLTGTYR_23_23
+#&gt; 5:     L.VYGEATSR_34              34     L.VYGEATSR_34_34
+#&gt; 6: -.PHSHPALTPEQK_35              35 -.PHSHPALTPEQK_35_35</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
+      <li><a href="#details">Details</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
   </div>

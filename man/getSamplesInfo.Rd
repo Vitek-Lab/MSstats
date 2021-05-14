@@ -15,3 +15,13 @@ data.table
 \description{
 Get information about number of measurements for each group
 }
+\details{
+This function extracts information required to compute percentages
+of missing and imputed values in group comparison.
+}
+\examples{
+QuantData <- dataProcess(DDARawData, use_log_file = FALSE)
+samples_info <- getSamplesInfo(QuantData)
+samples_info
+
+}

@@ -14,3 +14,14 @@ makePeptidesDictionary(input, normalization)
 \description{
 Prepare a peptides dictionary for global standards normalization
 }
+\details{
+This function extracts information required to perform normalization
+with global standards. It is useful for running the summarization workflow
+outside of the dataProcess function.
+}
+\examples{
+input = data.table::as.data.table(DDARawData)
+peptides_dict = makePeptidesDictionary(input, "GLOBALSTANDARDS")
+head(peptides_dict) # ready to be passed to the MSstatsNormalize function
+
+}

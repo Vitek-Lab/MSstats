@@ -61,9 +61,35 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
 #' 
 #' @export
 #' 
+#' @examples 
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input_all = MSstatsSelectFeatures(input, "all") # all features
+#' input_5 = MSstatsSelectFeatures(data.table::copy(input), 
+#' "topN", top_n = 5) # top 5 features
+#' 
+#' proc1 = getProcessed(input_all)
+#' proc2 = getProcessed(input_5)
+#' 
+#' proc1
+#' proc2
+#' 
 getProcessed = function(input) {
+    remove = NULL
+    
     if (is.element("remove", colnames(input))) {
-        input[(remove)]
+        if (all(!(input$remove))) {
+            NULL
+        } else {
+            input[(remove)]
+        }
     } else {
         NULL
     }

@@ -20,7 +20,7 @@
 #' input = MSstatsMergeFractions(input)
 #' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 #' input_all = MSstatsSelectFeatures(input, "all") # all features
-#' input_5 = MSstatsSelectFeatures(input, "topN", top_n = 5) # top 5 features
+#' input_5 = MSstatsSelectFeatures(data.table::copy(input), "topN", top_n = 5) # top 5 features
 #' input_informative = MSstatsSelectFeatures(input, "highQuality") # feature selection
 #' 
 #' head(input_all)

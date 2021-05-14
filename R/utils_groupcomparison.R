@@ -4,7 +4,13 @@
 #' 
 #' @return logical, TRUE if data represent repeated measurements design
 #' 
+#' @details This extracts information required by the group comparison workflow
+#' 
 #' @export
+#' 
+#' @examples
+#' QuantData2 <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' checkRepeatedDesign(QuantData1)
 #' 
 checkRepeatedDesign = function(summarization_output) {
     SUBJECT = GROUP = NULL
@@ -30,7 +36,15 @@ checkRepeatedDesign = function(summarization_output) {
 #' 
 #' @return data.table
 #' 
+#' @details This function extracts information required to compute percentages
+#' of missing and imputed values in group comparison.
+#' 
 #' @export
+#' 
+#' @examples
+#' QuantData <- dataProcess(DDARawData, use_log_file = FALSE)
+#' samples_info <- getSamplesInfo(QuantData)
+#' samples_info
 #' 
 getSamplesInfo = function(summarization_output) {
     RUN = NULL
@@ -176,6 +190,7 @@ getSamplesInfo = function(summarization_output) {
 #' Get params (coefficients, covariance matrix, degrees of freedom) from a model
 #' @param fitted_model object of class lm or lmerMod
 #' @importFrom stats vcov
+#' @importFrom methods is
 #' @keywords internal
 .getModelParameters = function(fitted_model) {
     if (is(fitted_model[["full_fit"]], "lm")) {

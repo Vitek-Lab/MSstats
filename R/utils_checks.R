@@ -268,7 +268,16 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 #' @param input `data.table` in MSstats standard format
 #' @param normalization normalization method
 #' 
+#' @details This function extracts information required to perform normalization
+#' with global standards. It is useful for running the summarization workflow
+#' outside of the dataProcess function.
+#' 
 #' @export
+#' 
+#' @examples 
+#' input = data.table::as.data.table(DDARawData)
+#' peptides_dict = makePeptidesDictionary(input, "GLOBALSTANDARDS")
+#' head(peptides_dict) # ready to be passed to the MSstatsNormalize function
 #' 
 makePeptidesDictionary = function(input, normalization) {
     PEPTIDE = PeptideSequence = PrecursorCharge = NULL

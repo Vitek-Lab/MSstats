@@ -154,12 +154,12 @@
 <span class='no'>cens</span> <span class='kw'>=</span> <span class='st'>"NA"</span>
 <span class='no'>impute</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 <span class='kw pkg'>MSstatsConvert</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/MSstatsConvert/man/MSstatsLogsSettings.html'>MSstatsLogsSettings</a></span>(<span class='fl'>FALSE</span>)
-<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForDataProcess.html'>MSstatsPrepareForDataProcess</a></span>(<span class='no'>raw</span>, <span class='fl'>2</span>, <span class='kw'>NULL</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-14 22:19:22] ** Fractionation handled.
-#&gt; INFO  [2021-05-14 22:19:22] ** Updated quantification data to make balanced design. Missing values are marked by NA</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsNormalize.html'>MSstatsNormalize</a></span>(<span class='no'>input</span>, <span class='st'>"EQUALIZEMEDIANS"</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForDataProcess.html'>MSstatsPrepareForDataProcess</a></span>(<span class='no'>raw</span>, <span class='fl'>2</span>, <span class='kw'>NULL</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 23:03:50] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 23:03:50] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 23:03:50] ** Updated quantification data to make balanced design. Missing values are marked by NA</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsNormalize.html'>MSstatsNormalize</a></span>(<span class='no'>input</span>, <span class='st'>"EQUALIZEMEDIANS"</span>)
 <span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsMergeFractions.html'>MSstatsMergeFractions</a></span>(<span class='no'>input</span>)
-<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsHandleMissing.html'>MSstatsHandleMissing</a></span>(<span class='no'>input</span>, <span class='st'>"TMP"</span>, <span class='fl'>TRUE</span>, <span class='st'>"NA"</span>, <span class='fl'>0.999</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Log2 intensities under cutoff = 13.456  were considered as censored missing values.
-#&gt; INFO  [2021-05-14 22:19:22] ** Log2 intensities = NA were considered as censored missing values.</div><div class='input'><span class='no'>input_all</span> <span class='kw'>=</span> <span class='fu'>MSstatsSelectFeatures</span>(<span class='no'>input</span>, <span class='st'>"all"</span>) <span class='co'># all features</span></div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Use all features that the dataset originally has.</div><div class='input'><span class='no'>input_5</span> <span class='kw'>=</span> <span class='fu'>MSstatsSelectFeatures</span>(<span class='no'>input</span>, <span class='st'>"topN"</span>, <span class='kw'>top_n</span> <span class='kw'>=</span> <span class='fl'>5</span>) <span class='co'># top 5 features</span></div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Use top5 features that have highest average of log2(intensity) across runs.</div><div class='input'><span class='no'>input_informative</span> <span class='kw'>=</span> <span class='fu'>MSstatsSelectFeatures</span>(<span class='no'>input</span>, <span class='st'>"highQuality"</span>) <span class='co'># feature selection</span></div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Flag uninformative feature and outliers by feature selection algorithm.</div><div class='input'>
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsHandleMissing.html'>MSstatsHandleMissing</a></span>(<span class='no'>input</span>, <span class='st'>"TMP"</span>, <span class='fl'>TRUE</span>, <span class='st'>"NA"</span>, <span class='fl'>0.999</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 23:03:50] ** Log2 intensities under cutoff = 13.456  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 23:03:50] ** Log2 intensities = NA were considered as censored missing values.</div><div class='input'><span class='no'>input_all</span> <span class='kw'>=</span> <span class='fu'>MSstatsSelectFeatures</span>(<span class='no'>input</span>, <span class='st'>"all"</span>) <span class='co'># all features</span></div><div class='output co'>#&gt; INFO  [2021-05-14 23:03:50] ** Use all features that the dataset originally has.</div><div class='input'><span class='no'>input_5</span> <span class='kw'>=</span> <span class='fu'>MSstatsSelectFeatures</span>(<span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/copy.html'>copy</a></span>(<span class='no'>input</span>), <span class='st'>"topN"</span>, <span class='kw'>top_n</span> <span class='kw'>=</span> <span class='fl'>5</span>) <span class='co'># top 5 features</span></div><div class='output co'>#&gt; INFO  [2021-05-14 23:03:50] ** Use top5 features that have highest average of log2(intensity) across runs.</div><div class='input'><span class='no'>input_informative</span> <span class='kw'>=</span> <span class='fu'>MSstatsSelectFeatures</span>(<span class='no'>input</span>, <span class='st'>"highQuality"</span>) <span class='co'># feature selection</span></div><div class='output co'>#&gt; INFO  [2021-05-14 23:03:51] ** Flag uninformative feature and outliers by feature selection algorithm.</div><div class='input'>
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>input_all</span>)</div><div class='output co'>#&gt;    PROTEIN                      PEPTIDE TRANSITION
 #&gt; 1:  bovine             D.GPLTGTYR_23_23      NA_NA
 #&gt; 2:  bovine F.HFHWGSSDDQGSEHTVDR_402_402      NA_NA
@@ -174,13 +174,13 @@
 #&gt; 4:                G.PLTGTYR_8_8_NA_NA     L             C1                1   1
 #&gt; 5:       H.SFNVEYDDSQDK_465_465_NA_NA     L             C1                1   1
 #&gt; 6:        K.AVVQDPALKPL_156_156_NA_NA     L             C1                1   1
-#&gt;    GROUP SUBJECT FRACTION INTENSITY ABUNDANCE originalRUN censored remove
-#&gt; 1:     1       1        1  757400.1  19.83052           1    FALSE   TRUE
-#&gt; 2:     1       1        1 2087125.8  21.29291           1    FALSE   TRUE
-#&gt; 3:     1       1        1 1485145.8  20.80200           1    FALSE   TRUE
-#&gt; 4:     1       1        1 4986404.0  22.54939           1    FALSE  FALSE
-#&gt; 5:     1       1        1 2488141.2  21.54646           1    FALSE   TRUE
-#&gt; 6:     1       1        1 7519322.0  23.14200           1    FALSE  FALSE</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>input_5</span>)</div><div class='output co'>#&gt;    PROTEIN                      PEPTIDE TRANSITION
+#&gt;    GROUP SUBJECT FRACTION INTENSITY ABUNDANCE originalRUN censored
+#&gt; 1:     1       1        1  757400.1  19.83052           1    FALSE
+#&gt; 2:     1       1        1 2087125.8  21.29291           1    FALSE
+#&gt; 3:     1       1        1 1485145.8  20.80200           1    FALSE
+#&gt; 4:     1       1        1 4986404.0  22.54939           1    FALSE
+#&gt; 5:     1       1        1 2488141.2  21.54646           1    FALSE
+#&gt; 6:     1       1        1 7519322.0  23.14200           1    FALSE</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>input_5</span>)</div><div class='output co'>#&gt;    PROTEIN                      PEPTIDE TRANSITION
 #&gt; 1:  bovine             D.GPLTGTYR_23_23      NA_NA
 #&gt; 2:  bovine F.HFHWGSSDDQGSEHTVDR_402_402      NA_NA
 #&gt; 3:  bovine   F.HWGSSDDQGSEHTVDR_229_229      NA_NA
@@ -214,13 +214,13 @@
 #&gt; 4:             C4                1  12     4       1        1        NA
 #&gt; 5:             C5                1  13     5       1        1        NA
 #&gt; 6:             C5                1  14     5       1        1        NA
-#&gt;    ABUNDANCE censored remove feature_quality is_outlier
-#&gt; 1:  19.83052    FALSE   TRUE     Informative      FALSE
-#&gt; 2:        NA     TRUE   TRUE     Informative      FALSE
-#&gt; 3:        NA     TRUE   TRUE     Informative      FALSE
-#&gt; 4:        NA     TRUE   TRUE     Informative      FALSE
-#&gt; 5:        NA     TRUE   TRUE     Informative      FALSE
-#&gt; 6:        NA     TRUE   TRUE     Informative      FALSE</div><div class='input'>
+#&gt;    ABUNDANCE censored feature_quality is_outlier
+#&gt; 1:  19.83052    FALSE     Informative      FALSE
+#&gt; 2:        NA     TRUE     Informative      FALSE
+#&gt; 3:        NA     TRUE     Informative      FALSE
+#&gt; 4:        NA     TRUE     Informative      FALSE
+#&gt; 5:        NA     TRUE     Informative      FALSE
+#&gt; 6:        NA     TRUE     Informative      FALSE</div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

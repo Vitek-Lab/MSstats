@@ -29,7 +29,8 @@ Imports:
     marray,
     stats,
     grDevices,
-    graphics
+    graphics,
+    methods
 Suggests: 
     BiocStyle,
     knitr,
