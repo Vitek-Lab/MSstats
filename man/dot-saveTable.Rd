@@ -9,10 +9,10 @@
 \arguments{
 \item{input}{data.table}
 
+\item{name_base}{path to a folder (or "" for working directory)}
+
 \item{file_name}{name of a file to save. If this file already exists,
 an integer will be appended to this name}
-
-\item{folder_path}{path to a folder (or "" for working directory)}
 }
 \description{
 Save a data table to a file

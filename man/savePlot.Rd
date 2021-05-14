@@ -7,6 +7,8 @@
 savePlot(name_base, file_name, width, height)
 }
 \arguments{
+\item{name_base}{path to a folder (or "" for working directory)}
+
 \item{file_name}{name of a file to save. If this file already exists,
 an integer will be appended to this name}
 

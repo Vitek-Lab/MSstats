@@ -220,7 +220,7 @@ MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 
 #' @export
 #' 
 #' @examples 
-#' #' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 #' group_comparison_input <- MSstatsPrepareForGroupComparison(QuantData)
 #' levels(QuantData$ProteinLevelData$GROUP)
 #' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)

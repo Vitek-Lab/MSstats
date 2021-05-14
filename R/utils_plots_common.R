@@ -117,7 +117,7 @@ savePlot = function(name_base, file_name, width, height) {
 
 #' Save a data table to a file
 #' @param input data.table
-#' @param folder_path path to a folder (or "" for working directory)
+#' @param name_base path to a folder (or "" for working directory)
 #' @param file_name name of a file to save. If this file already exists,
 #' an integer will be appended to this name
 #' @return NULL
