@@ -34,7 +34,8 @@ Suggests:
     rmarkdown,
     MSstatsBioData,
     tinytest,
-    covr
+    covr,
+    markdown
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
