@@ -55,6 +55,13 @@ data.frame in the MSstats required format.
 \description{
 Import OpenMS files
 }
+\examples{
+openms_raw = data.table::fread(system.file("tinytest/raw_data/OpenMS/openms_input.csv", 
+                                           package = "MSstatsConvert"))
+openms_imported = OpenMStoMSstatsFormat(openms_raw, use_log_file = FALSE)
+head(openms_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek.
 }

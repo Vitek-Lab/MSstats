@@ -69,6 +69,17 @@ Import MaxQuant files
 \note{
 Warning: MSstats does not support for metabolic labeling or iTRAQ experiments.
 }
+\examples{
+mq_ev = data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_ev.csv",
+                                      package = "MSstatsConvert"))
+mq_pg = data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_pg.csv",
+                                      package = "MSstatsConvert"))
+annot = data.table::fread(system.file("tinytest/raw_data/MaxQuant/annotation.csv",
+                                      package = "MSstatsConvert"))
+maxq_imported = MaxQtoMSstatsFormat(mq_ev, annot, mq_pg, use_log_file = FALSE)
+head(maxq_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek.
 }

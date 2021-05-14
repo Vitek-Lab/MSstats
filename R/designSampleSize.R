@@ -114,7 +114,7 @@ designSampleSize = function(
     result = data.table::rbindlist(
         lapply(fitted_models, function(fit) {
             if (!is.null(fit)) {
-                if (!is.(fit, "lmerMod")) {
+                if (!is(fit, "lmerMod")) {
                     error = summary(fit)$sigma^2
                     subject <- NA
                     group_subject <- NA

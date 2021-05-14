@@ -210,12 +210,61 @@ If `append = TRUE`, has to be a valid path to a file.</p></td>
 
     <p>data.frame in the MSstats required format.</p>
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>skyline_raw</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span>(<span class='st'>"tinytest/raw_data/Skyline/skyline_input.csv"</span>,
+                          <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"MSstatsConvert"</span>)
+<span class='no'>skyline_raw</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='no'>skyline_raw</span>)
+<span class='no'>skyline_imported</span> <span class='kw'>=</span> <span class='fu'>SkylinetoMSstatsFormat</span>(<span class='no'>skyline_raw</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:10] ** Raw data from Skyline imported successfully.
+#&gt; INFO  [2021-05-15 00:30:10] ** Raw data from Skyline cleaned successfully.
+#&gt; INFO  [2021-05-15 00:30:10] ** Using annotation extracted from quantification data.
+#&gt; INFO  [2021-05-15 00:30:10] ** Run labels were standardized to remove symbols such as '.' or '%'.
+#&gt; INFO  [2021-05-15 00:30:10] ** The following options are used:
+#&gt;   - Features will be defined by the columns: PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge
+#&gt;   - Shared peptides will be removed.
+#&gt;   - Proteins with single feature will not be removed.
+#&gt;   - Features with less than 3 measurements across runs will be removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Rows with values of StandardType equal to iRT are removed 
+#&gt; INFO  [2021-05-15 00:30:10] ** Intensities with values of Truncated equal to TRUE are replaced with NA
+#&gt; WARN  [2021-05-15 00:30:10] ** DetectionQValue not found in input columns.
+#&gt; INFO  [2021-05-15 00:30:10] ** Sequences containing DECOY, Decoys are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Three isotopic preaks per feature and run are summed
+#&gt; INFO  [2021-05-15 00:30:10] ** Features with all missing measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Shared peptides are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows: sum
+#&gt; INFO  [2021-05-15 00:30:10] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Run annotation merged with quantification data.
+#&gt; INFO  [2021-05-15 00:30:10] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:30:10] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:30:10] ** Finished preprocessing. The dataset is ready to be processed by the dataProcess function.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>skyline_imported</span>)</div><div class='output co'>#&gt;   ProteinName      PeptideSequence PrecursorCharge FragmentIon ProductCharge
+#&gt; 1      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
+#&gt; 2      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
+#&gt; 3      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
+#&gt; 4      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
+#&gt; 5      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
+#&gt; 6      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
+#&gt;   IsotopeLabelType Condition BioReplicate
+#&gt; 1            light      Mix1            1
+#&gt; 2            light      Mix1            2
+#&gt; 3            light      Mix1            3
+#&gt; 4            light      Mix2            4
+#&gt; 5            light      Mix2            5
+#&gt; 6            light      Mix2            6
+#&gt;                                              Run Fraction  Intensity
+#&gt; 1 121219_S_CCES_01_01_LysC_Try_1to10_Mixt_1_1raw        1 5311459776
+#&gt; 2 121219_S_CCES_01_02_LysC_Try_1to10_Mixt_1_2raw        1 4900185344
+#&gt; 3 121219_S_CCES_01_03_LysC_Try_1to10_Mixt_1_3raw        1 5323685504
+#&gt; 4 121219_S_CCES_01_04_LysC_Try_1to10_Mixt_2_1raw        1 5327922240
+#&gt; 5 121219_S_CCES_01_05_LysC_Try_1to10_Mixt_2_2raw        1 5824830336
+#&gt; 6 121219_S_CCES_01_06_LysC_Try_1to10_Mixt_2_3raw        1 5674675584</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
     <h2>Author</h2>

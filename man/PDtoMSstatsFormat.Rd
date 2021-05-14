@@ -70,6 +70,18 @@ data.frame in the MSstats required format.
 \description{
 Import Proteome Discoverer files
 }
+\examples{
+
+pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
+                     package = "MSstatsConvert")
+annot = system.file("tinytest/annotations/annot_pd.csv", package = "MSstatsdev")
+pd_raw = data.table::fread(pd_raw)
+annot = data.table::fread(annot)
+
+pd_imported = PDtoMSstatsFormat(pd_raw, annot, use_log_file = FALSE)
+head(pd_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek
 }

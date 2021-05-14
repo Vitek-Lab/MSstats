@@ -47,6 +47,24 @@
 #'
 #' @export
 #' 
+#' @examples 
+#' diau_frag = system.file("tinytest/raw_data/DIAUmpire/dia_frag.csv", 
+#'                              package = "MSstatsConvert")
+#' diau_pept = system.file("tinytest/raw_data/DIAUmpire/dia_pept.csv", 
+#'                              package = "MSstatsConvert")
+#' diau_prot = system.file("tinytest/raw_data/DIAUmpire/dia_prot.csv", 
+#'                              package = "MSstatsConvert")
+#' annot = system.file("tinytest/annotations/annot_diau.csv", 
+#'                     package = "MSstatsdev")
+#' diau_frag = data.table::fread(diau_frag) 
+#' diau_pept = data.table::fread(diau_pept) 
+#' diau_prot = data.table::fread(diau_prot) 
+#' annot = data.table::fread(annot)
+#' 
+#' diau_imported = DIAUmpiretoMSstatsFormat(diau_frag, diau_pept, diau_prot, 
+#'                                          annot, use_log_file = FALSE)
+#' head(diau_imported)
+#' 
 DIAUmpiretoMSstatsFormat = function(
     raw.frag, raw.pep, raw.pro, annotation, useSelectedFrag = TRUE,
     useSelectedPep = TRUE, removeFewMeasurements = TRUE,
@@ -107,6 +125,16 @@ DIAUmpiretoMSstatsFormat = function(
 #' @author Meena Choi, Olga Vitek. 
 #' 
 #' @export
+#' 
+#' @examples 
+#' mq_ev = data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_ev.csv",
+#'                                       package = "MSstatsConvert"))
+#' mq_pg = data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_pg.csv",
+#'                                       package = "MSstatsConvert"))
+#' annot = data.table::fread(system.file("tinytest/raw_data/MaxQuant/annotation.csv",
+#'                                       package = "MSstatsConvert"))
+#' maxq_imported = MaxQtoMSstatsFormat(mq_ev, annot, mq_pg, use_log_file = FALSE)
+#' head(maxq_imported)
 #' 
 MaxQtoMSstatsFormat = function(
     evidence, annotation, proteinGroups, proteinID = "Proteins", 
@@ -180,6 +208,13 @@ MaxQtoMSstatsFormat = function(
 #' 
 #' @export
 #' 
+#' 
+#' @examples 
+#' openms_raw = data.table::fread(system.file("tinytest/raw_data/OpenMS/openms_input.csv", 
+#'                                            package = "MSstatsConvert"))
+#' openms_imported = OpenMStoMSstatsFormat(openms_raw, use_log_file = FALSE)
+#' head(openms_imported)
+#' 
 OpenMStoMSstatsFormat = function(
     input, annotation = NULL, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
     removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
@@ -231,6 +266,17 @@ OpenMStoMSstatsFormat = function(
 #' @author Meena Choi, Olga Vitek. 
 #' 
 #' @export
+#' 
+#' @examples 
+#' os_raw = system.file("tinytest/raw_data/OpenSWATH/openswath_input.csv", 
+#'                              package = "MSstatsConvert")
+#' annot = system.file("tinytest/annotations/annot_os.csv", 
+#'                     package = "MSstatsdev")
+#' os_raw = data.table::fread(os_raw) 
+#' annot = data.table::fread(annot)
+#' 
+#' os_imported = OpenSWATHtoMSstatsFormat(os_raw, annot, use_log_file = FALSE)
+#' head(os_imported)
 #' 
 OpenSWATHtoMSstatsFormat = function(
     input, annotation, filter_with_mscore = TRUE, mscore_cutoff = 0.01,
@@ -302,6 +348,18 @@ OpenSWATHtoMSstatsFormat = function(
 #' 
 #' @export
 #' 
+#' @examples 
+#' progenesis_raw = system.file("tinytest/raw_data/Progenesis/progenesis_input.csv", 
+#'                              package = "MSstatsConvert")
+#' annot = system.file("tinytest/raw_data/Progenesis/progenesis_annot.csv", 
+#'                     package = "MSstatsConvert")
+#' progenesis_raw = data.table::fread(progenesis_raw) 
+#' annot = data.table::fread(annot)
+#' 
+#' progenesis_imported = ProgenesistoMSstatsFormat(progenesis_raw, annot,
+#'                                                 use_log_file = FALSE)
+#' head(progenesis_imported)
+#' 
 ProgenesistoMSstatsFormat = function(
     input, annotation, useUniquePeptide = TRUE, summaryforMultipleRows = max,
     removeFewMeasurements = TRUE, removeOxidationMpeptides = FALSE, 
@@ -368,6 +426,17 @@ ProgenesistoMSstatsFormat = function(
 #' @author Meena Choi, Olga Vitek
 #' 
 #' @export
+#' 
+#' @examples 
+#' 
+#' pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
+#'                      package = "MSstatsConvert")
+#' annot = system.file("tinytest/annotations/annot_pd.csv", package = "MSstatsdev")
+#' pd_raw = data.table::fread(pd_raw)
+#' annot = data.table::fread(annot)
+#' 
+#' pd_imported = PDtoMSstatsFormat(pd_raw, annot, use_log_file = FALSE)
+#' head(pd_imported)
 #' 
 PDtoMSstatsFormat = function(
     input, annotation, useNumProteinsColumn = FALSE, useUniquePeptide = TRUE,
@@ -438,6 +507,13 @@ PDtoMSstatsFormat = function(
 #' @author Meena Choi, Olga Vitek
 #' 
 #' @export
+#' 
+#' @examples 
+#' skyline_raw = system.file("tinytest/raw_data/Skyline/skyline_input.csv",
+#'                           package = "MSstatsConvert")
+#' skyline_raw = data.table::fread(skyline_raw)
+#' skyline_imported = SkylinetoMSstatsFormat(skyline_raw)
+#' head(skyline_imported)
 #' 
 SkylinetoMSstatsFormat = function(
     input, annotation = NULL, removeiRT = TRUE, filter_with_Qvalue = TRUE,
@@ -533,6 +609,13 @@ SkylinetoMSstatsFormat = function(
 #' 
 #' @export
 #' 
+#' @examples 
+#' spectronaut_raw = system.file("tinytest/raw_data/Spectronaut/spectronaut_input.csv",
+#'                               package = "MSstatsConvert")
+#' spectronaut_raw = data.table::fread(spectronaut_raw)
+#' spectronaut_imported = SpectronauttoMSstatsFormat(spectronaut_raw, use_log_file = FALSE)
+#' head(spectronaut_imported)
+#' 
 SpectronauttoMSstatsFormat = function(
     input, annotation = NULL, intensity = 'PeakArea', filter_with_Qvalue = TRUE,
     qvalue_cutoff = 0.01, useUniquePeptide = TRUE, removeFewMeasurements=TRUE,
@@ -546,12 +629,7 @@ SpectronauttoMSstatsFormat = function(
     input = MSstatsConvert::MSstatsImport(list(input = input), 
                                           "MSstats", "Spectronaut", ...)
     input = MSstatsConvert::MSstatsClean(input, intensity = intensity)
-    annotation = MSstatsConvert::MSstatsMakeAnnotation(
-        input, 
-        annotation, 
-        "Run" = "RFileName", 
-        "Condition" = "RCondition", 
-        "BioReplicate" = "RReplicate")
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
     
     pq_filter = list(score_column = "PGQvalue", 
                      score_threshold = 0.01, 

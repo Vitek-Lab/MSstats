@@ -63,6 +63,14 @@ data.frame in the MSstats required format.
 \description{
 Import Spectronaut files
 }
+\examples{
+spectronaut_raw = system.file("tinytest/raw_data/Spectronaut/spectronaut_input.csv",
+                              package = "MSstatsConvert")
+spectronaut_raw = data.table::fread(spectronaut_raw)
+spectronaut_imported = SpectronauttoMSstatsFormat(spectronaut_raw, use_log_file = FALSE)
+head(spectronaut_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek
 }

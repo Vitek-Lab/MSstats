@@ -62,6 +62,25 @@ data.frame in the MSstats required format.
 \description{
 Import DIA-Umpire files
 }
+\examples{
+diau_frag = system.file("tinytest/raw_data/DIAUmpire/dia_frag.csv", 
+                             package = "MSstatsConvert")
+diau_pept = system.file("tinytest/raw_data/DIAUmpire/dia_pept.csv", 
+                             package = "MSstatsConvert")
+diau_prot = system.file("tinytest/raw_data/DIAUmpire/dia_prot.csv", 
+                             package = "MSstatsConvert")
+annot = system.file("tinytest/annotations/annot_diau.csv", 
+                    package = "MSstatsdev")
+diau_frag = data.table::fread(diau_frag) 
+diau_pept = data.table::fread(diau_pept) 
+diau_prot = data.table::fread(diau_prot) 
+annot = data.table::fread(annot)
+
+diau_imported = DIAUmpiretoMSstatsFormat(diau_frag, diau_pept, diau_prot, 
+                                         annot, use_log_file = FALSE)
+head(diau_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek
 }

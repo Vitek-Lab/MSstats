@@ -61,6 +61,18 @@ data.frame in the MSstats required format.
 \description{
 Import OpenSWATH files
 }
+\examples{
+os_raw = system.file("tinytest/raw_data/OpenSWATH/openswath_input.csv", 
+                             package = "MSstatsConvert")
+annot = system.file("tinytest/annotations/annot_os.csv", 
+                    package = "MSstatsdev")
+os_raw = data.table::fread(os_raw) 
+annot = data.table::fread(annot)
+
+os_imported = OpenSWATHtoMSstatsFormat(os_raw, annot, use_log_file = FALSE)
+head(os_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek.
 }

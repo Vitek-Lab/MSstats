@@ -196,12 +196,48 @@ If `append = TRUE`, has to be a valid path to a file.</p></td>
 
     <p>data.frame in the MSstats required format.</p>
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>openms_raw</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span>(<span class='st'>"tinytest/raw_data/OpenMS/openms_input.csv"</span>,
+                                           <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"MSstatsConvert"</span>))
+<span class='no'>openms_imported</span> <span class='kw'>=</span> <span class='fu'>OpenMStoMSstatsFormat</span>(<span class='no'>openms_raw</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:09] ** Raw data from OpenMS imported successfully.
+#&gt; INFO  [2021-05-15 00:30:09] ** Raw data from OpenMS cleaned successfully.
+#&gt; INFO  [2021-05-15 00:30:09] ** Using annotation extracted from quantification data.
+#&gt; INFO  [2021-05-15 00:30:09] ** Run labels were standardized to remove symbols such as '.' or '%'.
+#&gt; INFO  [2021-05-15 00:30:09] ** The following options are used:
+#&gt;   - Features will be defined by the columns: PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge
+#&gt;   - Shared peptides will be removed.
+#&gt;   - Proteins with single feature will not be removed.
+#&gt;   - Features with less than 3 measurements across runs will be removed.
+#&gt; INFO  [2021-05-15 00:30:09] ** Features with all missing measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:09] ** Shared peptides are removed.
+#&gt; INFO  [2021-05-15 00:30:09] ** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows: max
+#&gt; INFO  [2021-05-15 00:30:09] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:09] ** Run annotation merged with quantification data.
+#&gt; INFO  [2021-05-15 00:30:09] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:09] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:30:09] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:30:09] ** Finished preprocessing. The dataset is ready to be processed by the dataProcess function.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>openms_imported</span>)</div><div class='output co'>#&gt;             ProteinName PeptideSequence PrecursorCharge FragmentIon
+#&gt; 1 sp|P32602|SEC17_YEAST ALDGQYIEASDIYSK               2          NA
+#&gt; 2 sp|P32602|SEC17_YEAST ALDGQYIEASDIYSK               2          NA
+#&gt; 3 sp|P32602|SEC17_YEAST ALDGQYIEASDIYSK               2          NA
+#&gt; 4 sp|P32602|SEC17_YEAST ALDGQYIEASDIYSK               2          NA
+#&gt; 5 sp|P32602|SEC17_YEAST ALDGQYIEASDIYSK               2          NA
+#&gt; 6 sp|P32602|SEC17_YEAST ALDGQYIEASDIYSK               2          NA
+#&gt;   ProductCharge IsotopeLabelType Condition BioReplicate Run Fraction Intensity
+#&gt; 1             0                L         1            1   1        1  57341200
+#&gt; 2             0                L         4            4  10        1  71823800
+#&gt; 3             0                L         4            4  11        1  65957500
+#&gt; 4             0                L         4            4  12        1  56110700
+#&gt; 5             0                L         1            1   2        1  77898600
+#&gt; 6             0                L         1            1   3        1  49719500</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
     <h2>Author</h2>

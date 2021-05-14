@@ -265,24 +265,24 @@ automatically generate three types of figures in pdf files as output :
 
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 23:04:10] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-14 23:04:10] ** Fractionation handled.
-#&gt; INFO  [2021-05-14 23:04:10] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-14 23:04:10] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-14 23:04:10] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-14 23:04:10] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-14 23:04:10] 
+    <pre class="examples"><div class='input'><span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:31] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:31] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:30:31] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:30:31] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:30:31] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:30:31] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-15 00:30:31] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-14 23:04:10] 
+#&gt; INFO  [2021-05-15 00:30:31] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-14 23:04:10]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-15 00:30:31]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-14 23:04:10]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
+#&gt; INFO  [2021-05-15 00:30:31]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
 #&gt; 1    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   1
 #&gt; 2    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   1
 #&gt; 3    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   2
@@ -312,9 +312,9 @@ automatically generate three types of figures in pdf files as output :
 <span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>comparison</span>) <span class='kw'>&lt;-</span> <span class='no'>groups</span>[<span class='fu'><a href='https://rdrr.io/r/base/order.html'>order</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>as.numeric</a></span>(<span class='no'>groups</span>))]
 <span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>,
 <span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>,
-<span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 23:04:10]  == Start to test and get inference in whole plot ...
+<span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:31]  == Start to test and get inference in whole plot ...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-14 23:04:10]  == Comparisons for all proteins are done.</div><div class='input'><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span></div><div class='output co'>#&gt;   Protein Label      log2FC        SE     Tvalue DF       pvalue   adj.pvalue
+#&gt; INFO  [2021-05-15 00:30:31]  == Comparisons for all proteins are done.</div><div class='input'><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span></div><div class='output co'>#&gt;   Protein Label      log2FC        SE     Tvalue DF       pvalue   adj.pvalue
 #&gt; 1    IDHC T3-T1  0.15937530 0.2917031  0.5463614 18 5.915262e-01 6.757573e-01
 #&gt; 2    IDHC T7-T1  6.15438359 0.2917031 21.0981085 18 3.819167e-14 7.638334e-14
 #&gt; 3    IDHC T9-T1  6.25407169 0.2917031 21.4398535 18 2.886580e-14 5.773160e-14

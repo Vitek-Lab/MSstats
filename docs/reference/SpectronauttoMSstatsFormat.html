@@ -210,12 +210,58 @@ If `append = TRUE`, has to be a valid path to a file.</p></td>
 
     <p>data.frame in the MSstats required format.</p>
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>spectronaut_raw</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span>(<span class='st'>"tinytest/raw_data/Spectronaut/spectronaut_input.csv"</span>,
+                              <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"MSstatsConvert"</span>)
+<span class='no'>spectronaut_raw</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='no'>spectronaut_raw</span>)
+<span class='no'>spectronaut_imported</span> <span class='kw'>=</span> <span class='fu'>SpectronauttoMSstatsFormat</span>(<span class='no'>spectronaut_raw</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:10] ** Raw data from Spectronaut imported successfully.
+#&gt; INFO  [2021-05-15 00:30:10] ** Raw data from Spectronaut cleaned successfully.
+#&gt; INFO  [2021-05-15 00:30:10] ** Using annotation extracted from quantification data.
+#&gt; INFO  [2021-05-15 00:30:10] ** Run labels were standardized to remove symbols such as '.' or '%'.
+#&gt; INFO  [2021-05-15 00:30:10] ** The following options are used:
+#&gt;   - Features will be defined by the columns: PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge
+#&gt;   - Shared peptides will be removed.
+#&gt;   - Proteins with single feature will not be removed.
+#&gt;   - Features with less than 3 measurements across runs will be removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Intensities with values smaller than 0.01 in PGQvalue are replaced with NA
+#&gt; INFO  [2021-05-15 00:30:10] ** Intensities with values smaller than 0.01 in EGQvalue are replaced with 0
+#&gt; INFO  [2021-05-15 00:30:10] ** Features with all missing measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Shared peptides are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows: max
+#&gt; INFO  [2021-05-15 00:30:10] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Run annotation merged with quantification data.
+#&gt; INFO  [2021-05-15 00:30:10] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:30:10] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:30:10] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:30:10] ** Finished preprocessing. The dataset is ready to be processed by the dataProcess function.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>spectronaut_imported</span>)</div><div class='output co'>#&gt;               ProteinName PeptideSequence PrecursorCharge FragmentIon
+#&gt; 1 1/sp|O75475|PSIP1_HUMAN      _ASNEDVTK_               2          y4
+#&gt; 2 1/sp|O75475|PSIP1_HUMAN      _ASNEDVTK_               2          y4
+#&gt; 3 1/sp|O75475|PSIP1_HUMAN      _ASNEDVTK_               2          y4
+#&gt; 4 1/sp|O75475|PSIP1_HUMAN      _ASNEDVTK_               2          y4
+#&gt; 5 1/sp|O75475|PSIP1_HUMAN      _ASNEDVTK_               2          y4
+#&gt; 6 1/sp|O75475|PSIP1_HUMAN      _ASNEDVTK_               2          y4
+#&gt;   ProductCharge IsotopeLabelType Condition BioReplicate                   Run
+#&gt; 1             1                L         A            1 lgillet_I150211_008_A
+#&gt; 2             1                L         B            1 lgillet_I150211_009_B
+#&gt; 3             1                L         A            2 lgillet_I150211_010_A
+#&gt; 4             1                L         B            2 lgillet_I150211_011_B
+#&gt; 5             1                L         A            3 lgillet_I150211_012_A
+#&gt; 6             1                L         B            3 lgillet_I150211_013_B
+#&gt;   Fraction Intensity
+#&gt; 1        1 21.358784
+#&gt; 2        1 15.226856
+#&gt; 3        1  7.240201
+#&gt; 4        1 20.564655
+#&gt; 5        1 24.972715
+#&gt; 6        1 24.549818</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
     <h2>Author</h2>

@@ -57,6 +57,19 @@ data.frame in the MSstats required format.
 \description{
 Import Progenesis files
 }
+\examples{
+progenesis_raw = system.file("tinytest/raw_data/Progenesis/progenesis_input.csv", 
+                             package = "MSstatsConvert")
+annot = system.file("tinytest/raw_data/Progenesis/progenesis_annot.csv", 
+                    package = "MSstatsConvert")
+progenesis_raw = data.table::fread(progenesis_raw) 
+annot = data.table::fread(annot)
+
+progenesis_imported = ProgenesistoMSstatsFormat(progenesis_raw, annot,
+                                                use_log_file = FALSE)
+head(progenesis_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek, Ulrich Omasits
 }

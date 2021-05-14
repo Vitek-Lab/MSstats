@@ -63,6 +63,14 @@ data.frame in the MSstats required format.
 \description{
 Import Skyline files
 }
+\examples{
+skyline_raw = system.file("tinytest/raw_data/Skyline/skyline_input.csv",
+                          package = "MSstatsConvert")
+skyline_raw = data.table::fread(skyline_raw)
+skyline_imported = SkylinetoMSstatsFormat(skyline_raw)
+head(skyline_imported)
+
+}
 \author{
 Meena Choi, Olga Vitek
 }
