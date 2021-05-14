@@ -27,7 +27,6 @@ Imports:
     ggrepel,
     gplots,
     marray,
-    methods,
     stats,
     grDevices,
     graphics

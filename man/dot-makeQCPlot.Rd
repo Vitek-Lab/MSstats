@@ -63,11 +63,11 @@ The input of this function is the quantitative data from function \code{\link{da
 }
 \examples{
 # Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, 
-three biological replicates, and no technical replicates which is a time-course experiment. 
-The goal is to provide pre-analysis visualization by automatically generate two types of figures 
-in two separate pdf files. 
-Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, 
-whereas, Protein PMG2 (gene name GPM2) is not.
+# three biological replicates, and no technical replicates which is a time-course experiment. 
+# The goal is to provide pre-analysis visualization by automatically generate two types of figures 
+# in two separate pdf files. 
+# Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, 
+# whereas, Protein PMG2 (gene name GPM2) is not.
 
 QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
