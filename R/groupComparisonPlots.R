@@ -46,7 +46,43 @@
 #' 
 #' @export
 #' 
-
+#' @examples
+#' QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+#' head(QuantData$FeatureLevelData)
+#' ## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
+#' comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
+#' comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
+#' comparison<-rbind(comparison1,comparison2, comparison3)
+#' row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
+#' groups = levels(QuantData$ProteinLevelData$GROUP)
+#' colnames(comparison) <- groups[order(as.numeric(groups))]
+#' testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,
+#' data=QuantData, 
+#' use_log_file = FALSE)
+#' testResultMultiComparisons$ComparisonResult
+#' # Volcano plot with FDR cutoff = 0.05 and no FC cutoff
+#' groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot",
+#' logBase.pvalue=2, address="Ex1_")
+#' # Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, 
+#' # and no protein name displayed
+#' # FCcutoff=70 is for demonstration purpose
+#' groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot",
+#' FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,address="Ex2_")
+#' # Heatmap with FDR cutoff = 0.05
+#' groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap", 
+#' logBase.pvalue=2, address="Ex1_")
+#' # Heatmap with FDR cutoff = 0.05 and FC cutoff = 70
+#' # FCcutoff=70 is for demonstration purpose
+#' groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap",
+#' FCcutoff=70, logBase.pvalue=2, address="Ex2_")
+#' # Comparison Plot
+#' groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot",
+#' address="Ex1_")
+#' # Comparison Plot
+#' groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot",
+#' ylimUp=8, ylimDown=-1, address="Ex2_")
+#' 
 groupComparisonPlots = function(
     data, type, sig = 0.05, FCcutoff = FALSE, logBase.pvalue = 10, ylimUp = FALSE,
     ylimDown = FALSE, xlimUp = FALSE, x.axis.size = 10, y.axis.size = 10, 
