@@ -59,7 +59,7 @@ The assumption of a constant variance can be checked by examining the residuals 
 }
 }
 \examples{
-QuantData <- dataProcess(SRMRawData)
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
 levels(QuantData$FeatureLevelData$GROUP)
 comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
@@ -67,7 +67,8 @@ row.names(comparison) <- "T7-T1"
 colnames(comparison) <- unique(QuantData$ProteinLevelData$GROUP)
 # Tests for differentially abundant proteins with models:
 # label-based SRM experiment with expanded scope of biological replication.
-testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
+testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData,
+use_log_file = FALSE)
 # normal quantile-quantile plots
 modelBasedQCPlots(data=testResultOneComparison, type="QQPlots", address="")
 # residual plots
