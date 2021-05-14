@@ -13,6 +13,26 @@ MSstatsGroupComparisonOutput(input, summarization_output, log_base = 2)
 
 \item{log_base}{base of the logarithm used in fold-change calculation}
 }
+\value{
+list, same as the output of `groupComparison`
+}
 \description{
 Create output of group comparison based on results for individual proteins
+}
+\examples{
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
+levels(QuantData$ProteinLevelData$GROUP)
+comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+row.names(comparison) <- "T7-T1"
+groups = levels(QuantData$ProteinLevelData$GROUP)
+colnames(comparison) <- groups[order(as.numeric(groups))]
+samples_info = getSamplesInfo(QuantData)
+repeated = checkRepeatedDesign(QuantData)
+group_comparison = MSstatsGroupComparison(group_comparison_input, comparison,
+                                          FALSE, repeated, samples_info)
+group_comparison_final = MSstatsGroupComparisonOutput(group_comparison,
+                                                      QuantData)
+group_comparison_final[["ComparisonResult"]] 
+                                                    
 }

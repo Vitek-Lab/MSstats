@@ -33,3 +33,19 @@ If not, it will be replaced with NULL}
 \description{
 Group comparison for a single protein
 }
+\examples{
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+group_comparison_input <- MSstatsPrepareForGroupComparison(QuantData)
+levels(QuantData$ProteinLevelData$GROUP)
+comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+row.names(comparison) <- "T7-T1"
+groups = levels(QuantData$ProteinLevelData$GROUP)
+colnames(comparison) <- groups[order(as.numeric(groups))]
+samples_info <- getSamplesInfo(QuantData)
+repeated <- checkRepeatedDesign(QuantData)
+single_output <- MSstatsGroupComparisonSingleProtein(
+  group_comparison_input[[1]], comparison, repeated, groups, samples_info,
+  FALSE, TRUE)
+single_output # same as a single element of MSstatsGroupComparison output
+
+}

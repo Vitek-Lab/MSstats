@@ -26,3 +26,21 @@ MSstatsGroupComparison(
 \description{
 Group comparison
 }
+\examples{
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
+levels(QuantData$ProteinLevelData$GROUP)
+comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+row.names(comparison) <- "T7-T1"
+groups = levels(QuantData$ProteinLevelData$GROUP)
+colnames(comparison) <- groups[order(as.numeric(groups))]
+samples_info = getSamplesInfo(QuantData)
+repeated = checkRepeatedDesign(QuantData)
+group_comparison = MSstatsGroupComparison(group_comparison_input, comparison,
+                                          FALSE, repeated, samples_info)
+length(group_comparison) # list of length equal to number of proteins
+group_comparison[[1]][[1]] # data used to fit linear model
+group_comparison[[1]][[2]] # comparison result
+group_comparison[[2]][[3]] # NULL, because we set save_fitted_models to FALSE
+
+}

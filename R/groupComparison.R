@@ -12,11 +12,34 @@
 #' The underlying model fitting functions are lm and lmer for the fixed effects model and mixed effects model, respectively.
 #' The input of this function is the quantitative data from function (dataProcess).
 #'
-#' @return list that consists of the following elements: (TODO)
+#' @return list that consists of three elements: "ComparisonResult" - data.frame with results of statistical testing,
+#' "ModelQC" - data.frame with data used to fit models for group comparison and "FittedModel" - list of fitted models.
+#' 
 #' @export 
 #' @import lme4
 #' @import limma
 #' @importFrom data.table rbindlist
+#'
+#' @examples
+#' # Consider quantitative data (i.e. QuantData) from yeast study with ten time points of interests, 
+#' # three biological replicates, and no technical replicates. 
+#' # It is a time-course experiment and we attempt to compare differential abundance
+#' # between time 1 and 7 in a set of targeted proteins. 
+#' # In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of 
+#' # Biological replication.  
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' head(QuantData$FeatureLevelData)
+#' levels(QuantData$ProteinLevelData$GROUP)
+#' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' row.names(comparison) <- "T7-T1"
+#' groups = levels(QuantData$ProteinLevelData$GROUP)
+#' colnames(comparison) <- groups[order(as.numeric(groups))]
+#' # Tests for differentially abundant proteins with models:
+#' # label-based SRM experiment with expanded scope of biological replication.
+# testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData,
+#                                            use_log_file = FALSE)
+#' # table for result
+#' testResultOneComparison$ComparisonResult
 #'
 groupComparison = function(contrast.matrix, data, 
                            save_fitted_models = TRUE, log_base = 2,
@@ -51,8 +74,18 @@ groupComparison = function(contrast.matrix, data,
 #' 
 #' @param summarization_output output of dataProcess
 #' 
+#' @return list of run-level data for each protein in the input. 
+#' This list has a "has_imputed" attribute that indicates if missing values
+#' were imputed in the input dataset.
+#' 
 #' @export
 #' 
+#' @examples
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
+#' length(group_comparison_input) # list of length equal to number of proteins
+#' # in protein-level data of QuantData
+#' head(group_comparison_input[[1]])
 MSstatsPrepareForGroupComparison = function(summarization_output) {
     has_imputed = is.element("NumImputedFeature", colnames(summarization_output$ProteinLevelData))
     summarized = data.table::as.data.table(summarization_output$ProteinLevelData)
@@ -78,6 +111,23 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' 
 #' @export
+#' 
+#' @examples
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
+#' levels(QuantData$ProteinLevelData$GROUP)
+#' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' row.names(comparison) <- "T7-T1"
+#' groups = levels(QuantData$ProteinLevelData$GROUP)
+#' colnames(comparison) <- groups[order(as.numeric(groups))]
+#' samples_info = getSamplesInfo(QuantData)
+#' repeated = checkRepeatedDesign(QuantData)
+#' group_comparison = MSstatsGroupComparison(group_comparison_input, comparison,
+#'                                           FALSE, repeated, samples_info)
+#' length(group_comparison) # list of length equal to number of proteins
+#' group_comparison[[1]][[1]] # data used to fit linear model
+#' group_comparison[[1]][[2]] # comparison result
+#' group_comparison[[2]][[3]] # NULL, because we set save_fitted_models to FALSE
 #' 
 MSstatsGroupComparison = function(summarized_list, contrast_matrix,
                                   save_fitted_models, repeated, samples_info) {
@@ -109,6 +159,24 @@ MSstatsGroupComparison = function(summarized_list, contrast_matrix,
 #' 
 #' @export
 #' 
+#' @return list, same as the output of `groupComparison`
+#' 
+#' @examples 
+#' #' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
+#' levels(QuantData$ProteinLevelData$GROUP)
+#' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' row.names(comparison) <- "T7-T1"
+#' groups = levels(QuantData$ProteinLevelData$GROUP)
+#' colnames(comparison) <- groups[order(as.numeric(groups))]
+#' samples_info = getSamplesInfo(QuantData)
+#' repeated = checkRepeatedDesign(QuantData)
+#' group_comparison = MSstatsGroupComparison(group_comparison_input, comparison,
+#'                                           FALSE, repeated, samples_info)
+#' group_comparison_final = MSstatsGroupComparisonOutput(group_comparison,
+#'                                                       QuantData)
+#' group_comparison_final[["ComparisonResult"]] 
+#'                                                     
 MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 2) {
     adj.pvalue = pvalue = issue = NULL
     
@@ -150,6 +218,21 @@ MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 
 #' @param has_imputed TRUE if missing values have been imputed
 #' 
 #' @export
+#' 
+#' @examples 
+#' #' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' group_comparison_input <- MSstatsPrepareForGroupComparison(QuantData)
+#' levels(QuantData$ProteinLevelData$GROUP)
+#' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' row.names(comparison) <- "T7-T1"
+#' groups = levels(QuantData$ProteinLevelData$GROUP)
+#' colnames(comparison) <- groups[order(as.numeric(groups))]
+#' samples_info <- getSamplesInfo(QuantData)
+#' repeated <- checkRepeatedDesign(QuantData)
+#' single_output <- MSstatsGroupComparisonSingleProtein(
+#'   group_comparison_input[[1]], comparison, repeated, groups, samples_info,
+#'   FALSE, TRUE)
+#' single_output # same as a single element of MSstatsGroupComparison output
 #' 
 MSstatsGroupComparisonSingleProtein = function(single_protein, contrast_matrix,
                                                repeated, groups, samples_info,

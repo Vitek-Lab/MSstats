@@ -109,11 +109,19 @@ If `append = TRUE`, has to be a valid path to a file.}
 Process MS data: clean, normalize and summarize before differential analysis
 }
 \examples{
-data(DDARawData)
-head(DDARawData)
-
-processed = dataProcess(DDARawData, use_log_file = FALSE)
-head(processed[["FeatureLevelData"]])
-head(processed[["ProteinLevelData"]])
+# Consider a raw data (i.e. SRMRawData) for a label-based SRM experiment from a yeast study
+# with ten time points (T1-T10) of interests and three biological replicates.
+# It is a time course experiment. The goal is to detect protein abundance changes
+# across time points.
+head(SRMRawData)
+# Log2 transformation and normalization are applied (default)
+QuantData<-dataProcess(SRMRawData)
+head(QuantData$FeatureLevelData)
+Log10 transformation and normalization are applied
+QuantData1<-dataProcess(SRMRawData, logTrans=10)
+head(QuantData1$FeatureLevelData)
+Log2 transformation and no normalization are applied
+QuantData2<-dataProcess(SRMRawData,normalization=FALSE)
+head(QuantData2$FeatureLevelData)
 
 }

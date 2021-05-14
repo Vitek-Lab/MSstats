@@ -17,3 +17,21 @@ list with protein-level data
 \description{
 Linear model-based summarization for a single protein
 }
+\examples{
+raw = DDARawData 
+method = "linear"
+cens = NULL
+impute = FALSE 
+# currently, MSstats only supports MBimpute = FALSE for linear summarization
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input = MSstatsMergeFractions(input)
+input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+input = MSstatsSelectFeatures(input, "all")
+input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+input_split = split(input, input$PROTEIN)
+single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]])
+head(single_protein_summary[[1]])
+
+}

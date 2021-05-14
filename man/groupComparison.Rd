@@ -40,7 +40,8 @@ If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
 }
 \value{
-list that consists of the following elements: (TODO)
+list that consists of three elements: "ComparisonResult" - data.frame with results of statistical testing,
+"ModelQC" - data.frame with data used to fit models for group comparison and "FittedModel" - list of fitted models.
 }
 \description{
 Whole plot testing
@@ -49,4 +50,24 @@ Whole plot testing
 contrast.matrix : comparison of interest. Based on the levels of conditions, specify 1 or -1 to the conditions of interests and 0 otherwise. The levels of conditions are sorted alphabetically. Command levels(QuantData$FeatureLevelData$GROUP_ORIGINAL) can illustrate the actual order of the levels of conditions.
 The underlying model fitting functions are lm and lmer for the fixed effects model and mixed effects model, respectively.
 The input of this function is the quantitative data from function (dataProcess).
+}
+\examples{
+# Consider quantitative data (i.e. QuantData) from yeast study with ten time points of interests, 
+# three biological replicates, and no technical replicates. 
+# It is a time-course experiment and we attempt to compare differential abundance
+# between time 1 and 7 in a set of targeted proteins. 
+# In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of 
+# Biological replication.  
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+head(QuantData$FeatureLevelData)
+levels(QuantData$ProteinLevelData$GROUP)
+comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+row.names(comparison) <- "T7-T1"
+groups = levels(QuantData$ProteinLevelData$GROUP)
+colnames(comparison) <- groups[order(as.numeric(groups))]
+# Tests for differentially abundant proteins with models:
+# label-based SRM experiment with expanded scope of biological replication.
+# table for result
+testResultOneComparison$ComparisonResult
+
 }

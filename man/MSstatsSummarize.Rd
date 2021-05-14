@@ -39,6 +39,28 @@ variance among intensities from features. FALSE means that we cannot assume
 equal variance among intensities from features, then we will account for
 heterogeneous variation from different features.}
 }
+\value{
+list of length one with run-level data.
+}
 \description{
 Feature-level data summarization
+}
+\examples{
+raw = DDARawData 
+method = "TMP"
+cens = "NA"
+impute = TRUE
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input = MSstatsMergeFractions(input)
+input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+input = MSstatsSelectFeatures(input, "all")
+processed = getProcessed(input)
+input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+input_split = split(input, input$PROTEIN)
+summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
+length(summarized) # list of summarization outputs for each protein
+head(summarized[[1]][[1]]) # run-level summaru
+
 }

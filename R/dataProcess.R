@@ -57,12 +57,20 @@
 #' @export
 #' 
 #' @examples 
-#' data(DDARawData)
-#' head(DDARawData)
-#' 
-#' processed = dataProcess(DDARawData, use_log_file = FALSE)
-#' head(processed[["FeatureLevelData"]])
-#' head(processed[["ProteinLevelData"]])
+#' # Consider a raw data (i.e. SRMRawData) for a label-based SRM experiment from a yeast study
+#' # with ten time points (T1-T10) of interests and three biological replicates.
+#' # It is a time course experiment. The goal is to detect protein abundance changes
+#' # across time points.
+#' head(SRMRawData)
+#' # Log2 transformation and normalization are applied (default)
+#' QuantData<-dataProcess(SRMRawData)
+#' head(QuantData$FeatureLevelData)
+#' Log10 transformation and normalization are applied
+#' QuantData1<-dataProcess(SRMRawData, logTrans=10)
+#' head(QuantData1$FeatureLevelData)
+#' Log2 transformation and no normalization are applied
+#' QuantData2<-dataProcess(SRMRawData,normalization=FALSE)
+#' head(QuantData2$FeatureLevelData)
 #' 
 dataProcess = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
@@ -143,7 +151,27 @@ dataProcess = function(
 #' @importFrom data.table uniqueN
 #' @importFrom utils setTxtProgressBar
 #' 
+#' @return list of length one with run-level data.
+#' 
 #' @export
+#' 
+#' @examples
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input = MSstatsSelectFeatures(input, "all")
+#' processed = getProcessed(input)
+#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+#' input_split = split(input, input$PROTEIN)
+#' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
+#' length(summarized) # list of summarization outputs for each protein
+#' head(summarized[[1]][[1]]) # run-level summaru
 #' 
 MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
                             remove50missing, equal_variance) {
@@ -184,6 +212,23 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 #' @importFrom stats xtabs
 #' 
 #' @export
+#' 
+#' @examples
+#' raw = DDARawData 
+#' method = "linear"
+#' cens = NULL
+#' impute = FALSE 
+#' # currently, MSstats only supports MBimpute = FALSE for linear summarization
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input = MSstatsSelectFeatures(input, "all")
+#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+#' input_split = split(input, input$PROTEIN)
+#' single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]])
+#' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
@@ -233,6 +278,24 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
 #' @importFrom stats predict
 #' 
 #' @export
+#' 
+#' @examples
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE 
+#' # currently, MSstats only supports MBimpute = FALSE for linear summarization
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input = MSstatsSelectFeatures(input, "all")
+#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+#' input_split = split(input, input$PROTEIN)
+#' single_protein_summary = MSstatsSummarizeSingleTMP(input_split[[1]],
+#'                                                    impute, cens, FALSE)
+#' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
                                      remove50missing) {
