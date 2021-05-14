@@ -43,7 +43,7 @@
     if (length(features_per_protein) > 0) {
         single_features = unique(as.character(features_per_protein))
         n_feat = min(length(single_features), 5)
-        msg = paste("Five or more proteins have only one feature:", "\n",
+        msg = paste("Some proteins have only one feature:", "\n",
                     paste(unique(as.character(features_per_protein))[1:n_feat],
                           sep = ",\n ", collapse = ",\n "),
                     "...")
@@ -102,7 +102,7 @@
     proteins = unique(input[LABEL == label, as.character(PROTEIN)])
     if (length(proteins) > 0) {
         n_prot = min(length(proteins), 5)
-        msg = paste(paste("5 or more proteins only have", name,
+        msg = paste(paste("Some proteins only have", name,
                           "intensities in label-based experiment",
                           "Please check or remove these proteins:"),
                     paste(proteins[1:n_prot], sep = ", \n ", collapse = ", \n "),
@@ -154,13 +154,16 @@
     missing_by_run = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
                                   NumTotal = .N), by = "RUN"]
     missing_by_run[, FractionMissing := NumMissing / NumTotal]
-    missing_by_run = as.character(missing_by_run[FractionMissing > 0.75, RUN])
+    missing_by_run = as.character(missing_by_run[FractionMissing > 0.75, 
+                                                 unique(RUN)])
     
     if (length(missing_in_any) > 0) {
-        msg = paste("Five or more features are completely",
-                          "missing in at least one condition: ", "\n",
-                          paste(unique(as.character(missing_in_any))[1:5], sep = ",\n ", 
-                                collapse = ",\n "), "...")
+        num_features = min(length(missing_in_any), 5)
+        msg = paste("Some features are completely",
+                    "missing in at least one condition: ", "\n",
+                    paste(unique(as.character(missing_in_any))[1:num_features], 
+                          sep = ",\n ", 
+                          collapse = ",\n "), "...")
         getOption("MSstatsLog")("INFO", msg)
         getOption("MSstatsMsg")("INFO", msg)
     }

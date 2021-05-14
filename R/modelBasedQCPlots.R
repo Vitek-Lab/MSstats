@@ -96,7 +96,7 @@ modelBasedQCPlots = function(
         if(is.null(sub)){
             next()
         }
-        if (class(sub) == "lm") {
+        if (is(sub, "lm")) {
             sub.residuals = sub$residuals
         } else {
             sub.residuals = resid(sub)
@@ -146,16 +146,16 @@ modelBasedQCPlots = function(
     savePlot(address, "ResidualPlot", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(fitted_models), style = 3)
     for (i in seq_along(fitted_models)) {	
-        sub = fitted_models[[i]]
-        if(is.null(sub)) {
+        fitted_model = fitted_models[[i]]
+        if(is.null(fitted_model)) {
             next()
         }
-        if (class(sub)=="lm") {
-            sub.residuals = sub$residuals
-            sub.fitted = sub$fitted.values
+        if (is(fitted_model, "lm")) {
+            sub.residuals = fitted_model$residuals
+            sub.fitted = fitted_model$fitted.values
         } else {
-            sub.residuals = resid(sub)
-            sub.fitted = fitted(sub)
+            sub.residuals = resid(fitted_model)
+            sub.fitted = fitted(fitted_model)
         }
         sub.residuals.table = data.frame("residual" = sub.residuals, 
                                          "fitted" = sub.fitted)

@@ -191,13 +191,8 @@
     
     for (i in seq_len(num_iter)) {
         if (i == 1) {
-            if (class(fit) == "lm") {
-                abs.resids = data.frame(abs.resids = abs(fit$residuals))
-                fitted = data.frame(fitted = fit$fitted.values)
-            } else {
-                abs.resids = data.frame(abs.resids = abs(resid(fit)))
-                fitted = data.frame(fitted = fitted(fit))
-            }
+            abs.resids = data.frame(abs.resids = abs(fit$residuals))
+            fitted = data.frame(fitted = fit$fitted.values)
             input = data.frame(input, 
                                "abs.resids" = abs.resids, 
                                "fitted" = fitted)
@@ -205,30 +200,16 @@
         fit.loess = loess(abs.resids ~ fitted, data = input)
         loess.fitted = data.frame(loess.fitted = fitted(fit.loess))
         input = data.frame(input, "loess.fitted" = loess.fitted)
-        
         ## loess fitted valuaes are predicted sd
         input$weight = 1 / (input$loess.fitted ^ 2)
         input = input[, !(colnames(input) %in% "abs.resids")]
-        
         ## re-fit using weight
-        if (class(fit) == "lm") {
-            wls.fit = lm(formula(fit), data = input, weights = weight)
-        } else {
-            wls.fit = lmer(formula(fit), data = input, weights = weight)
-        }
-        
-        ## lm or lmer
-        if (class(wls.fit) == "lm") {
-            abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
-        } else {
-            abs.resids = data.frame(abs.resids = abs(resid(wls.fit)))
-        }
+        wls.fit = lm(formula(fit), data = input, weights = weight)
+        abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
         input = data.frame(input, "abs.resids" = abs.resids)
-        
         input = input[, -which(colnames(input) %in% c("loess.fitted", "weight"))]
     }
-    
-    return(wls.fit)
+    wls.fit
 }
 
 

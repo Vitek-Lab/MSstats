@@ -233,7 +233,7 @@ dataProcessPlots = function(
       
       pept_feat = unique(single_protein[, list(PEPTIDE, FEATURE)])
       counts = pept_feat[, list(N = .N), by = "PEPTIDE"]$N
-      s = rep(1:length(counts), times = counts)
+      s = rep(seq_along(counts), times = counts)
       ss = unlist(lapply(counts, function(x) seq(1, x)), FALSE, FALSE)
       groupNametemp = data.frame(groupName,
                                  "FEATURE" = unique(single_protein$FEATURE)[1],
@@ -277,7 +277,7 @@ dataProcessPlots = function(
       
       pept_feat = unique(single_protein[, list(PEPTIDE, FEATURE)])
       counts = pept_feat[, list(N = .N), by = "PEPTIDE"]$N
-      s = rep(1:length(counts), times = counts)
+      s = rep(seq_along(counts), times = counts)
       ss = unlist(lapply(counts, function(x) seq(1, x)), FALSE, FALSE)
       groupNametemp = data.frame(groupName,
                                  FEATURE = unique(single_protein$FEATURE)[1],

@@ -178,7 +178,7 @@ getSamplesInfo = function(summarization_output) {
 #' @importFrom stats vcov
 #' @keywords internal
 .getModelParameters = function(fitted_model) {
-    if (class(fitted_model[["full_fit"]]) == "lm") {
+    if (is(fitted_model[["full_fit"]], "lm")) {
         model_summary = summary(fitted_model[["full_fit"]])
         cf = model_summary[["coefficients"]]
         vcv = model_summary[["cov.unscaled"]] * (model_summary[["sigma"]] ^ 2)

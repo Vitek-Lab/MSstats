@@ -114,7 +114,7 @@ designSampleSize = function(
     result = data.table::rbindlist(
         lapply(fitted_models, function(fit) {
             if (!is.null(fit)) {
-                if (class(fit) != "lmerMod") {
+                if (!is.(fit, "lmerMod")) {
                     error = summary(fit)$sigma^2
                     subject <- NA
                     group_subject <- NA
@@ -179,7 +179,7 @@ designSampleSize = function(
     power = numeric(length(t))
     for (i in seq_along(t)) {
         diff = qnorm(powerTemp) + qnorm(1 - powerTemp * FDR / (1 + (1 - FDR) * m0_m1) / 2) - t[i]
-        min(abs(diff), na.rm=TRUE)
+        min(abs(diff), na.rm = TRUE)
         power[i] = powerTemp[order(abs(diff))][1]
     }
     power

@@ -104,7 +104,7 @@ dataProcess = function(
                             "== Start the summarization per subplot...")
     getOption("MSstatsMsg")("INFO",
                             " == Start the summarization per subplot...")
-
+    
     processed = getProcessed(input)
     input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
                                            remove_uninformative_feature_outlier)
@@ -175,7 +175,7 @@ dataProcess = function(
 #' 
 MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
                             remove50missing, equal_variance) {
-
+    
     num_proteins = length(proteins_list)
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
@@ -252,12 +252,7 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
         getOption("MSstatsMsg")("WARN", msg)
         result = NULL
     } else {
-        if (class(fit) == "lm") {
-            cf = summary(fit)$coefficients[, 1]
-        } else{
-            cf = fixef(fit)
-        }
-        
+        cf = summary(fit)$coefficients[, 1]
         result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
         log_intensities = get_linear_summary(single_protein, cf,
                                              counts, label)

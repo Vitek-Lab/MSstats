@@ -179,7 +179,7 @@ groupComparisonPlots = function(
     if (colorkey) {
         par(mar = c(3, 3, 3, 3), mfrow = c(3, 1), oma = c(3, 0, 3, 0))
         plot.new()
-        image(z = matrix(seq(1:(length(my.colors) - 1)), ncol = 1), 
+        image(z = matrix(seq(seq_len(length(my.colors) - 1)), ncol = 1), 
               col = my.colors[-length(my.colors)], 
               xaxt = "n", 
               yaxt = "n")
