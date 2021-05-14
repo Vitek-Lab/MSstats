@@ -222,21 +222,49 @@ If `append = TRUE`, has to be a valid path to a file.</p></td>
 <span class='no'>diau_pept</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='no'>diau_pept</span>)
 <span class='no'>diau_prot</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='no'>diau_prot</span>)
 <span class='no'>annot</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='no'>annot</span>)
+<span class='no'>diau_frag</span> <span class='kw'>=</span> <span class='no'>diau_frag</span>[, <span class='fu'><a href='https://rdrr.io/r/base/lapply.html'>lapply</a></span>(<span class='no'>.SD</span>, <span class='kw'>function</span>(<span class='no'>x</span>) <span class='kw'>if</span> (<span class='fu'><a href='https://rdrr.io/r/base/integer.html'>is.integer</a></span>(<span class='no'>x</span>)) <span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>as.numeric</a></span>(<span class='no'>x</span>) <span class='kw'>else</span> <span class='no'>x</span>)]
+<span class='co'># In case numeric columns are not interpreted correctly</span>
 
 <span class='no'>diau_imported</span> <span class='kw'>=</span> <span class='fu'>DIAUmpiretoMSstatsFormat</span>(<span class='no'>diau_frag</span>, <span class='no'>diau_pept</span>, <span class='no'>diau_prot</span>,
-                                         <span class='no'>annot</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:02] ** Raw data from DIAUmpire imported successfully.
-#&gt; INFO  [2021-05-15 00:30:02] ** Using selected fragments and peptides.
-#&gt; INFO  [2021-05-15 00:30:02] ** Extracted the data from selected fragments and/or peptides.
-#&gt; INFO  [2021-05-15 00:30:02] ** Raw data from DIAUmpire cleaned successfully.
-#&gt; INFO  [2021-05-15 00:30:02] ** Using provided annotation.
-#&gt; INFO  [2021-05-15 00:30:02] ** Run labels were standardized to remove symbols such as '.' or '%'.
-#&gt; INFO  [2021-05-15 00:30:02] ** The following options are used:
+                                         <span class='no'>annot</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:14] ** Raw data from DIAUmpire imported successfully.
+#&gt; INFO  [2021-05-15 00:57:14] ** Using selected fragments and peptides.
+#&gt; INFO  [2021-05-15 00:57:14] ** Extracted the data from selected fragments and/or peptides.
+#&gt; INFO  [2021-05-15 00:57:14] ** Raw data from DIAUmpire cleaned successfully.
+#&gt; INFO  [2021-05-15 00:57:14] ** Using provided annotation.
+#&gt; INFO  [2021-05-15 00:57:14] ** Run labels were standardized to remove symbols such as '.' or '%'.
+#&gt; INFO  [2021-05-15 00:57:14] ** The following options are used:
 #&gt;   - Features will be defined by the columns: PeptideSequence, FragmentIon
 #&gt;   - Shared peptides will be removed.
 #&gt;   - Proteins with single feature will not be removed.
 #&gt;   - Features with less than 3 measurements across runs will be removed.
-#&gt; INFO  [2021-05-15 00:30:02] ** Features with all missing measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:02] ** Shared peptides are removed.</div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='error'>Error in `[.data.table`(input, , list(Intensity = aggregator(Intensity,     na.rm = TRUE)), by = feature_columns): Column 1 of result for group 16 is type 'double' but expecting type 'integer'. Column types must be consistent for each group.</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>diau_imported</span>)</div><div class='output co'>#&gt; <span class='error'>Error in head(diau_imported): nie znaleziono obiektu 'diau_imported'</span></div><div class='input'>
+#&gt; INFO  [2021-05-15 00:57:14] ** Features with all missing measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:14] ** Shared peptides are removed.</div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; <span class='warning'>Warning: brak argumentów w max; zwracanie wartości -Inf</span></div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:14] ** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows: max
+#&gt; INFO  [2021-05-15 00:57:14] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:14] ** Run annotation merged with quantification data.
+#&gt; INFO  [2021-05-15 00:57:14] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:14] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:57:14] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:57:14] ** Finished preprocessing. The dataset is ready to be processed by the dataProcess function.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>diau_imported</span>)</div><div class='output co'>#&gt;             ProteinName      PeptideSequence PrecursorCharge FragmentIon
+#&gt; 1 sp|P11310|ACADM_HUMAN AFTGFIVEADTPGIQIGR_3              NA        b5_1
+#&gt; 2 sp|P11310|ACADM_HUMAN AFTGFIVEADTPGIQIGR_3              NA        b5_1
+#&gt; 3 sp|P11310|ACADM_HUMAN AFTGFIVEADTPGIQIGR_3              NA        b5_1
+#&gt; 4 sp|P11310|ACADM_HUMAN AFTGFIVEADTPGIQIGR_3              NA        b5_1
+#&gt; 5 sp|P11310|ACADM_HUMAN AFTGFIVEADTPGIQIGR_3              NA        b5_1
+#&gt; 6 sp|P11310|ACADM_HUMAN AFTGFIVEADTPGIQIGR_3              NA        b5_1
+#&gt;   ProductCharge IsotopeLabelType Condition BioReplicate                 Run
+#&gt; 1            NA                L         A            1 lgillet_I150211_008
+#&gt; 2            NA                L         B            2 lgillet_I150211_009
+#&gt; 3            NA                L         A            1 lgillet_I150211_010
+#&gt; 4            NA                L         B            2 lgillet_I150211_011
+#&gt; 5            NA                L         A            1 lgillet_I150211_012
+#&gt; 6            NA                L         B            2 lgillet_I150211_013
+#&gt;   Fraction Intensity
+#&gt; 1        1       299
+#&gt; 2        1       254
+#&gt; 3        1       138
+#&gt; 4        1       241
+#&gt; 5        1       255
+#&gt; 6        1       127</div><div class='input'>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

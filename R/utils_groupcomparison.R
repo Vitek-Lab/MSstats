@@ -9,7 +9,7 @@
 #' @export
 #' 
 #' @examples
-#' QuantData2 <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' QuantData1 <- dataProcess(SRMRawData, use_log_file = FALSE)
 #' checkRepeatedDesign(QuantData1)
 #' 
 checkRepeatedDesign = function(summarization_output) {

@@ -214,29 +214,29 @@ If `append = TRUE`, has to be a valid path to a file.</p></td>
     <pre class="examples"><div class='input'><span class='no'>skyline_raw</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/system.file.html'>system.file</a></span>(<span class='st'>"tinytest/raw_data/Skyline/skyline_input.csv"</span>,
                           <span class='kw'>package</span> <span class='kw'>=</span> <span class='st'>"MSstatsConvert"</span>)
 <span class='no'>skyline_raw</span> <span class='kw'>=</span> <span class='kw pkg'>data.table</span><span class='kw ns'>::</span><span class='fu'><a href='https://Rdatatable.gitlab.io/data.table/reference/fread.html'>fread</a></span>(<span class='no'>skyline_raw</span>)
-<span class='no'>skyline_imported</span> <span class='kw'>=</span> <span class='fu'>SkylinetoMSstatsFormat</span>(<span class='no'>skyline_raw</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:10] ** Raw data from Skyline imported successfully.
-#&gt; INFO  [2021-05-15 00:30:10] ** Raw data from Skyline cleaned successfully.
-#&gt; INFO  [2021-05-15 00:30:10] ** Using annotation extracted from quantification data.
-#&gt; INFO  [2021-05-15 00:30:10] ** Run labels were standardized to remove symbols such as '.' or '%'.
-#&gt; INFO  [2021-05-15 00:30:10] ** The following options are used:
+<span class='no'>skyline_imported</span> <span class='kw'>=</span> <span class='fu'>SkylinetoMSstatsFormat</span>(<span class='no'>skyline_raw</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:22] ** Raw data from Skyline imported successfully.
+#&gt; INFO  [2021-05-15 00:57:22] ** Raw data from Skyline cleaned successfully.
+#&gt; INFO  [2021-05-15 00:57:22] ** Using annotation extracted from quantification data.
+#&gt; INFO  [2021-05-15 00:57:22] ** Run labels were standardized to remove symbols such as '.' or '%'.
+#&gt; INFO  [2021-05-15 00:57:22] ** The following options are used:
 #&gt;   - Features will be defined by the columns: PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge
 #&gt;   - Shared peptides will be removed.
 #&gt;   - Proteins with single feature will not be removed.
 #&gt;   - Features with less than 3 measurements across runs will be removed.
-#&gt; INFO  [2021-05-15 00:30:10] ** Rows with values of StandardType equal to iRT are removed 
-#&gt; INFO  [2021-05-15 00:30:10] ** Intensities with values of Truncated equal to TRUE are replaced with NA
-#&gt; WARN  [2021-05-15 00:30:10] ** DetectionQValue not found in input columns.
-#&gt; INFO  [2021-05-15 00:30:10] ** Sequences containing DECOY, Decoys are removed.
-#&gt; INFO  [2021-05-15 00:30:10] ** Three isotopic preaks per feature and run are summed
-#&gt; INFO  [2021-05-15 00:30:10] ** Features with all missing measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:10] ** Shared peptides are removed.
-#&gt; INFO  [2021-05-15 00:30:10] ** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows: sum
-#&gt; INFO  [2021-05-15 00:30:10] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:10] ** Run annotation merged with quantification data.
-#&gt; INFO  [2021-05-15 00:30:10] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:10] ** Fractionation handled.
-#&gt; INFO  [2021-05-15 00:30:10] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-15 00:30:10] ** Finished preprocessing. The dataset is ready to be processed by the dataProcess function.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>skyline_imported</span>)</div><div class='output co'>#&gt;   ProteinName      PeptideSequence PrecursorCharge FragmentIon ProductCharge
+#&gt; INFO  [2021-05-15 00:57:22] ** Rows with values of StandardType equal to iRT are removed 
+#&gt; INFO  [2021-05-15 00:57:22] ** Intensities with values of Truncated equal to TRUE are replaced with NA
+#&gt; WARN  [2021-05-15 00:57:22] ** DetectionQValue not found in input columns.
+#&gt; INFO  [2021-05-15 00:57:22] ** Sequences containing DECOY, Decoys are removed.
+#&gt; INFO  [2021-05-15 00:57:22] ** Three isotopic preaks per feature and run are summed
+#&gt; INFO  [2021-05-15 00:57:22] ** Features with all missing measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:22] ** Shared peptides are removed.
+#&gt; INFO  [2021-05-15 00:57:22] ** Multiple measurements in a feature and a run are summarized by summaryforMultipleRows: sum
+#&gt; INFO  [2021-05-15 00:57:22] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:22] ** Run annotation merged with quantification data.
+#&gt; INFO  [2021-05-15 00:57:22] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:22] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:57:22] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:57:22] ** Finished preprocessing. The dataset is ready to be processed by the dataProcess function.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>skyline_imported</span>)</div><div class='output co'>#&gt;   ProteinName      PeptideSequence PrecursorCharge FragmentIon ProductCharge
 #&gt; 1      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
 #&gt; 2      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA
 #&gt; 3      P00370 AANAGGVATSGLEMAQNAAR               3          NA            NA

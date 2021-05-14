@@ -211,24 +211,24 @@ above graph in Profile Plot. Default is 7.</p></td>
 <span class='co'># Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, </span>
 <span class='co'># whereas, Protein PMG2 (gene name GPM2) is not.</span>
 
-<span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:24] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:24] ** Fractionation handled.
-#&gt; INFO  [2021-05-15 00:30:24] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-15 00:30:24] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:24] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:24] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-15 00:30:24] 
+<span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:33] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:33] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:57:33] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:57:33] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:33] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:33] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-15 00:57:33] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-15 00:30:24] 
+#&gt; INFO  [2021-05-15 00:57:33] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-15 00:30:24]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-15 00:57:33]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-15 00:30:24]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
+#&gt; INFO  [2021-05-15 00:57:33]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
 #&gt; 1    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   1
 #&gt; 2    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   1
 #&gt; 3    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   2

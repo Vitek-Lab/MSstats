@@ -139,24 +139,24 @@ This list has a "has_imputed" attribute that indicates if missing values
 were imputed in the input dataset.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:06] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:06] ** Fractionation handled.
-#&gt; INFO  [2021-05-15 00:30:06] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-15 00:30:06] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:06] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:06] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-15 00:30:06] 
+    <pre class="examples"><div class='input'><span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:18] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:18] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:57:18] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:57:18] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:18] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:18] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-15 00:57:18] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-15 00:30:06] 
+#&gt; INFO  [2021-05-15 00:57:18] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-15 00:30:06]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-15 00:57:18]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-15 00:30:06]  == Summarization is done.</div><div class='input'><span class='no'>group_comparison_input</span> <span class='kw'>=</span> <span class='fu'>MSstatsPrepareForGroupComparison</span>(<span class='no'>QuantData</span>)
+#&gt; INFO  [2021-05-15 00:57:18]  == Summarization is done.</div><div class='input'><span class='no'>group_comparison_input</span> <span class='kw'>=</span> <span class='fu'>MSstatsPrepareForGroupComparison</span>(<span class='no'>QuantData</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span>(<span class='no'>group_comparison_input</span>) <span class='co'># list of length equal to number of proteins</span></div><div class='output co'>#&gt; [1] 2</div><div class='input'><span class='co'># in protein-level data of QuantData</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>group_comparison_input</span><span class='kw'>[[</span><span class='fl'>1</span>]])</div><div class='output co'>#&gt;    RUN Protein LogIntensities originalRUN GROUP SUBJECT TotalGroupMeasurements
 #&gt; 1:   1    IDHC       5.577050           1     1   ReplA                     18

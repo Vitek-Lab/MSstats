@@ -19,7 +19,7 @@ Check if data represents repeated measurements design
 This extracts information required by the group comparison workflow
 }
 \examples{
-QuantData2 <- dataProcess(SRMRawData, use_log_file = FALSE)
+QuantData1 <- dataProcess(SRMRawData, use_log_file = FALSE)
 checkRepeatedDesign(QuantData1)
 
 }

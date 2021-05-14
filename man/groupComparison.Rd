@@ -67,6 +67,8 @@ groups = levels(QuantData$ProteinLevelData$GROUP)
 colnames(comparison) <- groups[order(as.numeric(groups))]
 # Tests for differentially abundant proteins with models:
 # label-based SRM experiment with expanded scope of biological replication.
+testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData,
+                                           use_log_file = FALSE)
 # table for result
 testResultOneComparison$ComparisonResult
 

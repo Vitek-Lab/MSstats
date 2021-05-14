@@ -209,24 +209,24 @@ calculation (numSample, numPep, numTran, power) at the same time.</p>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Consider quantitative data (i.e. QuantData) from yeast study.</span>
 <span class='co'># A time course study with ten time points of interests and three biological replicates.</span>
-<span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:17] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:17] ** Fractionation handled.
-#&gt; INFO  [2021-05-15 00:30:17] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-15 00:30:17] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:17] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:17] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-15 00:30:17] 
+<span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:27] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:27] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:57:27] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:57:27] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:27] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:27] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-15 00:57:27] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-15 00:30:17] 
+#&gt; INFO  [2021-05-15 00:57:27] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-15 00:30:18]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-15 00:57:27]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-15 00:30:18]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
+#&gt; INFO  [2021-05-15 00:57:27]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
 #&gt; 1    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   1
 #&gt; 2    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   1
 #&gt; 3    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   2
@@ -254,9 +254,9 @@ calculation (numSample, numPep, numTran, power) at the same time.</p>
 <span class='fu'><a href='https://rdrr.io/r/base/row.names.html'>row.names</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"T3-T1"</span>,<span class='st'>"T7-T1"</span>,<span class='st'>"T9-T1"</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProteinLevelData</span>$<span class='no'>GROUP</span>)
 
-<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>,<span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:18]  == Start to test and get inference in whole plot ...
+<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>,<span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:27]  == Start to test and get inference in whole plot ...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-15 00:30:18]  == Comparisons for all proteins are done.</div><div class='input'>
+#&gt; INFO  [2021-05-15 00:57:27]  == Comparisons for all proteins are done.</div><div class='input'>
 <span class='co'>## Calculate sample size for future experiments:</span>
 <span class='co'>#(1) Minimal number of biological replicates per condition</span>
 <span class='fu'>designSampleSize</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>FittedModel</span>, <span class='kw'>numSample</span><span class='kw'>=</span><span class='fl'>TRUE</span>,

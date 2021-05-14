@@ -60,6 +60,8 @@
 #' diau_pept = data.table::fread(diau_pept) 
 #' diau_prot = data.table::fread(diau_prot) 
 #' annot = data.table::fread(annot)
+#' diau_frag = diau_frag[, lapply(.SD, function(x) if (is.integer(x)) as.numeric(x) else x)]
+#' # In case numeric columns are not interpreted correctly
 #' 
 #' diau_imported = DIAUmpiretoMSstatsFormat(diau_frag, diau_pept, diau_prot, 
 #'                                          annot, use_log_file = FALSE)

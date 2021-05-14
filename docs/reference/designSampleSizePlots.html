@@ -151,24 +151,24 @@ minimal number sample size which are (1) number of biological replicates per con
     <pre class="examples"><div class='input'><span class='co'># Based on the results of sample size calculation from function designSampleSize,</span>
 <span class='co'># we generate a series of sample size plots for number of biological replicates, or peptides, </span>
 <span class='co'># or transitions or power plot.</span>
-<span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:18] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-15 00:30:18] ** Fractionation handled.
-#&gt; INFO  [2021-05-15 00:30:18] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-15 00:30:18] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:18] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-15 00:30:18] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-15 00:30:18] 
+<span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:28] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-15 00:57:28] ** Fractionation handled.
+#&gt; INFO  [2021-05-15 00:57:28] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-15 00:57:28] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:28] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-15 00:57:28] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-15 00:57:28] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-15 00:30:18] 
+#&gt; INFO  [2021-05-15 00:57:28] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-15 00:30:18]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-15 00:57:28]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-15 00:30:18]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProcessedData</span>)</div><div class='output co'>#&gt; NULL</div><div class='input'><span class='co'>## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)</span>
+#&gt; INFO  [2021-05-15 00:57:28]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProcessedData</span>)</div><div class='output co'>#&gt; NULL</div><div class='input'><span class='co'>## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)</span>
 <span class='no'>comparison1</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
 <span class='no'>comparison2</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
 <span class='no'>comparison3</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
@@ -176,9 +176,9 @@ minimal number sample size which are (1) number of biological replicates per con
 <span class='fu'><a href='https://rdrr.io/r/base/row.names.html'>row.names</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"T3-T1"</span>,<span class='st'>"T7-T1"</span>,<span class='st'>"T9-T1"</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProteinLevelData</span>$<span class='no'>GROUP</span>)
 
-<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>, <span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:30:18]  == Start to test and get inference in whole plot ...
+<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>, <span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-15 00:57:28]  == Start to test and get inference in whole plot ...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-15 00:30:18]  == Comparisons for all proteins are done.</div><div class='input'>
+#&gt; INFO  [2021-05-15 00:57:28]  == Comparisons for all proteins are done.</div><div class='input'>
 <span class='co'># plot the calculated sample sizes for future experiments:</span>
 <span class='co'># (1) Minimal number of biological replicates per condition</span>
 <span class='no'>result.sample</span><span class='kw'>&lt;-</span><span class='fu'><a href='designSampleSize.html'>designSampleSize</a></span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>FittedModel</span>, <span class='kw'>numSample</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
