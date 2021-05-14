@@ -27,7 +27,10 @@ Imports:
     ggrepel,
     gplots,
     marray,
-    methods
+    methods,
+    stats,
+    grDevices,
+    graphics
 Suggests: 
     BiocStyle,
     knitr,
