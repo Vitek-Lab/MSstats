@@ -29,8 +29,11 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 
 #' Median normalization
 #' @param input `data.table` in standard MSstats format
+#' @importFrom stats median
 #' @keywords internal
 .normalizeMedian = function(input) {
+    ABUNDANCE_RUN = ABUNDANCE_FRACTION = ABUNDANCE = NULL
+    
     if (length(unique(input$LABEL)) == 1L) {
         label = "L"
     } else {
@@ -51,6 +54,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' Get median of protein abundances for a given label
 #' @param df `data.table`
 #' @param label "L" for light isotopes, "H" for heavy isotopes.
+#' @importFrom stats median
 #' @keywords internal
 .getMedian = function(df, label) {
     median(df$ABUNDANCE[df$LABEL == label], na.rm = TRUE)
@@ -61,6 +65,9 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @param input `data.table` in MSstats standard format
 #' @keywords internal
 .normalizeQuantile = function(input) {
+    ABUNDANCE = FRACTION = RUN = LABEL = GROUP_ORIGINAL = NULL
+    SUBJECT_ORIGINAL = PROTEIN = PEPTIDE = TRANSITION = INTENSITY = NULL
+    
     input[ABUNDANCE == 0, "ABUNDANCE"] = 1
     fractions = unique(input$FRACTION)
     is_labeled = data.table::uniqueN(input$LABEL) > 1
@@ -120,6 +127,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @param remove_missing if TRUE, only non-missing values will be considered
 #' @keywords internal
 .getWideTable = function(input, runs, label = "L", remove_missing = TRUE) {
+    RUN = NULL
+    
     if (remove_missing) {
         nonmissing_filter = !is.na(input$INTENSITY)
     } else {
@@ -142,6 +151,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @importFrom preprocessCore normalize.quantiles
 #' @keywords internal
 .quantileNormalizationSingleLabel = function(input, runs, label = "L") {
+    FEATURE = NULL
+    
     normalized = input[, list(FEATURE, preprocessCore::normalize.quantiles(as.matrix(.SD))),
                        .SDcols = runs]
     colnames(normalized)[-1] = runs
@@ -167,7 +178,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @importFrom data.table melt uniqueN
 #' @keywords internal
 .normalizeGlobalStandards = function(input, peptides_dict, standards) {
-    PeptideSequence = PEPTIDE = PROTEIN = NULL
+    PeptideSequence = PEPTIDE = PROTEIN = median_by_fraction = NULL
     Standard = FRACTION = LABEL = ABUNDANCE = RUN = GROUP = NULL
     
     proteins = as.character(unique(input$PROTEIN))
@@ -225,7 +236,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @export
 MSstatsMergeFractions = function(input) {
     ABUNDANCE = INTENSITY = GROUP_ORIGINAL = SUBJECT_ORIGINAL = RUN = NULL
-    originalRUN = FRACTION = TECHREPLICATE = NULL
+    originalRUN = FRACTION = TECHREPLICATE = tmp = merged = newRun = NULL
+    ncount = FEATURE = NULL
     
     input[!is.na(ABUNDANCE) & ABUNDANCE < 0, "ABUNDANCE"] = 0
     input[!is.na(INTENSITY) & INTENSITY == 1, "ABUNDANCE"] = 0

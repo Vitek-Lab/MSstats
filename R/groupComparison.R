@@ -75,6 +75,8 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' @param repeated logical, output of checkRepeatedDesign function
 #' @param samples_info data.table, output of getSamplesInfo function
 #' 
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' 
 #' @export
 #' 
 MSstatsGroupComparison = function(summarized_list, contrast_matrix,
@@ -103,9 +105,13 @@ MSstatsGroupComparison = function(summarized_list, contrast_matrix,
 #' @param summarization_output output of dataProcess function
 #' @param log_base base of the logarithm used in fold-change calculation
 #' 
+#' @importFrom stats p.adjust
+#' 
 #' @export
 #' 
 MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 2) {
+    adj.pvalue = pvalue = issue = NULL
+    
     has_imputed = is.element("NumImputedFeature", colnames(summarization_output$ProteinLevelData))
     model_qc_data = lapply(input, function(x) x[[1]])
     comparisons = lapply(input, function(x) x[[2]])

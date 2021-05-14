@@ -49,7 +49,7 @@ If `append = TRUE`, has to be a valid path to a file.}
 }
 \value{
 data.frame - sample size calculation results including varibles:
- desiredFC, numSample, FDR,  and power.
+desiredFC, numSample, FDR,  and power.
 }
 \description{
 Calculate sample size for future experiments of a Selected Reaction Monitoring (SRM), 

@@ -26,7 +26,9 @@
 #' calculation (numSample, numPep, numTran, power) at the same time.
 #' 
 #' @return data.frame - sample size calculation results including varibles:
-#'  desiredFC, numSample, FDR,  and power.
+#' desiredFC, numSample, FDR,  and power.
+#' 
+#' @importFrom stats median
 #' 
 #' @export
 #'  
@@ -107,6 +109,8 @@ designSampleSize = function(
 #' @param fitted_models FittedModels element of groupComparison output
 #' @keywords internal
 .getVarComponent = function(fitted_models) {
+    Protein = NULL
+    
     result = data.table::rbindlist(
         lapply(fitted_models, function(fit) {
             if (!is.null(fit)) {
@@ -144,6 +148,7 @@ designSampleSize = function(
 
 #' Get median per subject or group by subject
 #' @param var_component data.frame, output of .getVarComponent
+#' @importFrom stats median
 #' @keywords internal
 .getMedianSigmaSubject = function(var_component) {
     if (sum(!is.na(var_component[, "GroupBySubject"])) > 0) {
@@ -164,6 +169,7 @@ designSampleSize = function(
 #' @param delta difference between means (?)
 #' @param median_sigma_error median of error standard deviation
 #' @param median_sigma_subject median standard deviation per subject
+#' @importFrom stats qnorm
 #' @keywords internal
 .calculatePower = function(desiredFC, FDR, delta, median_sigma_error, 
                            median_sigma_subject, numSample) {
@@ -185,6 +191,7 @@ designSampleSize = function(
 #' @inheritParams .calculatePower
 #' @param alpha significance level
 #' @param delta difference between means (?)
+#' @importFrom stats qnorm
 #' @keywords internal
 .getNumSample = function(desiredFC, power, alpha, delta, median_sigma_error, 
                          median_sigma_subject){

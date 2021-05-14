@@ -15,6 +15,9 @@
 #' @return TRUE invisibly
 #' @keywords internal
 .logSummaryStatistics = function(input) {
+    RUN = SUBJECT_ORIGINAL = FRACTION = GROUP_ORIGINAL = NumRuns = NULL
+    NumBioReplicates = NumFractions = NULL
+    
     PEPTIDE = FEATURE = PROTEIN = feature_count = NULL
     
     num_proteins = data.table::uniqueN(input$PROTEIN)
@@ -137,13 +140,16 @@
 #' @return TRUE invisibly
 #' @keywords internal
 .logMissingness = function(input) {
+    ABUNDANCE = AllMissing = NumMissing = NumTotal = AnyAllMissing = NULL
+    FEATURE = FractionMissing = RUN = NULL
+    
     missing = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
                            NumTotal = .N), 
                     by = c("LABEL", "GROUP", "FEATURE")]
     missing[, AllMissing := NumMissing == NumTotal]
     missing[, AnyAllMissing := any(AllMissing), by = c("LABEL", "FEATURE")]
     missing_in_any = as.character(missing[(AnyAllMissing), FEATURE])
-    # LOG, which features have AnyAllMissing
+    # TODO: LOG, which features have AnyAllMissing
     
     missing_by_run = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
                                   NumTotal = .N), by = "RUN"]

@@ -1,4 +1,6 @@
 .getYaxis = function(temp) {
+    INTENSITY = ABUNDANCE = NULL
+    
     temp = temp[!is.na(INTENSITY) & !is.na(ABUNDANCE),]
     temp_abund = temp[1, "ABUNDANCE"]
     temp_inten = temp[1, "INTENSITY"]
@@ -12,6 +14,8 @@
 }
 
 .getSingleProteinForProfile = function(processed, all_proteins, i) {
+    FEATURE = SUBJECT = GROUP = PEPTIDE = NULL
+    
     single_protein = processed[processed$PROTEIN == all_proteins[i], ]
     single_protein[, FEATURE := factor(FEATURE)]
     single_protein[, SUBJECT := factor(SUBJECT)]
@@ -26,6 +30,8 @@
     y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
     ss, s, cumGroupAxis, yaxis.name, lineNameAxis, groupNametemp, dot_colors
 ) {
+    RUN = ABUNDANCE = Name = NULL
+    
     if (is_censored) {
         input$is_censored = factor(input$is_censored, 
                                    levels = c("FALSE", "TRUE"))
@@ -129,6 +135,8 @@
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
     yaxis.name, lineNameAxis, groupNametemp
 ) {
+    RUN = ABUNDANCE = Name = NULL
+    
     num_features = data.table::uniqueN(input$FEATURE)
     profile_plot = ggplot(data = input, 
                           aes_string(x = "RUN", y = "ABUNDANCE", 
@@ -192,6 +200,8 @@
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
     lineNameAxis, yaxis.name
 ) { 
+    RUN = ABUNDANCE = Name = NULL
+    
     if (all_proteins) {
         plot_title = "All proteins"
     } else {
@@ -219,6 +229,8 @@
     input, scale, single_protein, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, dot.size.condition, yaxis.name
 ) {
+    Mean = ciw = NULL
+    
     colnames(input)[colnames(input) == "GROUP"] = "Label"
     if (scale) {
         input$Label = as.numeric(gsub("\\D", "", unique(input$Label)))

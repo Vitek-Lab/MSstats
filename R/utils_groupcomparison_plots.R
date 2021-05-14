@@ -32,6 +32,8 @@
 }
 
 
+#' @importFrom stats quantile dist
+#' @keywords internal
 .getOrderedMatrix = function(input, type) {
     input_tmp = input
     input_tmp[is.na(input)] = 50
@@ -66,6 +68,8 @@
     y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
     legend.size, log_adjp
 ) {
+    Protein = NULL
+    
     plot = ggplot(aes_string(x = "logFC", 
                              y = log_adjp,
                              color = "colgroup",
@@ -158,6 +162,8 @@
     input, log_base, dot.size, x.axis.size, y.axis.size, 
     text.angle, hjust, vjust, y.limdown, y.limup
 ) {
+    logFC = ciw = NULL
+    
     protein = unique(input$Protein)
     plot = ggplot(input, aes_string(x = 'Label', y = 'logFC')) +
         geom_errorbar(aes(ymax = logFC + ciw, ymin = logFC - ciw),

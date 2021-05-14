@@ -37,28 +37,11 @@
 }
 
 
-#' Check if the experiment consist of repeated measurements (time course)
-#' @param input data.table
-#' @keywords internal
-.checkRepeated = function(input) {
-    subject_by_group = table(input[, list(SUBJECT, GROUP)])
-    subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 0))
-    repeated = any(subject_appearances > 1)
-    if (repeated) {
-        msg = "Time course design of experiment"
-    } else {
-        msg = "Case control design of experiment"
-    }
-    getOption("MSstatsLog")("INFO", msg)
-    repeated
-}
-
-
 #' Check if there is only single subject
 #' @param input data.table
 #' @keywords internal
 .checkSingleSubject = function(input) {
-    SUBJECT = NULL
+    SUBJECT = GROUP = NULL
     
     unique_annot = unique(input[, list(GROUP, SUBJECT)])
     subject_counts = unique_annot[, list(NumSubjects = data.table::uniqueN(SUBJECT)),

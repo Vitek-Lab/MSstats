@@ -82,9 +82,12 @@ modelBasedQCPlots = function(
     }
 }
 
+
+#' @importFrom stats resid quantile qnorm 
+#' @importFrom utils setTxtProgressBar
 .plotQQ = function(fitted_models, all_proteins, width, height, address,
                    dot.size, axis.size) {
-    # normality
+    residual = NULL
     .savePlot(address, "QQPlot", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(fitted_models), style = 3)
     for (i in seq_along(fitted_models)) {	
@@ -135,6 +138,8 @@ modelBasedQCPlots = function(
 }
 
 
+#' @importFrom stats resid fitted
+#' @importFrom utils setTxtProgressBar
 .plotResiduals = function(fitted_models, all_proteins, width, height, 
                           address, dot.size, axis.size) {
     .savePlot(address, "ResidualPlot", width, height)

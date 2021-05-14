@@ -38,7 +38,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .selectTopFeatures = function(input, top_n) {
-    ABUNDANCE = MeanAbundance = remove = FEATURE = NULL
+    ABUNDANCE = MeanAbundance = remove = FEATURE = feature_rank = NULL
     
     mean_by_feature = input[ABUNDANCE > 0, 
                             list(MeanAbundance = mean(ABUNDANCE, na.rm = TRUE)),
@@ -56,7 +56,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
     PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = is_censored = NULL
-    is_obs = log2inty = NULL
+    is_obs = log2inty = LABEL = NULL
     
     cols = c("PROTEIN", "PEPTIDE", "FEATURE", "originalRUN", "LABEL", 
              "ABUNDANCE", "censored")
@@ -89,7 +89,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .flagUninformativeSingleLabel = function(input, min_feature_count = 2) {
-    log2inty = is_obs = unrep = NULL
+    log2inty = is_obs = unrep = n_observed = NULL
     label = protein = feature = run = feature_quality = is_outlier = NULL
     
     if (nrow(input) == 0) {
@@ -137,6 +137,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' Calculate cutoff to label outliers
 #' @inheritParams .addOutlierCutoff
 #' @return numeric
+#' @importFrom stats qbinom
 #' @keywords internal
 .calculateOutlierCutoff = function(input, quantile_order = 0.01) {
     unrep = is_obs = feature = run = NULL
@@ -154,7 +155,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .addCoverageInfo = function(input) {
-    is_lowcvr = unrep = NULL
+    is_lowcvr = unrep = has_three_informative = NULL
     
     input[(has_three_informative), is_lowcvr := .flagLowCoverage(.SD), 
           by = c("protein", "feature"),
@@ -179,7 +180,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .addNInformativeInfo = function(input, min_feature_count, column) {
-    has_three_informative = NULL
+    has_three_informative = n_informative = NULL
     
     input[, n_informative := .countInformative(.SD, column), by = "protein",
           .SDcols = c("feature", column)]
@@ -221,9 +222,10 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' Calculate protein variances
 #' @param input data.table
 #' @return list of residuals, degress of freedom and variances
+#' @importFrom stats residuals
 #' @keywords internal
 .calculateProteinVariance = function(input) {
-    is_lowcvr = NULL
+    is_lowcvr = unrep = NULL
     
     robust_model = try(.fitHuber(input[!(is_lowcvr) & !(unrep), ]), silent = TRUE) 
     if (inherits(robust_model, "try-error")) {
@@ -281,7 +283,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .addNoisyFlag = function(input) {
-    svar_feature = NULL
+    svar_feature = is_outlier = is_noisy = NULL
     
     feature_vars = .getFeatureVariances(input)
     if (nrow(feature_vars) > 0) {
@@ -305,6 +307,8 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 }
 
 
+#' @importFrom stats quantile
+#' @keywords internal
 .getQuantileCutoff = function(input) {
     feature = svar_ref = NULL
     
@@ -319,7 +323,8 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return numeric
 #' @keywords internal
 .getFeatureVariances = function(input, tolerance = 3) {
-    s_resid_eb = NULL
+    s_resid_eb = num_filter = model_residuals = unrep = is_lowcvr = NULL
+    log2inty = n_runs = resid_null = NULL
     
     remove_outliers = unique(input$label) == "L"
     if (remove_outliers) {
@@ -346,7 +351,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return logical
 #' @keywords internal
 .addOutlierInformation = function(input, tol = 3, keep_run = FALSE) {
-    result = NULL
+    result = all_missing = NULL
     
     input$result = abs(input$model_residuals / input$s_resid_eb) > tol
     if (keep_run) {

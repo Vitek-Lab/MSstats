@@ -109,6 +109,7 @@
 #' @param input data.table
 #' @param rename if TRUE, rename the output column to LogIntensities
 #' @return data.table
+#' @importFrom stats median
 #' @keywords internal
 .adjustLRuns = function(input, rename = FALSE) {
     LABEL = newABUNDANCE = RUN = newABUNDANCE.h = NULL
@@ -151,6 +152,7 @@
 #' @param is_labeled logical, if TRUE, data comes from a labeled experiment
 #' @param equal_variances logical, if TRUE, equal variances are assumed
 #' @return lm or merMod
+#' @importFrom stats lm
 #' @keywords internal
 .fitLinearModel = function(input, is_single_feature, is_labeled,
                            equal_variances) {
@@ -181,10 +183,12 @@
 #' @param fit lm
 #' @param num_iter number of iterations
 #' @importFrom lme4 lmer
-#' @importFrom stats loess
+#' @importFrom stats loess resid lm formula
 #' @return merMod
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
+    weight = NULL
+    
     for (i in 1:num_iter) {
         if (i == 1) {
             if (class(fit) == "lm") {
@@ -204,7 +208,7 @@
         
         ## loess fitted valuaes are predicted sd
         input$weight = 1 / (input$loess.fitted ^ 2)
-        input = input[, -which(colnames(input) %in% "abs.resids")]
+        input = input[, !(colnames(input) %in% "abs.resids")]
         
         ## re-fit using weight
         if (class(fit) == "lm") {

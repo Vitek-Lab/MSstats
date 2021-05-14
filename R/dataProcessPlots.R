@@ -95,6 +95,8 @@ dataProcessPlots = function(
   originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
   remove_uninformative_feature_outlier = FALSE, address = ""
 ) {
+  PROTEIN = Protein = NULL
+  
   type = toupper(type)
   processed = data.table::as.data.table(data$FeatureLevelData)
   summarized = data.table::as.data.table(data$ProteinLevelData)
@@ -128,17 +130,24 @@ dataProcessPlots = function(
 }
 
 
+#' @importFrom utils setTxtProgressBar
+#' @importFrom stats xtabs
+#' @keywords internal
 .plotProfile = function(
   processed, summarized, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
   text.size, text.angle, legend.size, dot.size.profile, width, height, proteins, 
   originalPlot, summaryPlot, remove_uninformative_feature_outlier, address
 ) {
+  ABUNDANCE = PROTEIN = feature_quality = is_outlier = Protein = GROUP = NULL
+  SUBJECT = LABEL = RUN = xtabs = PEPTIDE = FEATURE = NULL
+  LogIntensities = TRANSITION = FRACTION = censored = analysis = NULL
+  
   yaxis.name = .getYaxis(processed)
   is_censored = is.element("censored", colnames(processed))
   all_proteins = as.character(unique(processed$PROTEIN))
   if (remove_uninformative_feature_outlier) {
     if (is.element("feature_quality", colnames(processed))) {
-      processed[, ABUDANDANCE := ifelse(
+      processed[, ABUNDANCE := ifelse(
         feature_quality == "Noninformative" | is_outlier, NA, ABUNDANCE)]
       msg = "** Filtered out uninformative feature and outliers in the profile plots."
     } else {
@@ -148,7 +157,7 @@ dataProcessPlots = function(
   }
   if (proteins != "all") {
     selected_proteins = .getSelectedProteins(proteins, all_proteins)
-    processed = processed[PROTEIN %in% selected_proteins, ]
+    processed = processed[PROTEIN %in% selected_proteins]
     summarized = summarized[Protein %in% selected_proteins]
     processed[, PROTEIN := factor(PROTEIN)]
     summarized[, PROTEIN := factor(Protein)]
@@ -157,10 +166,10 @@ dataProcessPlots = function(
   y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
   y.limdown = ifelse(is.numeric(ylimDown), ylimDown, -1)
   
-  processed = processed[order(GROUP, SUBJECT, LABEL), ]
+  processed = processed[order(GROUP, SUBJECT, LABEL)]
   processed[, RUN := factor(RUN, levels = unique(RUN), 
                             labels = seq(1, length(unique(RUN))))]
-  processed[, RUN := as.numeric(processed$RUN)]
+  processed[, RUN := as.numeric(RUN)]
   
   ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, c("GROUP", "RUN")])
@@ -169,7 +178,7 @@ dataProcessPlots = function(
   } 
   tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP <- factor(tempGroupName$GROUP,
+  tempGroupName$GROUP = factor(tempGroupName$GROUP,
                                 levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
@@ -192,9 +201,6 @@ dataProcessPlots = function(
   if ("feature_quality" %in% colnames(processed)) {
     processed[, feature_quality := NULL]
   }
-  if ("suggestToFilter" %in% colnames(processed)) {
-      processed[, suggestToFilter := NULL]
-  }
   if ("is_outlier" %in% colnames(processed)) {
     processed[, is_outlier := NULL]
   }
@@ -210,7 +216,7 @@ dataProcessPlots = function(
       }
       
       pept_feat = unique(single_protein[, list(PEPTIDE, FEATURE)])
-      counts = pept_feat[, .(N = .N), by = "PEPTIDE"]$N
+      counts = pept_feat[, list(N = .N), by = "PEPTIDE"]$N
       s = rep(1:length(counts), times = counts)
       ss = unlist(lapply(counts, function(x) seq(1, x)), FALSE, FALSE)
       groupNametemp = data.frame(groupName,
@@ -254,7 +260,7 @@ dataProcessPlots = function(
       }
       
       pept_feat = unique(single_protein[, list(PEPTIDE, FEATURE)])
-      counts = pept_feat[, .(N = .N), by = "PEPTIDE"]$N
+      counts = pept_feat[, list(N = .N), by = "PEPTIDE"]$N
       s = rep(1:length(counts), times = counts)
       ss = unlist(lapply(counts, function(x) seq(1, x)), FALSE, FALSE)
       groupNametemp = data.frame(groupName,
@@ -297,10 +303,15 @@ dataProcessPlots = function(
   }
 }
 
+
+#' @importFrom stats xtabs
+#' @importFrom utils setTxtProgressBar
 .plotQC = function(
   processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
   text.angle, legend.size, dot.size.profile, width, height, protein, address
 ) {
+  GROUP = SUBJECT = RUN = LABEL = PROTEIN = NULL
+  
   yaxis.name = .getYaxis(processed)
   y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
   y.limdown = ifelse(is.numeric(ylimDown), ylimDown, -1)
@@ -325,13 +336,13 @@ dataProcessPlots = function(
   processed = processed[order(LABEL, GROUP, SUBJECT)]
   
   ## Meena :due to GROUP=0 for labeled.. extra care required.
-  tempGroupName = unique(processed[, .(GROUP, RUN)])
+  tempGroupName = unique(processed[, list(GROUP, RUN)])
   if (length(unique(processed$LABEL)) == 2) {
     tempGroupName = tempGroupName[GROUP != '0']
   } 
   tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP <- factor(tempGroupName$GROUP,
+  tempGroupName$GROUP = factor(tempGroupName$GROUP,
                                 levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
@@ -340,7 +351,7 @@ dataProcessPlots = function(
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
                          Name = levels(tempGroupName$GROUP))
-
+  
   .savePlot(address, "QCPlot", width, height)
   if (protein %in% c("all", "allonly")) {
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
@@ -379,11 +390,17 @@ dataProcessPlots = function(
   }
 } 
 
+
+#' @importFrom stats qt sd na.omit
+#' @importFrom utils setTxtProgressBar
+#' @keywords internal
 .plotCondition = function(
   processed, summarized, ylimUp, ylimDown, scale, interval, x.axis.size, 
   y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
   dot.size.condition, width, height, protein, save_plot, address
 ) {
+  adj.pvalue = Protein = ciw = PROTEIN = GROUP = SUBJECT = ABUNDANCE = NULL
+  
   data.table::setnames(summarized, c("Protein", "LogIntensities"),
                        c("PROTEIN", "ABUNDANCE"))
   all_proteins = levels(summarized$PROTEIN)
@@ -406,9 +423,9 @@ dataProcessPlots = function(
       next()
     }
     
-    sp_all = single_protein[, .(Mean = mean(ABUNDANCE, na.rm = TRUE),
-                                SD = sd(ABUNDANCE, na.rm = TRUE),
-                                numMeasurement = .N),
+    sp_all = single_protein[, list(Mean = mean(ABUNDANCE, na.rm = TRUE),
+                                   SD = sd(ABUNDANCE, na.rm = TRUE),
+                                   numMeasurement = .N),
                             by = "GROUP"]
     if (interval == "CI") {
       sp_all[, ciw := qt(0.975, sp_all$numMeasurement) * sp_all$SD / sqrt(sp_all$numMeasurement)]

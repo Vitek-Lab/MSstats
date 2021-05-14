@@ -7,11 +7,13 @@
 #' @param missing_symbol `censoredInt` parameter to `dataProcess`
 #' @param censored_cutoff `maxQuantileforCensored` parameter to `dataProcess`
 #' 
+#' @importFrom stats quantile
+#' 
 #' @export
 #'  
 MSstatsHandleMissing = function(input, summary_method, impute, 
                                 missing_symbol, censored_cutoff) {
-    INTENSITY = LABEL = ABUNDANCE = NULL
+    INTENSITY = LABEL = ABUNDANCE = censored = NULL
     
     if ((summary_method == "TMP" & impute) & !is.null(missing_symbol)) {
         input$censored = FALSE
@@ -69,6 +71,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' @keywords internal
 .setCensoredByThreshold = function(input, censored_symbol, remove50missing) {
     total_features = n_obs = newABUNDANCE = n_obs_run = censored = NULL
+    nonmissing_all = ABUNDANCE_cut = NULL
     
     if (censored_symbol == "NA") {
         input[, nonmissing_all := !is.na(newABUNDANCE)]

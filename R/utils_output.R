@@ -21,12 +21,14 @@
 #' 
 MSstatsSummarizationOutput = function(input, summarized, processed, 
                                       method, impute, censored_symbol) {
+    LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL
+    
     input = .finalizeInput(input, summarized, method, impute, censored_symbol)
     summarized = lapply(summarized, function(x) x[[1]])
     summarized = data.table::rbindlist(summarized)
     if (inherits(summarized, "try-error")) {
         msg = paste("*** error : can't summarize per subplot with ", 
-                    summary_method, ".")
+                    method, ".")
         getOption("MSstatsLog")("ERROR", msg)
         getOption("MSstatsMsg")("ERROR", msg)
         rqall = NULL
@@ -104,6 +106,10 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' @inheritParams .finalizeInput
 #' @keywords internal
 .finalizeTMP = function(input, censored_symbol, impute, summarized) {
+    NonMissingStats = NumMeasuredFeature = MissingPercentage = LABEL = NULL
+    total_features = more50missing = nonmissing_orig = censored = NULL
+    INTENSITY = newABUNDANCE = NumImputedFeature = NULL
+    
     survival_predictions = lapply(summarized, function(x) x[[2]])
     predicted_survival = data.table::rbindlist(survival_predictions)
     if (impute) {
@@ -142,6 +148,10 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' @inheritParams .finalizeInput
 #' @keywords internal
 .finalizeLinear = function(input, censored_symbol) {
+    NonMissingStats = NumMeasuredFeature = MissingPercentage = NULL
+    total_features = more50missing = nonmissing_orig = LABEL = NULL
+    censored = INTENSITY = newABUNDANCE = NumImputedFeature = NULL
+    
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 
           by = c("PROTEIN", "RUN")]

@@ -55,7 +55,8 @@ groupComparisonPlots = function(
     width = 10, height = 10, which.Comparison = "all", which.Protein = "all",
     address = ""
 ) {
-    # TODO: initialize LOGS here
+    Label = Protein = NULL
+    
     type = toupper(type)
     input = data.table::as.data.table(data)
     all_labels = as.character(unique(data$Label))
@@ -96,6 +97,8 @@ groupComparisonPlots = function(
     input, log_base_pval, ylimUp, FCcutoff, sig, clustering, numProtein, colorkey, 
     width, height, log_base_FC, x.axis.size, y.axis.size, address
 ) {
+    adj.pvalue = heat_val = NULL
+    
     if (length(unique(input$Protein)) <= 1) {
         stop("At least two proteins are needed for heatmaps.")
     }
@@ -172,6 +175,8 @@ groupComparisonPlots = function(
     ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
     text.size, legend.size, x.axis.size, y.axis.size, log_base_FC
 ) {
+    adj.pvalue = colgroup = logFC = Protein = issue = Label = newlogFC = NULL
+    
     log_adjp = paste0("log", log_base_pval, "adjp")
     all_labels = unique(input$Label)
     input = input[!is.na(adj.pvalue), ]
@@ -250,6 +255,8 @@ groupComparisonPlots = function(
     input, proteins, address, width, height, sig, ylimUp, ylimDown,
     text.angle, dot.size, x.axis.size, y.axis.size, log_base_FC
 ) {
+    adj.pvalue = Protein = ciw = NULL
+    
     input = input[!is.na(adj.pvalue), ]
     all_proteins = unique(input$Protein)
     

@@ -2,6 +2,8 @@
 #' @importFrom survival survreg Surv
 #' @keywords internal
 .fitSurvival = function(input) {
+    FEATURE = RUN = NULL
+    
     missingness_filter = is.finite(input$newABUNDANCE)
     n_total = nrow(input[missingness_filter, ])
     n_features = data.table::uniqueN(input[missingness_filter, FEATURE])
@@ -47,8 +49,11 @@
 #' Get predicted values from a survival model
 #' @param input data.table
 #' @return numeric vector of predictions
+#' @importFrom stats predict
 #' @keywords internal
 .addSurvivalPredictions = function(input) {
+    LABEL = NULL
+    
     survival_fit = .fitSurvival(input[LABEL == "L", ])
     predict(survival_fit, newdata = input)
 }

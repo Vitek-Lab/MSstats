@@ -21,6 +21,8 @@ MSstatsContrastMatrix.list = function(contrasts, conditions, labels = NULL) {
     contrast_matrix
 }
 
+
+#' @importFrom utils combn
 #' @export
 MSstatsContrastMatrix.character = function(contrasts, conditions, labels = NULL) {
     if (contrasts == "pairwise") {

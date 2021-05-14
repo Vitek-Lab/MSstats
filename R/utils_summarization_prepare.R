@@ -16,7 +16,7 @@
 #' 
 MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol,
                                           remove_uninformative_feature_outlier) {
-    ABUNDANCE = feature_quality = is_outlier = NULL
+    ABUNDANCE = feature_quality = is_outlier = PROTEIN = NULL
     
     label = data.table::uniqueN(input$LABEL) == 2
     if (label) {
@@ -83,6 +83,9 @@ getProcessed = function(input) {
 #' @return data.table
 #' @keywords internal
 .prepareLinear = function(input, impute, censored_symbol) {
+    newABUNDANCE = ABUNDANCE = nonmissing = n_obs = n_obs_run = NULL
+    total_features = FEATURE = prop_features = NULL
+    
     input[, newABUNDANCE := ABUNDANCE]
     input[, nonmissing := .getNonMissingFilter(.SD, impute, censored_symbol)]
     input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
@@ -102,6 +105,10 @@ getProcessed = function(input) {
 #' @return data.table
 #' @keywords internal
 .prepareTMP = function(input, impute, censored_symbol) {
+    censored = feature_quality = newABUNDANCE = cen = nonmissing = n_obs = NULL
+    n_obs_run = total_features = FEATURE = prop_features = NULL
+    remove50missing = ABUNDANCE = NULL
+    
     if (impute & !is.null(censored_symbol)) {
         if (is.element("feature_quality", colnames(input))) {
             input[, censored := ifelse(feature_quality == "Informative",

@@ -29,6 +29,8 @@
 #'
 #' @return data.frame as described in details.
 #'
+#' @importFrom stats median
+#'
 #' @export
 #'
 #' @examples
@@ -51,6 +53,8 @@ quantification = function(
     data, type = "Sample", format="matrix", use_log_file = TRUE, append = FALSE,
     verbose = TRUE, log_file_path = NULL
 ) {
+    LogIntensities = NULL
+    
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
                                         log_file_path, base = "MSstats_quant_log_")
     getOption("MSstatsLog")("INFO", "MSstats - quantification function")

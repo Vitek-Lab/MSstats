@@ -134,11 +134,13 @@ dataProcess = function(
 #' FALSE uses the values assigned by cutoffCensored
 #' 
 #' @importFrom data.table uniqueN
+#' @importFrom utils setTxtProgressBar
 #' 
 #' @export
 #' 
 MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
                             remove50missing, equal_variance) {
+
     num_proteins = length(proteins_list)
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
@@ -155,7 +157,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
         for (protein_id in 1:num_proteins) {
             single_protein = proteins_list[[protein_id]]
             summarized_result = MSstatsSummarizeSingleLinear(single_protein,
-                                                             equal_variances)
+                                                             equal_variance)
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
         }
@@ -172,10 +174,12 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 #' 
 #' @return list with protein-level data
 #' 
+#' @importFrom stats xtabs
+#' 
 #' @export
 #' 
 MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) {
-    ABUNDANCE = RUN = FEATURE = NULL
+    ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
     
     label = data.table::uniqueN(single_protein$LABEL) > 1
     single_protein = single_protein[!is.na(ABUNDANCE)]
@@ -183,7 +187,7 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
     single_protein[, FEATURE := factor(FEATURE)]
     
     counts = xtabs(~ RUN + FEATURE, 
-                   data = unique(single_protein[, .(FEATURE, RUN)]))
+                   data = unique(single_protein[, list(FEATURE, RUN)]))
     counts = as.matrix(counts)
     is_single_feature = .checkSingleFeature(single_protein)
     
@@ -202,7 +206,7 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
             cf = fixef(fit)
         }
         
-        result = unique(single_protein[, .(Protein = PROTEIN, RUN = RUN)])
+        result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
         log_intensities = get_linear_summary(single_protein, cf,
                                              counts, label)
         result[, LogIntensities := log_intensities]
@@ -219,11 +223,14 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
 #' @return list of two data.tables: one with fitted survival model,
 #' the other with protein-level data
 #' 
+#' @importFrom stats predict
+#' 
 #' @export
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
                                      remove50missing) {
-    newABUNDANCE = NULL
+    newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
+    predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
                                                  "FEATURE", "ref"))
     single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &

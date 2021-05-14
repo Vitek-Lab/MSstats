@@ -7,6 +7,8 @@
 #' @export
 #' 
 checkRepeatedDesign = function(summarization_output) {
+    SUBJECT = GROUP = NULL
+    
     input = as.data.table(summarization_output$ProteinLevelData)
     subject_by_group = table(input[, list(SUBJECT, GROUP)])
     subject_appearances = apply(subject_by_group, 1, function(x) sum(x > 
@@ -31,6 +33,8 @@ checkRepeatedDesign = function(summarization_output) {
 #' @export
 #' 
 getSamplesInfo = function(summarization_output) {
+    RUN = NULL
+    
     summarized = as.data.table(summarization_output$ProteinLevelData)
     summarized[, list(NumRuns = data.table::uniqueN(RUN)),
                by = "GROUP"]
@@ -66,6 +70,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param save_fitted_models if TRUE, fitted model will be saved. If FALSE,
 #' it will be replaced by NULL
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
+#' @importFrom stats resid fitted
 #' @keywords internal
 .fitModelSingleProtein = function(input, contrast_matrix, has_tech_replicates,
                                   is_single_subject, repeated, groups,
@@ -152,7 +157,7 @@ getSamplesInfo = function(summarization_output) {
             } else {
                 full_fit = suppressMessages(try(
                     lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
-                         data = input),
+                               data = input),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
@@ -170,6 +175,7 @@ getSamplesInfo = function(summarization_output) {
 
 #' Get params (coefficients, covariance matrix, degrees of freedom) from a model
 #' @param fitted_model object of class lm or lmerMod
+#' @importFrom stats vcov
 #' @keywords internal
 .getModelParameters = function(fitted_model) {
     if (class(fitted_model[["full_fit"]]) == "lm") {
@@ -193,14 +199,14 @@ getSamplesInfo = function(summarization_output) {
 .getEmptyComparison = function(input, contrast_matrix, groups, protein) {
     all_comparisons = lapply(1:nrow(contrast_matrix), function(row_id) {
         ith_comparison = contrast_matrix[row_id, , drop = FALSE]
-
+        
         if (any(groups[ith_comparison != 0] %in% unique(input$GROUP))) {
             msg = paste("*** error: results of protein", protein,
                         "for comparison", row.names(ith_comparison),
                         "are NA because there are measurements",
                         "only in a single group")
             getOption("MSstatsLog")("INFO", msg)
-
+            
             if (ith_comparison[ith_comparison != 0 &
                                (groups %in% unique(input$GROUP))] > 0) {
                 list(
@@ -219,7 +225,7 @@ getSamplesInfo = function(summarization_output) {
                         "are NA because there are no measurements",
                         "in both conditions.")
             getOption("MSstatsLog")("INFO", msg)
-
+            
             list(logFC = NA,
                  issue = "completeMissing")
         }
@@ -249,7 +255,7 @@ getSamplesInfo = function(summarization_output) {
     parameters = .getModelParameters(fitted_model)
     fit = fitted_model[["full_fit"]]
     coefs = parameters$cf[, 1]
-
+    
     all_comparisons = vector("list", nrow(contrast_matrix))
     for (row_id in 1:nrow(contrast_matrix)) {
         ith_contrast = contrast_matrix[row_id, , drop = FALSE]
@@ -285,7 +291,7 @@ getSamplesInfo = function(summarization_output) {
                                empty_conditions)
     flag_issue_pos = length(count_diff_pos) != 0
     flag_issue_neg = length(count_diff_neg) != 0
-
+    
     if (any(c(flag_issue_pos, flag_issue_neg))) {
         if (flag_issue_pos & flag_issue_neg) {
             issue = "completeMissing"
@@ -374,11 +380,14 @@ getSamplesInfo = function(summarization_output) {
 #' @keywords internal
 .countMissingPercentage = function(contrast_matrix, summarized, 
                                    result, samples_info, has_imputed) {
-    counts = summarized[,
-                        .(totalN = unique(TotalGroupMeasurements),
-                          NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
-                          NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
-                        by = "GROUP"]
+    TotalGroupMeasurements = NumMeasuredFeature = NumImputedFeature = NULL
+    NumFea = NumRuns = totalN = NULL
+        
+        counts = summarized[,
+                            list(totalN = unique(TotalGroupMeasurements),
+                                 NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
+                                 NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
+                            by = "GROUP"]
     
     empty_conditions = setdiff(samples_info$GROUP, unique(counts$GROUP))
     if (length(empty_conditions) !=0) {
@@ -389,7 +398,7 @@ getSamplesInfo = function(summarization_output) {
         counts[is.na(totalN), NumImputedFeature := 0]
         counts[is.na(totalN), totalN := NumRuns * nofea]
     }
-
+    
     missing_vector = numeric(nrow(contrast_matrix))
     imputed_vector = numeric(nrow(contrast_matrix))
     for (i in 1:nrow(contrast_matrix)) {
