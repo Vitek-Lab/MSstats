@@ -20,7 +20,7 @@ list, same as the output of `groupComparison`
 Create output of group comparison based on results for individual proteins
 }
 \examples{
-#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
 levels(QuantData$ProteinLevelData$GROUP)
 comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)

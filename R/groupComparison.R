@@ -162,7 +162,7 @@ MSstatsGroupComparison = function(summarized_list, contrast_matrix,
 #' @return list, same as the output of `groupComparison`
 #' 
 #' @examples 
-#' #' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 #' group_comparison_input = MSstatsPrepareForGroupComparison(QuantData)
 #' levels(QuantData$ProteinLevelData$GROUP)
 #' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
