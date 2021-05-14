@@ -5,6 +5,17 @@
 #' @inheritParams MSstatsConvert::MSstatsBalancedDesign
 #' @export
 #' 
+#' @return data.table
+#' 
+#' @examples 
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' head(input)
+#' 
 MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     input = .checkDataValidity(input, fix_missing = fix_missing)
     input = .updateColumnsForProcessing(input)

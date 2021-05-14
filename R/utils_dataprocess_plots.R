@@ -1,3 +1,6 @@
+#' Get name for y-axis
+#' @param temp data.table
+#' @keywords internal
 .getYaxis = function(temp) {
     INTENSITY = ABUNDANCE = NULL
     
@@ -13,6 +16,12 @@
     }
 }
 
+
+#' Get data for a single protein to plot
+#' @param dataProcess output -> FeatureLevelData
+#' @param all_proteins character, set of protein names
+#' @param i integer, index of protein to use
+#' @keywords internal
 .getSingleProteinForProfile = function(processed, all_proteins, i) {
     FEATURE = SUBJECT = GROUP = PEPTIDE = NULL
     
@@ -25,6 +34,11 @@
 }
 
 
+#' Create profile plot
+#' @inheritParams dataProcessPlots
+#' @param input data.table
+#' @param is_censored TRUE if censored values were imputed
+#' @keywords internal
 .makeProfilePlot = function(
     input, is_censored, featureName, y.limdown, y.limup, x.axis.size, 
     y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
@@ -130,6 +144,10 @@
 }
 
 
+#' Make summary profile plot
+#' @inheritParams dataProcessPlots
+#' @inheritParams .makeProfilePlot
+#' @keywords internal
 .makeSummaryProfilePlot = function(
     input, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
@@ -195,6 +213,11 @@
 }
 
 
+#' Make QC plot
+#' @inherit dataProcessPlots
+#' @param input data.table
+#' @param all_proteins character vector of protein names
+#' @keywords internal
 .makeQCPlot = function(
     input, all_proteins, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
@@ -225,6 +248,11 @@
 }
 
 
+#' Make condition plot
+#' @inheritParams dataProcessPlots
+#' @param input data.table
+#' @param single_protein data.table
+#' @keywords internal
 .makeConditionPlot = function(
     input, scale, single_protein, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, dot.size.condition, yaxis.name

@@ -16,6 +16,19 @@ If not NULL, must be one of the options: "zero_to_na" or "na_to_zero".
 If "zero_to_na", Intensity values equal exactly to 0 will be converted to NA.
 If "na_to_zero", missing values will be replaced by zeros.}
 }
+\value{
+data.table
+}
 \description{
 Prepare data for processing by `dataProcess` function
+}
+\examples{
+raw = DDARawData 
+method = "TMP"
+cens = "NA"
+impute = TRUE
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+head(input)
+
 }

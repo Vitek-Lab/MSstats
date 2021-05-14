@@ -24,6 +24,9 @@ MSstatsHandleMissing(
 
 \item{censored_cutoff}{`maxQuantileforCensored` parameter to `dataProcess`}
 }
+\value{
+data.table
+}
 \description{
 Handle censored missing values
 }

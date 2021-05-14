@@ -9,6 +9,24 @@
 #' 
 #' @export
 #' 
+#' @examples 
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input_all = MSstatsSelectFeatures(input, "all") # all features
+#' input_5 = MSstatsSelectFeatures(input, "topN", top_n = 5) # top 5 features
+#' input_informative = MSstatsSelectFeatures(input, "highQuality") # feature selection
+#' 
+#' head(input_all)
+#' head(input_5)
+#' head(input_informative)
+#' 
 MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2) {
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
