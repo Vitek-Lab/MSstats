@@ -134,6 +134,10 @@
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
+      <th>proteins_list</th>
+      <td><p>list of processed feature-level data</p></td>
+    </tr>
+    <tr>
       <th>method</th>
       <td><p>summarization method: "linear" or "TMP"</p></td>
     </tr>
@@ -166,27 +170,41 @@ variance among intensities from features. FALSE means that we cannot assume
 equal variance among intensities from features, then we will account for
 heterogeneous variation from different features.</p></td>
     </tr>
-    <tr>
-      <th>input</th>
-      <td><p>list of processed feature-level data</p></td>
-    </tr>
-    <tr>
-      <th>remove_uninformative_feature_outlier</th>
-      <td><p>It only works after users used featureSubset = "highQuality" 
-in dataProcess. TRUE allows to remove 1) the features are flagged in the column, 
-feature_quality = "Uninformative" which are features with bad quality, 
-2) outliers that are flagged in the column, is_outlier = TRUE, 
-for run-level summarization. FALSE (default) uses all features and intensities 
-for run-level summarization.</p></td>
-    </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>list of length one with run-level data.</p>
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>raw</span> <span class='kw'>=</span> <span class='no'>DDARawData</span>
+<span class='no'>method</span> <span class='kw'>=</span> <span class='st'>"TMP"</span>
+<span class='no'>cens</span> <span class='kw'>=</span> <span class='st'>"NA"</span>
+<span class='no'>impute</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+<span class='kw pkg'>MSstatsConvert</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/MSstatsConvert/man/MSstatsLogsSettings.html'>MSstatsLogsSettings</a></span>(<span class='fl'>FALSE</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForDataProcess.html'>MSstatsPrepareForDataProcess</a></span>(<span class='no'>raw</span>, <span class='fl'>2</span>, <span class='kw'>NULL</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 22:19:22] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 22:19:22] ** Updated quantification data to make balanced design. Missing values are marked by NA</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsNormalize.html'>MSstatsNormalize</a></span>(<span class='no'>input</span>, <span class='st'>"EQUALIZEMEDIANS"</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsMergeFractions.html'>MSstatsMergeFractions</a></span>(<span class='no'>input</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsHandleMissing.html'>MSstatsHandleMissing</a></span>(<span class='no'>input</span>, <span class='st'>"TMP"</span>, <span class='fl'>TRUE</span>, <span class='st'>"NA"</span>, <span class='fl'>0.999</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Log2 intensities under cutoff = 13.456  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:22] ** Log2 intensities = NA were considered as censored missing values.</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsSelectFeatures.html'>MSstatsSelectFeatures</a></span>(<span class='no'>input</span>, <span class='st'>"all"</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Use all features that the dataset originally has.</div><div class='input'><span class='no'>processed</span> <span class='kw'>=</span> <span class='fu'><a href='getProcessed.html'>getProcessed</a></span>(<span class='no'>input</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForSummarization.html'>MSstatsPrepareForSummarization</a></span>(<span class='no'>input</span>, <span class='no'>method</span>, <span class='no'>impute</span>, <span class='no'>cens</span>, <span class='fl'>FALSE</span>)
+<span class='no'>input_split</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/split.html'>split</a></span>(<span class='no'>input</span>, <span class='no'>input</span>$<span class='no'>PROTEIN</span>)
+<span class='no'>summarized</span> <span class='kw'>=</span> <span class='fu'>MSstatsSummarize</span>(<span class='no'>input_split</span>, <span class='no'>method</span>, <span class='no'>impute</span>, <span class='no'>cens</span>, <span class='fl'>FALSE</span>, <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/length.html'>length</a></span>(<span class='no'>summarized</span>) <span class='co'># list of summarization outputs for each protein</span></div><div class='output co'>#&gt; [1] 6</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>summarized</span><span class='kw'>[[</span><span class='fl'>1</span>]]<span class='kw'>[[</span><span class='fl'>1</span>]]) <span class='co'># run-level summary</span></div><div class='output co'>#&gt;    RUN LogIntensities Protein
+#&gt; 1:   1       21.28437  bovine
+#&gt; 2:   2       20.85653  bovine
+#&gt; 3:   3       20.67521  bovine
+#&gt; 4:   4       21.60443  bovine
+#&gt; 5:   5       21.82186  bovine
+#&gt; 6:   6       21.20445  bovine</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
+      <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
   </div>

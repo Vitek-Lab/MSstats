@@ -127,18 +127,21 @@
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
+      <th>contrasts</th>
+      <td><p>One of the following:
+i) list of lists. Each sub-list consists of two vectors that name 
+conditions that will be compared. See the details section for more information
+ii) matrix. In this case, it's correctness will be checked
+iii) "pairwise". In this case, pairwise comparison matrix will be generated
+iv) data.frame. In this case, input will be converted to matrix</p></td>
+    </tr>
+    <tr>
       <th>conditions</th>
       <td><p>unique condition labels</p></td>
     </tr>
     <tr>
       <th>labels</th>
       <td><p>labels for contrasts (row.names of the contrast matrix)</p></td>
-    </tr>
-    <tr>
-      <th>contrast</th>
-      <td><p>list of lists. Each sub-list consists of two vectors that 
-name conditions that will be compared. See the details section for more 
-information</p></td>
     </tr>
     </table>
 

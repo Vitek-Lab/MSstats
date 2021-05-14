@@ -146,7 +146,7 @@ based on intensity-based linear model. Two options of the calculation:
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>data</th>
-      <td><p>'fittedmodel' in testing output from function groupComparison.</p></td>
+      <td><p>'FittedModel' in testing output from function groupComparison.</p></td>
     </tr>
     <tr>
       <th>desiredFC</th>
@@ -170,12 +170,34 @@ else you should input the exact number of biological replicates.</p></td>
 of detecting a true fold change. TRUE represent you require to calculate the power 
 for this category, else you should input the average of power you expect. Default is 0.9</p></td>
     </tr>
+    <tr>
+      <th>use_log_file</th>
+      <td><p>logical. If TRUE, information about data processing
+will be saved to a file.</p></td>
+    </tr>
+    <tr>
+      <th>append</th>
+      <td><p>logical. If TRUE, information about data processing will be added
+to an existing log file.</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>logical. If TRUE, information about data processing wil be printed
+to the console.</p></td>
+    </tr>
+    <tr>
+      <th>log_file_path</th>
+      <td><p>character. Path to a file to which information about 
+data processing will be saved. 
+If not provided, such a file will be created automatically.
+If `append = TRUE`, has to be a valid path to a file.</p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>data.frame - sample size calculation results including varibles:
- desiredFC, numSample, FDR,  and power.</p>
+desiredFC, numSample, FDR,  and power.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The function fits the model and uses variance components to calculate 
@@ -187,24 +209,24 @@ calculation (numSample, numPep, numTran, power) at the same time.</p>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Consider quantitative data (i.e. QuantData) from yeast study.</span>
 <span class='co'># A time course study with ten time points of interests and three biological replicates.</span>
-<span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-11 02:46:28] ** Features with one or two measurements across runs are removed.
-#&gt; INFO  [2021-05-11 02:46:28] ** Fractionation handled.
-#&gt; INFO  [2021-05-11 02:46:28] ** Updated quantification data to make balanced design. Missing values are marked by NA
-#&gt; INFO  [2021-05-11 02:46:28] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
-#&gt; INFO  [2021-05-11 02:46:28] ** Log2 intensities = NA were considered as censored missing values.
-#&gt; INFO  [2021-05-11 02:46:28] ** Use all features that the dataset originally has.
-#&gt; INFO  [2021-05-11 02:46:28] 
+<span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:29] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 22:19:29] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 22:19:29] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-14 22:19:29] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:29] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:29] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-14 22:19:29] 
 #&gt;  # proteins: 2
 #&gt;  # peptides per protein: 2-2
 #&gt;  # features per peptide: 3-3
-#&gt; INFO  [2021-05-11 02:46:28] 
+#&gt; INFO  [2021-05-14 22:19:29] 
 #&gt;                     1 2 3 4 5 6 7 8 9 10
 #&gt;              # runs 3 3 3 3 3 3 3 3 3  3
 #&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
 #&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
-#&gt; INFO  [2021-05-11 02:46:28]  == Start the summarization per subplot...
+#&gt; INFO  [2021-05-14 22:19:29]  == Start the summarization per subplot...
 #&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
-#&gt; INFO  [2021-05-11 02:46:28]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProcessedData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
+#&gt; INFO  [2021-05-14 22:19:29]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
 #&gt; 1    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   1
 #&gt; 2    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   1
 #&gt; 3    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   2
@@ -230,14 +252,59 @@ calculation (numSample, numPep, numTran, power) at the same time.</p>
 <span class='no'>comparison3</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
 <span class='no'>comparison</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/cbind.html'>rbind</a></span>(<span class='no'>comparison1</span>,<span class='no'>comparison2</span>, <span class='no'>comparison3</span>)
 <span class='fu'><a href='https://rdrr.io/r/base/row.names.html'>row.names</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"T3-T1"</span>,<span class='st'>"T7-T1"</span>,<span class='st'>"T9-T1"</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/unique.html'>unique</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProteinLevelData</span>$<span class='no'>GROUP</span>)
 
-<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>,<span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>)</div><div class='output co'>#&gt; <span class='error'>Error in MSstatsContrastMatrix.matrix(contrast.matrix, groups): Assertion on 'colnames of contrast matrix' failed: Must be equal to set {'1','2','3','4','5','6','7','8','9','10'}, but is {}.</span></div><div class='input'>
+<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>,<span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:29]  == Start to test and get inference in whole plot ...
+#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
+#&gt; INFO  [2021-05-14 22:19:29]  == Comparisons for all proteins are done.</div><div class='input'>
 <span class='co'>## Calculate sample size for future experiments:</span>
 <span class='co'>#(1) Minimal number of biological replicates per condition</span>
-<span class='fu'>designSampleSize</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>fittedmodel</span>, <span class='kw'>numSample</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
-                 <span class='kw'>desiredFC</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1.25</span>,<span class='fl'>1.75</span>), <span class='kw'>FDR</span><span class='kw'>=</span><span class='fl'>0.05</span>, <span class='kw'>power</span><span class='kw'>=</span><span class='fl'>0.8</span>)</div><div class='output co'>#&gt; <span class='error'>Error in lapply(fitted_models, function(fit) {    if (!is.null(fit)) {        if (class(fit) != "lmerMod") {            error = summary(fit)$sigma^2        }        else {            stddev = c(sapply(lme4::VarCorr(fit), function(el) attr(el,                 "stddev")), attr(lme4::VarCorr(fit), "sc"))            error = stddev[names(stddev) == ""]^2            if (any(names(stddev) %in% "SUBJECT.(Intercept)")) {                subject = stddev["SUBJECT.(Intercept)"]^2            }            else {                subject = NA            }            if (any(names(stddev) %in% "SUBJECT:GROUP.(Intercept)")) {                group_subject = stddev["SUBJECT:GROUP.(Intercept)"]^2            }            else {                group_subject = NA            }        }        list(Error = error, Subject = subject, GroupBySubject = group_subject)    }    else {        NULL    }}): nie znaleziono obiektu 'testResultMultiComparisons'</span></div><div class='input'><span class='co'>#(2) Power calculation</span>
-<span class='fu'>designSampleSize</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>fittedmodel</span>, <span class='kw'>numSample</span><span class='kw'>=</span><span class='fl'>2</span>,
-                 <span class='kw'>desiredFC</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1.25</span>,<span class='fl'>1.75</span>), <span class='kw'>FDR</span><span class='kw'>=</span><span class='fl'>0.05</span>, <span class='kw'>power</span><span class='kw'>=</span><span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; <span class='error'>Error in lapply(fitted_models, function(fit) {    if (!is.null(fit)) {        if (class(fit) != "lmerMod") {            error = summary(fit)$sigma^2        }        else {            stddev = c(sapply(lme4::VarCorr(fit), function(el) attr(el,                 "stddev")), attr(lme4::VarCorr(fit), "sc"))            error = stddev[names(stddev) == ""]^2            if (any(names(stddev) %in% "SUBJECT.(Intercept)")) {                subject = stddev["SUBJECT.(Intercept)"]^2            }            else {                subject = NA            }            if (any(names(stddev) %in% "SUBJECT:GROUP.(Intercept)")) {                group_subject = stddev["SUBJECT:GROUP.(Intercept)"]^2            }            else {                group_subject = NA            }        }        list(Error = error, Subject = subject, GroupBySubject = group_subject)    }    else {        NULL    }}): nie znaleziono obiektu 'testResultMultiComparisons'</span></div><div class='input'>                 
+<span class='fu'>designSampleSize</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>FittedModel</span>, <span class='kw'>numSample</span><span class='kw'>=</span><span class='fl'>TRUE</span>,
+                 <span class='kw'>desiredFC</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1.25</span>,<span class='fl'>1.75</span>), <span class='kw'>FDR</span><span class='kw'>=</span><span class='fl'>0.05</span>, <span class='kw'>power</span><span class='kw'>=</span><span class='fl'>0.8</span>)</div><div class='output co'>#&gt;    desiredFC numSample  FDR power    CV
+#&gt; 1      1.250        31 0.05   0.8 0.004
+#&gt; 2      1.275        26 0.05   0.8 0.005
+#&gt; 3      1.300        23 0.05   0.8 0.006
+#&gt; 4      1.325        20 0.05   0.8 0.006
+#&gt; 5      1.350        17 0.05   0.8 0.007
+#&gt; 6      1.375        15 0.05   0.8 0.008
+#&gt; 7      1.400        14 0.05   0.8 0.009
+#&gt; 8      1.425        12 0.05   0.8 0.010
+#&gt; 9      1.450        11 0.05   0.8 0.011
+#&gt; 10     1.475        10 0.05   0.8 0.012
+#&gt; 11     1.500         9 0.05   0.8 0.013
+#&gt; 12     1.525         9 0.05   0.8 0.012
+#&gt; 13     1.550         8 0.05   0.8 0.014
+#&gt; 14     1.575         8 0.05   0.8 0.013
+#&gt; 15     1.600         7 0.05   0.8 0.015
+#&gt; 16     1.625         7 0.05   0.8 0.015
+#&gt; 17     1.650         6 0.05   0.8 0.017
+#&gt; 18     1.675         6 0.05   0.8 0.017
+#&gt; 19     1.700         6 0.05   0.8 0.017
+#&gt; 20     1.725         5 0.05   0.8 0.020
+#&gt; 21     1.750         5 0.05   0.8 0.019</div><div class='input'><span class='co'>#(2) Power calculation</span>
+<span class='fu'>designSampleSize</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>FittedModel</span>, <span class='kw'>numSample</span><span class='kw'>=</span><span class='fl'>2</span>,
+                 <span class='kw'>desiredFC</span><span class='kw'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1.25</span>,<span class='fl'>1.75</span>), <span class='kw'>FDR</span><span class='kw'>=</span><span class='fl'>0.05</span>, <span class='kw'>power</span><span class='kw'>=</span><span class='fl'>TRUE</span>)</div><div class='output co'>#&gt;    desiredFC numSample  FDR power    CV
+#&gt; 1      1.250         2 0.05  0.01 0.068
+#&gt; 2      1.275         2 0.05  0.01 0.067
+#&gt; 3      1.300         2 0.05  0.01 0.065
+#&gt; 4      1.325         2 0.05  0.01 0.064
+#&gt; 5      1.350         2 0.05  0.01 0.063
+#&gt; 6      1.375         2 0.05  0.01 0.062
+#&gt; 7      1.400         2 0.05  0.01 0.061
+#&gt; 8      1.425         2 0.05  0.01 0.060
+#&gt; 9      1.450         2 0.05  0.01 0.059
+#&gt; 10     1.475         2 0.05  0.01 0.058
+#&gt; 11     1.500         2 0.05  0.01 0.057
+#&gt; 12     1.525         2 0.05  0.01 0.056
+#&gt; 13     1.550         2 0.05  0.01 0.055
+#&gt; 14     1.575         2 0.05  0.01 0.054
+#&gt; 15     1.600         2 0.05  0.02 0.053
+#&gt; 16     1.625         2 0.05  0.03 0.052
+#&gt; 17     1.650         2 0.05  0.04 0.051
+#&gt; 18     1.675         2 0.05  0.05 0.051
+#&gt; 19     1.700         2 0.05  0.06 0.050
+#&gt; 20     1.725         2 0.05  0.08 0.049
+#&gt; 21     1.750         2 0.05  0.10 0.048</div><div class='input'>                 
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

@@ -181,6 +181,14 @@ automatically generate three types of figures in pdf files as output :
       <td><p>for volcano plot or heatmap, (-) logarithm transformation of adjusted p-value with base 2 or 10(default).</p></td>
     </tr>
     <tr>
+      <th>ylimUp</th>
+      <td><p>for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.</p></td>
+    </tr>
+    <tr>
+      <th>ylimDown</th>
+      <td><p>for all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.</p></td>
+    </tr>
+    <tr>
       <th>xlimUp</th>
       <td><p>for Volcano plot, the limit for x-axis. FALSE (default) for  use maximum for absolute value of log-fold change or 3 as default if maximum for absolute value of log-fold change is less than 3.</p></td>
     </tr>
@@ -189,12 +197,20 @@ automatically generate three types of figures in pdf files as output :
       <td><p>size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.</p></td>
     </tr>
     <tr>
+      <th>y.axis.size</th>
+      <td><p>size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.</p></td>
+    </tr>
+    <tr>
       <th>dot.size</th>
       <td><p>size of dots in volcano plot and comparison plot. Default is 3.</p></td>
     </tr>
     <tr>
       <th>text.size</th>
       <td><p>size of ProteinName label in the graph for Volcano Plot. Default is 4.</p></td>
+    </tr>
+    <tr>
+      <th>text.angle</th>
+      <td><p>angle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.</p></td>
     </tr>
     <tr>
       <th>legend.size</th>
@@ -236,22 +252,6 @@ automatically generate three types of figures in pdf files as output :
       <th>address</th>
       <td><p>the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.</p></td>
     </tr>
-    <tr>
-      <th>ylimUpfor</th>
-      <td><p>all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.</p></td>
-    </tr>
-    <tr>
-      <th>ylimDownfor</th>
-      <td><p>all three plots, lower limit for y-axis. FALSE (default) for volcano plot/heatmap use minimum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses minimum of log-fold change - CI.</p></td>
-    </tr>
-    <tr>
-      <th>y.axis.sizesize</th>
-      <td><p>of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.</p></td>
-    </tr>
-    <tr>
-      <th>text.angleangle</th>
-      <td><p>of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.</p></td>
-    </tr>
     </table>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
@@ -264,12 +264,97 @@ automatically generate three types of figures in pdf files as output :
 </ul>
 
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>QuantData</span><span class='kw'>&lt;-</span><span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:41] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 22:19:41] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 22:19:41] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-14 22:19:41] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:41] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:41] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-14 22:19:41] 
+#&gt;  # proteins: 2
+#&gt;  # peptides per protein: 2-2
+#&gt;  # features per peptide: 3-3
+#&gt; INFO  [2021-05-14 22:19:41] 
+#&gt;                     1 2 3 4 5 6 7 8 9 10
+#&gt;              # runs 3 3 3 3 3 3 3 3 3  3
+#&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
+#&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
+#&gt; INFO  [2021-05-14 22:19:41]  == Start the summarization per subplot...
+#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
+#&gt; INFO  [2021-05-14 22:19:41]  == Summarization is done.</div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>QuantData</span>$<span class='no'>FeatureLevelData</span>)</div><div class='output co'>#&gt;   PROTEIN         PEPTIDE TRANSITION               FEATURE LABEL GROUP RUN
+#&gt; 1    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   1
+#&gt; 2    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   1
+#&gt; 3    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   2
+#&gt; 4    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   2
+#&gt; 5    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     H     0   3
+#&gt; 6    IDHC ATDVIVPEEGELR_2      y7_NA ATDVIVPEEGELR_2_y7_NA     L     1   3
+#&gt;   SUBJECT FRACTION originalRUN censored  INTENSITY ABUNDANCE newABUNDANCE
+#&gt; 1       0        1           1    FALSE 84361.0835 15.855859    15.855859
+#&gt; 2       1        1           1    FALSE   215.1353  7.240669     7.240669
+#&gt; 3       0        1           2    FALSE 62109.5876 15.801179    15.801179
+#&gt; 4       2        1           2    FALSE  1205.2252 10.113738    10.113738
+#&gt; 5       0        1           3    FALSE 65114.3646 15.755022    15.755022
+#&gt; 6       3        1           3    FALSE  1476.3046 10.292109    10.292109
+#&gt;   predicted
+#&gt; 1        NA
+#&gt; 2        NA
+#&gt; 3        NA
+#&gt; 4        NA
+#&gt; 5        NA
+#&gt; 6        NA</div><div class='input'><span class='co'>## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)</span>
+<span class='no'>comparison1</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
+<span class='no'>comparison2</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
+<span class='no'>comparison3</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
+<span class='no'>comparison</span><span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/cbind.html'>rbind</a></span>(<span class='no'>comparison1</span>,<span class='no'>comparison2</span>, <span class='no'>comparison3</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/row.names.html'>row.names</a></span>(<span class='no'>comparison</span>)<span class='kw'>&lt;-</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"T3-T1"</span>,<span class='st'>"T7-T1"</span>,<span class='st'>"T9-T1"</span>)
+<span class='no'>groups</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/levels.html'>levels</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProteinLevelData</span>$<span class='no'>GROUP</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>comparison</span>) <span class='kw'>&lt;-</span> <span class='no'>groups</span>[<span class='fu'><a href='https://rdrr.io/r/base/order.html'>order</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>as.numeric</a></span>(<span class='no'>groups</span>))]
+<span class='no'>testResultMultiComparisons</span><span class='kw'>&lt;-</span><span class='fu'><a href='groupComparison.html'>groupComparison</a></span>(<span class='kw'>contrast.matrix</span><span class='kw'>=</span><span class='no'>comparison</span>,
+<span class='kw'>data</span><span class='kw'>=</span><span class='no'>QuantData</span>,
+<span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:41]  == Start to test and get inference in whole plot ...
+#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
+#&gt; INFO  [2021-05-14 22:19:41]  == Comparisons for all proteins are done.</div><div class='input'><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span></div><div class='output co'>#&gt;   Protein Label      log2FC        SE     Tvalue DF       pvalue   adj.pvalue
+#&gt; 1    IDHC T3-T1  0.15937530 0.2917031  0.5463614 18 5.915262e-01 6.757573e-01
+#&gt; 2    IDHC T7-T1  6.15438359 0.2917031 21.0981085 18 3.819167e-14 7.638334e-14
+#&gt; 3    IDHC T9-T1  6.25407169 0.2917031 21.4398535 18 2.886580e-14 5.773160e-14
+#&gt; 4    PMG2 T3-T1 -0.06456834 0.1518673 -0.4251629 18 6.757573e-01 6.757573e-01
+#&gt; 5    PMG2 T7-T1 -0.09032809 0.1518673 -0.5947831 18 5.593918e-01 5.593918e-01
+#&gt; 6    PMG2 T9-T1 -0.22946599 0.1518673 -1.5109639 18 1.481542e-01 1.481542e-01
+#&gt;   issue MissingPercentage ImputationPercentage
+#&gt; 1    NA                 0                    0
+#&gt; 2    NA                 0                    0
+#&gt; 3    NA                 0                    0
+#&gt; 4    NA                 0                    0
+#&gt; 5    NA                 0                    0
+#&gt; 6    NA                 0                    0</div><div class='input'><span class='co'># Volcano plot with FDR cutoff = 0.05 and no FC cutoff</span>
+<span class='fu'>groupComparisonPlots</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span>, <span class='kw'>type</span><span class='kw'>=</span><span class='st'>"VolcanoPlot"</span>,
+<span class='kw'>logBase.pvalue</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>address</span><span class='kw'>=</span><span class='st'>"Ex1_"</span>)
+<span class='co'># Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, </span>
+<span class='co'># and no protein name displayed</span>
+<span class='co'># FCcutoff=70 is for demonstration purpose</span>
+<span class='fu'>groupComparisonPlots</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span>, <span class='kw'>type</span><span class='kw'>=</span><span class='st'>"VolcanoPlot"</span>,
+<span class='kw'>FCcutoff</span><span class='kw'>=</span><span class='fl'>70</span>, <span class='kw'>logBase.pvalue</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>ylimUp</span><span class='kw'>=</span><span class='fl'>100</span>, <span class='kw'>ProteinName</span><span class='kw'>=</span><span class='fl'>FALSE</span>,<span class='kw'>address</span><span class='kw'>=</span><span class='st'>"Ex2_"</span>)</div><div class='output co'>#&gt; <span class='warning'>Warning: Removed 10 rows containing missing values (geom_path).</span></div><div class='output co'>#&gt; <span class='warning'>Warning: Removed 10 rows containing missing values (geom_path).</span></div><div class='input'><span class='co'># Heatmap with FDR cutoff = 0.05</span>
+<span class='fu'>groupComparisonPlots</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span>, <span class='kw'>type</span><span class='kw'>=</span><span class='st'>"Heatmap"</span>,
+<span class='kw'>logBase.pvalue</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>address</span><span class='kw'>=</span><span class='st'>"Ex1_"</span>)
+<span class='co'># Heatmap with FDR cutoff = 0.05 and FC cutoff = 70</span>
+<span class='co'># FCcutoff=70 is for demonstration purpose</span>
+<span class='fu'>groupComparisonPlots</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span>, <span class='kw'>type</span><span class='kw'>=</span><span class='st'>"Heatmap"</span>,
+<span class='kw'>FCcutoff</span><span class='kw'>=</span><span class='fl'>70</span>, <span class='kw'>logBase.pvalue</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>address</span><span class='kw'>=</span><span class='st'>"Ex2_"</span>)</div><div class='img'><img src='groupComparisonPlots-1.png' alt='' width='700' height='433' /></div><div class='input'><span class='co'># Comparison Plot</span>
+<span class='fu'>groupComparisonPlots</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span>, <span class='kw'>type</span><span class='kw'>=</span><span class='st'>"ComparisonPlot"</span>,
+<span class='kw'>address</span><span class='kw'>=</span><span class='st'>"Ex1_"</span>)</div><div class='output co'>#&gt; pdf 
+#&gt;   2 </div><div class='input'><span class='co'># Comparison Plot</span>
+<span class='fu'>groupComparisonPlots</span>(<span class='kw'>data</span><span class='kw'>=</span><span class='no'>testResultMultiComparisons</span>$<span class='no'>ComparisonResult</span>, <span class='kw'>type</span><span class='kw'>=</span><span class='st'>"ComparisonPlot"</span>,
+<span class='kw'>ylimUp</span><span class='kw'>=</span><span class='fl'>8</span>, <span class='kw'>ylimDown</span><span class='kw'>=</span>-<span class='fl'>1</span>, <span class='kw'>address</span><span class='kw'>=</span><span class='st'>"Ex2_"</span>)</div><div class='output co'>#&gt; pdf 
+#&gt;   2 </div><div class='input'>
+</div><div class='img'><img src='groupComparisonPlots-2.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#details">Details</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
   </div>

@@ -140,12 +140,52 @@
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>list, same as the output of `groupComparison`</p>
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>QuantData</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='dataProcess.html'>dataProcess</a></span>(<span class='no'>SRMRawData</span>, <span class='kw'>use_log_file</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:19] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 22:19:19] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 22:19:19] ** Updated quantification data to make balanced design. Missing values are marked by NA
+#&gt; INFO  [2021-05-14 22:19:19] ** Log2 intensities under cutoff = 3.776  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:19] ** Log2 intensities = NA were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:19] ** Use all features that the dataset originally has.
+#&gt; INFO  [2021-05-14 22:19:19] 
+#&gt;  # proteins: 2
+#&gt;  # peptides per protein: 2-2
+#&gt;  # features per peptide: 3-3
+#&gt; INFO  [2021-05-14 22:19:19] 
+#&gt;                     1 2 3 4 5 6 7 8 9 10
+#&gt;              # runs 3 3 3 3 3 3 3 3 3  3
+#&gt;     # bioreplicates 3 3 3 3 3 3 3 3 3  3
+#&gt;  # tech. replicates 1 1 1 1 1 1 1 1 1  1
+#&gt; INFO  [2021-05-14 22:19:19]  == Start the summarization per subplot...
+#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%
+#&gt; INFO  [2021-05-14 22:19:19]  == Summarization is done.</div><div class='input'><span class='no'>group_comparison_input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForGroupComparison.html'>MSstatsPrepareForGroupComparison</a></span>(<span class='no'>QuantData</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/levels.html'>levels</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProteinLevelData</span>$<span class='no'>GROUP</span>)</div><div class='output co'>#&gt;  [1] "1"  "10" "2"  "3"  "4"  "5"  "6"  "7"  "8"  "9" </div><div class='input'><span class='no'>comparison</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(-<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>1</span>,<span class='fl'>0</span>,<span class='fl'>0</span>,<span class='fl'>0</span>),<span class='kw'>nrow</span><span class='kw'>=</span><span class='fl'>1</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/row.names.html'>row.names</a></span>(<span class='no'>comparison</span>) <span class='kw'>&lt;-</span> <span class='st'>"T7-T1"</span>
+<span class='no'>groups</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/levels.html'>levels</a></span>(<span class='no'>QuantData</span>$<span class='no'>ProteinLevelData</span>$<span class='no'>GROUP</span>)
+<span class='fu'><a href='https://rdrr.io/r/base/colnames.html'>colnames</a></span>(<span class='no'>comparison</span>) <span class='kw'>&lt;-</span> <span class='no'>groups</span>[<span class='fu'><a href='https://rdrr.io/r/base/order.html'>order</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/numeric.html'>as.numeric</a></span>(<span class='no'>groups</span>))]
+<span class='no'>samples_info</span> <span class='kw'>=</span> <span class='fu'><a href='getSamplesInfo.html'>getSamplesInfo</a></span>(<span class='no'>QuantData</span>)
+<span class='no'>repeated</span> <span class='kw'>=</span> <span class='fu'><a href='checkRepeatedDesign.html'>checkRepeatedDesign</a></span>(<span class='no'>QuantData</span>)
+<span class='no'>group_comparison</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsGroupComparison.html'>MSstatsGroupComparison</a></span>(<span class='no'>group_comparison_input</span>, <span class='no'>comparison</span>,
+                                          <span class='fl'>FALSE</span>, <span class='no'>repeated</span>, <span class='no'>samples_info</span>)</div><div class='output co'>#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</div><div class='input'><span class='no'>group_comparison_final</span> <span class='kw'>=</span> <span class='fu'>MSstatsGroupComparisonOutput</span>(<span class='no'>group_comparison</span>,
+                                                      <span class='no'>QuantData</span>)
+<span class='no'>group_comparison_final</span><span class='kw'>[[</span><span class='st'>"ComparisonResult"</span>]]</div><div class='output co'>#&gt;   Protein Label      log2FC        SE     Tvalue DF       pvalue   adj.pvalue
+#&gt; 1    IDHC T7-T1  6.15438359 0.2917031 21.0981085 18 3.819167e-14 7.638334e-14
+#&gt; 2    PMG2 T7-T1 -0.09032809 0.1518673 -0.5947831 18 5.593918e-01 5.593918e-01
+#&gt;   issue MissingPercentage ImputationPercentage
+#&gt; 1    NA                 0                    0
+#&gt; 2    NA                 0                    0</div><div class='input'>                                                    
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
+      <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
   </div>

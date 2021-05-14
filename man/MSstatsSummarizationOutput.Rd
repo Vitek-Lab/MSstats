@@ -56,6 +56,6 @@ input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
 input_split = split(input, input$PROTEIN)
 summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
 output = output = MSstatsSummarizationOutput(input, summarized, processed,
-method, impute, ces)
+method, impute, cens)
 
 }

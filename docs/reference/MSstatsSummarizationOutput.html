@@ -165,18 +165,35 @@
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>list that consists of the following elements:</p><ul>
-<li><p>ProcessedData - feature-level data after processing</p></li>
-<li><p>RunlevelData - run-level (summarized) data</p></li>
+<li><p>FeatureLevelData - feature-level data after processing</p></li>
+<li><p>ProteinLevelData - protein-level (summarized) data</p></li>
 <li><p>SummaryMethod (string) - name of summarization method that was used</p></li>
 </ul>
 
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>raw</span> <span class='kw'>=</span> <span class='no'>DDARawData</span>
+<span class='no'>method</span> <span class='kw'>=</span> <span class='st'>"TMP"</span>
+<span class='no'>cens</span> <span class='kw'>=</span> <span class='st'>"NA"</span>
+<span class='no'>impute</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+<span class='kw pkg'>MSstatsConvert</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/MSstatsConvert/man/MSstatsLogsSettings.html'>MSstatsLogsSettings</a></span>(<span class='fl'>FALSE</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForDataProcess.html'>MSstatsPrepareForDataProcess</a></span>(<span class='no'>raw</span>, <span class='fl'>2</span>, <span class='kw'>NULL</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 22:19:22] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 22:19:22] ** Updated quantification data to make balanced design. Missing values are marked by NA</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsNormalize.html'>MSstatsNormalize</a></span>(<span class='no'>input</span>, <span class='st'>"EQUALIZEMEDIANS"</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsMergeFractions.html'>MSstatsMergeFractions</a></span>(<span class='no'>input</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsHandleMissing.html'>MSstatsHandleMissing</a></span>(<span class='no'>input</span>, <span class='st'>"TMP"</span>, <span class='fl'>TRUE</span>, <span class='st'>"NA"</span>, <span class='fl'>0.999</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Log2 intensities under cutoff = 13.456  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:22] ** Log2 intensities = NA were considered as censored missing values.</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsSelectFeatures.html'>MSstatsSelectFeatures</a></span>(<span class='no'>input</span>, <span class='st'>"all"</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:22] ** Use all features that the dataset originally has.</div><div class='input'><span class='no'>processed</span> <span class='kw'>=</span> <span class='fu'><a href='getProcessed.html'>getProcessed</a></span>(<span class='no'>input</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForSummarization.html'>MSstatsPrepareForSummarization</a></span>(<span class='no'>input</span>, <span class='no'>method</span>, <span class='no'>impute</span>, <span class='no'>cens</span>, <span class='fl'>FALSE</span>)
+<span class='no'>input_split</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/split.html'>split</a></span>(<span class='no'>input</span>, <span class='no'>input</span>$<span class='no'>PROTEIN</span>)
+<span class='no'>summarized</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsSummarize.html'>MSstatsSummarize</a></span>(<span class='no'>input_split</span>, <span class='no'>method</span>, <span class='no'>impute</span>, <span class='no'>cens</span>, <span class='fl'>FALSE</span>, <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt;   |                                                                              |                                                                      |   0%  |                                                                              |============                                                          |  17%  |                                                                              |=======================                                               |  33%  |                                                                              |===================================                                   |  50%  |                                                                              |===============================================                       |  67%  |                                                                              |==========================================================            |  83%  |                                                                              |======================================================================| 100%</div><div class='input'><span class='no'>output</span> <span class='kw'>=</span> <span class='no'>output</span> <span class='kw'>=</span> <span class='fu'>MSstatsSummarizationOutput</span>(<span class='no'>input</span>, <span class='no'>summarized</span>, <span class='no'>processed</span>,
+<span class='no'>method</span>, <span class='no'>impute</span>, <span class='no'>cens</span>)</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
   </div>

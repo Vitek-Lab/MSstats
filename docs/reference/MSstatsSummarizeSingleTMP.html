@@ -162,12 +162,37 @@ which have more than 50% missing values. FALSE is default.</p></td>
     <p>list of two data.tables: one with fitted survival model,
 the other with protein-level data</p>
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='no'>raw</span> <span class='kw'>=</span> <span class='no'>DDARawData</span>
+<span class='no'>method</span> <span class='kw'>=</span> <span class='st'>"TMP"</span>
+<span class='no'>cens</span> <span class='kw'>=</span> <span class='st'>"NA"</span>
+<span class='no'>impute</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+<span class='co'># currently, MSstats only supports MBimpute = FALSE for linear summarization</span>
+<span class='kw pkg'>MSstatsConvert</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/MSstatsConvert/man/MSstatsLogsSettings.html'>MSstatsLogsSettings</a></span>(<span class='fl'>FALSE</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForDataProcess.html'>MSstatsPrepareForDataProcess</a></span>(<span class='no'>raw</span>, <span class='fl'>2</span>, <span class='kw'>NULL</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:23] ** Features with one or two measurements across runs are removed.
+#&gt; INFO  [2021-05-14 22:19:23] ** Fractionation handled.
+#&gt; INFO  [2021-05-14 22:19:23] ** Updated quantification data to make balanced design. Missing values are marked by NA</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsNormalize.html'>MSstatsNormalize</a></span>(<span class='no'>input</span>, <span class='st'>"EQUALIZEMEDIANS"</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsMergeFractions.html'>MSstatsMergeFractions</a></span>(<span class='no'>input</span>)
+<span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsHandleMissing.html'>MSstatsHandleMissing</a></span>(<span class='no'>input</span>, <span class='st'>"TMP"</span>, <span class='fl'>TRUE</span>, <span class='st'>"NA"</span>, <span class='fl'>0.999</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:23] ** Log2 intensities under cutoff = 13.456  were considered as censored missing values.
+#&gt; INFO  [2021-05-14 22:19:23] ** Log2 intensities = NA were considered as censored missing values.</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsSelectFeatures.html'>MSstatsSelectFeatures</a></span>(<span class='no'>input</span>, <span class='st'>"all"</span>)</div><div class='output co'>#&gt; INFO  [2021-05-14 22:19:23] ** Use all features that the dataset originally has.</div><div class='input'><span class='no'>input</span> <span class='kw'>=</span> <span class='fu'><a href='MSstatsPrepareForSummarization.html'>MSstatsPrepareForSummarization</a></span>(<span class='no'>input</span>, <span class='no'>method</span>, <span class='no'>impute</span>, <span class='no'>cens</span>, <span class='fl'>FALSE</span>)
+<span class='no'>input_split</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/split.html'>split</a></span>(<span class='no'>input</span>, <span class='no'>input</span>$<span class='no'>PROTEIN</span>)
+<span class='no'>single_protein_summary</span> <span class='kw'>=</span> <span class='fu'>MSstatsSummarizeSingleTMP</span>(<span class='no'>input_split</span><span class='kw'>[[</span><span class='fl'>1</span>]],
+                                                   <span class='no'>impute</span>, <span class='no'>cens</span>, <span class='fl'>FALSE</span>)
+<span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span>(<span class='no'>single_protein_summary</span><span class='kw'>[[</span><span class='fl'>1</span>]])</div><div class='output co'>#&gt;    RUN LogIntensities Protein
+#&gt; 1:   1       21.28437  bovine
+#&gt; 2:   2       20.85653  bovine
+#&gt; 3:   3       20.67521  bovine
+#&gt; 4:   4       21.60443  bovine
+#&gt; 5:   5       21.82186  bovine
+#&gt; 6:   6       21.20445  bovine</div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       <li><a href="#value">Value</a></li>
+      <li><a href="#examples">Examples</a></li>
     </ul>
 
   </div>

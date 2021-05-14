@@ -150,6 +150,10 @@
       <td><p>log base for p-values</p></td>
     </tr>
     <tr>
+      <th>ylimUp</th>
+      <td><p>for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.</p></td>
+    </tr>
+    <tr>
       <th>FCcutoff</th>
       <td><p>for volcano plot or heatmap, whether involve fold change cutoff or not. FALSE (default) means no fold change cutoff is applied for significance analysis. FCcutoff = specific value means specific fold change cutoff is applied.</p></td>
     </tr>
@@ -184,6 +188,10 @@
     <tr>
       <th>x.axis.size</th>
       <td><p>size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.</p></td>
+    </tr>
+    <tr>
+      <th>y.axis.size</th>
+      <td><p>size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.</p></td>
     </tr>
     <tr>
       <th>address</th>

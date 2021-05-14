@@ -121,7 +121,14 @@
     <p>Power calculation</p>
     </div>
 
-    <pre class="usage"><span class='fu'>.calculatePower</span>(<span class='no'>desiredFC</span>, <span class='no'>median_sigma_error</span>, <span class='no'>numSample</span>)</pre>
+    <pre class="usage"><span class='fu'>.calculatePower</span>(
+  <span class='no'>desiredFC</span>,
+  <span class='no'>FDR</span>,
+  <span class='no'>delta</span>,
+  <span class='no'>median_sigma_error</span>,
+  <span class='no'>median_sigma_subject</span>,
+  <span class='no'>numSample</span>
+)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -132,8 +139,21 @@
 and upper values of the desired fold change.</p></td>
     </tr>
     <tr>
+      <th>FDR</th>
+      <td><p>a pre-specified false discovery ratio (FDR) to control the overall 
+false positive rate. Default is 0.05</p></td>
+    </tr>
+    <tr>
+      <th>delta</th>
+      <td><p>difference between means (?)</p></td>
+    </tr>
+    <tr>
       <th>median_sigma_error</th>
       <td><p>median of error standard deviation</p></td>
+    </tr>
+    <tr>
+      <th>median_sigma_subject</th>
+      <td><p>median standard deviation per subject</p></td>
     </tr>
     <tr>
       <th>numSample</th>

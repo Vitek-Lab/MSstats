@@ -121,7 +121,14 @@
     <p>Get sample size</p>
     </div>
 
-    <pre class="usage"><span class='fu'>.getNumSample</span>(<span class='no'>desiredFC</span>, <span class='no'>power</span>, <span class='no'>median_sigma_error</span>, <span class='no'>median_sigma_subject</span>)</pre>
+    <pre class="usage"><span class='fu'>.getNumSample</span>(
+  <span class='no'>desiredFC</span>,
+  <span class='no'>power</span>,
+  <span class='no'>alpha</span>,
+  <span class='no'>delta</span>,
+  <span class='no'>median_sigma_error</span>,
+  <span class='no'>median_sigma_subject</span>
+)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -136,6 +143,14 @@ and upper values of the desired fold change.</p></td>
       <td><p>a pre-specified statistical power which defined as the probability 
 of detecting a true fold change. TRUE represent you require to calculate the power 
 for this category, else you should input the average of power you expect. Default is 0.9</p></td>
+    </tr>
+    <tr>
+      <th>alpha</th>
+      <td><p>significance level</p></td>
+    </tr>
+    <tr>
+      <th>delta</th>
+      <td><p>difference between means (?)</p></td>
     </tr>
     <tr>
       <th>median_sigma_error</th>

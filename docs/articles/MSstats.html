@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <div id="example-2" class="section level3">
 <h3 class="hasAnchor">
 <a href="#example-2" class="anchor"></a>Example</h3>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">input &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="st">"output_progenesis.csv"</span>, <span class="dt">stringsAsFactors=</span>F) </a>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">input &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="st">"output_progenesis.csv"</span>, <span class="dt">stringsAsFactors=</span><span class="ot">FALSE</span>) </a>
 <a class="sourceLine" id="cb3-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb3-3" data-line-number="3"><span class="co"># Read in annotation including condition and biological replicates per run.</span></a>
 <a class="sourceLine" id="cb3-4" data-line-number="4"><span class="co"># Users should make this annotation file. It is not the output from Progenesis.</span></a>
@@ -233,7 +233,7 @@ document.addEventListener("DOMContentLoaded", function() {
 <div id="example-3" class="section level3">
 <h3 class="hasAnchor">
 <a href="#example-3" class="anchor"></a>Example</h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">input &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="st">"output_spectronaut.csv"</span>, <span class="dt">stringsAsFactors=</span>F) </a>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">input &lt;-<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="st">"output_spectronaut.csv"</span>, <span class="dt">stringsAsFactors=</span><span class="ot">FALSE</span>) </a>
 <a class="sourceLine" id="cb4-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb4-3" data-line-number="3">quant &lt;-<span class="st"> </span><span class="kw"><a href="../reference/SpectronauttoMSstatsFormat.html">SpectronauttoMSstatsFormat</a></span>(input)</a></code></pre></div>
 </div>
@@ -645,158 +645,6 @@ document.addEventListener("DOMContentLoaded", function() {
 <a class="sourceLine" id="cb12-5" data-line-number="5"><span class="co"># </span></a>
 <a class="sourceLine" id="cb12-6" data-line-number="6"><span class="co"># # Group quantification</span></a>
 <a class="sourceLine" id="cb12-7" data-line-number="7"><span class="co"># groupQuant &lt;- quantification(QuantData, type="Group")</span></a></code></pre></div>
-<hr>
-</div>
-</div>
-</div>
-<div id="assay-characterization" class="section level1">
-<h1 class="hasAnchor">
-<a href="#assay-characterization" class="anchor"></a>Assay characterization</h1>
-<div id="nonlinear_quantlim" class="section level2">
-<h2 class="hasAnchor">
-<a href="#nonlinear_quantlim" class="anchor"></a>nonlinear_quantlim</h2>
-<p>This function calculates the value of the LOB (limit of blank) and LOD (limit of detection) from the (<code>Concentration</code>, <code>Intensity</code>) spiked in data. This function should be used instead of the linear function whenever a significant threshold is present at low concentrations. Such threshold is characterized by a signal that is dominated by noise where the mean intensity is constant and independent of concentration. The function also returns the values of the nonlinear curve fit that allows it to be plotted. At least 2 blank samples (characterized by <code>Intensity = 0</code>) are required by this function which are used to calculate the background noise. The LOB is defined as the concentration at which the value of the nonlinear fit is equal to the 95% upper bound of the noise. The LOD is the concentration at which the latter is equal to the 90% lower bound (5% quantile) of the prediction interval of the nonlinear fit. A weighted nonlinear fit is used with weights for every unique concentration proportional to the inverse of variance between replicates. The details behind the calculation of the nonlinear fit can be found in the Reference.</p>
-<p>The output is a data frame that contains the following columns:</p>
-<ul>
-<li>
-<code>CONCENTRATION</code> : Concentration values at which the value of the fit is calculated.</li>
-<li>
-<code>MEAN</code> : The value of the curve fit.</li>
-<li>
-<code>LOW</code> : the lower bound of the 95% prediction interval.</li>
-<li>
-<code>UP</code> : the upper bound of the 95% prediction interval.</li>
-<li>
-<code>LOB</code> : LOB (one column with identical values)</li>
-<li>
-<code>LOD</code> : LOD (one column with identical values)</li>
-<li>
-<code>SLOPE</code> : the slope of the linear curve fit where only the spikes above LOD are considered.</li>
-<li>
-<code>INTERCEPT</code> : the intercept of the linear curve fit where only the spikes above LOD are considered .</li>
-<li>
-<code>NAME</code> : The name of the assay (identical to that provided in the input).</li>
-<li>
-<code>METHOD</code> : which is always set to <code>NONLINEAR</code> when this function is used. Each line of the data frame corresponds to a unique concentration value at which the value of the fit and prediction interval are evaluated. More unique concentrations values than in the input data frame are used to increase the accuracy of the LOB/D calculations.</li>
-</ul>
-<p>The LOB and LOD can only be calculated when more than 2 blank samples are included. The data should ideally be plotted using the companion function <code>plot_quantlim</code> to ensure that the fit is suited to the data.</p>
-<div id="arguments-12" class="section level3">
-<h3 class="hasAnchor">
-<a href="#arguments-12" class="anchor"></a>Arguments</h3>
-<ul>
-<li>
-<code>datain</code> : Data frame that contains the input data. The input data frame has to contain the following columns : <code>CONCENTRATION</code>, <code>INTENSITY</code> (both of which are measurements from the spiked in experiment) and <code>NAME</code> which designates the name of the assay (e.g. the name of the peptide or protein), Each line of the data frame contains one measurement from the spiked-in experiment. Multiple different <code>INTENSITY</code> values for the same <code>CONCENTRATION</code> are assumed to correspond to different replicates. Blank Samples are characterized by <code>CONCENTRATION = 0</code>.</li>
-<li>
-<code>alpha</code> : Probability level to estimate the LOB/LOD.</li>
-<li>
-<code>Npoints</code> : Number of points to use to discretize the concentration line between 0 and the maximum spiked concentration.</li>
-<li>
-<code>Nbootstrap</code> : Number of bootstrap samples to use to calculate the prediction interval of the fit. This number has to be increased for very low alpha values or whenever very accurate assay characterization is required.</li>
-</ul>
-</div>
-<div id="example-12" class="section level3">
-<h3 class="hasAnchor">
-<a href="#example-12" class="anchor"></a>Example</h3>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="co"># # Consider data from a spiked-in contained in an example dataset</span></a>
-<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="co"># head(SpikeInDataNonLinear)</span></a>
-<a class="sourceLine" id="cb13-3" data-line-number="3"><span class="co"># </span></a>
-<a class="sourceLine" id="cb13-4" data-line-number="4"><span class="co"># nonlinear_quantlim_out &lt;- nonlinear_quantlim(SpikeInDataNonLinear)</span></a>
-<a class="sourceLine" id="cb13-5" data-line-number="5"><span class="co"># </span></a>
-<a class="sourceLine" id="cb13-6" data-line-number="6"><span class="co"># # Get values of LOB/LOD</span></a>
-<a class="sourceLine" id="cb13-7" data-line-number="7"><span class="co"># nonlinear_quantlim_out$LOB[1]</span></a>
-<a class="sourceLine" id="cb13-8" data-line-number="8"><span class="co"># nonlinear_quantlim_out$LOD[1]</span></a></code></pre></div>
-</div>
-<div id="linear_quantlim" class="section level3">
-<h3 class="hasAnchor">
-<a href="#linear_quantlim" class="anchor"></a>linear_quantlim</h3>
-<p>This function calculates the value of the LOB (limit of blank) and LOD (limit of detection) from the (<code>Concentration</code>, <code>Intensity</code>) spiked in data. The function also returns the values of the linear curve fit that allows it to be plotted. At least 2 blank samples (characterized by <code>Intensity = 0</code>) are required by this function which are used to calculate the background noise. The LOB is defined as the concentration at which the value of the linear fit is equal to the 95% upper bound of the noise. The LOD is the concentration at which the latter is equal to the 90% lower bound of the prediction interval (5% quantile) of the linear fit. A weighted linear fit is used with weights for every unique concentration proportional to the inverse of variance between replicates.</p>
-<p>The output is a data frame that contains the following columns:</p>
-<ul>
-<li>
-<code>CONCENTRATION</code> : Concentration values at which the value of the fit is calculated .</li>
-<li>
-<code>MEAN</code> : The value of the curve fit.</li>
-<li>
-<code>LOW</code> : the lower bound of the 95% prediction interval.</li>
-<li>
-<code>UP</code> : the upper bound of the 95% prediction interval.</li>
-<li>
-<code>LOB</code>: LOB (one column with identical values)</li>
-<li>
-<code>LOD</code> : LOD (one column with identical values)</li>
-<li>
-<code>SLOPE</code> : the slope of the linear curve fit where only the spikes above LOD are considered.</li>
-<li>
-<code>INTERCEPT</code> : the intercept of the linear curve fit where only the spikes above LOD are considered.</li>
-<li>
-<code>NAME</code> : The name of the assay (identical to that provided in the input).</li>
-<li>
-<code>METHOD</code> : which is always set to <code>LINEAR</code> when this function is used. Each line of the data frame corresponds to a unique concentration value at which the value of the fit and prediction interval are evaluated. More unique concentrations values than in the input data frame are used to increase the accuracy of the LOB/D calculations.</li>
-</ul>
-<p>The LOB and LOD can only be calculated when more than 2 blank samples are included. The data should ideally be plotted using the companion function <code>plot_quantlim</code> to ensure that a linear fit is suited to the data.</p>
-</div>
-<div id="arguments-13" class="section level3">
-<h3 class="hasAnchor">
-<a href="#arguments-13" class="anchor"></a>Arguments</h3>
-<ul>
-<li>
-<code>datain</code> : Data frame that contains the input data. The input data frame has to contain the following columns : <code>CONCENTRATION</code>, <code>INTENSITY</code> (both of which are measurements from the spiked in experiment) and <code>NAME</code> which designates the name of the assay (e.g. the name of the peptide or protein) Each line of the data frame contains one measurement from the spiked-in experiment. Multiple different <code>INTENSITY</code> values for the same <code>CONCENTRATION</code> are assumed to correspond to different replicates. Blank Samples are characterized by <code>CONCENTRATION = 0</code>.</li>
-<li>
-<code>alpha</code> : Probability level to estimate the LOB/LOD.</li>
-<li>
-<code>Npoints</code> : Number of points to use to discretize the concentration line between 0 and the maximum spiked concentration.</li>
-<li>
-<code>{Nbootstrap</code> : Number of bootstrap samples to use to calculate the prediction interval of the fit. This number has to be increased for very low alpha values or whenever very accurate assay characterization is required.</li>
-</ul>
-</div>
-<div id="example-13" class="section level3">
-<h3 class="hasAnchor">
-<a href="#example-13" class="anchor"></a>Example</h3>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="co"># # Consider data from a spiked-in contained in an example dataset</span></a>
-<a class="sourceLine" id="cb14-2" data-line-number="2"><span class="co"># head(SpikeInDataLinear)</span></a>
-<a class="sourceLine" id="cb14-3" data-line-number="3"><span class="co"># </span></a>
-<a class="sourceLine" id="cb14-4" data-line-number="4"><span class="co"># linear_quantlim_out &lt;- linear_quantlim(SpikeInDataLinear)</span></a>
-<a class="sourceLine" id="cb14-5" data-line-number="5"><span class="co"># </span></a>
-<a class="sourceLine" id="cb14-6" data-line-number="6"><span class="co"># # Get values of LOB/LOD</span></a>
-<a class="sourceLine" id="cb14-7" data-line-number="7"><span class="co"># linear_quantlim_out$LOB[1]</span></a>
-<a class="sourceLine" id="cb14-8" data-line-number="8"><span class="co"># linear_quantlim_out$LOD[1]</span></a></code></pre></div>
-</div>
-<div id="plot_quantlim" class="section level3">
-<h3 class="hasAnchor">
-<a href="#plot_quantlim" class="anchor"></a>plot_quantlim</h3>
-<p>This function allows to plot the curve fit that is used to calculate the LOB and LOD with functions <code>nonlinear_quantlim</code> and <code>linear_quantlim</code>. The function outputs for each calibration curve, two pdf files each containg one plot. On the first, designated by <code>*_overall.pdf</code>, the entire concentration range is plotted. On the second plot, designated by <code>*_zoom.pdf</code>, the concentration range between 0 and <code>xlim_plot</code> (if specified in the argument of the function) is plotted. When no <code>xlim_plot</code> value is specified, the region close to LOB and LOD is automatically plotted.</p>
-<p>This plotting function should ideally be used every time <code>nonlinear_quantlim</code> or <code>linear_quantlim</code> are called to visually ensure that the fits and data are accurate.</p>
-</div>
-<div id="arguments-14" class="section level3">
-<h3 class="hasAnchor">
-<a href="#arguments-14" class="anchor"></a>Arguments</h3>
-<ul>
-<li>
-<code>spikeindata</code> : Data frame that contains the experimental spiked in data. This data frame should be identical to that used as input by function functions <code>nonlinear_quantlim</code> or <code>linear_quantlim</code>. The data frame has to contain the following columns : <code>CONCENTRATION</code>, <code>INTENSITY</code> (both of which are measurements from the spiked in experiment) and NAME which designates the name of the assay (e.g. the name of the peptide or protein).</li>
-<li>
-<code>quantlim_out</code> : Data frame that was output by functions <code>nonlinear_quantlim</code> or <code>linear_quantlim</code>.</li>
-<li>
-<code>alpha</code> : Probability level to estimate the LOB/LOD.</li>
-<li>
-<code>dir_output</code> : String containg the path of the directly where the pdf files of the plots should be output.</li>
-<li>
-<code>xlim_plot</code> : Optional argument containing the maximum xaxis value of the zoom plot. When no value is specified, a suitable value close to LOD is automatically chosen.</li>
-</ul>
-</div>
-<div id="example-14" class="section level3">
-<h3 class="hasAnchor">
-<a href="#example-14" class="anchor"></a>Example</h3>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="co"># # Consider data from a spiked-in contained in an example dataset</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="co"># head(SpikeInDataNonLinear)</span></a>
-<a class="sourceLine" id="cb15-3" data-line-number="3"><span class="co"># </span></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="co"># nonlinear_quantlim_out &lt;- nonlinear_quantlim(SpikeInDataNonLinear, alpha = 0.05)</span></a>
-<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="co"># </span></a>
-<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="co"># #Get values of LOB/LOD</span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7"><span class="co"># nonlinear_quantlim_out$LOB[1]</span></a>
-<a class="sourceLine" id="cb15-8" data-line-number="8"><span class="co"># nonlinear_quantlim_out$LOD[1]</span></a>
-<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="co"># </span></a>
-<a class="sourceLine" id="cb15-10" data-line-number="10"><span class="co"># plot_quantlim(spikeindata = SpikeInDataLinear, quantlim_out  = nonlinear_quantlim_out,</span></a>
-<a class="sourceLine" id="cb15-11" data-line-number="11"><span class="co"># dir_output =  getwd(), alpha = 0.05)</span></a></code></pre></div>
 </div>
 </div>
 </div>
@@ -822,11 +670,6 @@ document.addEventListener("DOMContentLoaded", function() {
       <li><a href="#designsamplesize">designSampleSize</a></li>
       <li><a href="#designsamplesizeplots">designSampleSizePlots</a></li>
       <li><a href="#quantification">quantification</a></li>
-      </ul>
-</li>
-      <li>
-<a href="#assay-characterization">Assay characterization</a><ul class="nav nav-pills nav-stacked">
-<li><a href="#nonlinear_quantlim">nonlinear_quantlim</a></li>
       </ul>
 </li>
       </ul>

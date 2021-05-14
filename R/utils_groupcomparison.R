@@ -385,8 +385,10 @@ getSamplesInfo = function(summarization_output) {
         
         counts = summarized[,
                             list(totalN = unique(TotalGroupMeasurements),
-                                 NumMeasuredFeature = sum(NumMeasuredFeature, na.rm = T),
-                                 NumImputedFeature = sum(NumImputedFeature, na.rm = T)),
+                                 NumMeasuredFeature = sum(NumMeasuredFeature, 
+                                                          na.rm = TRUE),
+                                 NumImputedFeature = sum(NumImputedFeature, 
+                                                         na.rm = TRUE)),
                             by = "GROUP"]
     
     empty_conditions = setdiff(samples_info$GROUP, unique(counts$GROUP))
