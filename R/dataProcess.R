@@ -65,7 +65,7 @@
 #' # Log2 transformation and normalization are applied (default)
 #' QuantData<-dataProcess(SRMRawData)
 #' head(QuantData$FeatureLevelData)
-#' Log10 transformation and normalization are applied
+#' # Log10 transformation and normalization are applied
 #' QuantData1<-dataProcess(SRMRawData, logTrans=10)
 #' head(QuantData1$FeatureLevelData)
 #' Log2 transformation and no normalization are applied
