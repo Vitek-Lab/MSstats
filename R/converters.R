@@ -55,7 +55,7 @@
 #' diau_prot = system.file("tinytest/raw_data/DIAUmpire/dia_prot.csv", 
 #'                              package = "MSstatsConvert")
 #' annot = system.file("tinytest/annotations/annot_diau.csv", 
-#'                     package = "MSstatsdev")
+#'                     package = "MSstats")
 #' diau_frag = data.table::fread(diau_frag) 
 #' diau_pept = data.table::fread(diau_pept) 
 #' diau_prot = data.table::fread(diau_prot) 
@@ -273,7 +273,7 @@ OpenMStoMSstatsFormat = function(
 #' os_raw = system.file("tinytest/raw_data/OpenSWATH/openswath_input.csv", 
 #'                              package = "MSstatsConvert")
 #' annot = system.file("tinytest/annotations/annot_os.csv", 
-#'                     package = "MSstatsdev")
+#'                     package = "MSstats")
 #' os_raw = data.table::fread(os_raw) 
 #' annot = data.table::fread(annot)
 #' 
@@ -433,7 +433,7 @@ ProgenesistoMSstatsFormat = function(
 #' 
 #' pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
 #'                      package = "MSstatsConvert")
-#' annot = system.file("tinytest/annotations/annot_pd.csv", package = "MSstatsdev")
+#' annot = system.file("tinytest/annotations/annot_pd.csv", package = "MSstats")
 #' pd_raw = data.table::fread(pd_raw)
 #' annot = data.table::fread(annot)
 #' 

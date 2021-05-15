@@ -65,7 +65,7 @@ Import OpenSWATH files
 os_raw = system.file("tinytest/raw_data/OpenSWATH/openswath_input.csv", 
                              package = "MSstatsConvert")
 annot = system.file("tinytest/annotations/annot_os.csv", 
-                    package = "MSstatsdev")
+                    package = "MSstats")
 os_raw = data.table::fread(os_raw) 
 annot = data.table::fread(annot)
 

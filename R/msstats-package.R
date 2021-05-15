@@ -2,7 +2,7 @@
 ## usethis namespace: start
 #' @importFrom Rcpp sourceCpp
 ## usethis namespace: end
-#' @useDynLib MSstatsdev, .registration=TRUE
+#' @useDynLib MSstats, .registration=TRUE
 NULL
 
 

@@ -74,7 +74,7 @@ Import Proteome Discoverer files
 
 pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
                      package = "MSstatsConvert")
-annot = system.file("tinytest/annotations/annot_pd.csv", package = "MSstatsdev")
+annot = system.file("tinytest/annotations/annot_pd.csv", package = "MSstats")
 pd_raw = data.table::fread(pd_raw)
 annot = data.table::fread(annot)
 

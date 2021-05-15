@@ -2,18 +2,18 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 get_estimable_fixed_random <- function(parameters, contrast) {
-    .Call(`_MSstatsdev_get_estimable_fixed_random`, parameters, contrast)
+    .Call(`_MSstats_get_estimable_fixed_random`, parameters, contrast)
 }
 
 make_contrast_run_quant <- function(input, coefs, contrast_matrix, counts, is_labeled, is_reference = FALSE) {
-    .Call(`_MSstatsdev_make_contrast_run_quant`, input, coefs, contrast_matrix, counts, is_labeled, is_reference)
+    .Call(`_MSstats_make_contrast_run_quant`, input, coefs, contrast_matrix, counts, is_labeled, is_reference)
 }
 
 get_linear_summary <- function(input, coefs, counts, is_labeled) {
-    .Call(`_MSstatsdev_get_linear_summary`, input, coefs, counts, is_labeled)
+    .Call(`_MSstats_get_linear_summary`, input, coefs, counts, is_labeled)
 }
 
 median_polish_summary <- function(x, eps = 0.01, maxiter = 10L) {
-    .Call(`_MSstatsdev_median_polish_summary`, x, eps, maxiter)
+    .Call(`_MSstats_median_polish_summary`, x, eps, maxiter)
 }
 
