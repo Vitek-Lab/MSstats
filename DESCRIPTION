@@ -11,7 +11,7 @@ Authors@R: c(
   person("Ting", "Huang", email = "thuang0703@gmail.com", role = "aut"),
   person("Olga", "Vitek", email = "o.vitek@northeastern.edu", role = "aut")) 
 License: Artistic-2.0
-Depends: R (>= 3.6)
+Depends: R (>= 4.0)
 Imports: 
     MSstatsConvert,
     data.table,
