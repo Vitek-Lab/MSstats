@@ -8,7 +8,6 @@ NULL
 
 #' Set default logging object when package is loaded
 #' @param ... ignored
-#' @importFrom log4r file_appender console_appender
 #' @return none, sets options called MSstatsLog and MSstatsMsg
 #' @keywords internal
 .onLoad = function(...) {
