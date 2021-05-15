@@ -1,0 +1,10 @@
+version: 0.0
+os: linux
+files:
+  - source: ./
+    destination: /home/rstudio/code/deployment/msstats-dev
+# Executes After install lifecycle during deployment
+hooks:
+  AfterInstall:
+    - location: inst/scripts/after_install.sh
+      runas: ubuntu
