@@ -17,7 +17,7 @@ NumericVector get_intercept(CharacterVector coef_names) {
     NumericVector intercept_name = grep("Intercept", coef_names);
     CharacterVector temp_intercept = coef_names[intercept_name];
 
-    NumericVector intercept(temp_intercept.length(), 1);
+    NumericVector intercept(temp_intercept.length(), 1.0);
     if (is_true(all(is_na(temp_intercept))) || (temp_intercept.length() == 0)) {
         intercept = NumericVector(0.0);
     } else { 
