@@ -19,7 +19,7 @@ NumericVector get_intercept(CharacterVector coef_names) {
 
     NumericVector intercept(temp_intercept.length(), 1);
     if (is_true(all(is_na(temp_intercept))) || (temp_intercept.length() == 0)) {
-        intercept = NumericVector(0);
+        intercept = NumericVector(0.0);
     } else { 
         intercept.names() = temp_intercept;
     } 
@@ -65,7 +65,7 @@ NumericVector get_ref(const CharacterVector& coef_names, const NumericVector& fi
     if ((find_ref.length() != 0) & !(find_ref[0] == -1)) {
         if (is_reference) {
             CharacterVector temp_ref = coef_names[find_ref];
-            ref = rep(0, find_ref.length());
+            ref = rep(0.0, find_ref.length());
             ref.attr("names") = temp_ref;
         } else {
             CharacterVector temp_ref = coef_names[find_ref];
