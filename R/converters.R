@@ -567,7 +567,7 @@ SkylinetoMSstatsFormat = function(
                        filter = filter_with_Qvalue, 
                        drop_column = TRUE)
     
-    feature_columns = c("PeptideSequence", "PrecursorCharge", 
+    feature_columns = c("IsotopeLabelType", "PeptideSequence", "PrecursorCharge", 
                         "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsPreprocess(
         input, 
