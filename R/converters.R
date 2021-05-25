@@ -584,7 +584,8 @@ SkylinetoMSstatsFormat = function(
         feature_cleaning = list(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = sum))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsBalancedDesign(input, c("PeptideSequence", "PrecursorCharge", 
+                                           "FragmentIon", "ProductCharge"))
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
