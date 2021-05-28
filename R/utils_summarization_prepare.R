@@ -168,8 +168,11 @@ getProcessed = function(input) {
     input[, prop_features := sum(nonmissing) / total_features,
           by = c("PROTEIN", "RUN")] 
     
-    if (any(input$cen == 0)) {
-        .setCensoredByThreshold(input, censored_symbol, remove50missing)
+    if (is.element("cen", colnames(input))) {
+        if (any(input[["cen"]] == 0)) {
+            .setCensoredByThreshold(input, censored_symbol, remove50missing)
+        }
     }
+
     input
 }
