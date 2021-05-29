@@ -99,7 +99,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
   input[n_obs > 1 & n_obs_run > 0, 
         ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
         by = grouping_vars]
-  input[, ABUNDANCE_cut := ifelse(!is.finite(ABUNDANCE_cut, 0, ABUNDANCE_cut))]
+  input[, ABUNDANCE_cut := ifelse(!is.finite(ABUNDANCE_cut), 0, ABUNDANCE_cut)]
   if (censored_symbol == "NA") {
     input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
                                    ABUNDANCE_cut, newABUNDANCE)]
