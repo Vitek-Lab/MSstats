@@ -99,11 +99,13 @@ MSstatsHandleMissing = function(input, summary_method, impute,
   input[n_obs > 1 & n_obs_run > 0, 
         ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
         by = grouping_vars]
+  input[, any_censored := any(censored & n_obs > 1 & n_obs_run > 0),
+        by = "PROTEIN"]
   if (censored_symbol == "NA") {
-    input[, newABUNDANCE := ifelse(!nonmissing_all & censored & is.finite(ABUNDANCE_cut), 
+    input[, newABUNDANCE := ifelse(!nonmissing_all & censored & is.finite(ABUNDANCE_cut) & any_censored, 
                                    ABUNDANCE_cut, newABUNDANCE)]
   } else if (censored_symbol == "0") {
-    input[, newABUNDANCE := ifelse(!nonmissing_all & newABUNDANCE == 0 & is.finite(ABUNDANCE_cut), 
+    input[, newABUNDANCE := ifelse(!nonmissing_all & newABUNDANCE == 0 & is.finite(ABUNDANCE_cut) & any_censored, 
                                    ABUNDANCE_cut, newABUNDANCE)]
   }
 }
