@@ -305,7 +305,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
     }
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
-    if (impute) {
+    if (impute & any(single_protein[["censored"]])) {
         survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
                                                    with = FALSE])
         single_protein[, predicted := predict(survival_fit,
