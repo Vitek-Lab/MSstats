@@ -315,7 +315,8 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                                 predicted, newABUNDANCE)]
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
     } else {
-        survival = NULL
+        survival = single_protein
+        survival[, predicted := NA]
     }
     
     single_protein = .isSummarizable(single_protein, remove50missing)
