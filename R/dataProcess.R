@@ -315,7 +315,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                                 predicted, newABUNDANCE)]
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
     } else {
-        survival = single_protein
+        survival = single_protein[, cols, with = FALSE]
         survival[, predicted := NA]
     }
     
