@@ -567,7 +567,7 @@ SkylinetoMSstatsFormat = function(
                        filter = filter_with_Qvalue, 
                        drop_column = TRUE)
     
-    feature_columns = c("PeptideSequence", "PrecursorCharge", 
+    feature_columns = c("IsotopeLabelType", "PeptideSequence", "PrecursorCharge", 
                         "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsPreprocess(
         input, 
@@ -584,7 +584,8 @@ SkylinetoMSstatsFormat = function(
         feature_cleaning = list(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = sum))
-    input = MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsBalancedDesign(input, c("PeptideSequence", "PrecursorCharge", 
+                                           "FragmentIon", "ProductCharge"))
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")

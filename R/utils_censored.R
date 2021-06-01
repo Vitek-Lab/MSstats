@@ -84,23 +84,30 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' will be removed
 #' @keywords internal
 .setCensoredByThreshold = function(input, censored_symbol, remove50missing) {
-    total_features = n_obs = newABUNDANCE = n_obs_run = censored = NULL
-    nonmissing_all = ABUNDANCE_cut = NULL
-    
-    if (censored_symbol == "NA") {
-        input[, nonmissing_all := !is.na(newABUNDANCE)]
-    } else if (censored_symbol == "0") {
-        input[, nonmissing_all := !is.na(newABUNDANCE) & input$newABUNDANCE != 0]
-    }
-    
-    input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, 
-                                     FALSE, nonmissing_all)] 
-    grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
-    input[n_obs > 1 & n_obs_run > 0, 
-          ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
-          by = grouping_vars]
-    input[, newABUNDANCE := ifelse(!nonmissing_all & censored, 
+  total_features = n_obs = newABUNDANCE = n_obs_run = censored = NULL
+  nonmissing_all = ABUNDANCE_cut = NULL
+  
+  if (censored_symbol == "NA") {
+    input[, nonmissing_all := !is.na(newABUNDANCE)]
+  } else if (censored_symbol == "0") {
+    input[, nonmissing_all := !is.na(newABUNDANCE) & input$newABUNDANCE != 0]
+  }
+  
+  input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, 
+                                   FALSE, nonmissing_all)] 
+  grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
+  input[n_obs > 1 & n_obs_run > 0, 
+        ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
+        by = grouping_vars]
+  input[, any_censored := any(censored & n_obs > 1 & n_obs_run > 0),
+        by = "PROTEIN"]
+  if (censored_symbol == "NA") {
+    input[, newABUNDANCE := ifelse(!nonmissing_all & censored & is.finite(ABUNDANCE_cut) & any_censored, 
                                    ABUNDANCE_cut, newABUNDANCE)]
+  } else if (censored_symbol == "0") {
+    input[, newABUNDANCE := ifelse(!nonmissing_all & newABUNDANCE == 0 & is.finite(ABUNDANCE_cut) & any_censored, 
+                                   ABUNDANCE_cut, newABUNDANCE)]
+  }
 }
 
 
