@@ -62,7 +62,7 @@
 .makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size) {
     par(oma = c(3, 0, 0, 4))
     heatmap_input = as.matrix(input)
-    row.names(heatmap_input) = substr(row.names(heatmap_input), 1, 30)
+    row.names(heatmap_input) = substr(row.names(heatmap_input), 1, 20)
     heatmap.2(heatmap_input,
               col = my.colors,
               Rowv = FALSE, Colv = FALSE,
