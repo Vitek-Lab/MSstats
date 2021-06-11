@@ -61,7 +61,9 @@
 #' @keywords internal
 .makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size) {
     par(oma = c(3, 0, 0, 4))
-    heatmap.2(as.matrix(input),
+    heatmap_input = as.matrix(input)
+    row.names(heatmap_input) = substr(row.names(heatmap_input), 1, 30)
+    heatmap.2(heatmap_input,
               col = my.colors,
               Rowv = FALSE, Colv = FALSE,
               dendrogram = "none", breaks = my.breaks,
