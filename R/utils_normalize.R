@@ -277,12 +277,10 @@ MSstatsMergeFractions = function(input) {
             run_info = unique(input[, 
                                     list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, 
                                          originalRUN, FRACTION, TECHREPLICATE)])
-            match_runs = try(
-                data.table::dcast(run_info, 
-                                  GROUP_ORIGINAL + SUBJECT_ORIGINAL + TECHREPLICATE ~ FRACTION,
-                                  value.var = "originalRUN"), silent = TRUE
-            )
-            if (inherits(match_runs, "try-error")) {
+            run_info[, num_runs := uniqueN(originalRUN),
+                     by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
+                            "RUN", "TECHREPLICATE", "FRACTION")]
+            if (any(run_info[["num_runs"]] > 1)) {
                 msg = "*** error : can't figure out which multiple runs come from the same sample."
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
@@ -311,12 +309,10 @@ MSstatsMergeFractions = function(input) {
             run_info = unique(input[, 
                                     list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, 
                                          originalRUN, FRACTION)])
-            match_runs = try(
-                data.table::dcast(run_info, 
-                                  GROUP_ORIGINAL + SUBJECT_ORIGINAL ~ FRACTION,
-                                  value.var = "originalRUN"), silent = TRUE
-            )
-            if (inherits(match_runs, "try-error")) {
+            run_info[, num_runs := uniqueN(originalRUN),
+                     by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
+                            "RUN", "FRACTION")]
+            if (any(run_info[["num_runs"]] > 1)) {
                 msg = "*** error : can't figure out which multiple runs come from the same sample."
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
