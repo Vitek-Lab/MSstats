@@ -62,6 +62,7 @@
 #' which are features with bad quality, 
 #' 2) outliers that are flagged in the column, is_outlier=TRUE in Profile plots. 
 #' FALSE (default) shows all features and intensities in profile plots.
+#' @param censoredInt If "0", log-intensities equal to 0 will be removed from QC plot.
 #' @param address the name of folder that will store the results. 
 #' Default folder is the current working directory. 
 #' The other assigned folder has to be existed under the current working directory.
@@ -109,7 +110,7 @@ dataProcessPlots = function(
   text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
   dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
   originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-  remove_uninformative_feature_outlier = FALSE, address = ""
+  remove_uninformative_feature_outlier = FALSE, censoredInt = "NA", address = ""
 ) {
   PROTEIN = Protein = NULL
   
@@ -137,7 +138,7 @@ dataProcessPlots = function(
   if (type == "QCPLOT")
     .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
             text.size, text.angle, legend.size, dot.size.profile, width, height,
-            which.Protein, address)
+            which.Protein, censoredInt, address)
   if (type == "CONDITIONPLOT")
     .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
                    x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
@@ -324,7 +325,7 @@ dataProcessPlots = function(
 #' @importFrom utils setTxtProgressBar
 .plotQC = function(
   processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
-  text.angle, legend.size, dot.size.profile, width, height, protein, address
+  text.angle, legend.size, dot.size.profile, width, height, protein, censoredInt, address
 ) {
   GROUP = SUBJECT = RUN = LABEL = PROTEIN = NULL
   
@@ -373,7 +374,7 @@ dataProcessPlots = function(
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
-                          yaxis.name)
+                          yaxis.name, censoredInt)
     print(qc_plot)
   } 
   
