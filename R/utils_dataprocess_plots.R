@@ -221,7 +221,7 @@
 .makeQCPlot = function(
     input, all_proteins, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
-    lineNameAxis, yaxis.name
+    lineNameAxis, yaxis.name, censoredInt
 ) { 
     RUN = ABUNDANCE = Name = NULL
     
@@ -229,6 +229,9 @@
         plot_title = "All proteins"
     } else {
         plot_title = unique(input$PROTEIN)
+    }
+    if (censoredInt == "0") {
+        input = input[ABUNDANCE > 0]   
     }
     
     ggplot(input, aes_string(x = "RUN", y = "ABUNDANCE")) + 
