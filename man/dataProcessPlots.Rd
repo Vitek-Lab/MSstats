@@ -26,6 +26,7 @@ dataProcessPlots(
   summaryPlot = TRUE,
   save_condition_plot_result = FALSE,
   remove_uninformative_feature_outlier = FALSE,
+  censoredInt = "NA",
   address = ""
 )
 }
@@ -101,6 +102,8 @@ featureSubset="highQuality" in dataProcess. TRUE allows to remove
 which are features with bad quality, 
 2) outliers that are flagged in the column, is_outlier=TRUE in Profile plots. 
 FALSE (default) shows all features and intensities in profile plots.}
+
+\item{censoredInt}{If "0", log-intensities equal to 0 will be removed from QC plot.}
 
 \item{address}{the name of folder that will store the results. 
 Default folder is the current working directory. 

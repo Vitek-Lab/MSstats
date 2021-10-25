@@ -18,7 +18,8 @@
   cumGroupAxis,
   groupName,
   lineNameAxis,
-  yaxis.name
+  yaxis.name,
+  censoredInt
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ Default is 0.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}
+
+\item{censoredInt}{If "0", log-intensities equal to 0 will be removed from QC plot.}
 }
 \description{
 To illustrate the quantitative data after data-preprocessing and 
