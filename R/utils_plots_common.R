@@ -101,7 +101,7 @@ savePlot = function(name_base, file_name, width, height) {
     if (name_base != FALSE) {
         all_files = list.files(".")
         if(file_name == 'ProfilePlot'){
-            num_same_name = sum(grepl(paste0("^", name_base, file_name, "_[0-9]?"), all_files))
+            num_same_name = sum(grepl("ProfilePlot[_0-9]*.pdf", all_files))
         } else {
             num_same_name = sum(grepl(paste0("^", name_base, file_name, "[0-9]?"), all_files))
         }
