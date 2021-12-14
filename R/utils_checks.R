@@ -102,7 +102,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 .checkUnProcessedDataValidity = function(input, fix_missing, fill_incomplete) {
     input = data.table::as.data.table(unclass(input))
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
-             "PrecursorCharge", "FragmentIon", "ProductCharge", 
+             "PrecursorCharge", "FragmentIon", "ProductCharge", "TechReplicate",
              "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
     provided_cols = intersect(cols, colnames(input))
     
