@@ -319,7 +319,7 @@ MSstatsMergeFractions = function(input) {
             } else {
                 run_info[, merged := "merged"]
                 run_info[, newRun := do.call(paste, c(.SD, sep = "_")), 
-                          .SDcols = c(1:3, ncol(match_runs))]
+                          .SDcols = c(1:3, ncol(run_info))]
                 match_runs = unique(run_info[, list(GROUP_ORIGINAL,
                                                     SUBJECT_ORIGINAL,
                                                     newRun)])
