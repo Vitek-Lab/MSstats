@@ -320,13 +320,14 @@ MSstatsMergeFractions = function(input) {
                 run_info[, merged := "merged"]
                 run_info[, newRun := do.call(paste, c(.SD, sep = "_")), 
                           .SDcols = c(1:3, ncol(run_info))]
-                match_runs = unique(run_info[, list(GROUP_ORIGINAL,
-                                                    SUBJECT_ORIGINAL,
-                                                    newRun)])
-                
+                match_runs = unique(run_info[, list(GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                                                    originalRUN, newRun)])
+      
                 input = merge(input, match_runs,
-                              by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+                              by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
+                                     "originalRUN"),
                               all.x = TRUE)
+
                 select_fraction = input[!is.na(ABUNDANCE) & input$ABUNDANCE > 0,
                                         list(ncount = .N),
                                         by = c("FEATURE", "FRACTION")]
