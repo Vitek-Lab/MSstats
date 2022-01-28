@@ -277,7 +277,7 @@ MSstatsMergeFractions = function(input) {
             run_info = unique(input[, 
                                     list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, 
                                          originalRUN, FRACTION, TECHREPLICATE)])
-            run_info[, num_runs := uniqueN(originalRUN),
+            run_info[, num_runs := data.table::uniqueN(originalRUN),
                      by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
                             "RUN", "TECHREPLICATE", "FRACTION")]
             if (any(run_info[["num_runs"]] > 1)) {
@@ -309,7 +309,7 @@ MSstatsMergeFractions = function(input) {
             run_info = unique(input[, 
                                     list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, 
                                          originalRUN, FRACTION)])
-            run_info[, num_runs := uniqueN(originalRUN),
+            run_info[, num_runs := data.table::uniqueN(originalRUN),
                      by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
                             "RUN", "FRACTION")]
             if (any(run_info[["num_runs"]] > 1)) {
