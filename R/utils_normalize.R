@@ -317,12 +317,12 @@ MSstatsMergeFractions = function(input) {
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
-                match_runs[, merged := "merged"]
-                match_runs[, newRun := do.call(paste, c(.SD, sep = "_")), 
-                           .SDcols = c(1:3, ncol(match_runs))]
-                match_runs = unique(match_runs[, list(GROUP_ORIGINAL,
-                                                      SUBJECT_ORIGINAL,
-                                                      newRun)])
+                run_info[, merged := "merged"]
+                run_info[, newRun := do.call(paste, c(.SD, sep = "_")), 
+                          .SDcols = c(1:3, ncol(match_runs))]
+                match_runs = unique(run_info[, list(GROUP_ORIGINAL,
+                                                    SUBJECT_ORIGINAL,
+                                                    newRun)])
                 
                 input = merge(input, match_runs,
                               by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
