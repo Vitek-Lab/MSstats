@@ -278,8 +278,7 @@ MSstatsMergeFractions = function(input) {
                                     list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, 
                                          originalRUN, FRACTION, TECHREPLICATE)])
             run_info[, num_runs := data.table::uniqueN(originalRUN),
-                     by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
-                            "RUN", "TECHREPLICATE", "FRACTION")]
+                     by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "TECHREPLICATE", "FRACTION")]
             if (any(run_info[["num_runs"]] > 1)) {
                 msg = "*** error : can't figure out which multiple runs come from the same sample."
                 getOption("MSstatsLog")("ERROR", msg)
@@ -310,8 +309,7 @@ MSstatsMergeFractions = function(input) {
                                     list(GROUP_ORIGINAL, SUBJECT_ORIGINAL, RUN, 
                                          originalRUN, FRACTION)])
             run_info[, num_runs := data.table::uniqueN(originalRUN),
-                     by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
-                            "RUN", "FRACTION")]
+                     by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "FRACTION")]
             if (any(run_info[["num_runs"]] > 1)) {
                 msg = "*** error : can't figure out which multiple runs come from the same sample."
                 getOption("MSstatsLog")("ERROR", msg)
