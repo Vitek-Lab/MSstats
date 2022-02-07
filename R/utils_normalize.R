@@ -284,10 +284,15 @@ MSstatsMergeFractions = function(input) {
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
-                run_info[, newRun := paste(GROUP_ORIGINAL, SUBJECT_ORIGINAL, FRACTION, 
-                                           TECHREPLICATE, "merged", sep = "_")]
+                run_info[, MinFraction := as.character(unique(originalRUN[FRACTION == 1])), 
+                           by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "TECHREPLICATE")]
+                run_info[, newRun := paste(GROUP_ORIGINAL, SUBJECT_ORIGINAL, 
+                                           TECHREPLICATE, MinFraction, "merged", 
+                                           sep = "_")]
+                run_info[, MinFraction := NULL]
+                run_info[, num_runs := NULL]
                 input = merge(input, run_info, by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
-                                                      "FRACTION", "TECHREPLICATE", 
+                                                      "FRACTION", "TECHREPLICATE", "RUN",
                                                       "originalRUN"),
                               all.x = TRUE)
                 
