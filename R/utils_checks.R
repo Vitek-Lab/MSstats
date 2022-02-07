@@ -232,7 +232,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", 
-             "SUBJECT", "FRACTION", "INTENSITY")
+             "SUBJECT", "TECHREPLICATE", "FRACTION", "INTENSITY")
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
