@@ -284,13 +284,12 @@ MSstatsMergeFractions = function(input) {
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
-                input$newRun = NA
-                input$newRun = as.character(input$newRun)
-                run_info[, GROUP_ORIGINAL := as.character(GROUP_ORIGINAL)]
-                run_info[, SUBJECT_ORIGINAL := as.character(SUBJECT_ORIGINAL)]
-                for (k in seq_len(nrow(run_info))) {
-                    input[originalRUN %in% run_info[k, 4:ncol(run_info)], "newRun"] = paste(paste(run_info[k, 1:4], collapse = "_"), 'merged', sep = "_")   
-                }
+                run_info[, newRun := paste(GROUP_ORIGINAL, SUBJECT_ORIGINAL, FRACTION, 
+                                           TECHREPLICATE, "merged", sep = "_")]
+                input = merge(input, run_info, by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL",
+                                                      "FRACTION", "TECHREPLICATE", 
+                                                      "originalRUN"),
+                              all.x = TRUE)
                 
                 select_fraction = input[!is.na(ABUNDANCE) & ABUNDANCE > 0, 
                                         list(ncount = .N),
