@@ -233,6 +233,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", 
              "SUBJECT", "TECHREPLICATE", "FRACTION", "INTENSITY")
+    cols = intersect(cols, colnames(input))
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
