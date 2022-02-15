@@ -35,7 +35,6 @@ Suggests:
     BiocStyle,
     knitr,
     rmarkdown,
-    MSstatsBioData,
     tinytest,
     covr,
     markdown
