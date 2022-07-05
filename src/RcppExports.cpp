@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // get_estimable_fixed_random
 List get_estimable_fixed_random(const List& parameters, const arma::vec& contrast);
 RcppExport SEXP _MSstats_get_estimable_fixed_random(SEXP parametersSEXP, SEXP contrastSEXP) {

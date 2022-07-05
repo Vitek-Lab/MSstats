@@ -672,3 +672,88 @@ SpectronauttoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", "\n")
     input
 }
+
+
+#' Import Spectronaut files
+#' 
+#' @param diann_quantification 
+#' @param annotation annotation tableincludes Condition, BioReplicate, Run.
+#' @param protein_id_column name of a column that will be used as protein ID.
+#' @param fragment_column name of a column that stores fragment intensities.
+#' @param filter_qvalue TRUE(default) will filter out the intensities that have greater than qvalue_cutoff in EG.Qvalue column. Those intensities will be replaced with zero and will be considered as censored missing values for imputation purpose.
+#' @param qvalue_cutoff Cutoff for EG.Qvalue. default is 0.01.
+#' @param filter_prot_qvalue TRUE(default) will filter out the intensities that have greater than qvalue_cutoff in EG.Qvalue column. Those intensities will be replaced with zero and will be considered as censored missing values for imputation purpose.
+#' @param prot_qvalue_cutoff Cutoff for EG.Qvalue. default is 0.01.
+#' @param ... additional parameters to `data.table::fread`.
+#' @inheritParams .documentFunction
+#' 
+#' @return data.frame in the MSstats required format.
+#' 
+#' @author Mateusz Staniak
+#' 
+#' @export
+#' 
+DIANNtoMSstatsFormat = function(
+        diann_quantification, annotation, protein_id_column = "ProteinIds",
+        fragment_column = "FragmentQuantCorrected",
+        useUniquePeptide = TRUE, summaryforMultipleRows = max, 
+        removeFewMeasurements = TRUE,
+        removeProtein_with1Peptide = FALSE, 
+        filter_qvalue = TRUE, qvalue_cutoff = 0.01,
+        filter_prot_qvalue = FALSE, prot_qvalue_cutoff = 0.01,
+        use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+        ...
+) {
+    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                        log_file_path)
+    
+    input = MSstatsConvert::MSstatsImport(list(input = diann_quantification), 
+                                          type = "MSstats",
+                                          tool = "DIANN", ...)
+    input = MSstatsConvert::MSstatsClean(input, 
+                                         protein_column = protein_id_column,
+                                         fragment_column = fragment_column)
+    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, 
+                                                       annotation)
+    
+    q_score_filter = list(score_column = "Qvalue", 
+                          score_threshold = qvalue_cutoff, 
+                          direction = "smaller", 
+                          behavior = "remove", 
+                          handle_na = "remove", 
+                          fill_value = NA,
+                          filter = filter_qvalue, 
+                          drop_column = TRUE)
+    pq_score_filter = list(score_column = "ProteinQValue", 
+                           score_threshold = prot_qvalue_cutoff, 
+                           direction = "smaller", 
+                           behavior = "remove", 
+                           handle_na = "remove", 
+                           fill_value = NA,
+                           filter = filter_prot_qvalue, 
+                           drop_column = TRUE)
+    
+    
+    feature_columns = c("PeptideSequence", "PrecursorCharge", 
+                        "FragmentIon", "ProductCharge")
+    input = MSstatsConvert::MSstatsPreprocess(
+        input, 
+        annotation,
+        feature_columns,
+        remove_shared_peptides = useUniquePeptide, 
+        remove_single_feature_proteins = removeProtein_with1Peptide,
+        score_filtering = list(qscore = q_score_filter,
+                               pqscore = pq_score_filter),
+        feature_cleaning = list(
+            remove_features_with_few_measurements = removeFewMeasurements,
+            summarize_multiple_psms = summaryforMultipleRows),
+        columns_to_fill = list("IsotopeLabelType" = "L"))
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    
+    msg_final = paste("** Finished preprocessing. The dataset is ready",
+                      "to be processed by the dataProcess function.")
+    getOption("MSstatsLog")("INFO", msg_final)
+    getOption("MSstatsMsg")("INFO", msg_final)
+    getOption("MSstatsLog")("INFO", "\n")
+    input
+}
