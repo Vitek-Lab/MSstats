@@ -131,7 +131,7 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' 
 MSstatsGroupComparison = function(summarized_list, contrast_matrix,
                                   save_fitted_models, repeated, samples_info) {
-    groups = sort(colnames(contrast_matrix))
+    groups = colnames(contrast_matrix)
     has_imputed = attr(summarized_list, "has_imputed")
     all_proteins_id = seq_along(summarized_list)
     test_results = vector("list", length(all_proteins_id))
