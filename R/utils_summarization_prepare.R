@@ -29,8 +29,7 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
     
     label = data.table::uniqueN(input$LABEL) == 2
     if (label) {
-        input$ref = factor(ifelse(input$LABEL == "L", 
-                                  input$RUN[input$LABEL == "L"], 0))
+        input[, ref := factor(ifelse(LABEL == "L", RUN, 0))
     }
     
     if (is.element("remove", colnames(input))) {
