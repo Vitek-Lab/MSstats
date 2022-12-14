@@ -338,6 +338,7 @@ getSamplesInfo = function(summarization_output) {
 #' @keywords internal
 .handleSingleContrast = function(input, fit, contrast, groups,
                                  parameters, protein, coefs) {
+    groups = sort(groups)
     contrast_values = .getContrast(input, contrast, coefs, groups)
     parameters$cf = parameters$cf[names(contrast_values), , drop = FALSE]
     parameters$vcv = parameters$vcv[names(contrast_values), names(contrast_values)]
