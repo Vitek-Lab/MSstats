@@ -171,21 +171,16 @@ dataProcessPlots = function(
     }
     getOption("MSstatsMsg")("INFO", msg)
   }
-  if (proteins != "all") {
-    selected_proteins = getSelectedProteins(proteins, all_proteins)
-    processed = processed[PROTEIN %in% selected_proteins]
-    summarized = summarized[Protein %in% selected_proteins]
-    processed[, PROTEIN := factor(PROTEIN)]
-    summarized[, PROTEIN := factor(Protein)]
-  }
-  
-  y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
-  y.limdown = ifelse(is.numeric(ylimDown), ylimDown, -1)
   
   processed = processed[order(GROUP, SUBJECT, LABEL)]
   processed[, RUN := factor(RUN, levels = unique(RUN), 
                             labels = seq(1, length(unique(RUN))))]
   processed[, RUN := as.numeric(RUN)]
+  
+  summarized = summarized[order(GROUP, SUBJECT)]
+  summarized[, RUN := factor(RUN, levels = unique(RUN), 
+                            labels = seq(1, length(unique(RUN))))]
+  summarized[, RUN := as.numeric(RUN)]
   
   ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, c("GROUP", "RUN")])
@@ -200,9 +195,22 @@ dataProcessPlots = function(
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
   lineNameAxis = cumGroupAxis[-nlevels(tempGroupName$GROUP)]
+
+  if (proteins != "all") {
+      selected_proteins = getSelectedProteins(proteins, all_proteins)
+      processed = processed[PROTEIN %in% selected_proteins]
+      summarized = summarized[Protein %in% selected_proteins]
+      processed[, PROTEIN := factor(PROTEIN)]
+      summarized[, PROTEIN := factor(Protein)]
+  }
+  
+  y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
+  y.limdown = ifelse(is.numeric(ylimDown), ylimDown, -1)
+  
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
                          Name = levels(tempGroupName$GROUP))
+
   
   if (length(unique(processed$LABEL)) == 2) {
     processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
