@@ -60,6 +60,10 @@ MSstatsHandleMissing = function(input, summary_method, impute,
             
             getOption("MSstatsMsg")("INFO", msg)
             getOption("MSstatsMsg")("INFO", msg_2)
+            
+            getOption("MSstatsLog")("INFO", msg)
+            getOption("MSstatsLog")("INFO", msg_2)
+            
         } else {
             if (missing_symbol == '0') {
                 input$censored = input$LABEL == "L" & 

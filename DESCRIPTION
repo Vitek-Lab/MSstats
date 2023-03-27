@@ -30,7 +30,8 @@ Imports:
     stats,
     grDevices,
     graphics,
-    methods
+    methods,
+    statmod
 Suggests: 
     BiocStyle,
     knitr,
