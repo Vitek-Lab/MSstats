@@ -98,7 +98,7 @@ groupComparisonPlots = function(
     all_labels = as.character(unique(data$Label))
     log_base_FC = ifelse(is.element("log2FC", colnames(data)), 2, 10)
     
-    getOption("MSstatsLog")("MSstats - groupComparisonPlots function")
+    getOption("MSstatsLog")("INFO", "MSstats - groupComparisonPlots function")
     chosen_labels = .checkGCPlotsInput(type, logBase.pvalue, which.Comparison,
                                        all_labels)
     input = input[Label %in% chosen_labels]
