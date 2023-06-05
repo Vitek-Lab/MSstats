@@ -396,8 +396,8 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
                       filter = T, 
                       drop_column = FALSE)
   
-  oxidation_filter = list(col_name = "PeptideSequence",
-                          pattern = "\\+16", 
+  oxidation_filter = list(col_name = "PeptideModifiedSequence",
+                          pattern = "\\(UniMod\\:35\\)", 
                           filter = removeOxidationMpeptides, 
                           drop_column = FALSE)
   
@@ -421,7 +421,7 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
     getOption("MSstatsMsg")("INFO", msg_2_mbr)
     # getOption("MSstatsLog")("INFO", "\n")
     
-  }else{
+  } else{
     msg <- '** MBR was not used to analyze the data. Now setting names and filtering'
     msg_1 <- paste0('-- Filtering on GlobalPGQValue < ', pg_qvalue_cutoff)
     msg_2 <- paste0('-- Filtering on GlobalQValue < ', qvalue_cutoff)
@@ -452,7 +452,7 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
     aggregate_isotopic = F,
     feature_cleaning = list(
       remove_features_with_few_measurements = removeFewMeasurements,
-      summarize_multiple_psms = sum))
+      summarize_multiple_psms = max))
   
   input = MSstatsConvert::MSstatsBalancedDesign(input, c("PeptideSequence", "PrecursorCharge",
                                                          "FragmentIon", "ProductCharge"), fill_incomplete = F,
@@ -460,7 +460,7 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
   )
   
   # add the fraction and isotype label information
-  input$fraction <- rep(1, nrow(input))
+  input$Fraction <- rep(1, nrow(input))
   input$IsotopeLabelType <- rep('Light', nrow(input))
   
   msg_final = paste("** Finished preprocessing. The dataset is ready",
