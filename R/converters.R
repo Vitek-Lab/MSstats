@@ -396,9 +396,9 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
                       filter = T, 
                       drop_column = FALSE)
   
-  oxidation_filter = list(col_name = "PeptideSequence",
-                          pattern = "\\+16", 
-                          filter = removeOxidationMpeptides, 
+  oxidation_filter = list(col_name = "PeptideModifiedSequence",
+                          pattern = "\\(UniMod\\:35\\)",
+                          filter = removeOxidationMpeptides,
                           drop_column = FALSE)
   
   # do some qvlaue filtering
@@ -452,7 +452,7 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
     aggregate_isotopic = F,
     feature_cleaning = list(
       remove_features_with_few_measurements = removeFewMeasurements,
-      summarize_multiple_psms = sum))
+      summarize_multiple_psms = max))
   
   input = MSstatsConvert::MSstatsBalancedDesign(input, c("PeptideSequence", "PrecursorCharge",
                                                          "FragmentIon", "ProductCharge"), fill_incomplete = F,
