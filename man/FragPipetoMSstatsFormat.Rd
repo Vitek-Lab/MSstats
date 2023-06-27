@@ -52,7 +52,11 @@ data.frame in the MSstats required format.
 Import FragPipe files
 }
 \examples{
-TODO
+fragpipe_raw = system.file("tinytest/raw_data/fragpipe/fragpipe_input.csv",
+                              package = "MSstatsConvert")
+fragpipe_raw = data.table::fread(fragpipe_raw)
+fragpipe_imported = FragPipetoMSstatsFormat(fragpipe_raw, use_log_file = FALSE)
+head(fragpipe_imported)
 
 }
 \author{
