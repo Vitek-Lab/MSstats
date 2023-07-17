@@ -2,6 +2,7 @@
 ```{r style, echo = FALSE, results = 'asis'}
 BiocStyle::markdown()
 ```
+
 ```{r global_options, include=FALSE}
 knitr::opts_chunk$set(fig.width=10, fig.height=7, warning=FALSE, message=FALSE)
 options(width=110)
