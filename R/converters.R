@@ -823,7 +823,7 @@ SpectronauttoMSstatsFormat = function(
 #' @export
 #' 
 #' @examples 
-#' fragpipe_raw = system.file("tinytest/raw_data/fragpipe/fragpipe_input.csv",
+#' fragpipe_raw = system.file("tinytest/raw_data/FragPipe/fragpipe_input.csv",
 #'                               package = "MSstatsConvert")
 #' fragpipe_raw = data.table::fread(fragpipe_raw)
 #' fragpipe_imported = FragPipetoMSstatsFormat(fragpipe_raw, use_log_file = FALSE)
