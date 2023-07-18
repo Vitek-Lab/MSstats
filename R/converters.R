@@ -396,7 +396,7 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
                       filter = T, 
                       drop_column = FALSE)
   
-  oxidation_filter = list(col_name = "PeptideModifiedSequence",
+  oxidation_filter = list(col_name = "PeptideSequence",
                           pattern = "\\(UniMod\\:35\\)",
                           filter = removeOxidationMpeptides,
                           drop_column = FALSE)
