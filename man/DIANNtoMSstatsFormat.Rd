@@ -67,10 +67,10 @@ Import Diann files
 }
 \examples{
 \dontrun{
-input <- fread('diann_pooled_report.tsv')
-annot <- fread('Annotation.csv')
-colnames(annot) <- c('Condition', 'Run', 'BioReplicate')
-input <- DIANNtoMSstatsFormat(input, annotation = annot, MBR = F)
+input = fread('diann_pooled_report.tsv')
+annot = fread('Annotation.csv')
+colnames(annot) = c('Condition', 'Run', 'BioReplicate')
+input = DIANNtoMSstatsFormat(input, annotation = annot, MBR = F)
 head(input)
 }
 }

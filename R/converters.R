@@ -100,7 +100,8 @@ DIAUmpiretoMSstatsFormat = function(
         columns_to_fill = list("PrecursorCharge" = NA,
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
@@ -185,7 +186,8 @@ MaxQtoMSstatsFormat = function(
         columns_to_fill = list("FragmentIon" = NA,
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
@@ -242,7 +244,8 @@ OpenMStoMSstatsFormat = function(
         feature_cleaning = list(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = summaryforMultipleRows))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
@@ -326,7 +329,8 @@ OpenSWATHtoMSstatsFormat = function(
         columns_to_fill = c("ProductCharge" = NA, 
                             "IsotopeLabelType" = "L"))
     input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns, 
-                                                  fix_missing = "na_to_zero")
+                                                  fix_missing = "na_to_zero",
+                                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
@@ -360,13 +364,13 @@ OpenSWATHtoMSstatsFormat = function(
 #' 
 #' @examples 
 #' \dontrun{
-#' input <- fread('diann_pooled_report.tsv')
-#' annot <- fread('Annotation.csv')
-#' colnames(annot) <- c('Condition', 'Run', 'BioReplicate')
-#' input <- DIANNtoMSstatsFormat(input, annotation = annot, MBR = F)
+#' input = fread('diann_pooled_report.tsv')
+#' annot = fread('Annotation.csv')
+#' colnames(annot) = c('Condition', 'Run', 'BioReplicate')
+#' input = DIANNtoMSstatsFormat(input, annotation = annot, MBR = F)
 #' head(input)
 #' }
-DIANNtoMSstatsFormat <- function(input, annotation = NULL,
+DIANNtoMSstatsFormat = function(input, annotation = NULL,
                                  global_qvalue_cutoff = 0.01,
                                  qvalue_cutoff = 0.01, 
                                  pg_qvalue_cutoff = 0.01,
@@ -383,36 +387,28 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
   input = MSstatsConvert::MSstatsImport(list(input = input),
                                         "MSstats", "DIANN")
   input = MSstatsConvert::MSstatsClean(input, MBR = MBR)
-  if(!is.null(annotation)){
-    annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
-    # check that the annotation has the correct column names
-    if(sum(c('Condition','Run','BioReplicate') %in% colnames(annotation)) < 3){
-      stop("Make sure the column names for the annotation table are: Condition, Run and BioReplicate")
-    }
-  }
-  
+  annotation = MSstatsConvert::MSstatsMakeAnnotation(input, annotation)
+
   decoy_filter = list(col_name = "ProteinName",
                       pattern = c("DECOY", "Decoys"),
                       filter = T, 
                       drop_column = FALSE)
-  
   oxidation_filter = list(col_name = "PeptideSequence",
                           pattern = "\\(UniMod\\:35\\)",
                           filter = removeOxidationMpeptides,
                           drop_column = FALSE)
   
-  # do some qvlaue filtering
-  msg <- paste0('** Filtering on Global Q Value < ', global_qvalue_cutoff)
+  msg = paste0('** Filtering on Global Q Value < ', global_qvalue_cutoff)
   getOption("MSstatsLog")("INFO", msg)
   getOption("MSstatsMsg")("INFO", msg)
   
-  input <- input[input$DetectionQValue < global_qvalue_cutoff, ]
-  if(MBR){
-    msg <- '** MBR was used to analyze the data. Now setting names and filtering'
-    msg_1_mbr <- paste0('-- LibPGQValue < ', pg_qvalue_cutoff)
-    msg_2_mbr <- paste0('-- LibQValue < ', qvalue_cutoff)
-    input <- input[input$LibPGQValue < pg_qvalue_cutoff, ]
-    input <- input[input$LibQValue < qvalue_cutoff, ]
+  input = input[DetectionQValue < global_qvalue_cutoff, ]
+  if (MBR) {
+    msg = '** MBR was used to analyze the data. Now setting names and filtering'
+    msg_1_mbr = paste0('-- LibPGQValue < ', pg_qvalue_cutoff)
+    msg_2_mbr = paste0('-- LibQValue < ', qvalue_cutoff)
+    input = input[LibPGQValue < pg_qvalue_cutoff, ]
+    input = input[LibQValue < qvalue_cutoff, ]
     getOption("MSstatsLog")("INFO", msg)
     getOption("MSstatsMsg")("INFO", msg)
     getOption("MSstatsLog")("INFO", msg_1_mbr)
@@ -420,13 +416,12 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
     getOption("MSstatsLog")("INFO", msg_2_mbr)
     getOption("MSstatsMsg")("INFO", msg_2_mbr)
     # getOption("MSstatsLog")("INFO", "\n")
-    
-  }else{
-    msg <- '** MBR was not used to analyze the data. Now setting names and filtering'
-    msg_1 <- paste0('-- Filtering on GlobalPGQValue < ', pg_qvalue_cutoff)
-    msg_2 <- paste0('-- Filtering on GlobalQValue < ', qvalue_cutoff)
-    input <- input[input$GlobalPGQValue < pg_qvalue_cutoff, ]
-    input <- input[input$GlobalQValue < qvalue_cutoff, ]
+  } else{
+    msg = '** MBR was not used to analyze the data. Now setting names and filtering'
+    msg_1 = paste0('-- Filtering on GlobalPGQValue < ', pg_qvalue_cutoff)
+    msg_2 = paste0('-- Filtering on GlobalQValue < ', qvalue_cutoff)
+    input = input[GlobalPGQValue < pg_qvalue_cutoff, ]
+    input = input[GlobalQValue < qvalue_cutoff, ]
     getOption("MSstatsLog")("INFO", msg)
     getOption("MSstatsMsg")("INFO", msg)
     getOption("MSstatsLog")("INFO", msg_1)
@@ -434,12 +429,10 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
     getOption("MSstatsLog")("INFO", msg_2)
     getOption("MSstatsMsg")("INFO", msg_2)
     # getOption("MSstatsLog")("INFO", "\n")
-    
   }
   
   feature_columns = c("PeptideSequence", "PrecursorCharge",
                       "FragmentIon", "ProductCharge")
-  
   input = MSstatsConvert::MSstatsPreprocess(
     input, 
     annotation, 
@@ -449,19 +442,18 @@ DIANNtoMSstatsFormat <- function(input, annotation = NULL,
     exact_filtering = NULL,
     pattern_filtering = list(decoy = decoy_filter, 
                              oxidation = oxidation_filter),
-    aggregate_isotopic = F,
+    aggregate_isotopic = FALSE,
     feature_cleaning = list(
       remove_features_with_few_measurements = removeFewMeasurements,
-      summarize_multiple_psms = max))
+      summarize_multiple_psms = max),
+    columns_to_fill = list(Fraction = 1,
+                           IsotopeLabelType = "Light"))
   
-  input = MSstatsConvert::MSstatsBalancedDesign(input, c("PeptideSequence", "PrecursorCharge",
-                                                         "FragmentIon", "ProductCharge"), fill_incomplete = F,
-                                                handle_fractions = F
+  input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns, 
+                                                fill_incomplete = FALSE,
+                                                handle_fractions = FALSE,
+                                                remove_few = removeFewMeasurements
   )
-  
-  # add the fraction and isotype label information
-  input$fraction <- rep(1, nrow(input))
-  input$IsotopeLabelType <- rep('Light', nrow(input))
   
   msg_final = paste("** Finished preprocessing. The dataset is ready",
                     "to be processed by the dataProcess function.")
@@ -535,7 +527,8 @@ ProgenesistoMSstatsFormat = function(
         columns_to_fill = list("FragmentIon" = NA, 
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
     
@@ -618,7 +611,8 @@ PDtoMSstatsFormat = function(
         columns_to_fill = list("FragmentIon" = NA, 
                                "ProductCharge" = NA,
                                "IsotopeLabelType" = "L"))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     data.table::setnames(input, "PeptideSequence", "PeptideModifiedSequence",
                          skip_absent = TRUE)
     
@@ -722,7 +716,8 @@ SkylinetoMSstatsFormat = function(
             remove_features_with_few_measurements = removeFewMeasurements,
             summarize_multiple_psms = sum))
     input = MSstatsBalancedDesign(input, c("PeptideSequence", "PrecursorCharge", 
-                                           "FragmentIon", "ProductCharge"))
+                                           "FragmentIon", "ProductCharge"),
+                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
@@ -800,7 +795,8 @@ SpectronauttoMSstatsFormat = function(
         score_filtering = list(pgq = pq_filter, 
                                psm_q = qval_filter),
         columns_to_fill = list("IsotopeLabelType" = "L"))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
@@ -830,7 +826,7 @@ SpectronauttoMSstatsFormat = function(
 #' head(fragpipe_imported)
 #' 
 FragPipetoMSstatsFormat = function(
-        input, useUniquePeptide = TRUE, removeFewMeasurements=TRUE,
+        input, useUniquePeptide = TRUE, removeFewMeasurements = TRUE,
         removeProtein_with1Feature = FALSE, summaryforMultipleRows = max,
         use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
         ...
@@ -854,7 +850,8 @@ FragPipetoMSstatsFormat = function(
         feature_cleaning = list(remove_features_with_few_measurements = removeFewMeasurements,
                                 summarize_multiple_psms = summaryforMultipleRows),
         columns_to_fill = list("IsotopeLabelType" = "L"))
-    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns)
+    input = MSstatsConvert::MSstatsBalancedDesign(input, feature_columns,
+                                                  remove_few = removeFewMeasurements)
     
     msg_final = paste("** Finished preprocessing. The dataset is ready",
                       "to be processed by the dataProcess function.")
