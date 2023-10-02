@@ -70,6 +70,7 @@
 #'  The command address can help to specify where to store the file as well as 
 #'  how to modify the beginning of the file name. 
 #'  If address=FALSE, plot will be not saved as pdf file but showed in window.
+#'  @param isggPlot if TRUE it renders ggplot else normal plots.
 #' 
 #' @details
 #' \itemize{
@@ -109,7 +110,7 @@ dataProcessPlots = function(
     text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
     dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
     originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-    remove_uninformative_feature_outlier = FALSE, address = ""
+    remove_uninformative_feature_outlier = FALSE, address = "", isggPlot = FALSE
 ) {
   PROTEIN = Protein = NULL
   
@@ -128,7 +129,6 @@ dataProcessPlots = function(
       stop("** Cannnot generate multiple plots in a screen. Please set one protein at a time.")
     }
   }
-  isggPlot <- FALSE
   if (type == "PROFILEPLOT") 
     plot <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
                  x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
