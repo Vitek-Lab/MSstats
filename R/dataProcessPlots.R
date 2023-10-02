@@ -104,12 +104,12 @@
 #' dataProcessPlots(data=QuantData,type="ConditionPlot")
 #' 
 dataProcessPlots = function(
-  data, type, featureName = "Transition", ylimUp = FALSE, ylimDown = FALSE,
-  scale = FALSE, interval = "CI", x.axis.size = 10, y.axis.size = 10,
-  text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
-  dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
-  originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-  remove_uninformative_feature_outlier = FALSE, address = ""
+    data, type, featureName = "Transition", ylimUp = FALSE, ylimDown = FALSE,
+    scale = FALSE, interval = "CI", x.axis.size = 10, y.axis.size = 10,
+    text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
+    dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
+    originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
+    remove_uninformative_feature_outlier = FALSE, address = ""
 ) {
   PROTEIN = Protein = NULL
   
@@ -128,21 +128,36 @@ dataProcessPlots = function(
       stop("** Cannnot generate multiple plots in a screen. Please set one protein at a time.")
     }
   }
-  
+  isggPlot <- FALSE
   if (type == "PROFILEPLOT") 
-    .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
+    plot <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
                  x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                  dot.size.profile, width, height, which.Protein, originalPlot, 
                  summaryPlot, remove_uninformative_feature_outlier, address)
   if (type == "QCPLOT")
-    .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
+    plot <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
             text.size, text.angle, legend.size, dot.size.profile, width, height,
             which.Protein, address)
   if (type == "CONDITIONPLOT")
-    .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
+    plot <- .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
                    x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                    dot.size.profile, dot.size.condition, width, height,
                    which.Protein, save_condition_plot_result, address)
+  if(isggPlot) {
+    converted_plot <- ggplotly(plot)
+    converted_plot <- converted_plot %>% 
+      plotly::layout(
+        width = 800,   # Set the width of the chart in pixels
+        height = 600,  # Set the height of the chart in pixels
+        legend = list(
+          x = 0.5,     # Set the x position of the legend
+          y = -0.2,    # Set the y position of the legend (negative value to move below the plot)
+          orientation = "h"  # Horizontal orientation
+        )
+      )
+    return(plotly)
+  }
+  print(plot)
 }
 
 
@@ -150,9 +165,9 @@ dataProcessPlots = function(
 #' @importFrom stats xtabs
 #' @keywords internal
 .plotProfile = function(
-  processed, summarized, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
-  text.size, text.angle, legend.size, dot.size.profile, width, height, proteins, 
-  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address
+    processed, summarized, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
+    text.size, text.angle, legend.size, dot.size.profile, width, height, proteins, 
+    originalPlot, summaryPlot, remove_uninformative_feature_outlier, address
 ) {
   ABUNDANCE = PROTEIN = feature_quality = is_outlier = Protein = GROUP = NULL
   SUBJECT = LABEL = RUN = xtabs = PEPTIDE = FEATURE = NULL
@@ -179,7 +194,7 @@ dataProcessPlots = function(
   
   summarized = summarized[order(GROUP, SUBJECT)]
   summarized[, RUN := factor(RUN, levels = unique(RUN), 
-                            labels = seq(1, length(unique(RUN))))]
+                             labels = seq(1, length(unique(RUN))))]
   summarized[, RUN := as.numeric(RUN)]
   
   ## Meena :due to GROUP=0 for labeled.. extra care required.
@@ -190,18 +205,18 @@ dataProcessPlots = function(
   tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
   level.group = as.character(unique(tempGroupName$GROUP))
   tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+                               levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
   lineNameAxis = cumGroupAxis[-nlevels(tempGroupName$GROUP)]
-
+  
   if (proteins != "all") {
-      selected_proteins = getSelectedProteins(proteins, all_proteins)
-      processed = processed[PROTEIN %in% selected_proteins]
-      summarized = summarized[Protein %in% selected_proteins]
-      processed[, PROTEIN := factor(PROTEIN)]
-      summarized[, PROTEIN := factor(Protein)]
+    selected_proteins = getSelectedProteins(proteins, all_proteins)
+    processed = processed[PROTEIN %in% selected_proteins]
+    summarized = summarized[Protein %in% selected_proteins]
+    processed[, PROTEIN := factor(PROTEIN)]
+    summarized[, PROTEIN := factor(Protein)]
   }
   
   y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
@@ -210,7 +225,7 @@ dataProcessPlots = function(
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
                          Name = levels(tempGroupName$GROUP))
-
+  
   
   if (length(unique(processed$LABEL)) == 2) {
     processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
@@ -260,8 +275,8 @@ dataProcessPlots = function(
                                       legend.size, dot.size.profile, 
                                       ss, s, cumGroupAxis, yaxis.name,
                                       lineNameAxis, groupNametemp, dot_colors)
-      print(profile_plot)
       setTxtProgressBar(pb, i)
+      return(profile_plot)
     }
     close(pb)
     
@@ -298,7 +313,7 @@ dataProcessPlots = function(
              TRANSITION = "Run summary", FEATURE = "Run summary",
              LABEL = "Endogenous", RUN = RUN,
              ABUNDANCE = LogIntensities, FRACTION = 1)
-        ]
+      ]
       if (is_censored) {
         quant$censored = FALSE
       }
@@ -316,8 +331,8 @@ dataProcessPlots = function(
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
         yaxis.name, lineNameAxis, groupNametemp
       )
-      print(profile_plot)
       setTxtProgressBar(pb, i)
+      return(profile_plot)
     }
     close(pb)
     
@@ -331,8 +346,8 @@ dataProcessPlots = function(
 #' @importFrom stats xtabs
 #' @importFrom utils setTxtProgressBar
 .plotQC = function(
-  processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
-  text.angle, legend.size, dot.size.profile, width, height, protein, address
+    processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
+    text.angle, legend.size, dot.size.profile, width, height, protein, address
 ) {
   GROUP = SUBJECT = RUN = LABEL = PROTEIN = NULL
   
@@ -367,7 +382,7 @@ dataProcessPlots = function(
   tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
   level.group = as.character(unique(tempGroupName$GROUP))
   tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+                               levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
@@ -382,7 +397,7 @@ dataProcessPlots = function(
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
                           yaxis.name)
-    print(qc_plot)
+    return(qc_plot)
   } 
   
   if (protein != 'allonly') {
@@ -404,8 +419,8 @@ dataProcessPlots = function(
                             x.axis.size, y.axis.size, text.size, text.angle, 
                             legend.size, label.color, cumGroupAxis, groupName,
                             lineNameAxis, yaxis.name)
-      print(qc_plot)
       setTxtProgressBar(pb, i)
+      return(qc_plot)
     } 
     close(pb)
   } 
@@ -419,9 +434,9 @@ dataProcessPlots = function(
 #' @importFrom utils setTxtProgressBar
 #' @keywords internal
 .plotCondition = function(
-  processed, summarized, ylimUp, ylimDown, scale, interval, x.axis.size, 
-  y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
-  dot.size.condition, width, height, protein, save_plot, address
+    processed, summarized, ylimUp, ylimDown, scale, interval, x.axis.size, 
+    y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
+    dot.size.condition, width, height, protein, save_plot, address
 ) {
   adj.pvalue = Protein = ciw = PROTEIN = GROUP = SUBJECT = ABUNDANCE = NULL
   
@@ -472,8 +487,8 @@ dataProcessPlots = function(
                                   y.limup, x.axis.size, y.axis.size, 
                                   text.size, text.angle, legend.size, 
                                   dot.size.condition, yaxis.name)
-    print(con_plot)
     setTxtProgressBar(pb, i)
+    return(con_plot)
   }
   close(pb)
   
