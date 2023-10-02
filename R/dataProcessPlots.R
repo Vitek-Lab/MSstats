@@ -155,7 +155,7 @@ dataProcessPlots = function(
           orientation = "h"  # Horizontal orientation
         )
       )
-    return(plotly)
+    return(converted_plot)
   }
   print(plot)
 }
