@@ -110,7 +110,7 @@ dataProcessPlots = function(
     text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
     dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
     originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-    remove_uninformative_feature_outlier = FALSE, address = "", isggPlot = FALSE
+    remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE
 ) {
   PROTEIN = Protein = NULL
   
@@ -143,7 +143,7 @@ dataProcessPlots = function(
                    x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                    dot.size.profile, dot.size.condition, width, height,
                    which.Protein, save_condition_plot_result, address)
-  if(isggPlot) {
+  if(isPlotly) {
     converted_plot <- ggplotly(plot)
     converted_plot <- converted_plot %>% 
       plotly::layout(
