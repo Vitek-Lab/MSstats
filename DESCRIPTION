@@ -24,6 +24,8 @@ Imports:
     utils,
     Rcpp,
     ggplot2,
+    plotly,
+    magrittr,
     ggrepel,
     gplots,
     marray,

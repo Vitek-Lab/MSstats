@@ -70,7 +70,7 @@
 #'  The command address can help to specify where to store the file as well as 
 #'  how to modify the beginning of the file name. 
 #'  If address=FALSE, plot will be not saved as pdf file but showed in window.
-#'  @param isggPlot if TRUE it renders ggplot else normal plots.
+#'  @param isPlotly if TRUE it renders ggplot else normal plots.
 #' 
 #' @details
 #' \itemize{
@@ -82,6 +82,8 @@
 #' 
 #' 
 #' @import ggplot2
+#' @importFrom magrittr %>%
+#' @importFrom plotly ggplotly
 #' @importFrom graphics axis image legend mtext par plot.new title plot
 #' @importFrom grDevices dev.off hcl pdf
 #' 

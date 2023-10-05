@@ -26,7 +26,8 @@ dataProcessPlots(
   summaryPlot = TRUE,
   save_condition_plot_result = FALSE,
   remove_uninformative_feature_outlier = FALSE,
-  address = ""
+  address = "",
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -109,7 +110,8 @@ The other assigned folder has to be existed under the current working directory.
  "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv". 
  The command address can help to specify where to store the file as well as 
  how to modify the beginning of the file name. 
- If address=FALSE, plot will be not saved as pdf file but showed in window.}
+ If address=FALSE, plot will be not saved as pdf file but showed in window.
+ @param isPlotly if TRUE it renders ggplot else normal plots.}
 }
 \description{
 To illustrate the quantitative data after data-preprocessing and 
