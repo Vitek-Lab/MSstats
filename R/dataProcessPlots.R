@@ -251,6 +251,7 @@ dataProcessPlots = function(
     savePlot(address, "ProfilePlot", width, height)
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
+        print("in for loop",i)
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
       if (all(is.na(single_protein$ABUNDANCE))) {
         next()
