@@ -63,6 +63,10 @@
 #' 2) outliers that are flagged in the column, is_outlier=TRUE in Profile plots. 
 #' FALSE (default) shows all features and intensities in profile plots.
 #' @param address the name of folder that will store the results. 
+#' @param isPlotly This parameter is for MSstatsShiny application for plotly 
+#' render, this cannot be used for saving PDF files as plotly do not have 
+#' suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
+#' same time.
 #' Default folder is the current working directory. 
 #' The other assigned folder has to be existed under the current working directory.
 #'  An output pdf file is automatically created with the default name of 
@@ -83,6 +87,9 @@
 #' @import ggplot2
 #' @importFrom graphics axis image legend mtext par plot.new title plot
 #' @importFrom grDevices dev.off hcl pdf
+#' @importFrom magrittr %>%
+#' @importFrom plotly ggplotly
+#' 
 #' 
 #' @export
 #' 
@@ -109,7 +116,7 @@ dataProcessPlots = function(
   text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
   dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
   originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-  remove_uninformative_feature_outlier = FALSE, address = ""
+  remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE
 ) {
   PROTEIN = Protein = NULL
   
@@ -129,20 +136,31 @@ dataProcessPlots = function(
     }
   }
   
+  if(isPlotly & address != FALSE) {
+      stop("Both isPlotly and address cannot be set at the same time as plotly 
+           plots cannot be saved to a PDF, Please set isPlotly to FALSE
+           to generate ggplot Plots to a PDF")
+  }
+  
   if (type == "PROFILEPLOT") 
-    .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
-                 x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
-                 dot.size.profile, width, height, which.Protein, originalPlot, 
-                 summaryPlot, remove_uninformative_feature_outlier, address)
-  if (type == "QCPLOT")
-    .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
+    plot <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
+                        x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
+                        dot.size.profile, width, height, which.Protein, originalPlot, 
+                        summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
+  if (type == "QCPLOT") 
+    plot <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
             text.size, text.angle, legend.size, dot.size.profile, width, height,
-            which.Protein, address)
+            which.Protein, address, isPlotly)
   if (type == "CONDITIONPLOT")
-    .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
+    plot <- .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
                    x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                    dot.size.profile, dot.size.condition, width, height,
-                   which.Protein, save_condition_plot_result, address)
+                   which.Protein, save_condition_plot_result, address, isPlotly)
+  
+  if(isPlotly) {
+      return(.convert.ggplot.plotly(plot))
+  }
+  
 }
 
 
@@ -152,7 +170,7 @@ dataProcessPlots = function(
 .plotProfile = function(
   processed, summarized, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
   text.size, text.angle, legend.size, dot.size.profile, width, height, proteins, 
-  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address
+  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address, isPlotly
 ) {
   ABUNDANCE = PROTEIN = feature_quality = is_outlier = Protein = GROUP = NULL
   SUBJECT = LABEL = RUN = xtabs = PEPTIDE = FEATURE = NULL
@@ -260,8 +278,11 @@ dataProcessPlots = function(
                                       legend.size, dot.size.profile, 
                                       ss, s, cumGroupAxis, yaxis.name,
                                       lineNameAxis, groupNametemp, dot_colors)
-      print(profile_plot)
       setTxtProgressBar(pb, i)
+      print(profile_plot)
+      if(isPlotly & address == FALSE) {
+          return(profile_plot)
+      }
     }
     close(pb)
     
@@ -318,6 +339,10 @@ dataProcessPlots = function(
       )
       print(profile_plot)
       setTxtProgressBar(pb, i)
+      
+      if(isPlotly & address == FALSE) {
+          return(profile_plot)
+      }
     }
     close(pb)
     
@@ -332,7 +357,7 @@ dataProcessPlots = function(
 #' @importFrom utils setTxtProgressBar
 .plotQC = function(
   processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
-  text.angle, legend.size, dot.size.profile, width, height, protein, address
+  text.angle, legend.size, dot.size.profile, width, height, protein, address, isPlotly
 ) {
   GROUP = SUBJECT = RUN = LABEL = PROTEIN = NULL
   
@@ -383,6 +408,9 @@ dataProcessPlots = function(
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
                           yaxis.name)
     print(qc_plot)
+    if(isPlotly & address == FALSE) {
+        return(qc_plot)
+    }
   } 
   
   if (protein != 'allonly') {
@@ -406,6 +434,10 @@ dataProcessPlots = function(
                             lineNameAxis, yaxis.name)
       print(qc_plot)
       setTxtProgressBar(pb, i)
+      
+      if(isPlotly & address == FALSE) {
+          return(qc_plot)
+      }
     } 
     close(pb)
   } 
@@ -421,7 +453,7 @@ dataProcessPlots = function(
 .plotCondition = function(
   processed, summarized, ylimUp, ylimDown, scale, interval, x.axis.size, 
   y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
-  dot.size.condition, width, height, protein, save_plot, address
+  dot.size.condition, width, height, protein, save_plot, address, isPlotly
 ) {
   adj.pvalue = Protein = ciw = PROTEIN = GROUP = SUBJECT = ABUNDANCE = NULL
   
@@ -474,6 +506,10 @@ dataProcessPlots = function(
                                   dot.size.condition, yaxis.name)
     print(con_plot)
     setTxtProgressBar(pb, i)
+    
+    if(isPlotly & address == FALSE) {
+        return(con_plot)
+    }
   }
   close(pb)
   
@@ -491,4 +527,21 @@ dataProcessPlots = function(
     }
     .saveTable(result, address, "ConditionPlot_value")
   }
+}
+
+#' converter for plots from ggplot to plotly
+#' @noRd
+.convert.ggplot.plotly = function(plot) {
+    converted_plot <- ggplotly(plot)
+    converted_plot <- converted_plot %>% 
+        plotly::layout(
+            width = 800,   # Set the width of the chart in pixels
+            height = 600,  # Set the height of the chart in pixels
+            legend = list(
+                x = 0.5,     # Set the x position of the legend
+                y = -0.2,    # Set the y position of the legend (negative value to move below the plot)
+                orientation = "h"  # Horizontal orientation
+            )
+        )
+    return(converted_plot)
 }

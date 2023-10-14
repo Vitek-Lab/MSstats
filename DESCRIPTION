@@ -26,6 +26,8 @@ Imports:
     ggplot2,
     ggrepel,
     gplots,
+    plotly,
+    magrittr,
     marray,
     stats,
     grDevices,
