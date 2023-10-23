@@ -34,12 +34,12 @@
 #' head(msstats_annotation)
 SDRFtoAnnotation = function(
         data, 
-        run_name="comment[data file]",
-        condition_name="characteristics[disease]",
-        biological_replicate="characteristics[biological replicate]",
-        fraction=NULL){
+        run_name = "comment[data file]",
+        condition_name = "characteristics[disease]",
+        biological_replicate = "characteristics[biological replicate]",
+        fraction = NULL){
     
-    data = setDT(data)
+    data = data.table::setDT(data)
     
     extract_cols = c(run_name, condition_name, biological_replicate)
     if (!is.null(fraction)){
@@ -52,7 +52,8 @@ SDRFtoAnnotation = function(
     if (length(colnames(data)) < length(extract_cols)){
         stop("ERROR: One or more of the column passed in the parameters were not found in the data. Please ensure that the column names are correct.")
     }
-    setnames(data, extract_cols, c("Run", "Condition", "BioReplicate"))
+    data.table::setnames(data, extract_cols, 
+                         c("Run", "Condition", "BioReplicate"))
     
     return(data)
 }
@@ -88,11 +89,11 @@ SDRFtoAnnotation = function(
 #' SDRF_file = extractSDRF(maxq_imported)
 extractSDRF = function(
         data, 
-        run_name="comment[data file]",
-        condition_name="characteristics[disease]",
-        biological_replicate="characteristics[biological replicate]",
-        fraction=NULL,
-        meta_data=NULL){
+        run_name = "comment[data file]",
+        condition_name = "characteristics[disease]",
+        biological_replicate = "characteristics[biological replicate]",
+        fraction = NULL,
+        meta_data = NULL){
     
     extract_cols = c("Condition", "BioReplicate", "Run", "Fraction")
     data = as.data.table(data)
@@ -101,16 +102,16 @@ extractSDRF = function(
     
     if (is.null(fraction)){
         data$Fraction = NULL
-        setnames(data, c("Condition", "BioReplicate", "Run"), 
+        data.table::setnames(data, c("Condition", "BioReplicate", "Run"), 
                  c(run_name, condition_name, biological_replicate))
     } else {
-        setnames(data, extract_cols, 
+        data.table::setnames(data, extract_cols, 
                  c(run_name, condition_name, biological_replicate, fraction))
     }
     
     if (!is.null(meta_data)){
-        meta_data = setDT(meta_data)
-        data = merge(data, meta_data, all.x=TRUE, all.y=TRUE, by=run_name)
+        meta_data = data.table::setDT(meta_data)
+        data = merge(data, meta_data, all.x = TRUE, all.y = TRUE, by = run_name)
     }
     
     return(data)
