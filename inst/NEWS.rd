@@ -2,6 +2,12 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.10.0 (2023-10-23)}{
+    \itemize{
+        \item Added functions to convert SDRF annotation files into MSstats annotation format.
+    }
+}
+
 \section{Version 3.21.4 (2021-02-25)}{
     \itemize{
         \item Fix the bug for feature selection
