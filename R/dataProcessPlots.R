@@ -88,7 +88,7 @@
 #' @importFrom graphics axis image legend mtext par plot.new title plot
 #' @importFrom grDevices dev.off hcl pdf
 #' @importFrom magrittr %>%
-#' @importFrom plotly ggplotly
+#' @importFrom plotly ggplotly style
 #' 
 #' 
 #' @export
@@ -142,15 +142,27 @@ dataProcessPlots = function(
            to generate ggplot Plots to a PDF")
   }
   
-  if (type == "PROFILEPLOT") 
-    plot <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
-                        x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
-                        dot.size.profile, width, height, which.Protein, originalPlot, 
-                        summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
-  if (type == "QCPLOT") 
-    plot <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
-            text.size, text.angle, legend.size, dot.size.profile, width, height,
-            which.Protein, address, isPlotly)
+  if (type == "PROFILEPLOT") {
+      plot <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
+                           x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
+                           dot.size.profile, width, height, which.Protein, originalPlot, 
+                           summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
+      # plot <- hide_legend(.convert.ggplot.plotly(plot))
+      # p <- .convert.ggplot.plotly(plot)
+      # if(toupper(featureName) == "NA") {
+      #     p <- p %>% style(plot, showlegend = FALSE)
+      # }
+      
+      return(plot)
+  }
+    
+  if (type == "QCPLOT") {
+      plot <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
+                      text.size, text.angle, legend.size, dot.size.profile, width, height,
+                      which.Protein, address, isPlotly)
+      
+  }
+    
   if (type == "CONDITIONPLOT")
     plot <- .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
                    x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
@@ -278,10 +290,18 @@ dataProcessPlots = function(
                                       legend.size, dot.size.profile, 
                                       ss, s, cumGroupAxis, yaxis.name,
                                       lineNameAxis, groupNametemp, dot_colors)
+      
+      profile_plot_plotly = .makeProfilePlotPlotly(single_protein, is_censored, profile_plot, featureName, 
+                                             y.limdown, y.limup,
+                                             x.axis.size, y.axis.size, 
+                                             text.size, text.angle, 
+                                             legend.size, dot.size.profile, 
+                                             ss, s, cumGroupAxis, yaxis.name,
+                                             lineNameAxis, groupNametemp, dot_colors)
       setTxtProgressBar(pb, i)
       print(profile_plot)
       if(isPlotly & address == FALSE) {
-          return(profile_plot)
+          return(profile_plot_plotly)
       }
     }
     close(pb)
@@ -537,10 +557,28 @@ dataProcessPlots = function(
         plotly::layout(
             width = 800,   # Set the width of the chart in pixels
             height = 600,  # Set the height of the chart in pixels
+            title = list(
+                font = list(
+                    size = 18
+                )
+            ),
+            xaxis = list(
+                titlefont = list(
+                    size = 15  # Set the font size for the x-axis label
+                )
+            ),
             legend = list(
-                x = 0.5,     # Set the x position of the legend
-                y = -0.2,    # Set the y position of the legend (negative value to move below the plot)
-                orientation = "h"  # Horizontal orientation
+                x = 0,     # Set the x position of the legend
+                y = -0.25,    # Set the y position of the legend (negative value to move below the plot)
+                orientation = "h",  # Horizontal orientation
+                font = list(
+                    size = 9  # Set the font size for legend item labels
+                ),
+                title = list(
+                    font = list(
+                        size = 12  # Set the font size for the legend title
+                    )
+                )
             )
         )
     return(converted_plot)

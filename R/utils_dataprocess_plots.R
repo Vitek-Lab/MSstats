@@ -33,6 +33,34 @@
     single_protein
 }
 
+#' Create profile plot
+#' @inheritParams dataProcessPlots
+#' @param input data.table
+#' @param is_censored TRUE if censored values were imputed
+#' @param profile_plot ggplot generated plot
+#' @keywords internal
+.makeProfilePlotPlotly = function(
+    input, is_censored, profile_plot, featureName, y.limdown, y.limup, x.axis.size, 
+    y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
+    ss, s, cumGroupAxis, yaxis.name, lineNameAxis, groupNametemp, dot_colors
+) {
+    plotly_plot <- .convert.ggplot.plotly(profile_plot)
+    featureName = toupper(featureName)
+    if (featureName == "TRANSITION") {
+        type_color = "FEATURE"
+    } else {
+        type_color = "PEPTIDE"
+    }
+    n = length(unique(input[[type_color]]))
+    if(toupper(featureName) == "NA") {
+        plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
+    } else {
+        plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
+        plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = TRUE, traces = 1:n)
+    }
+    plotly_plot
+}
+
 
 #' Create profile plot
 #' @inheritParams dataProcessPlots
@@ -63,16 +91,27 @@
         geom_line(size = 0.5)
     
     if (is_censored) {
+        print("lengthhhh")
+        print(length(unique(input[[type_color]])))
+        # print(length(profile_plot))
         profile_plot = profile_plot +
-            geom_point(aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored'), 
-                       data = input, 
-                       size = dot.size.profile) +
-            scale_shape_manual(values = c(16, 1), 
-                               labels = c("Detected data", "Censored missing data"))
+        geom_point(aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored'),
+                   data = input,
+                   size = dot.size.profile) +
+        scale_shape_manual(values = c(16, 1),
+                           labels = c("Detected data", "Censored missing data"))
+        
+        # profile_plot = profile_plot +
+        #     geom_point(data = input,size = dot.size.profile) +
+        #     aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored') +
+        #     scale_shape_manual(values = c(16, 1),
+        #                        labels = c("Detected data", "Censored missing data"))
+        print("IS CENS")
     } else {
         profile_plot = profile_plot +
             geom_point(size = dot.size.profile) +
             scale_shape_manual(values = c(16))
+        print("IS NOT CENS")
     }
     
     
@@ -231,20 +270,21 @@
         plot_title = unique(input$PROTEIN)
     }
     
-    ggplot(input, aes_string(x = "RUN", y = "ABUNDANCE")) + 
-        facet_grid(~LABEL) + 
+    ggplot(input, aes_string(x = "RUN", y = "ABUNDANCE")) +
+        facet_grid(~LABEL) +
         geom_boxplot(aes_string(fill = "LABEL"), outlier.shape = 1,
-                     outlier.size = 1.5) + 
-        scale_fill_manual(values = label.color, guide = "none") + 
-        scale_x_discrete("MS runs", breaks = cumGroupAxis) + 
-        scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) + 
-        geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey", 
-                   linetype = "longdash") + 
-        labs(title  =  plot_title) + 
-        geom_text(data = groupName, aes(x = RUN, y = ABUNDANCE, label = Name), 
-                  size = text.size, angle = text.angle, color = "black") + 
+                     outlier.size = 1.5) +
+        scale_fill_manual(values = label.color, guide = "none") +
+        scale_x_discrete("MS runs", breaks = cumGroupAxis) +
+        scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
+        geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey",
+                   linetype = "longdash") +
+        labs(title  =  plot_title) +
+        geom_text(data = groupName, aes(x = RUN, y = ABUNDANCE, label = Name),
+                  size = text.size, angle = text.angle, color = "black") +
         theme_msstats("QCPLOT", x.axis.size, y.axis.size,
                       legend_size = NULL)
+    
 }
 
 
