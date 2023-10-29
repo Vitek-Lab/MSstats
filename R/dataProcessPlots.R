@@ -88,7 +88,7 @@
 #' @importFrom graphics axis image legend mtext par plot.new title plot
 #' @importFrom grDevices dev.off hcl pdf
 #' @importFrom magrittr %>%
-#' @importFrom plotly ggplotly style
+#' @importFrom plotly ggplotly style add_trace plot_ly subplot
 #' 
 #' 
 #' @export
@@ -147,13 +147,7 @@ dataProcessPlots = function(
                            x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                            dot.size.profile, width, height, which.Protein, originalPlot, 
                            summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
-      # plot <- hide_legend(.convert.ggplot.plotly(plot))
-      # p <- .convert.ggplot.plotly(plot)
-      # if(toupper(featureName) == "NA") {
-      #     p <- p %>% style(plot, showlegend = FALSE)
-      # }
-      
-      return(plot)
+      # return(plot)
   }
     
   if (type == "QCPLOT") {
@@ -170,7 +164,11 @@ dataProcessPlots = function(
                    which.Protein, save_condition_plot_result, address, isPlotly)
   
   if(isPlotly) {
-      return(.convert.ggplot.plotly(plot))
+      plotly_plot <- .convert.ggplot.plotly(plot)
+      if(toupper(featureName) == "NA") {
+          plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
+      }
+      plotly_plot
   }
   
 }
@@ -291,17 +289,11 @@ dataProcessPlots = function(
                                       ss, s, cumGroupAxis, yaxis.name,
                                       lineNameAxis, groupNametemp, dot_colors)
       
-      profile_plot_plotly = .makeProfilePlotPlotly(single_protein, is_censored, profile_plot, featureName, 
-                                             y.limdown, y.limup,
-                                             x.axis.size, y.axis.size, 
-                                             text.size, text.angle, 
-                                             legend.size, dot.size.profile, 
-                                             ss, s, cumGroupAxis, yaxis.name,
-                                             lineNameAxis, groupNametemp, dot_colors)
+      # profile_plot_plotly = .makeProfilePlotPlotly(single_protein, profile_plot, featureName)
       setTxtProgressBar(pb, i)
       print(profile_plot)
       if(isPlotly & address == FALSE) {
-          return(profile_plot_plotly)
+          return(profile_plot)
       }
     }
     close(pb)
@@ -357,6 +349,7 @@ dataProcessPlots = function(
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
         yaxis.name, lineNameAxis, groupNametemp
       )
+      # profile_plot_plotly = .makeProfilePlotPlotly(combined, profile_plot, featureName)
       print(profile_plot)
       setTxtProgressBar(pb, i)
       
@@ -581,5 +574,24 @@ dataProcessPlots = function(
                 )
             )
         )
-    return(converted_plot)
+    fix_plot = .fix.legend.plotly.plots(converted_plot)
+    return(fix_plot)
+}
+
+.fix.legend.plotly.plots = function(plot) {
+
+    df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
+    
+    df$legend_group <- gsub("^(.*?),.*", "\\1", df$legend_entries)
+    df$is_first <- !duplicated(df$legend_group)
+    df$is_bool <- ifelse(grepl("TRUE|FALSE", df$legend_group), TRUE, FALSE)
+    for (i in df$id) {
+        is_first <- df$is_first[[i]]
+        is_bool <- df$is_bool[[i]]
+        plot$x$data[[i]]$name <- df$legend_group[[i]]
+        plot$x$data[[i]]$legendgroup <- plot$x$data[[i]]$name
+        if (!is_first) plot$x$data[[i]]$showlegend <- FALSE
+        if(is_bool) plot$x$data[[i]]$showlegend <- FALSE
+    }
+    plot
 }

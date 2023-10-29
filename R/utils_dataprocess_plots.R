@@ -16,7 +16,6 @@
     }
 }
 
-
 #' Get data for a single protein to plot
 #' @param dataProcess output -> FeatureLevelData
 #' @param all_proteins character, set of protein names
@@ -31,34 +30,6 @@
     single_protein[, GROUP := factor(GROUP)]
     single_protein[, PEPTIDE := factor(PEPTIDE)]
     single_protein
-}
-
-#' Create profile plot
-#' @inheritParams dataProcessPlots
-#' @param input data.table
-#' @param is_censored TRUE if censored values were imputed
-#' @param profile_plot ggplot generated plot
-#' @keywords internal
-.makeProfilePlotPlotly = function(
-    input, is_censored, profile_plot, featureName, y.limdown, y.limup, x.axis.size, 
-    y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
-    ss, s, cumGroupAxis, yaxis.name, lineNameAxis, groupNametemp, dot_colors
-) {
-    plotly_plot <- .convert.ggplot.plotly(profile_plot)
-    featureName = toupper(featureName)
-    if (featureName == "TRANSITION") {
-        type_color = "FEATURE"
-    } else {
-        type_color = "PEPTIDE"
-    }
-    n = length(unique(input[[type_color]]))
-    if(toupper(featureName) == "NA") {
-        plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
-    } else {
-        plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
-        plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = TRUE, traces = 1:n)
-    }
-    plotly_plot
 }
 
 
@@ -93,13 +64,14 @@
     if (is_censored) {
         print("lengthhhh")
         print(length(unique(input[[type_color]])))
-        # print(length(profile_plot))
         profile_plot = profile_plot +
         geom_point(aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored'),
                    data = input,
                    size = dot.size.profile) +
         scale_shape_manual(values = c(16, 1),
                            labels = c("Detected data", "Censored missing data"))
+        
+        
         
         # profile_plot = profile_plot +
         #     geom_point(data = input,size = dot.size.profile) +
