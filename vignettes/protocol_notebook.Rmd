@@ -1,0 +1,30 @@
+---
+title: "MSstats Nature Protocols Workflow"
+author: "Devon Kohler"
+date: "2023-07-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Nature Protocols Workflow
+
+This markdown document reviews the workflow from the upcoming MSstats Nature 
+Protocols paper. First we will review a simple workflow with classic MSstats, 
+then an updated workflow with MSstatsBig.
+
+
+## Classic `MSstats` Workflow
+
+**Note: you must have at least 32GB of RAM to run this workflow**
+
+First we load the data and packages
+
+```{r cars}
+library(MSstats)
+library(tidyverse)
+
+fragpipe_data = read.csv("msstats.csv")
+```

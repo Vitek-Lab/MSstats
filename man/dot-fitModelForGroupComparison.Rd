@@ -8,7 +8,8 @@
   input,
   repeated,
   is_single_subject,
-  has_tech_replicates
+  has_tech_replicates,
+  weights
 )
 }
 \arguments{

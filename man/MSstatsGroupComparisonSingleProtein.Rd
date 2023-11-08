@@ -11,7 +11,8 @@ MSstatsGroupComparisonSingleProtein(
   groups,
   samples_info,
   save_fitted_models,
-  has_imputed
+  has_imputed,
+  weighted_regression
 )
 }
 \arguments{

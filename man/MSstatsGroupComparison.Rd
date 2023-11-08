@@ -9,7 +9,8 @@ MSstatsGroupComparison(
   contrast_matrix,
   save_fitted_models,
   repeated,
-  samples_info
+  samples_info,
+  weighted_regression
 )
 }
 \arguments{

@@ -78,6 +78,7 @@ dataProcess = function(
     min_feature_count = 2, n_top_feature = 3, summaryMethod = "TMP", 
     equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
     remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
+    bayesian=TRUE, bayes_method="MCMC", chains=4, cores=4, n_iterations=2000,
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
@@ -106,22 +107,49 @@ dataProcess = function(
                             " == Start the summarization per subplot...")
     
     processed = getProcessed(input)
-    input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
-                                           remove_uninformative_feature_outlier)
-    input_split = split(input, input$PROTEIN)
-    summarized = tryCatch(MSstatsSummarize(input_split, summaryMethod,
-                                           MBimpute, censoredInt, 
-                                           remove50missing, equalFeatureVar),
-                          error = function(e) {
-                              print(e)
-                              NULL
-                          })
-    getOption("MSstatsLog")("INFO",
-                            "== Summarization is done.")
-    getOption("MSstatsMsg")("INFO",
-                            " == Summarization is done.")
-    output = MSstatsSummarizationOutput(input, summarized, processed,
-                                        summaryMethod, MBimpute, censoredInt)
+
+    if (bayesian){
+        getOption("MSstatsMsg")("INFO",
+                                " == Bayesian summarization...")
+        
+        input = MSstatsPrepareForSummarization(input, "TMP", FALSE, 
+                                           censoredInt, FALSE)
+        
+        getOption("MSstatsMsg")("INFO",
+                                " == MCMC model progress can be seen in the RStudio 'Viewer' tab...")
+        summarized = MSstatsBayesSummarize(input, bayes_method=bayes_method, 
+                                    chains=chains, cores=cores, 
+                                    n_iterations=n_iterations)
+        
+        getOption("MSstatsLog")("INFO",
+                                "== Summarization is done.")
+        getOption("MSstatsMsg")("INFO",
+                                " == Summarization is done.")
+        output = MSstatsBayesSummarizationOutput(input, summarized)
+        
+    } else {
+        
+        getOption("MSstatsMsg")("INFO",
+                                " == Frequentist summarization...")
+        input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
+                                               remove_uninformative_feature_outlier)
+        input_split = split(input, input$PROTEIN)
+        summarized = tryCatch(MSstatsSummarize(input_split, summaryMethod,
+                                               MBimpute, censoredInt, 
+                                               remove50missing, equalFeatureVar),
+                              error = function(e) {
+                                  print(e)
+                                  NULL
+                              })
+        
+        getOption("MSstatsLog")("INFO",
+                                "== Summarization is done.")
+        getOption("MSstatsMsg")("INFO",
+                                " == Summarization is done.")
+        output = MSstatsSummarizationOutput(input, summarized, processed,
+                                            summaryMethod, MBimpute, censoredInt)
+    }
+
     output
 }
 

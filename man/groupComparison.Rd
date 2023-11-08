@@ -9,6 +9,7 @@ groupComparison(
   data,
   save_fitted_models = TRUE,
   log_base = 2,
+  weighted_regression = TRUE,
   use_log_file = TRUE,
   append = FALSE,
   verbose = TRUE,

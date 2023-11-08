@@ -43,6 +43,7 @@
 #'
 groupComparison = function(contrast.matrix, data, 
                            save_fitted_models = TRUE, log_base = 2,
+                           weighted_regression=TRUE,
                            use_log_file = TRUE, append = FALSE, 
                            verbose = TRUE, log_file_path = NULL
 ) {
@@ -61,7 +62,8 @@ groupComparison = function(contrast.matrix, data,
     getOption("MSstatsMsg")("INFO",
                             " == Start to test and get inference in whole plot ...")
     testing_results = MSstatsGroupComparison(split_summarized, contrast_matrix,
-                                             save_fitted_models, repeated, samples_info)
+                                             save_fitted_models, repeated, 
+                                             samples_info, weighted_regression)
     getOption("MSstatsLog")("INFO",
                             "== Comparisons for all proteins are done.")
     getOption("MSstatsMsg")("INFO",
@@ -130,7 +132,8 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' group_comparison[[2]][[3]] # NULL, because we set save_fitted_models to FALSE
 #' 
 MSstatsGroupComparison = function(summarized_list, contrast_matrix,
-                                  save_fitted_models, repeated, samples_info) {
+                                  save_fitted_models, repeated, samples_info,
+                                  weighted_regression) {
     groups = colnames(contrast_matrix)
     has_imputed = attr(summarized_list, "has_imputed")
     all_proteins_id = seq_along(summarized_list)
@@ -139,7 +142,8 @@ MSstatsGroupComparison = function(summarized_list, contrast_matrix,
     for (i in all_proteins_id) {
         comparison_outputs = MSstatsGroupComparisonSingleProtein(
             summarized_list[[i]], contrast_matrix, repeated, 
-            groups, samples_info, save_fitted_models, has_imputed
+            groups, samples_info, save_fitted_models, has_imputed,
+            weighted_regression
         )
         test_results[[i]] = comparison_outputs
         setTxtProgressBar(pb, i)
@@ -237,15 +241,18 @@ MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 
 MSstatsGroupComparisonSingleProtein = function(single_protein, contrast_matrix,
                                                repeated, groups, samples_info,
                                                save_fitted_models,
-                                               has_imputed) {
+                                               has_imputed, 
+                                               weighted_regression) {
     single_protein = .prepareSingleProteinForGC(single_protein)
     is_single_subject = .checkSingleSubject(single_protein)
     has_tech_reps = .checkTechReplicate(single_protein)
+    weights = .getWeights(single_protein, weighted_regression)
     
     fitted_model = try(.fitModelSingleProtein(single_protein, contrast_matrix,
                                               has_tech_reps, is_single_subject,
                                               repeated, groups, samples_info,
-                                              save_fitted_models, has_imputed),
+                                              save_fitted_models, has_imputed,
+                                              weights),
                        silent = TRUE)
     if (inherits(fitted_model, "try-error")) {
         result = list(list(Protein = unique(single_protein$Protein),

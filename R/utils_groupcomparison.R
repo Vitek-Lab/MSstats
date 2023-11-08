@@ -89,7 +89,8 @@ getSamplesInfo = function(summarization_output) {
 .fitModelSingleProtein = function(input, contrast_matrix, has_tech_replicates,
                                   is_single_subject, repeated, groups,
                                   samples_info,
-                                  save_fitted_models, has_imputed) {
+                                  save_fitted_models, has_imputed, 
+                                  weights) {
     GROUP = SUBJECT = NULL
     
     input[, GROUP := factor(GROUP)]
@@ -106,7 +107,8 @@ getSamplesInfo = function(summarization_output) {
     } else {
         fitted_model = .fitModelForGroupComparison(input, repeated,
                                                    is_single_subject,
-                                                   has_tech_replicates)
+                                                   has_tech_replicates,
+                                                   weights)
         result = .getAllComparisons(input, fitted_model, contrast_matrix,
                                     groups, protein)
         result = .countMissingPercentage(contrast_matrix,
@@ -137,18 +139,20 @@ getSamplesInfo = function(summarization_output) {
 #' @inheritParams .fitModelSingleProtein
 #' @keywords internal
 .fitModelForGroupComparison = function(input, repeated, is_single_subject,
-                                       has_tech_replicates) {
+                                       has_tech_replicates, weights) {
     if (!repeated) {
         if (!has_tech_replicates | is_single_subject) {
             full_fit = lm(ABUNDANCE ~ GROUP, data = input)
             df_full = full_fit[["df.residual"]]
         } else {
             full_fit = suppressMessages(try(
-                lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
+                lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input, 
+                           weights=weights),
                 TRUE
             ))
             df_full = suppressMessages(try(
-                lm(ABUNDANCE ~ GROUP + SUBJECT, data = input)$df.residual,
+                lm(ABUNDANCE ~ GROUP + SUBJECT, data = input, 
+                   weights=weights)$df.residual,
                 TRUE
             ))
         }
@@ -156,27 +160,29 @@ getSamplesInfo = function(summarization_output) {
         ## time-course
         if (is_single_subject) {
             full_fit = lm(ABUNDANCE ~ GROUP,
-                          data = input)
+                          data = input, weights=weights)
             df_full = full_fit$df.residual
         } else {
             ## no single subject
             if (!has_tech_replicates) {
                 full_fit = suppressMessages(try(
-                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
+                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input, 
+                               weights=weights),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
-                    lm(ABUNDANCE ~ GROUP + SUBJECT, data = input)$df.residual,
+                    lm(ABUNDANCE ~ GROUP + SUBJECT, data = input, 
+                       weights=weights)$df.residual,
                     TRUE))
             } else {
                 full_fit = suppressMessages(try(
                     lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
-                               data = input),
+                               data = input, weights=weights),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
                     lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT,
-                       data = input)$df.residual,
+                       data = input, weights=weights)$df.residual,
                     TRUE
                 ))
             }
@@ -439,3 +445,12 @@ getSamplesInfo = function(summarization_output) {
     result
 }
 
+.getWeights = function(data, weighted_regression){
+    ## temp
+    if (weighted_regression){
+        weigths = 1/data[,LogIntensities_sd]
+    } else {
+        weigths = rep(1, nrow(data))
+    }
+    return(weigths)
+}
