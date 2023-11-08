@@ -147,7 +147,6 @@ dataProcessPlots = function(
                            x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                            dot.size.profile, width, height, which.Protein, originalPlot, 
                            summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
-      # return(plot)
   }
     
   if (type == "QCPLOT") {
@@ -165,9 +164,10 @@ dataProcessPlots = function(
   
   if(isPlotly) {
       plotly_plot <- .convert.ggplot.plotly(plot)
-      if(toupper(featureName) == "NA") {
-          plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
-      }
+      # plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+      # if(toupper(featureName) == "NA") {
+      #     plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
+      # }
       plotly_plot
   }
   
@@ -574,11 +574,10 @@ dataProcessPlots = function(
                 )
             )
         )
-    fix_plot = .fix.legend.plotly.plots(converted_plot)
-    return(fix_plot)
+    return(converted_plot)
 }
 
-.fix.legend.plotly.plots = function(plot) {
+.fix.legend.plotly.plots.dataprocess = function(plot) {
 
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
     
@@ -592,6 +591,31 @@ dataProcessPlots = function(
         plot$x$data[[i]]$legendgroup <- plot$x$data[[i]]$name
         if (!is_first) plot$x$data[[i]]$showlegend <- FALSE
         if(is_bool) plot$x$data[[i]]$showlegend <- FALSE
+    }
+    plot
+}
+
+.fix.legend.plotly.plots.volcano = function(plot) {
+    df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
+    # Create a mapping
+    color_mapping <- c("black" = "No regulation", "red" = "Up-regulated", "blue" = "Down-regulated")
+    print(df)
+    # Update the legend_entries column
+    df$legend_group <- sapply(df$legend_entries, function(entry) {
+        for (color in names(color_mapping)) {
+            if (grepl(color, entry)) {
+                entry <- gsub(color, color_mapping[color], entry)
+                break
+            }
+        }
+        entry <- gsub(",.+", "", entry)
+        entry <- gsub("\\(|\\)", "", entry)  # Remove any remaining parentheses
+        entry
+    })
+    print(df)
+    for (i in df$id) {
+        plot$x$data[[i]]$name <- df$legend_group[[i]]
+        plot$x$data[[i]]$legendgroup <- plot$x$data[[i]]$name
     }
     plot
 }

@@ -30,6 +30,10 @@
 #' @param which.Comparison list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.
 #' @param which.Protein Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.
 #' @param address the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.
+#' @param isPlotly This parameter is for MSstatsShiny application for plotly 
+#' render, this cannot be used for saving PDF files as plotly do not have 
+#' suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
+#' same time.
 #' 
 #' 
 #' @details 
@@ -43,6 +47,7 @@
 #' @importFrom stats hclust
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom marray maPalette
+#' @importFrom plotly ggplotly style add_trace plot_ly subplot
 #' 
 #' @export
 #' 
@@ -89,7 +94,7 @@ groupComparisonPlots = function(
     dot.size = 3, text.size = 4, text.angle = 0, legend.size = 13, 
     ProteinName = TRUE, colorkey = TRUE, numProtein = 100, clustering = "both", 
     width = 10, height = 10, which.Comparison = "all", which.Protein = "all",
-    address = ""
+    address = "", isPlotly=FALSE
 ) {
     Label = Protein = NULL
     
@@ -105,20 +110,35 @@ groupComparisonPlots = function(
     input[, Protein := factor(Protein)]
     input[, Label := factor(Label)]
     
-    if (type == "HEATMAP") {
-        .plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
+    if(isPlotly & address != FALSE) {
+        stop("Both isPlotly and address cannot be set at the same time as plotly 
+           plots cannot be saved to a PDF, Please set isPlotly to FALSE
+           to generate ggplot Plots to a PDF")
+    }
+    
+    if (type == "HEATMAP") { # yet to be converted to plotly
+        return(.plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
                      numProtein, colorkey, width, height, log_base_FC,
-                     x.axis.size, y.axis.size, address)
+                     x.axis.size, y.axis.size, address, isPlotly))
     }
     if (type == "VOLCANOPLOT") {
-        .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
+        plot <- .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
                      ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
-                     text.size, legend.size, x.axis.size, y.axis.size, log_base_FC)
+                     text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly)
+        if(isPlotly) {
+            plotly_plot <- .convert.ggplot.plotly(plot)
+            plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
+            return(plotly_plot)
+        }
     }
     if (type == "COMPARISONPLOT") {
-        .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
+        plot <- .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
                         ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
-                        log_base_FC)
+                        log_base_FC, isPlotly)
+        if(isPlotly) {
+            plotly_plot <- .convert.ggplot.plotly(plot)
+            return(plotly_plot)
+        }
     }
 }
 
@@ -131,8 +151,9 @@ groupComparisonPlots = function(
 #' @keywords internal
 .plotHeatmap = function(
     input, log_base_pval, ylimUp, FCcutoff, sig, clustering, numProtein, colorkey, 
-    width, height, log_base_FC, x.axis.size, y.axis.size, address
+    width, height, log_base_FC, x.axis.size, y.axis.size, address, isPlotly
 ) {
+    print("HEATTTTTMAPPPP")
     adj.pvalue = heat_val = NULL
     
     if (length(unique(input$Protein)) <= 1) {
@@ -200,6 +221,7 @@ groupComparisonPlots = function(
     if (address != FALSE) {
         dev.off()
     }
+    return(heatmap)
 } 
 
 
@@ -209,7 +231,7 @@ groupComparisonPlots = function(
 .plotVolcano = function(
     input, which.Comparison, address, width, height, log_base_pval,
     ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
-    text.size, legend.size, x.axis.size, y.axis.size, log_base_FC
+    text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly
 ) {
     adj.pvalue = colgroup = logFC = Protein = issue = Label = newlogFC = NULL
     
@@ -275,6 +297,9 @@ groupComparisonPlots = function(
                             y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
                             legend.size, log_adjp)
         print(plot)
+        if(isPlotly & address == FALSE) {
+            return(plot)
+        }
     }
     if (address != FALSE) {
         dev.off()
@@ -289,7 +314,7 @@ groupComparisonPlots = function(
 #' @keywords internal
 .plotComparison = function(
     input, proteins, address, width, height, sig, ylimUp, ylimDown,
-    text.angle, dot.size, x.axis.size, y.axis.size, log_base_FC
+    text.angle, dot.size, x.axis.size, y.axis.size, log_base_FC, isPlotly
 ) {
     adj.pvalue = Protein = ciw = NULL
     
@@ -323,6 +348,9 @@ groupComparisonPlots = function(
                                y.axis.size, text.angle, hjust, vjust, y.limdown, 
                                y.limup)
         print(plot)
+        if(isPlotly & address == FALSE) {
+            return(plot)
+        }
     }
     if (address != FALSE) {
         dev.off()

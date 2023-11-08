@@ -27,7 +27,8 @@ groupComparisonPlots(
   height = 10,
   which.Comparison = "all",
   which.Protein = "all",
-  address = ""
+  address = "",
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -76,6 +77,11 @@ groupComparisonPlots(
 \item{which.Protein}{Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.}
 
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
+
+\item{isPlotly}{This parameter is for MSstatsShiny application for plotly 
+render, this cannot be used for saving PDF files as plotly do not have 
+suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
+same time.}
 }
 \description{
 To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, 

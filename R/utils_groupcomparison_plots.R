@@ -10,6 +10,8 @@
     if (selected_labels != "all") {
         if (is.character(selected_labels)) {
             chosen_labels = selected_labels
+            print("labels")
+            print(chosen_labels)
             wrong_labels = setdiff(chosen_labels, all_labels)
             if (length(wrong_labels) > 0) {
                 msg_1 = paste("Please check labels of comparisons.",
@@ -61,15 +63,38 @@
 #' @keywords internal
 .makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size) {
     par(oma = c(3, 0, 0, 4))
+    print(as.matrix(input))
     heatmap.2(as.matrix(input),
               col = my.colors,
               Rowv = FALSE, Colv = FALSE,
               dendrogram = "none", breaks = my.breaks,
               trace = "none", na.color = "grey",
-              cexCol = (x.axis.size / 10), 
+              cexCol = (x.axis.size / 10),
               cexRow = (y.axis.size / 10),
               key = FALSE,
-              lhei = c(0.1, 0.9), lwid = c(0.1, 0.9)) 
+              lhei = c(0.1, 0.9), lwid = c(0.1, 0.9))
+    
+    # heatmap_plot <- plot_ly(
+    #     z = as.matrix(input),
+    #     colorscale = my.colors,  # Set the colorscale
+    #     type = "heatmap"
+    # )
+    # 
+    # # Customize the heatmap appearance
+    # heatmap_plot <- heatmap_plot %>%
+    #     layout(
+    #         xaxis = list(
+    #             tickangle = 45,  # Adjust X-axis label rotation angle
+    #             tickfont = list(size = x.axis.size)
+    #         ),
+    #         yaxis = list(
+    #             tickfont = list(size = y.axis.size)
+    #         ),
+    #         margin = list(l = 50, r = 50, b = 50, t = 50)  # Adjust the margin
+    #     )
+    # 
+    # # Show the plot
+    # heatmap_plot
 }
 
 
@@ -86,7 +111,7 @@
     legend.size, log_adjp
 ) {
     Protein = NULL
-    
+    print(input)
     plot = ggplot(aes_string(x = "logFC", 
                              y = log_adjp,
                              color = "colgroup",
