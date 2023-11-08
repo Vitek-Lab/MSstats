@@ -164,10 +164,10 @@ dataProcessPlots = function(
   
   if(isPlotly) {
       plotly_plot <- .convert.ggplot.plotly(plot)
-      # plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
-      # if(toupper(featureName) == "NA") {
-      #     plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
-      # }
+      plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+      if(toupper(featureName) == "NA") {
+          plotly_plot <- plotly_plot %>% style(plotly_plot, showlegend = FALSE)
+      }
       plotly_plot
   }
   
