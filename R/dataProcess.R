@@ -78,7 +78,7 @@ dataProcess = function(
     min_feature_count = 2, n_top_feature = 3, summaryMethod = "TMP", 
     equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
     remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
-    bayesian=TRUE, bayes_method="MCMC", chains=4, cores=4, n_iterations=2000,
+    bayes_method="MCMC", chains=4, cores=4, n_iterations=2000, group_size=50,
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
@@ -108,46 +108,53 @@ dataProcess = function(
     
     processed = getProcessed(input)
 
-    if (bayesian){
-        getOption("MSstatsMsg")("INFO",
-                                " == Bayesian summarization...")
-        
-        input = MSstatsPrepareForSummarization(input, "TMP", FALSE, 
-                                           censoredInt, FALSE)
-        
-        getOption("MSstatsMsg")("INFO",
-                                " == MCMC model progress can be seen in the RStudio 'Viewer' tab...")
-        summarized = MSstatsBayesSummarize(input, bayes_method=bayes_method, 
-                                    chains=chains, cores=cores, 
-                                    n_iterations=n_iterations)
-        
-        getOption("MSstatsLog")("INFO",
-                                "== Summarization is done.")
-        getOption("MSstatsMsg")("INFO",
-                                " == Summarization is done.")
-        output = MSstatsBayesSummarizationOutput(input, summarized)
-        
-    } else {
-        
-        getOption("MSstatsMsg")("INFO",
-                                " == Frequentist summarization...")
-        input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
-                                               remove_uninformative_feature_outlier)
-        input_split = split(input, input$PROTEIN)
-        summarized = tryCatch(MSstatsSummarize(input_split, summaryMethod,
-                                               MBimpute, censoredInt, 
-                                               remove50missing, equalFeatureVar),
-                              error = function(e) {
-                                  print(e)
-                                  NULL
-                              })
-        
-        getOption("MSstatsLog")("INFO",
-                                "== Summarization is done.")
-        getOption("MSstatsMsg")("INFO",
-                                " == Summarization is done.")
+    # if (bayesian){
+    #     getOption("MSstatsMsg")("INFO",
+    #                             " == Bayesian summarization...")
+    #     
+    #     input = MSstatsPrepareForSummarization(input, "TMP", FALSE, 
+    #                                        censoredInt, FALSE)
+    #     
+    #     getOption("MSstatsMsg")("INFO",
+    #                             " == MCMC model progress can be seen in the RStudio 'Viewer' tab...")
+    #     summarized = MSstatsBayesSummarize(input, bayes_method=bayes_method, 
+    #                                 chains=chains, cores=cores, 
+    #                                 n_iterations=n_iterations)
+    #     
+    #     getOption("MSstatsLog")("INFO",
+    #                             "== Summarization is done.")
+    #     getOption("MSstatsMsg")("INFO",
+    #                             " == Summarization is done.")
+    #     output = MSstatsBayesSummarizationOutput(input, summarized)
+    #     
+    # } else {
+    #     
+    input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
+                                           remove_uninformative_feature_outlier)
+    input_split = split(input, input$PROTEIN)
+    summarized = MSstatsSummarize(input_split, summaryMethod,#tryCatch(
+                                           MBimpute, censoredInt, 
+                                           remove50missing, equalFeatureVar,
+                                           bayes_method, n_iterations, chains, 
+                                           cores, group_size)
+                          # ,
+                          # error = function(e) {
+                          #     print(e)
+                          #     NULL
+                          # })
+    
+    getOption("MSstatsLog")("INFO",
+                            "== Summarization is done.")
+    getOption("MSstatsMsg")("INFO",
+                            " == Summarization is done.")
+    if (summaryMethod != "bayesian"){
         output = MSstatsSummarizationOutput(input, summarized, processed,
                                             summaryMethod, MBimpute, censoredInt)
+    } else {
+        summarized_full = rbindlist(summarized$model)
+        output = list()
+        output$MSstats = MSstatsBayesSummarizationOutput(input, summarized_full)
+        output$model_details = summarized$model_details
     }
 
     output
@@ -202,7 +209,8 @@ dataProcess = function(
 #' head(summarized[[1]][[1]]) # run-level summary
 #' 
 MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
-                            remove50missing, equal_variance) {
+                            remove50missing, equal_variance, bayes_method,
+                            n_iterations, chains, cores, group_size) {
     
     num_proteins = length(proteins_list)
     summarized_results = vector("list", num_proteins)
@@ -215,8 +223,44 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
             setTxtProgressBar(pb, protein_id)
         }
         close(pb)
+    } else if (method == "bayesian"){
+        
+        summarized_results = list()
+        
+        groups = max(round(num_proteins/group_size,0),1)
+        num_proteins = num_proteins %/% groups + (sequence(groups) - 1 < num_proteins %% groups)
+        summarized = vector("list", length(groups))
+        model_details = vector("list", length(groups))
+        
+        dpc_betas = calculate_dpc(rbindlist(proteins_list))
+        
+        pb = utils::txtProgressBar(min = 0, max = groups, style = 3)
+        idx=1
+        for (group_id in seq_len(groups)) {
+            id = num_proteins[[group_id]]
+            single_group = proteins_list[idx:(idx+id-1)]
+            
+            model = MSstatsBayesSummarize(
+                rbindlist(single_group), 
+                dpc_betas=dpc_betas,
+                bayes_method=bayes_method, 
+                n_iterations=n_iterations,
+                chains=chains, cores=cores)
+            
+            summarized[[group_id]] = model$result_df
+            model_details[[group_id]] = model$bayes_results
+            
+            idx = idx + id
+            setTxtProgressBar(pb, group_id)
+        }
+        
+        summarized_results$model = summarized
+        summarized_results$model_details = model_details
+        
     } else {
+        num_proteins = split(num_proteins, 10)
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+        
         for (protein_id in seq_len(num_proteins)) {
             single_protein = proteins_list[[protein_id]]
             summarized_result = MSstatsSummarizeSingleLinear(single_protein,

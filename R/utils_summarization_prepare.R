@@ -105,6 +105,8 @@ getProcessed = function(input) {
 .prepareSummary = function(input, method, impute, censored_symbol) {
     if (method == "TMP") {
         input = .prepareTMP(input, impute, censored_symbol)
+    } else if (method == "bayesian"){
+        input = .prepareTMP(input, FALSE, censored_symbol)
     } else {
         input = .prepareLinear(input, FALSE, censored_symbol)
     }

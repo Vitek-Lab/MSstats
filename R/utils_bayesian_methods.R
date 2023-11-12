@@ -1,7 +1,8 @@
 #' @importFrom protDP dpc
 #' 
 #' @export
-MSstatsBayesSummarize = function(data, bayes_method="MCMC", 
+MSstatsBayesSummarize = function(data, dpc_betas, 
+                                 bayes_method="MCMC", 
                                  n_iterations=1000, 
                                  chains=4, cores=4, 
                                  elbo_samples=500,
@@ -10,7 +11,7 @@ MSstatsBayesSummarize = function(data, bayes_method="MCMC",
     keep = c("PROTEIN", "FEATURE", "RUN", "ABUNDANCE")
     subset_data = data[, ..keep]
     
-    model_data = prepare_for_bayes(subset_data)
+    model_data = prepare_for_bayes(subset_data, dpc_betas)
     feature_data = model_data[[1]]
     stan_input = model_data[[2]]
     missing_runs = model_data[[3]]
@@ -31,7 +32,7 @@ MSstatsBayesSummarize = function(data, bayes_method="MCMC",
 }
 
 calculate_dpc = function(data){
-
+    
     wide_data = data.table::dcast(data, FEATURE~RUN, value.var = "ABUNDANCE")
     wide_data[, FEATURE := NULL]
     
@@ -44,7 +45,7 @@ MSstatsBayesSummarizationOutput = function(input, summarized){
     
     # Define feature and protein data
     feature_data = input
-    protein_data = summarized$result_df
+    protein_data = summarized
     
     # Add missing value info to feature level data
     feature_data = merge(feature_data, 
@@ -134,9 +135,7 @@ MSstatsBayesSummarizationOutput = function(input, summarized){
            )
 }
 
-prepare_for_bayes = function(data){
-    
-    dpc_betas = calculate_dpc(data)
+prepare_for_bayes = function(data, dpc_betas){
     
     data_list = remove_missing_runs(data)
     data = data_list[[1]]
@@ -198,10 +197,11 @@ arrange_stan_data = function(input, run_priors, dpc_betas){
                       protein_id_missing=missing_mat[,4],
                       zeros=rep(0, nrow(obs_mat)),
                       ones=rep(0, nrow(missing_mat)),
-                      run_priors=run_priors[,3][[1]],
-                      sigma=rep(1, num_proteins),
-                      sigma_run=rep(1, num_runs),
-                      sigma_feat=rep(1,num_feat),
+                      run_mu_prior=run_priors[,3][[1]],
+                      sigma_run_prior=rep(1, num_runs),
+                      feat_mu_prior=rep(0,num_feat),
+                      sigma_feat_prior=rep(1,num_feat),
+                      sigma_prior=rep(1, num_proteins),
                       beta0=dpc_betas[[1]],
                       beta1=dpc_betas[[2]])
 }
@@ -212,7 +212,7 @@ format_data = function(data){
     data[, "Missing"] = ifelse(is.na(data[, "ABUNDANCE"]), 1., 0.)
     
     for (col in c("PROTEIN", "RUN", "FEATURE")){
-        id_map = as.numeric(unlist(data[, ..col]))
+        id_map = as.numeric(droplevels(unlist(data[, ..col])))
         data[, paste0(col, "_original")] = data[,..col]
         data[,col] = id_map
     }

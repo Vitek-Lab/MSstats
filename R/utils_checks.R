@@ -51,7 +51,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
                                    standards_names, feature_selection, 
                                    summarization, imputation) {
     checkmate::assertChoice(log_base, c(2, 10), .var.name = "logTrans")
-    checkmate::assertChoice(summarization$method, c("linear", "TMP"),
+    checkmate::assertChoice(summarization$method, c("linear", "TMP", "bayesian"),
                             .var.name = "summaryMethod") 
     getOption("MSstatsLog")("INFO", paste("Summary method:", 
                                           summarization$method))
