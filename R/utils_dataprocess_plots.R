@@ -49,6 +49,9 @@
         input$is_censored = factor(input$is_censored, 
                                    levels = c("FALSE", "TRUE"))
     }
+    print(input)
+    print(unique(input$predicted))
+    write.csv(input, file = "your_file_name.csv", row.names = T)
     featureName = toupper(featureName)
     if (featureName == "TRANSITION") {
         type_color = "FEATURE"
@@ -56,22 +59,24 @@
         type_color = "PEPTIDE"
     }
     
-    profile_plot = ggplot(input, aes_string(x = 'RUN', y = 'ABUNDANCE', 
+    profile_plot = ggplot(input, aes_string(x = 'RUN', y = 'newABUNDANCE',
                                             color = type_color, linetype = 'FEATURE')) +
+    #     geom_point(aes(shape = is.na(ABUNDANCE)), size = 3) +
+    # profile_plot <- ggplot(input, aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, linetype = 'FEATURE')) +
+    #     geom_point(aes(shape = ifelse(is.na(ABUNDANCE), "predicted", "ABUNDANCE")), size = 3) +
         facet_grid(~LABEL) +
         geom_line(size = 0.5)
     
+    # do the hollow for summary plot?
     if (is_censored) {
         print("lengthhhh")
         print(length(unique(input[[type_color]])))
         profile_plot = profile_plot +
-        geom_point(aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored'),
+        geom_point(aes_string(x = 'RUN', y = 'newABUNDANCE', color = type_color, shape = 'censored'),
                    data = input,
                    size = dot.size.profile) +
         scale_shape_manual(values = c(16, 1),
                            labels = c("Detected data", "Censored missing data"))
-        
-        
         
         # profile_plot = profile_plot +
         #     geom_point(data = input,size = dot.size.profile) +
@@ -164,6 +169,8 @@
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
     yaxis.name, lineNameAxis, groupNametemp
 ) {
+    print(input)
+    write.csv(input, file = "your_file_name_summ.csv", row.names = T)
     RUN = ABUNDANCE = Name = NULL
     
     num_features = data.table::uniqueN(input$FEATURE)

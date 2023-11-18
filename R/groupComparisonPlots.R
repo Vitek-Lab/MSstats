@@ -111,9 +111,11 @@ groupComparisonPlots = function(
     input[, Label := factor(Label)]
     
     if(isPlotly & address != FALSE) {
-        stop("Both isPlotly and address cannot be set at the same time as plotly 
-           plots cannot be saved to a PDF, Please set isPlotly to FALSE
-           to generate ggplot Plots to a PDF")
+        # stop("Both isPlotly and address cannot be set at the same time as plotly 
+        #    plots cannot be saved to a PDF, Please set isPlotly to FALSE
+        #    to generate ggplot Plots to a PDF")
+        print("Plots will be saved as .HTML file as plotly is selected, set isPlotly = FALSE, if 
+            you want to generate PDF using ggplot2")
     }
     
     if (type == "HEATMAP") { # yet to be converted to plotly
@@ -126,8 +128,11 @@ groupComparisonPlots = function(
                      ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
                      text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly)
         if(isPlotly) {
-            plotly_plot <- .convert.ggplot.plotly(plot)
+            plotly_plot <- .convert.ggplot.plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
             plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
+            if(address != FALSE) {
+                .save.plotly.plot.html(list(plotly_plot),address,"VolcanoPlot" ,width, height)
+            }
             return(plotly_plot)
         }
     }
@@ -136,7 +141,10 @@ groupComparisonPlots = function(
                         ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
                         log_base_FC, isPlotly)
         if(isPlotly) {
-            plotly_plot <- .convert.ggplot.plotly(plot)
+            plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
+            if(address != FALSE) {
+                .save.plotly.plot.html(list(plotly_plot),address,"ComparisonPlot" ,width, height)
+            }
             return(plotly_plot)
         }
     }
@@ -297,14 +305,16 @@ groupComparisonPlots = function(
                             y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
                             legend.size, log_adjp)
         print(plot)
-        if(isPlotly & address == FALSE) {
+        if(isPlotly) {
             return(plot)
         }
     }
-    if (address != FALSE) {
+    print(isPlotly)
+    if (address != FALSE & isPlotly != TRUE) {
+        print(isPlotly)
+        print("inside save pdf?")
         dev.off()
     }
-}
 
 
 #' Preprocess data for comparison plots and create them
@@ -348,11 +358,11 @@ groupComparisonPlots = function(
                                y.axis.size, text.angle, hjust, vjust, y.limdown, 
                                y.limup)
         print(plot)
-        if(isPlotly & address == FALSE) {
+        if(isPlotly) {
             return(plot)
         }
     }
-    if (address != FALSE) {
+    if (address != FALSE & isPlotly != TRUE) {
         dev.off()
     }
 }

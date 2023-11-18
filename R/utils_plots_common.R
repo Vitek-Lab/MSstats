@@ -99,19 +99,35 @@ getSelectedProteins = function(chosen_proteins, all_proteins) {
 #' 
 savePlot = function(name_base, file_name, width, height) {
     if (name_base != FALSE) {
-        all_files = list.files(".")
-        if(file_name == 'ProfilePlot'){
-            num_same_name = sum(grepl(paste0("^", name_base, file_name, "_[0-9]?"), all_files))
-        } else {
-            num_same_name = sum(grepl(paste0("^", name_base, file_name, "[0-9]?"), all_files))
-        }
-        if (num_same_name > 0) {
-            file_name = paste(file_name, num_same_name + 1, sep = "_")
-        }
-        file_path = paste0(name_base, file_name, ".pdf")
+        # all_files = list.files(".")
+        # if(file_name == 'ProfilePlot'){
+        #     num_same_name = sum(grepl(paste0("^", name_base, file_name, "_[0-9]?"), all_files))
+        # } else {
+        #     num_same_name = sum(grepl(paste0("^", name_base, file_name, "[0-9]?"), all_files))
+        # }
+        # if (num_same_name > 0) {
+        #     file_name = paste(file_name, num_same_name + 1, sep = "_")
+        # }
+        # file_path = paste0(name_base, file_name, ".pdf")
+        file_path = getFileName(name_base, file_name, width, height)
+        file_path = paste0(file_path,".pdf")
         pdf(file_path, width = width, height = height)
     }
     NULL
+}
+
+getFileName = function(name_base, file_name, width, height) {
+    all_files = list.files(".")
+    if(file_name == 'ProfilePlot'){
+        num_same_name = sum(grepl(paste0("^", name_base, file_name, "_[0-9]?"), all_files))
+    } else {
+        num_same_name = sum(grepl(paste0("^", name_base, file_name, "[0-9]?"), all_files))
+    }
+    if (num_same_name > 0) {
+        file_name = paste(file_name, num_same_name + 1, sep = "_")
+    }
+    file_path = paste0(name_base, file_name)
+    return(file_path)
 }
 
 
