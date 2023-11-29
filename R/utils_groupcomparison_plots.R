@@ -57,6 +57,9 @@
 }
 
 
+colMax <- function(data) sapply(data, max, na.rm = TRUE)
+colMin <- function(data) sapply(data, min, na.rm = TRUE)
+
 #' Create heatmap
 #' @param input data.table
 #' @inheritParams groupComparisonPlots
@@ -70,79 +73,48 @@
     ncols <- length(my.colors)   # Number of colors in the color scale
     mypalette <- colorRampPalette(c("#0000FF","#000000","#FF0000"))
     cols <- mypalette(ncols)
+
+    a <- list(
+        title = "",
+        # titlefont = f1,
+        showticklabels = TRUE,
+        tickangle = 45,
+        # tickfont = f2,
+        exponentformat = "E")
     
-    zseq <- seq(0,1,length.out=ncols+1)
-    colorScale <- data.frame(
-        z = c(0,rep(zseq[-c(1,length(zseq))],each=2),1),
-        col=rep(cols,each=2)
-    )   
-    colorScale$col <- as.character(colorScale$col)
-    print(colorScale)
+    # adjust my breaks
+    x = my.breaks
+    dltx <- diff(x)[1]
+    x <- sort(c(x,-dltx/16,dltx/16))
+    x <- x[x!=0]
+    x.resc <- (x-min(x))/(max(x)-min(x))
     
-    zseq = my.breaks
+    # get color scale
+    cols = my.colors
     colorScale <- data.frame(
-        z = c(0,rep(zseq[-c(1,length(zseq))],each=2),1),
+        z = c(0,rep(x.resc[2:(length(x.resc)-1)],each=2),1),
         col=rep(cols,each=2)
     )
-    colorScale$col <- as.character(colorScale$col)
-    colorScale[26,"z"] <- 101.00000
-    print(colorScale)
     
-    zmx <- round(max(input))
-    zmn <- round(min(input))
-    heatmap_plot <- plot_ly(z = as.matrix(input),
-            # zmin=zmn,
-            # zmax=zmx,
-            x = colnames(input),
-            xgap = 2,
-            y = rownames(input),
-            ygap = 2,
+    heatmap_plot = plot_ly(z = as.matrix(test),
+            zmin=x[1],
+            zmax=x[length(x)],
+            x = colnames(test),
+            xgap = 1,
+            y = rownames(test),
+            ygap = 1,
             type = "heatmap",
             colorscale = colorScale,
-            colorbar=list(ypad = 30, tick0=-zmn, dtick=10) ) 
-    # %>%
-    #     layout(xaxis = a,
-    #            margin = list(l =90,
-    #                          r = 10,
-    #                          b = 100,
-    #                          t = 10))
-    # 
-    
-    # n_values = length(my.colors)
-    # cdf <- structure(list(
-    #     sort(c(my.breaks,my.breaks[-c(1, length(my.breaks))])),
-    #     rep(my.colors, each=2)),
-    #     row.names = c(NA,-n_values*2L), class = "data.frame")
-    # colnames(cdf) <- c("z", "col")
-    # tickvalues <- seq(1 +(n_values-1)/n_values/2, n_values - (n_values-1)/n_values/2, (n_values-1)/n_values/2)
-    # tickvalues <- tickvalues[seq(1, length(tickvalues), 2)]
-    # 
-    # colorScale <- data.frame(z=c(-33.219281,-19.931569,-19.931569,-13.287712),col=c("#440053","#440053","#FDE624","#FDE624"))
-    # colorScale$col <- as.character(colorScale$col)
-    # # heatmap.2(as.matrix(input),
-    # #           col = my.colors,
-    # #           Rowv = FALSE, Colv = FALSE,
-    # #           dendrogram = "none", breaks = my.breaks,
-    # #           trace = "none", na.color = "grey",
-    # #           cexCol = (x.axis.size / 10),
-    # #           cexRow = (y.axis.size / 10),
-    # #           key = FALSE,
-    # #           lhei = c(0.1, 0.9), lwid = c(0.1, 0.9))
-    # print(cdf)
-    # heatmap_plot <- plot_ly(
-    #     z = as.matrix(input),
-    #     x = colnames(input), 
-    #     y = rownames(input),
-    #     xgap=1,
-    #     ygap=1,
-    #     # colorscale = cdf,  # Set the colorscale
-    #     # colorscale = list(c(0, 0.5, 1), c('blue', 'yellow', 'red')),
-    #     colorscale = colorScale,
-    #     type = "heatmap",
-    #     # colorbar=list(ypad = 30, tickvals=c(-20,-10), ticktext=c(0,1))
-    # )
-    
+            colorbar=list(ypad = 520, tick0=x[1], dtick=dltx,len=1,orientation="h")  ) %>%
+        layout(xaxis = a,
+               plot_bgcolor  = "grey"
+               # margin = list(l =90,
+               #               r = 10,
+               #               b = 100,
+               #               t = 10)
+        )
     heatmap_plot
+    
     # heatmap_plot <- plot_ly(
     #     z = as.matrix(input),
     #     colorscale = my.colors,  # Set the colorscale

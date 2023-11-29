@@ -175,16 +175,20 @@
     
     num_features = data.table::uniqueN(input$FEATURE)
     profile_plot = ggplot(data = input, 
-                          aes_string(x = "RUN", y = "ABUNDANCE", 
+                          aes_string(x = "RUN", y = "newABUNDANCE", 
                                      color = "analysis", linetype = "FEATURE", 
                                      size = "analysis")) +
         facet_grid(~LABEL) +
         geom_line(size = 0.5)
     
-    if (is_censored) {
+    if (is_censored) { # splitting into two layers to keep red above grey
         profile_plot = profile_plot +
-            geom_point(data = input, 
-                       aes_string(x = "RUN", y = "ABUNDANCE", 
+            geom_point(data = input[input$PEPTIDE != "Run summary"], 
+                       aes_string(x = "RUN", y = "newABUNDANCE", 
+                                  color = "analysis", size = "analysis", 
+                                  shape = "censored")) +
+            geom_point(data = input[input$PEPTIDE == "Run summary"], 
+                       aes_string(x = "RUN", y = "newABUNDANCE", 
                                   color = "analysis", size = "analysis", 
                                   shape = "censored")) +
             scale_shape_manual(values = c(16, 1), 
@@ -224,7 +228,7 @@
     } else {
         profile_plot = profile_plot +
             guides(color = color_guide) +
-            geom_point(aes_string(x = "RUN", y = "ABUNDANCE", size = "analysis",
+            geom_point(aes_string(x = "RUN", y = "newABUNDANCE", size = "analysis",
                                   color = "analysis"), data = input)
     }
     profile_plot

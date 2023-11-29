@@ -192,9 +192,10 @@ groupComparisonPlots = function(
     wide = wide[rowSums(!is.na(wide)) != 0, colSums(!is.na(wide)) != 0]
     wide = .getOrderedMatrix(wide, clustering)
     
-    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    # blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 14)
     my.colors = blue.red.18
-    my.colors = c(my.colors, "grey") # for NA
+    # my.colors = c(my.colors, "grey") # for NA
     up = 10 
     temp = 10 ^ (-sort(ceiling(seq(2, up, length = 10)[c(1, 2, 3, 5, 10)]), decreasing = TRUE))
     breaks = c(temp, sig)
@@ -315,7 +316,7 @@ groupComparisonPlots = function(
         print("inside save pdf?")
         dev.off()
     }
-
+}
 
 #' Preprocess data for comparison plots and create them
 #' @inheritParams groupComparisonPlots

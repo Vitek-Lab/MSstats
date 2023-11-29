@@ -372,14 +372,17 @@ dataProcessPlots = function(
         quant$censored = FALSE
       }
       quant$analysis = "Run summary"
+      quant$newABUNDANCE = quant$ABUNDANCE
       single_protein$analysis = "Processed feature-level data"
+      print(colnames(single_protein))
       combined = rbind(single_protein[
         , 
         list(PROTEIN, PEPTIDE, TRANSITION, FEATURE, LABEL,
-             RUN, ABUNDANCE, FRACTION, censored, analysis)], quant)
+             RUN, ABUNDANCE, newABUNDANCE,FRACTION, censored, analysis)], quant,fill=TRUE)
       combined$analysis = factor(combined$analysis)
       combined$FEATURE = factor(combined$FEATURE)
       combined$RUN = as.numeric(combined$RUN)
+      print(colnames(combined))
       profile_plot = .makeSummaryProfilePlot(
         combined, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
