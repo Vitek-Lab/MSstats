@@ -20,7 +20,8 @@ MSstatsBayesSummarize = function(data, dpc_betas,
     
     if (bayes_method == "MCMC"){
         fit = stan(file = stan_file, data = stan_input,
-                   chains = chains, iter = n_iterations, cores = cores)
+                   chains = chains, iter = n_iterations, cores = cores,
+                   seed=100, model_name="MSstats_model")
     } else if (bayes_method == "VB"){
         model = stan_model(stan_file)
         fit = vb(model, data = stan_input, iter = n_iterations, 
@@ -200,8 +201,8 @@ arrange_stan_data = function(input, run_priors, dpc_betas){
                       run_mu_prior=run_priors[,3][[1]],
                       sigma_run_prior=rep(1, num_runs),
                       feat_mu_prior=rep(0,num_feat),
-                      sigma_feat_prior=rep(1,num_feat),
-                      sigma_prior=rep(1, num_proteins),
+                      sigma_feat_prior=rep(1, num_feat),
+                      sigma_prior=rep(1, num_runs),
                       beta0=dpc_betas[[1]],
                       beta1=dpc_betas[[2]])
 }
@@ -356,13 +357,15 @@ recover_data = function(fit, feature_data, missing_runs){
     run_mu = rstan::summary(fit, pars="run_mu")
     feature_mu = rstan::summary(fit, pars="feature_mu")
     obs_mis = rstan::summary(fit, pars="obs_mis")
+    sigma = rstan::summary(fit, pars="sigma")
     
     return(list(result_df = feature_data,
                 bayes_results=list(
                     # beta = rbind(beta0$summary, beta1$summary),
                     run = run_mu$summary,
                     feature = feature_mu$summary,
-                    missing = obs_mis$summary)
+                    missing = obs_mis$summary,
+                    sigma = sigma$summary)
                 )
            )
 }

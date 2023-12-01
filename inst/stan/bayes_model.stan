@@ -17,16 +17,17 @@ data {
   int zeros[N_obs] ;
   int ones[N_missing];
   
-  real<lower=0, upper=40> run_mu_prior[R];
+  vector<lower=0, upper=40>[R] run_mu_prior;
   vector<lower=0>[R] sigma_run_prior;
   
   vector<lower=0>[Feat] feat_mu_prior;
   vector<lower=0>[Feat] sigma_feat_prior;
   
-  vector<lower=0>[P] sigma_prior;
+  vector<lower=0>[R] sigma_prior;
+  // real sigma_prior;
   
-  real beta0;
-  real beta1;
+  // real beta0;
+  // real beta1;
 }
 parameters {
   // real beta0;
@@ -39,7 +40,8 @@ parameters {
   vector<lower=0, upper=50>[N_missing] obs_mis;
   // vector<lower=0, upper=5>[N_missing] missing_sigma;
   
-  vector<lower=0>[P] sigma;
+  vector<lower=0>[R] sigma;
+  // real sigma;
 }
 model {
   // beta0 ~ normal(8., 2.);
@@ -52,8 +54,9 @@ model {
   
   sigma ~ exponential(sigma_prior);
   
-  obs ~ normal(run_mu[run_id] + feature_mu[feature_id], sigma[protein_id]);
-  obs_mis ~ normal(run_mu[run_id_missing] + feature_mu[feature_id_missing] - (beta1*sigma[protein_id_missing]), sigma[protein_id_missing]);
+  obs ~ normal(run_mu[run_id] + feature_mu[feature_id], sigma[run_id]);
+  obs_mis ~ normal(run_mu[run_id_missing] + feature_mu[feature_id_missing], sigma[run_id_missing]);
+   // - (beta1*sigma[protein_id_missing])
 
   // zeros ~ bernoulli(.05 + ((1-.05)*(1.0 ./ (1.0 + exp(-beta0 + (beta1*obs))))));
   // ones ~ bernoulli(.05 + ((1-.05)*(1.0 ./ (1.0 + exp(-beta0 + (beta1*obs_mis)))))); //mar + ((1 - mar) *
