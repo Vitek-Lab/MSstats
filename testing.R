@@ -15,17 +15,21 @@ msstats_input_data = MaxQtoMSstatsFormat(evidence, annotation, pg,
 msstats_input_data = as.data.frame(msstats_input_data)
 msstats_input_data = msstats_input_data %>% filter(!grepl(";", ProteinName))
 
-prot = (msstats_input_data %>% distinct(ProteinName) %>% sample_n(50) %>% c())[[1]]
-prot = c(prot, "P00360")
+# prot = (msstats_input_data %>% distinct(ProteinName) %>% sample_n(50) %>% c())[[1]]
+prot = c("P00359")
 sample = msstats_input_data %>% filter(ProteinName %in% prot)
 
 
-summarized_results = dataProcess(sample, summaryMethod="bayesian",
+summarized_results = dataProcess(sample, normalization = FALSE,
+                                 summaryMethod="bayesian",
                                  bayes_method="MCMC", chains=4, cores=4, 
-                                 n_iterations=2000, group_size=51, 
+                                 n_iterations=10000, group_size=51, 
                                  use_log_file = FALSE)
 
-profile_plot(summarized_results$MSstats, "P00360",
+dataProcessPlots(summarized_results, type="ProfilePlot")
+
+
+profile_plot(summarized_results$MSstats, "P00359",
              include_summary=TRUE,
              summary_error_bars=TRUE, color_features_grey=FALSE)
 
