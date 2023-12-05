@@ -3,7 +3,7 @@ library(MSstats)
 library(rstan)
 library(protDP)
 
-setwd("D:\\OneDrive - Northeastern University\\Northeastern\\Research\\MS_data\\Bulk\\DDA_Choi2017")
+setwd("/Users/kohler.d/Library/CloudStorage/OneDrive-NortheasternUniversity/Northeastern/Research/MS_data/Bulk/DDA_Choi2017")
 
 ## Load data
 evidence = read.csv("MaxQ/Choi2017_DDA_MaxQuant_evidence.txt", sep="\t")
@@ -11,21 +11,24 @@ pg = read.csv("MaxQ/Choi2017_DDA_MaxQuant_proteinGroups.txt", sep="\t")
 annotation = read.csv("MaxQ/Choi2017_DDA_MaxQuant_annotation.csv")
 
 msstats_input_data = MaxQtoMSstatsFormat(evidence, annotation, pg,
-                                         removeFewMeasurements = FALSE, use_log_file = FALSE)
+                                         removeFewMeasurements = FALSE, 
+                                         use_log_file = FALSE)
 msstats_input_data = as.data.frame(msstats_input_data)
 msstats_input_data = msstats_input_data %>% filter(!grepl(";", ProteinName))
 
-prot = (msstats_input_data %>% distinct(ProteinName) %>% sample_n(50) %>% c())[[1]]
-prot = c(prot, "P00360")
+prot = (msstats_input_data %>% distinct(ProteinName) %>% 
+            sample_n(10) %>% c())[[1]]
+prot = c(prot, "Q08581")
+prot = c("Q08581")
 sample = msstats_input_data %>% filter(ProteinName %in% prot)
 
 
-summarized_results = dataProcess(sample, summaryMethod="bayesian",
-                                 bayes_method="MCMC", chains=4, cores=4, 
-                                 n_iterations=2000, group_size=51, 
-                                 use_log_file = FALSE)
+summarized_results = dataProcess(msstats_input_data, summaryMethod="TMP")#,
+                                 # bayes_method="MCMC", chains=4, cores=4, 
+                                 # n_iterations=5000, group_size=51, 
+                                 # use_log_file = FALSE)
 
-profile_plot(summarized_results$MSstats, "P00360",
+profile_plot(summarized_results$MSstats, "Q08581",
              include_summary=TRUE,
              summary_error_bars=TRUE, color_features_grey=FALSE)
 

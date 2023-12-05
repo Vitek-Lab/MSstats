@@ -47,11 +47,13 @@ model {
   // mar ~ beta(1, 20);
   
   run_mu ~ normal(run_mu_prior, sigma_run_prior);
+  // run_mu ~ normal(run_mu_prior, 3.);
+  
+  // feature_mu ~ normal(feat_mu_prior, sigma_feat_prior);
+  // feature_mu ~ normal(feat_mu_prior, 1.);
+  
+  // sigma ~ exponential(sigma_prior);
 
-  feature_mu ~ normal(feat_mu_prior, sigma_feat_prior);
-  
-  sigma ~ exponential(sigma_prior);
-  
   obs ~ normal(run_mu[run_id] + feature_mu[feature_id], sigma[protein_id]);
   obs_mis ~ normal(run_mu[run_id_missing] + feature_mu[feature_id_missing] - (beta1*sigma[protein_id_missing]), sigma[protein_id_missing]);
 

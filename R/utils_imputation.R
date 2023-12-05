@@ -39,6 +39,8 @@
             } else {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ FEATURE + RUN,
                                         data = input, dist = "gaussian")
+                
+                lm(newABUNDANCE ~ FEATURE + RUN, data=input)
             }
         }  
     }
@@ -55,5 +57,5 @@
     LABEL = NULL
     
     survival_fit = .fitSurvival(input[LABEL == "L", ])
-    predict(survival_fit, newdata = input)
+    predict(survival_fit, newdata = input, se.fit =TRUE)
 }

@@ -198,7 +198,7 @@ arrange_stan_data = function(input, run_priors, dpc_betas){
                       zeros=rep(0, nrow(obs_mat)),
                       ones=rep(0, nrow(missing_mat)),
                       run_mu_prior=run_priors[,3][[1]],
-                      sigma_run_prior=rep(1, num_runs),
+                      sigma_run_prior=run_priors[,4][[1]],
                       feat_mu_prior=rep(0,num_feat),
                       sigma_feat_prior=rep(1,num_feat),
                       sigma_prior=rep(1, num_proteins),
@@ -273,21 +273,27 @@ get_priors = function(data) {
         
         # Calculate run priors
         run_effect = c()
-        # run_std = list()
+        run_std = list()
         
         for (r in seq_along(runs)) {
             run_effect = c(run_effect, 
                    mean(temp_data[
                    which(temp_data[, 3] == as.numeric(runs[r])), 4][[1]], 
                    na.rm=TRUE))
-            # run_std = c(run_std, 
-            #              var(temp_data[(temp_data[, 2] == r), 4], na.rm=TRUE))
+            run_std = c(run_std,
+                        sd(temp_data[
+                            which(temp_data[, 3] == as.numeric(runs[r])), 4][[1]], 
+                            na.rm=TRUE))
         }
         
         run_effect = as.numeric(run_effect)
+        run_std = as.numeric(run_std)
+        run_std[is.na(run_std)] = 2.
         temp_df = data.frame("PROTEIN_original" = rep(prot, length(runs)),
                              "RUN_original" = runs,
-                             "Run_prior" = run_effect)
+                             "Run_prior" = run_effect,
+                             "Run_std" = run_std
+                             )
         # run_effect[is.na(run_effect)] = 0
         run_priors[[i]] = temp_df[which(!is.na(temp_df[,3])),]
         
