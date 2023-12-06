@@ -3,7 +3,7 @@ library(MSstats)
 library(rstan)
 library(protDP)
 
-setwd("D:\\OneDrive - Northeastern University\\Northeastern\\Research\\MS_data\\Bulk\\DDA_Choi2017")
+setwd("/Users/kohler.d/Library/CloudStorage/OneDrive-NortheasternUniversity/Northeastern/Research/MS_data/Bulk/DDA_Choi2017")
 
 ## Load data
 evidence = read.csv("MaxQ/Choi2017_DDA_MaxQuant_evidence.txt", sep="\t")
@@ -11,7 +11,8 @@ pg = read.csv("MaxQ/Choi2017_DDA_MaxQuant_proteinGroups.txt", sep="\t")
 annotation = read.csv("MaxQ/Choi2017_DDA_MaxQuant_annotation.csv")
 
 msstats_input_data = MaxQtoMSstatsFormat(evidence, annotation, pg,
-                                         removeFewMeasurements = FALSE, use_log_file = FALSE)
+                                         removeFewMeasurements = FALSE, 
+                                         use_log_file = FALSE)
 msstats_input_data = as.data.frame(msstats_input_data)
 msstats_input_data = msstats_input_data %>% filter(!grepl(";", ProteinName))
 
@@ -27,7 +28,6 @@ summarized_results = dataProcess(sample, normalization = FALSE,
                                  use_log_file = FALSE)
 
 dataProcessPlots(summarized_results, type="ProfilePlot")
-
 
 profile_plot(summarized_results$MSstats, "P00359",
              include_summary=TRUE,

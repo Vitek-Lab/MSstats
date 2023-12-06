@@ -14,7 +14,7 @@ data {
   int feature_id_missing[N_missing];
   int protein_id_missing[N_missing];
 
-  int zeros[N_obs] ;
+  int zeros[N_obs];
   int ones[N_missing];
   
   vector<lower=0, upper=40>[R] run_mu_prior;
@@ -49,7 +49,12 @@ model {
   // mar ~ beta(1, 20);
   
   run_mu ~ normal(run_mu_prior, sigma_run_prior);
-
+  // run_mu ~ normal(run_mu_prior, 3.);
+  
+  // feature_mu ~ normal(feat_mu_prior, sigma_feat_prior);
+  // feature_mu ~ normal(feat_mu_prior, 1.);
+  
+  // sigma ~ exponential(sigma_prior);
   feature_mu ~ normal(feat_mu_prior, sigma_feat_prior);
   
   sigma ~ exponential(sigma_prior);

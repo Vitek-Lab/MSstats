@@ -258,7 +258,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
         summarized_results$model_details = model_details
         
     } else {
-        num_proteins = split(num_proteins, 10)
+        # num_proteins = split(num_proteins, 10)
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
         
         for (protein_id in seq_len(num_proteins)) {
