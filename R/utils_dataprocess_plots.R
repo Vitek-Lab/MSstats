@@ -74,7 +74,7 @@
         profile_plot = profile_plot +
         geom_point(aes_string(x = 'RUN', y = 'newABUNDANCE', color = type_color, shape = 'censored'),
                    data = input,
-                   size = dot.size.profile) +
+                   size = dot.size.profile,show.legend = TRUE) +
         scale_shape_manual(values = c(16, 1),
                            labels = c("Detected data", "Censored missing data"))
         

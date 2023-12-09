@@ -137,75 +137,114 @@ dataProcessPlots = function(
   }
   
   if(isPlotly & address != FALSE) {
-      # stop("Both isPlotly and address cannot be set at the same time as plotly 
-      #      plots cannot be saved to a PDF, Please set isPlotly to FALSE
-      #      to generate ggplot Plots to a PDF")
       print("Plots will be saved as .HTML file as plotly is selected, set isPlotly = FALSE, if 
             you want to generate PDF using ggplot2")
   }
   
   if (type == "PROFILEPLOT") {
-      plot <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
+      plots <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
                            x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                            dot.size.profile, width, height, which.Protein, originalPlot, 
                            summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
+      plotly_plots = list()
+      print("in porff")
+      print(plots)
       if(isPlotly) {
           og_plotly_plot = NULL
           summ_plotly_plot = NULL
-          if(rlang::has_name(plot, "original_plot")) {
-              og_plotly_plot <- .convert.ggplot.plotly(plot[["original_plot"]],tips=c("FEATURE","RUN","newABUNDANCE"))
-              og_plotly_plot = .fix.legend.plotly.plots.dataprocess(og_plotly_plot)
-              if(toupper(featureName) == "NA") {
-                  og_plotly_plot <- og_plotly_plot %>% style(og_plotly_plot, showlegend = FALSE)
+          if(rlang::has_name(plots, "original_plot")) {
+              for(i in seq_along(plots[["original_plot"]])) {
+                  plot_i <- plots[["original_plot"]][[paste("plot",i)]]
+                  print(class(plot_i))
+                  print(typeof(plot_i))
+                  print("checlll")
+                  og_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  og_plotly_plot = .fix.legend.plotly.plots.dataprocess(og_plotly_plot)
+                  if(toupper(featureName) == "NA") {
+                      og_plotly_plot <- og_plotly_plot %>% style(og_plotly_plot, showlegend = FALSE)
+                  }
+                  plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
-              print(og_plotly_plot)
-              plotly_plot = og_plotly_plot
+              # og_plotly_plot <- .convert.ggplot.plotly(plots[["original_plot"]],tips=c("FEATURE","RUN","newABUNDANCE"))
+              # og_plotly_plot = .fix.legend.plotly.plots.dataprocess(og_plotly_plot)
+              # if(toupper(featureName) == "NA") {
+              #     og_plotly_plot <- og_plotly_plot %>% style(og_plotly_plot, showlegend = FALSE)
+              # }
+              # plotly_plot = og_plotly_plot
           }
-          if(rlang::has_name(plot, "summary_plot")) {
-              summ_plotly_plot <- .convert.ggplot.plotly(plot[["summary_plot"]],tips=c("FEATURE","RUN","ABUNDANCE"))
-              summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
-              if(toupper(featureName) == "NA") {
-                  summ_plotly_plot <- summ_plotly_plot %>% style(summ_plotly_plot, showlegend = FALSE)
+          if(rlang::has_name(plots, "summary_plot")) {
+              print("in summm")
+              print(length(plots[["summary_plot"]]))
+              for(i in seq_along(plots[["summary_plot"]])) {
+                  print("num summ pot")
+                  plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
+                  summ_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
+                  summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
+                  if(toupper(featureName) == "NA") {
+                      summ_plotly_plot <- summ_plotly_plot %>% style(summ_plotly_plot, showlegend = FALSE)
+                  }
+                  plotly_plots = c(plotly_plots, list(summ_plotly_plot))
               }
-              print(summ_plotly_plot)
-              plotly_plot = summ_plotly_plot
+              # summ_plotly_plot <- .convert.ggplot.plotly(plot[["summary_plot"]],tips=c("FEATURE","RUN","ABUNDANCE"))
+              # summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
+              # if(toupper(featureName) == "NA") {
+              #     summ_plotly_plot <- summ_plotly_plot %>% style(summ_plotly_plot, showlegend = FALSE)
+              # }
+              # plotly_plot = summ_plotly_plot
           }
           
           if(address != FALSE) {
-              .save.plotly.plot.html(list(summ_plotly_plot,og_plotly_plot),address,"ProfilePlot" ,width, height)
+              # .save.plotly.plot.html(list(summ_plotly_plot,og_plotly_plot),address,"ProfilePlot" ,width, height)
+              .save.plotly.plot.html(plotly_plots,address,"ProfilePlot" ,width, height)
           }
-          return(plotly_plot)
+          return(plotly_plots)
       }
   }
     
   if (type == "QCPLOT") {
-      plot <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
+      plots <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
                       text.size, text.angle, legend.size, dot.size.profile, width, height,
                       which.Protein, address, isPlotly)
+      plotly_plots <- list()
       if(isPlotly) {
-        plotly_plot <- .convert.ggplot.plotly(plot)
-        plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
-        
-        if(address != FALSE) {
-            .save.plotly.plot.html(list(plotly_plot),address,"QCPlot" ,width, height)
-        }
-        return(plotly_plot)
+          for(i in seq_along(plots)) {
+              plot <- plots[[i]]
+              plotly_plot <- .convert.ggplot.plotly(plot)
+              plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+              plotly_plots = c(plotly_plots, list(plotly_plot))
+          }
+            # plotly_plot <- .convert.ggplot.plotly(plot)
+            # plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+            
+            if(address != FALSE) {
+                # .save.plotly.plot.html(list(plotly_plot),address,"QCPlot" ,width, height)
+                .save.plotly.plot.html(plotly_plots,address,"QCPlot" ,width, height)
+            }
+            return(plotly_plots)
       }
   }
     
   if (type == "CONDITIONPLOT") {
-      plot <- .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
+      plots <- .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
                              x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                              dot.size.profile, dot.size.condition, width, height,
                              which.Protein, save_condition_plot_result, address, isPlotly)
+      plotly_plots <- list()
       if(isPlotly) {
-          plotly_plot <- .convert.ggplot.plotly(plot)
-          plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+          for(i in seq_along(plots)) {
+              plot <- plots[[i]]
+              plotly_plot <- .convert.ggplot.plotly(plot)
+              plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+              plotly_plots = c(plotly_plots, list(plotly_plot))
+          }
+          # plotly_plot <- .convert.ggplot.plotly(plot)
+          # plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
           
           if(address != FALSE) {
-              .save.plotly.plot.html(list(plotly_plot),address,"ConditionPlot" ,width, height)
+              # .save.plotly.plot.html(list(plotly_plot),address,"ConditionPlot" ,width, height)
+              .save.plotly.plot.html(plotly_plots,address,"ConditionPlot" ,width, height)
           }
-            return(plotly_plot)
+            return(plotly_plots)
       }
   }
 }
@@ -294,11 +333,16 @@ dataProcessPlots = function(
     processed[, is_outlier := NULL]
   }
   output_plots <- list()
+  output_plots[["original_plot"]] = list()
+  output_plots[["summary_plot"]] = list()
   all_proteins = levels(processed$PROTEIN)
   if (originalPlot) {
-    savePlot(address, "ProfilePlot", width, height)
+    if(isPlotly == FALSE) {
+        savePlot(address, "ProfilePlot", width, height)
+    }
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
+        print("how many forrr")
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
       if (all(is.na(single_protein$ABUNDANCE))) {
         next()
@@ -328,13 +372,12 @@ dataProcessPlots = function(
       
       setTxtProgressBar(pb, i)
       print(profile_plot)
-      if(isPlotly) {
-          output_plots[[paste("original_plot")]] <- profile_plot
-      }
+      output_plots[["original_plot"]][[paste("plot",i)]] <- profile_plot
     }
+    
     close(pb)
     
-    if (address != FALSE & isPlotly != TRUE) {
+    if (address != FALSE & isPlotly == FALSE) {
       dev.off()
     } 
   }
@@ -344,7 +387,9 @@ dataProcessPlots = function(
                                  RUN = unique(summarized$RUN))
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
-    savePlot(address, "ProfilePlot_wSummarization", width, height)
+    if(isPlotly == FALSE) {
+        savePlot(address, "ProfilePlot_wSummarization", width, height)
+    }
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
@@ -390,18 +435,19 @@ dataProcessPlots = function(
       )
       print(profile_plot)
       setTxtProgressBar(pb, i)
+      output_plots[["summary_plot"]][[paste("plot",i)]] <- profile_plot
       
-      if(isPlotly) {
-          output_plots[[paste("summary_plot")]] <- profile_plot
-      }
     }
     close(pb)
     
-    if (address != FALSE & isPlotly != TRUE) {
+    if (address != FALSE & isPlotly == FALSE) {
       dev.off()
     } 
   }
-  return(output_plots)
+  if(isPlotly) {
+      return(output_plots)
+  }
+  
 }
 
 
@@ -452,17 +498,20 @@ dataProcessPlots = function(
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
                          Name = levels(tempGroupName$GROUP))
-  
-  savePlot(address, "QCPlot", width, height)
+  if (isPlotly == FALSE) {
+      savePlot(address, "QCPlot", width, height)
+  }
+  plots <- list()
   if (protein %in% c("all", "allonly")) {
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
                           yaxis.name)
     print(qc_plot)
-    if(isPlotly) {
-        return(qc_plot)
-    }
+    plots <- c(plots, list(qc_plot))
+    # if(isPlotly) {
+    #     return(qc_plot)
+    # }
   } 
   
   if (protein != 'allonly') {
@@ -475,6 +524,7 @@ dataProcessPlots = function(
     }
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {	
+    
       single_protein = processed[processed$PROTEIN == all_proteins[i], ]
       single_protein = single_protein[order(LABEL, RUN)]
       if (all(is.na(single_protein$ABUNDANCE))) {
@@ -485,15 +535,19 @@ dataProcessPlots = function(
                             legend.size, label.color, cumGroupAxis, groupName,
                             lineNameAxis, yaxis.name)
       print(qc_plot)
+      plots <- c(plots, list(qc_plot))
       setTxtProgressBar(pb, i)
       
-      if(isPlotly) {
-          return(qc_plot)
-      }
+      # if(isPlotly) {
+      #     return(qc_plot)
+      # }
     } 
     close(pb)
   } 
-  if (address != FALSE & isPlotly != TRUE) {
+  if (isPlotly) {
+      return(plots)
+  }
+  if (address != FALSE) {
     dev.off()
   }
 } 
@@ -520,9 +574,13 @@ dataProcessPlots = function(
   yaxis.name = .getYaxis(processed)
   
   results = vector("list", length(all_proteins))
-  savePlot(address, "ConditionPlot", width, height)
+  if(isPlotly == FALSE) {
+      savePlot(address, "ConditionPlot", width, height)
+  }
+  plots <- list()
   pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
   for (i in seq_along(all_proteins)) {
+      print("how many??")
     single_protein = summarized[PROTEIN == all_proteins[i], ]
     single_protein = na.omit(single_protein)
     single_protein[, GROUP := factor(GROUP)]
@@ -557,15 +615,12 @@ dataProcessPlots = function(
                                   text.size, text.angle, legend.size, 
                                   dot.size.condition, yaxis.name)
     print(con_plot)
+    plots <- c(plots, list(con_plot))
     setTxtProgressBar(pb, i)
-    
-    if(isPlotly) {
-        return(con_plot)
-    }
   }
   close(pb)
   
-  if (address != FALSE & isPlotly != TRUE) {
+  if (address != FALSE & isPlotly == FALSE) {
     dev.off()
   }
   
@@ -578,6 +633,9 @@ dataProcessPlots = function(
       data.table::setnames(result, "ciw", "SD")
     }
     .saveTable(result, address, "ConditionPlot_value")
+  }
+  if (isPlotly) {
+      return(plots)
   }
 }
 
@@ -622,6 +680,7 @@ dataProcessPlots = function(
     df$is_first <- !duplicated(df$legend_group)
     df$is_bool <- ifelse(grepl("TRUE|FALSE", df$legend_group), TRUE, FALSE)
     df[nrow(df), "is_first"] <- FALSE # remove text legend
+    print(df)
     for (i in df$id) {
         is_first <- df$is_first[[i]]
         is_bool <- df$is_bool[[i]]
@@ -662,10 +721,20 @@ dataProcessPlots = function(
 }
 
 .save.plotly.plot.html = function(plots, address, file_name, width, height) {
-    print(typeof(plots))
-    print(length(plots))
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
-    doc <- htmltools::tagList(lapply(plots,function(x) div(x, style = "float:left;width:50%;")))
+    doc <- htmltools::tagList(lapply(plots,function(x) htmltools::div(x, style = "float:left;width:100%;")))
+    # Set a specific width for each plot
+    plot_width <- 800
+    plot_height <- 600
+
+    # Create a div for each plot with style settings
+    divs <- lapply(plots, function(x) {
+        # htmltools::div(x, style = paste0("width:", plot_width, "; display:inline-block;"))
+        htmltools::div(x, style = paste0("width:", plot_width, "px; height:", plot_height, "px; margin: 10px;"))
+    })
+
+    # Combine the divs into a tagList
+    doc <- htmltools::tagList(divs)
     htmltools::save_html(html = doc, file = file_name)
 }

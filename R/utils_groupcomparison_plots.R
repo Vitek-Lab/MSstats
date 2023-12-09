@@ -64,17 +64,10 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
 #' @param input data.table
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
-.makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size) {
+.makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size, height) {
     par(oma = c(3, 0, 0, 4))
-    print(as.matrix(input))
-    print(my.breaks)
-    print(my.colors)
-    
-    ncols <- length(my.colors)   # Number of colors in the color scale
-    mypalette <- colorRampPalette(c("#0000FF","#000000","#FF0000"))
-    cols <- mypalette(ncols)
 
-    a <- list(
+    label_formatter <- list(
         title = "",
         # titlefont = f1,
         showticklabels = TRUE,
@@ -82,7 +75,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
         # tickfont = f2,
         exponentformat = "E")
     
-    # adjust my breaks
+    # adjust my.breaks
     x = my.breaks
     dltx <- diff(x)[1]
     x <- sort(c(x,-dltx/16,dltx/16))
@@ -96,46 +89,22 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
         col=rep(cols,each=2)
     )
     
-    heatmap_plot = plot_ly(z = as.matrix(test),
+    heatmap_plot = plot_ly(z = as.matrix(input),
             zmin=x[1],
             zmax=x[length(x)],
-            x = colnames(test),
-            xgap = 1,
-            y = rownames(test),
-            ygap = 1,
+            x = colnames(input),
+            xgap = 0,
+            y = rownames(input),
+            ygap = 0,
             type = "heatmap",
+            showlegend=FALSE, showscale=FALSE,
             colorscale = colorScale,
-            colorbar=list(ypad = 520, tick0=x[1], dtick=dltx,len=1,orientation="h")  ) %>%
-        layout(xaxis = a,
+            colorbar=list(ypad = 520, tick0=x[1], dtick=dltx,len=1,orientation="h")
+            ) %>%
+        plotly::layout(xaxis = label_formatter, 
                plot_bgcolor  = "grey"
-               # margin = list(l =90,
-               #               r = 10,
-               #               b = 100,
-               #               t = 10)
         )
     heatmap_plot
-    
-    # heatmap_plot <- plot_ly(
-    #     z = as.matrix(input),
-    #     colorscale = my.colors,  # Set the colorscale
-    #     type = "heatmap"
-    # )
-    # 
-    # # Customize the heatmap appearance
-    # heatmap_plot <- heatmap_plot %>%
-    #     layout(
-    #         xaxis = list(
-    #             tickangle = 45,  # Adjust X-axis label rotation angle
-    #             tickfont = list(size = x.axis.size)
-    #         ),
-    #         yaxis = list(
-    #             tickfont = list(size = y.axis.size)
-    #         ),
-    #         margin = list(l = 50, r = 50, b = 50, t = 50)  # Adjust the margin
-    #     )
-    # 
-    # # Show the plot
-    # heatmap_plot
 }
 
 

@@ -111,41 +111,61 @@ groupComparisonPlots = function(
     input[, Label := factor(Label)]
     
     if(isPlotly & address != FALSE) {
-        # stop("Both isPlotly and address cannot be set at the same time as plotly 
-        #    plots cannot be saved to a PDF, Please set isPlotly to FALSE
-        #    to generate ggplot Plots to a PDF")
         print("Plots will be saved as .HTML file as plotly is selected, set isPlotly = FALSE, if 
             you want to generate PDF using ggplot2")
     }
     
-    if (type == "HEATMAP") { # yet to be converted to plotly
-        return(.plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
+    if (type == "HEATMAP") { 
+        plot <- .plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
                      numProtein, colorkey, width, height, log_base_FC,
-                     x.axis.size, y.axis.size, address, isPlotly))
-    }
-    if (type == "VOLCANOPLOT") {
-        plot <- .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
-                     ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
-                     text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly)
+                     x.axis.size, y.axis.size, address, isPlotly)
         if(isPlotly) {
-            plotly_plot <- .convert.ggplot.plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
-            plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
+            plotly_plot <- .convert.ggplot.plotly(plot)
             if(address != FALSE) {
-                .save.plotly.plot.html(list(plotly_plot),address,"VolcanoPlot" ,width, height)
+                .save.plotly.plot.html(list(plotly_plot),address,"Heatmap" ,width, height)
             }
             return(plotly_plot)
         }
     }
+    if (type == "VOLCANOPLOT") {
+        plots <- .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
+                     ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
+                     text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly)
+        plotly_plots <- list()
+        if(isPlotly) {
+            for(i in seq_along(plots)) {
+                plot <- plots[[i]]
+                plotly_plot <- .convert.ggplot.plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
+                plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
+                plotly_plots = c(plotly_plots, list(plotly_plot))
+            }
+            # all_plotly_plots <- subplot(plotly_plots, nrows = length(plotly_plots))
+            # plotly_plot <- .convert.ggplot.plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
+            # plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
+            if(address != FALSE) {
+                # .save.plotly.plot.html(list(plotly_plot),address,"VolcanoPlot" ,width, height)
+                .save.plotly.plot.html(plotly_plots,address,"VolcanoPlot" ,width, height)
+            }
+            return(plotly_plots)
+        }
+    }
     if (type == "COMPARISONPLOT") {
-        plot <- .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
+        plots <- .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
                         ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
                         log_base_FC, isPlotly)
+        plotly_plots <- list()
         if(isPlotly) {
-            plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
-            if(address != FALSE) {
-                .save.plotly.plot.html(list(plotly_plot),address,"ComparisonPlot" ,width, height)
+            for(i in seq_along(plots)) {
+                plot <- plots[[i]]
+                plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
+                plotly_plots = c(plotly_plots, list(plotly_plot))
             }
-            return(plotly_plot)
+            # plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
+            if(address != FALSE) {
+                # .save.plotly.plot.html(list(plotly_plot),address,"ComparisonPlot" ,width, height)
+                .save.plotly.plot.html(plotly_plots,address,"ComparisonPlot" ,width, height)
+            }
+            return(plotly_plots)
         }
     }
 }
@@ -161,7 +181,6 @@ groupComparisonPlots = function(
     input, log_base_pval, ylimUp, FCcutoff, sig, clustering, numProtein, colorkey, 
     width, height, log_base_FC, x.axis.size, y.axis.size, address, isPlotly
 ) {
-    print("HEATTTTTMAPPPP")
     adj.pvalue = heat_val = NULL
     
     if (length(unique(input$Protein)) <= 1) {
@@ -169,6 +188,10 @@ groupComparisonPlots = function(
     }
     if (length(unique(input$Label)) <= 1) {
         stop("At least two comparisons are needed for heatmaps.")
+    }
+    
+    if(isPlotly == FALSE) {
+        stop("Heatmap is only available using Plotly for now, set isPlotly = T to get the results")
     }
     
     if (is.numeric(ylimUp)) {
@@ -206,17 +229,19 @@ groupComparisonPlots = function(
     namepro = rownames(wide)
     totalpro = length(namepro)
     numheatmap = totalpro %/% numProtein + 1
-    if (colorkey) {
-        par(mar = c(3, 3, 3, 3), mfrow = c(3, 1), oma = c(3, 0, 3, 0))
-        plot.new()
-        image(z = matrix(seq(seq_len(length(my.colors) - 1)), ncol = 1), 
-              col = my.colors[-length(my.colors)], 
-              xaxt = "n", 
-              yaxt = "n")
-        mtext("Color Key", side = 3,line = 1, cex = 3)
-        mtext("(sign) Adjusted p-value", side = 1, line = 3, at = 0.5, cex = 1.7)
-        mtext(blocks, side = 1, line = 1, at = x.at, cex = 1)
-    }
+    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    my.colors.rgb = lapply(blue.red.18, function(x) as.vector(col2rgb(x)))   
+    color.key.plot <- plot_ly(type="image",z=list(my.colors.rgb)) %>%
+        plotly::layout(
+        #     title = list(text="Color Key",y=0.57,font = list(
+        #     size = 22
+        # )),
+                       xaxis = list(dtick = 0, ticktext = as.character(blocks), tickmode="array", tickvals = -0.5:length(blocks),tickangle = 0,
+                                    title="(sign) Adjusted p-value"),
+                       yaxis = list(ticks = "", showticklabels = FALSE)
+                       )%>% 
+        plotly::style(hoverinfo = 'none')
+    ####
     
     savePlot(address, "Heatmap", width, height)
     for (j in seq_len(numheatmap)) {
@@ -225,10 +250,25 @@ groupComparisonPlots = function(
         } else {
             partial_wide = wide[((j - 1) * numProtein + 1):nrow(wide), ]
         }
-        heatmap  = .makeHeatmap(partial_wide, my.colors, my.breaks, x.axis.size, y.axis.size)
+        heatmap  = .makeHeatmap(partial_wide, my.colors, my.breaks, x.axis.size, y.axis.size, height)
     } 
     if (address != FALSE) {
         dev.off()
+    }
+    if(colorkey) {
+        return(subplot(heatmap,color.key.plot,nrows=2) %>%
+                   plotly::layout(
+                       # width = 800,   # Set the width of the chart in pixels
+                       #            height = height,
+                                  annotations = list(
+                       list(x = 0.5 , y = 1.1, text = "Heatmap", showarrow = FALSE, xref='paper', yref='paper',font = list(
+                           size = 18
+                       )),
+                       list(x = 0.5 , y = 0.35, text = "Color Key", showarrow = FALSE, xref='paper', yref='paper',font = list(
+                           size = 18
+                       ))),
+                       margin = list(l = 50, r = 50, b = 50, t = 100)
+                   ))
     }
     return(heatmap)
 } 
@@ -280,8 +320,10 @@ groupComparisonPlots = function(
     input[, Protein := as.character(Protein)]
     input[!is.na(issue) & issue == "oneConditionMissing", 
           Protein := paste0("*", Protein)]
-    
-    savePlot(address, "VolcanoPlot", width, height)
+    if(isPlotly == FALSE) {
+        savePlot(address, "VolcanoPlot", width, height)
+    }
+    plots <- list()
     for (i in seq_along(all_labels)) {
         label_name = all_labels[i]
         single_label = input[Label == label_name, ]
@@ -306,14 +348,12 @@ groupComparisonPlots = function(
                             y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
                             legend.size, log_adjp)
         print(plot)
-        if(isPlotly) {
-            return(plot)
-        }
+        plots <- c(plots, list(plot))
     }
-    print(isPlotly)
-    if (address != FALSE & isPlotly != TRUE) {
-        print(isPlotly)
-        print("inside save pdf?")
+    if (isPlotly) {
+        return(plots)
+    }
+    if (address != FALSE) {
         dev.off()
     }
 }
@@ -344,7 +384,10 @@ groupComparisonPlots = function(
     
     all_proteins = unique(input$Protein)
     input$Protein = factor(input$Protein)
-    savePlot(address, "ComparisonPlot", width, height)
+    if(isPlotly == FALSE) {
+        savePlot(address, "ComparisonPlot", width, height)
+    }
+    plots <- list()
     log_fc_column = intersect(colnames(input), c("log2FC", "log10FC"))
     for (i in seq_along(all_proteins)) {
         single_protein = input[Protein == all_proteins[i], ] 		
@@ -359,11 +402,12 @@ groupComparisonPlots = function(
                                y.axis.size, text.angle, hjust, vjust, y.limdown, 
                                y.limup)
         print(plot)
-        if(isPlotly) {
-            return(plot)
-        }
+        plots <- c(plots, list(plot))
     }
-    if (address != FALSE & isPlotly != TRUE) {
+    if (isPlotly) {
+        return(plots)
+    }
+    if (address != FALSE) {
         dev.off()
     }
 }
