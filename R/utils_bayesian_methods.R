@@ -53,7 +53,8 @@ MSstatsBayesSummarizationOutput = function(input, summarized){
                          unique(protein_data[,c("PROTEIN_original", 
                                                 "RUN_original",
                                                 "FEATURE_original", 
-                                                "imp_mean", "imp_sd")]),
+                                                "imp_mean", "imp_sd"
+                                                )]),
                          by.x = c("PROTEIN", "RUN", "FEATURE"),
                          by.y = c("PROTEIN_original", "RUN_original", 
                                   "FEATURE_original"), 
@@ -183,9 +184,12 @@ arrange_stan_data = function(input, run_priors, dpc_betas){
                      nrow=nrow(input[which(!is.na(input[,3])),]))
     missing_mat = matrix(as.numeric(unlist(input[which(is.na(input[,3])),])),
                          nrow=nrow(input[which(is.na(input[,3])),]))
+    if (all(dim(missing_mat) == c(0,0))) {
+        missing_mat = matrix(c(0,0,0,0), nrow=1)
+    }
     
     stan_input = list(N_obs=nrow(obs_mat), 
-                      N_missing=nrow(missing_mat),
+                      # N_missing=nrow(missing_mat),
                       R=num_runs,
                       Feat=num_feat,
                       P=num_proteins,
@@ -193,16 +197,16 @@ arrange_stan_data = function(input, run_priors, dpc_betas){
                       run_id=obs_mat[,1],
                       feature_id=obs_mat[,2],
                       protein_id=obs_mat[,4],
-                      run_id_missing=missing_mat[,1],
-                      feature_id_missing=missing_mat[,2],
-                      protein_id_missing=missing_mat[,4],
-                      zeros=rep(0, nrow(obs_mat)),
-                      ones=rep(0, nrow(missing_mat)),
-                      run_mu_prior=run_priors[,3][[1]],
-                      sigma_run_prior=run_priors[,4][[1]],
-                      feat_mu_prior=rep(0,num_feat),
-                      sigma_feat_prior=rep(1, num_feat),
-                      sigma_prior=rep(2, num_runs))#,
+                      # run_id_missing=missing_mat[,1],
+                      # feature_id_missing=missing_mat[,2],
+                      # protein_id_missing=missing_mat[,4],
+                      # zeros=rep(0, nrow(obs_mat)),
+                      # ones=rep(0, nrow(missing_mat)),
+                      run_mu_prior=run_priors[,3][[1]])#,
+                      # sigma_prior=run_priors[,4][[1]])#,
+                      # feat_mu_prior=rep(0,num_feat),
+                      # sigma_feat_prior=rep(1, num_feat),
+                      # sigma_prior=rep(2, num_runs))#,
                       # beta0=dpc_betas[[1]],
                       # beta1=dpc_betas[[2]])
 }
@@ -327,20 +331,20 @@ get_priors = function(data) {
 
 recover_data = function(fit, feature_data, missing_runs){
     
-    parameters = c("obs_mis", "run_mu", "sigma", "beta0", "beta1")
+    parameters = c("run", "sigma", "beta0", "beta1")#"obs_mis",
     
     # Missing imputation
-    results = rstan::summary(fit, pars="obs_mis")
-    results = results$summary[,c("mean", "sd")]
-    imp_index = which(is.na(feature_data$ABUNDANCE))
+    # results = rstan::summary(fit, pars="obs_mis")
+    # results = results$summary[,c("mean", "sd")]
+    # imp_index = which(is.na(feature_data$ABUNDANCE))
     
     feature_data[, "imp_mean"] = 0
     feature_data[, "imp_sd"] = 0
-    feature_data[imp_index, "imp_mean" := results[,1]]
-    feature_data[imp_index, "imp_sd" := results[,2]]
+    # feature_data[imp_index, "imp_mean" := results[,1]]
+    # feature_data[imp_index, "imp_sd" := results[,2]]
     
     # Feature estimation
-    results = rstan::summary(fit, pars="feature_mu")
+    results = rstan::summary(fit, pars="feature")
     results = as.data.frame(results$summary[,c("mean", "sd")])
     results = rename(results, c("feature_mean" = "mean", 
                                 "feature_sd" = "sd"))
@@ -349,7 +353,7 @@ recover_data = function(fit, feature_data, missing_runs){
                          by="Protein_feature_idx")
     
     # Run estimation
-    results = rstan::summary(fit, pars="run_mu")
+    results = rstan::summary(fit, pars="run")
     results = as.data.frame(results$summary[,c("mean", "sd")])
     results = rename(results, c("run_mean" = "mean", 
                                 "run_sd" = "sd"))
@@ -360,17 +364,17 @@ recover_data = function(fit, feature_data, missing_runs){
     
     # beta0 = rstan::summary(fit, pars="beta0")
     # beta1 = rstan::summary(fit, pars="beta1")
-    run_mu = rstan::summary(fit, pars="run_mu")
-    feature_mu = rstan::summary(fit, pars="feature_mu")
-    obs_mis = rstan::summary(fit, pars="obs_mis")
+    run = rstan::summary(fit, pars="run")
+    feature = rstan::summary(fit, pars="feature")
+    # obs_mis = rstan::summary(fit, pars="obs_mis")
     sigma = rstan::summary(fit, pars="sigma")
     
     return(list(result_df = feature_data,
                 bayes_results=list(
                     # beta = rbind(beta0$summary, beta1$summary),
-                    run = run_mu$summary,
-                    feature = feature_mu$summary,
-                    missing = obs_mis$summary,
+                    run = run$summary,
+                    feature = feature$summary,
+                    # missing = obs_mis$summary,
                     sigma = sigma$summary)
                 )
            )
