@@ -104,6 +104,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
         plotly::layout(xaxis = label_formatter, 
                plot_bgcolor  = "grey"
         )
+    print(heatmap_plot)
     heatmap_plot
 }
 

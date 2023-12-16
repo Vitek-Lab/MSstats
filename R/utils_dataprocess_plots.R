@@ -61,28 +61,16 @@
     
     profile_plot = ggplot(input, aes_string(x = 'RUN', y = 'newABUNDANCE',
                                             color = type_color, linetype = 'FEATURE')) +
-    #     geom_point(aes(shape = is.na(ABUNDANCE)), size = 3) +
-    # profile_plot <- ggplot(input, aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, linetype = 'FEATURE')) +
-    #     geom_point(aes(shape = ifelse(is.na(ABUNDANCE), "predicted", "ABUNDANCE")), size = 3) +
         facet_grid(~LABEL) +
         geom_line(size = 0.5)
     
-    # do the hollow for summary plot?
     if (is_censored) {
-        print("lengthhhh")
-        print(length(unique(input[[type_color]])))
         profile_plot = profile_plot +
         geom_point(aes_string(x = 'RUN', y = 'newABUNDANCE', color = type_color, shape = 'censored'),
                    data = input,
-                   size = dot.size.profile,show.legend = TRUE) +
+                   size = dot.size.profile) +
         scale_shape_manual(values = c(16, 1),
                            labels = c("Detected data", "Censored missing data"))
-        
-        # profile_plot = profile_plot +
-        #     geom_point(data = input,size = dot.size.profile) +
-        #     aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored') +
-        #     scale_shape_manual(values = c(16, 1),
-        #                        labels = c("Detected data", "Censored missing data"))
         print("IS CENS")
     } else {
         profile_plot = profile_plot +

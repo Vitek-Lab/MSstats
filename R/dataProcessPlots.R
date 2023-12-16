@@ -147,54 +147,36 @@ dataProcessPlots = function(
                            dot.size.profile, width, height, which.Protein, originalPlot, 
                            summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
       plotly_plots = list()
-      print("in porff")
-      print(plots)
       if(isPlotly) {
           og_plotly_plot = NULL
           summ_plotly_plot = NULL
           if(rlang::has_name(plots, "original_plot")) {
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
-                  print(class(plot_i))
-                  print(typeof(plot_i))
-                  print("checlll")
                   og_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
                   og_plotly_plot = .fix.legend.plotly.plots.dataprocess(og_plotly_plot)
+                  og_plotly_plot = .fix.censored.points.legend.profileplots.plotly(og_plotly_plot)
+
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot <- og_plotly_plot %>% style(og_plotly_plot, showlegend = FALSE)
                   }
                   plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
-              # og_plotly_plot <- .convert.ggplot.plotly(plots[["original_plot"]],tips=c("FEATURE","RUN","newABUNDANCE"))
-              # og_plotly_plot = .fix.legend.plotly.plots.dataprocess(og_plotly_plot)
-              # if(toupper(featureName) == "NA") {
-              #     og_plotly_plot <- og_plotly_plot %>% style(og_plotly_plot, showlegend = FALSE)
-              # }
-              # plotly_plot = og_plotly_plot
           }
           if(rlang::has_name(plots, "summary_plot")) {
-              print("in summm")
-              print(length(plots[["summary_plot"]]))
               for(i in seq_along(plots[["summary_plot"]])) {
-                  print("num summ pot")
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
                   summ_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
                   summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
+                  summ_plotly_plot = .fix.censored.points.legend.profileplots.plotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot <- summ_plotly_plot %>% style(summ_plotly_plot, showlegend = FALSE)
                   }
                   plotly_plots = c(plotly_plots, list(summ_plotly_plot))
               }
-              # summ_plotly_plot <- .convert.ggplot.plotly(plot[["summary_plot"]],tips=c("FEATURE","RUN","ABUNDANCE"))
-              # summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
-              # if(toupper(featureName) == "NA") {
-              #     summ_plotly_plot <- summ_plotly_plot %>% style(summ_plotly_plot, showlegend = FALSE)
-              # }
-              # plotly_plot = summ_plotly_plot
           }
           
           if(address != FALSE) {
-              # .save.plotly.plot.html(list(summ_plotly_plot,og_plotly_plot),address,"ProfilePlot" ,width, height)
               .save.plotly.plot.html(plotly_plots,address,"ProfilePlot" ,width, height)
           }
           return(plotly_plots)
@@ -213,11 +195,8 @@ dataProcessPlots = function(
               plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
               plotly_plots = c(plotly_plots, list(plotly_plot))
           }
-            # plotly_plot <- .convert.ggplot.plotly(plot)
-            # plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
             
             if(address != FALSE) {
-                # .save.plotly.plot.html(list(plotly_plot),address,"QCPlot" ,width, height)
                 .save.plotly.plot.html(plotly_plots,address,"QCPlot" ,width, height)
             }
             return(plotly_plots)
@@ -237,11 +216,7 @@ dataProcessPlots = function(
               plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
               plotly_plots = c(plotly_plots, list(plotly_plot))
           }
-          # plotly_plot <- .convert.ggplot.plotly(plot)
-          # plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
-          
           if(address != FALSE) {
-              # .save.plotly.plot.html(list(plotly_plot),address,"ConditionPlot" ,width, height)
               .save.plotly.plot.html(plotly_plots,address,"ConditionPlot" ,width, height)
           }
             return(plotly_plots)
@@ -509,9 +484,6 @@ dataProcessPlots = function(
                           yaxis.name)
     print(qc_plot)
     plots <- c(plots, list(qc_plot))
-    # if(isPlotly) {
-    #     return(qc_plot)
-    # }
   } 
   
   if (protein != 'allonly') {
@@ -537,10 +509,6 @@ dataProcessPlots = function(
       print(qc_plot)
       plots <- c(plots, list(qc_plot))
       setTxtProgressBar(pb, i)
-      
-      # if(isPlotly) {
-      #     return(qc_plot)
-      # }
     } 
     close(pb)
   } 
@@ -679,8 +647,8 @@ dataProcessPlots = function(
     df$legend_group <- gsub("^\\((.*?),.*", "\\1", df$legend_entries)
     df$is_first <- !duplicated(df$legend_group)
     df$is_bool <- ifelse(grepl("TRUE|FALSE", df$legend_group), TRUE, FALSE)
-    df[nrow(df), "is_first"] <- FALSE # remove text legend
-    print(df)
+    # df[nrow(df), "is_first"] <- FALSE 
+    plot$x$data[[nrow(df)]]$showlegend <- FALSE # remove text legend
     for (i in df$id) {
         is_first <- df$is_first[[i]]
         is_bool <- df$is_bool[[i]]
@@ -689,7 +657,31 @@ dataProcessPlots = function(
         if (!is_first) plot$x$data[[i]]$showlegend <- FALSE
         if(is_bool) plot$x$data[[i]]$showlegend <- FALSE
     }
-    # print(plot$x$data)
+    plot
+
+}
+
+.fix.censored.points.legend.profileplots.plotly = function(plot) {
+    df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
+    detected_data = FALSE
+    censored_data = FALSE
+    for (i in df$id) {
+        if(!detected_data && df$legend_entries[[i]] == "FALSE") {
+            plot$x$data[[i]]$name <- "Detected data"
+            plot$x$data[[i]]$showlegend <- TRUE
+            # plot$x$data[[i]]$marker$color <- 'rgba(0,0,0,1)'
+            # plot$x$data[[i]]$marker$line$color <- 'rgba(0,0,0,1)'
+            detected_data = TRUE
+
+        }
+        if(!censored_data && df$legend_entries[[i]] == "TRUE") {
+            plot$x$data[[i]]$name <- "Censored missing data"
+            plot$x$data[[i]]$showlegend <- TRUE
+            # plot$x$data[[i]]$marker$color <- 'rgba(0,0,0,1)'
+            # plot$x$data[[i]]$marker$line$color <- 'rgba(0,0,0,1)'
+            censored_data = TRUE
+        }
+    }
     plot
 }
 
@@ -720,9 +712,8 @@ dataProcessPlots = function(
     plot
 }
 
-.save.plotly.plot.html = function(plots, address, file_name, width, height) {
-    file_name = getFileName(address, file_name, width, height)
-    file_name = paste0(file_name,".html")
+#' @export
+.get.plotly.plot.html = function(plots, width, height) {
     doc <- htmltools::tagList(lapply(plots,function(x) htmltools::div(x, style = "float:left;width:100%;")))
     # Set a specific width for each plot
     plot_width <- 800
@@ -736,5 +727,23 @@ dataProcessPlots = function(
 
     # Combine the divs into a tagList
     doc <- htmltools::tagList(divs)
-    htmltools::save_html(html = doc, file = file_name)
+    doc
+}
+
+#' @export
+.save.plotly.plot.html = function(plots, address, file_name, width, height) {
+    file_name = getFileName(address, file_name, width, height)
+    file_name = paste0(file_name,".html")
+    doc <- .get.plotly.plot.html(plots, width, height)
+    # htmltools::save_html(html = doc, file = file_name) # works but lib same folder
+    
+    x = combine_plotly_plots(plots)
+    
+    htmlwidgets::saveWidget(x,file_name,selfcontained = T) # works with lib diff folder
+    
+}
+
+combine_plotly_plots <- function(plots, width = 800, height = 600, margin = 100) {
+    fig <- plotly::subplot(plots[[1]],plots[[2]], nrows =2,margin = 1) %>% plotly::layout(scene = list(domain = list(x = c(0.5, 1), y = c(0,1))))
+    fig
 }

@@ -4,7 +4,7 @@
 \alias{.makeHeatmap}
 \title{Create heatmap}
 \usage{
-.makeHeatmap(input, my.colors, my.breaks, x.axis.size, y.axis.size)
+.makeHeatmap(input, my.colors, my.breaks, x.axis.size, y.axis.size, height)
 }
 \arguments{
 \item{input}{data.table}
@@ -12,6 +12,8 @@
 \item{x.axis.size}{size of axes labels, e.g. name of the comparisons in heatmap, and in comparison plot. Default is 10.}
 
 \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
+
+\item{height}{height of the saved file. Default is 10.}
 }
 \description{
 Create heatmap

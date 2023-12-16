@@ -139,11 +139,7 @@ groupComparisonPlots = function(
                 plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
                 plotly_plots = c(plotly_plots, list(plotly_plot))
             }
-            # all_plotly_plots <- subplot(plotly_plots, nrows = length(plotly_plots))
-            # plotly_plot <- .convert.ggplot.plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
-            # plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
             if(address != FALSE) {
-                # .save.plotly.plot.html(list(plotly_plot),address,"VolcanoPlot" ,width, height)
                 .save.plotly.plot.html(plotly_plots,address,"VolcanoPlot" ,width, height)
             }
             return(plotly_plots)
@@ -160,9 +156,7 @@ groupComparisonPlots = function(
                 plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
                 plotly_plots = c(plotly_plots, list(plotly_plot))
             }
-            # plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
             if(address != FALSE) {
-                # .save.plotly.plot.html(list(plotly_plot),address,"ComparisonPlot" ,width, height)
                 .save.plotly.plot.html(plotly_plots,address,"ComparisonPlot" ,width, height)
             }
             return(plotly_plots)
@@ -259,7 +253,7 @@ groupComparisonPlots = function(
         return(subplot(heatmap,color.key.plot,nrows=2) %>%
                    plotly::layout(
                        # width = 800,   # Set the width of the chart in pixels
-                       #            height = height,
+                                  # height = 1800,
                                   annotations = list(
                        list(x = 0.5 , y = 1.1, text = "Heatmap", showarrow = FALSE, xref='paper', yref='paper',font = list(
                            size = 18
