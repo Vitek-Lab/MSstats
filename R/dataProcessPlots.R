@@ -735,15 +735,15 @@ dataProcessPlots = function(
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
     doc <- .get.plotly.plot.html(plots, width, height)
-    # htmltools::save_html(html = doc, file = file_name) # works but lib same folder
+    htmltools::save_html(html = doc, file = file_name) # works but lib same folder
     
-    x = combine_plotly_plots(plots)
-    
-    htmlwidgets::saveWidget(x,file_name,selfcontained = T) # works with lib diff folder
+    # x = combine_plotly_plots(plots)
+    # 
+    # htmlwidgets::saveWidget(x,file_name,selfcontained = T) # works with lib diff folder
     
 }
-
-combine_plotly_plots <- function(plots, width = 800, height = 600, margin = 100) {
-    fig <- plotly::subplot(plots[[1]],plots[[2]], nrows =2,margin = 1) %>% plotly::layout(scene = list(domain = list(x = c(0.5, 1), y = c(0,1))))
-    fig
-}
+# 
+# combine_plotly_plots <- function(plots, width = 800, height = 600, margin = 100) {
+#     fig <- plotly::subplot(plots[[1]],plots[[2]], nrows =2,margin = 1) %>% plotly::layout(scene = list(domain = list(x = c(0.5, 1), y = c(0,1))))
+#     fig
+# }
