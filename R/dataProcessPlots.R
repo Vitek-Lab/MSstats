@@ -638,7 +638,7 @@ dataProcessPlots = function(
                     )
                 )
             )
-        )
+        ) 
     return(converted_plot)
 }
 
@@ -736,7 +736,8 @@ dataProcessPlots = function(
     file_name = paste0(file_name,".html")
     doc <- .get.plotly.plot.html(plots, width, height)
     htmltools::save_html(html = doc, file = file_name) # works but lib same folder
-    
+    zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
+    unlink(file_name)
     # x = combine_plotly_plots(plots)
     # 
     # htmlwidgets::saveWidget(x,file_name,selfcontained = T) # works with lib diff folder
