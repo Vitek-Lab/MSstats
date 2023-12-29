@@ -225,17 +225,23 @@ groupComparisonPlots = function(
     numheatmap = totalpro %/% numProtein + 1
     blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
     my.colors.rgb = lapply(blue.red.18, function(x) as.vector(col2rgb(x)))   
-    color.key.plot <- plot_ly(type="image",z=list(my.colors.rgb)) %>%
-        plotly::layout(
-        #     title = list(text="Color Key",y=0.57,font = list(
-        #     size = 22
-        # )),
-                       xaxis = list(dtick = 0, ticktext = as.character(blocks), tickmode="array", tickvals = -0.5:length(blocks),tickangle = 0,
-                                    title="(sign) Adjusted p-value"),
-                       yaxis = list(ticks = "", showticklabels = FALSE)
-                       )%>% 
-        plotly::style(hoverinfo = 'none')
-    ####
+    color.key.plot <- plotly::layout(
+        plot_ly(type = "image", z = list(my.colors.rgb)),
+        xaxis = list(
+            dtick = 0,
+            ticktext = as.character(blocks),
+            tickmode = "array",
+            tickvals = -0.5:length(blocks),
+            tickangle = 0,
+            title = "(sign) Adjusted p-value"
+        ),
+        yaxis = list(
+            ticks = "",
+            showticklabels = FALSE
+        )
+    )
+    
+    color.key.plot <- plotly::style(color.key.plot, hoverinfo = 'none')
     
     if(isPlotly == FALSE) {
         savePlot(address, "Heatmap", width, height)
@@ -252,17 +258,38 @@ groupComparisonPlots = function(
         dev.off()
     }
     if(colorkey) {
-        return(subplot(heatmap,color.key.plot,nrows=2) %>%
-                   plotly::layout(
-                                  annotations = list(
-                       list(x = 0.5 , y = 1.1, text = "Heatmap", showarrow = FALSE, xref='paper', yref='paper',font = list(
-                           size = 18
-                       )),
-                       list(x = 0.5 , y = 0.35, text = "Color Key", showarrow = FALSE, xref='paper', yref='paper',font = list(
-                           size = 18
-                       ))),
-                       margin = list(l = 50, r = 50, b = 50, t = 50)
-                   ))
+        heatmap_and_color_key <- subplot(heatmap, color.key.plot, nrows = 2)
+        
+        heatmap_and_color_key <- plotly::layout(
+            heatmap_and_color_key,
+            annotations = list(
+                list(
+                    x = 0.5,
+                    y = 1.1,
+                    text = "Heatmap",
+                    showarrow = FALSE,
+                    xref = 'paper',
+                    yref = 'paper',
+                    font = list(
+                        size = 18
+                    )
+                ),
+                list(
+                    x = 0.5,
+                    y = 0.35,
+                    text = "Color Key",
+                    showarrow = FALSE,
+                    xref = 'paper',
+                    yref = 'paper',
+                    font = list(
+                        size = 18
+                    )
+                )
+            ),
+            margin = list(l = 50, r = 50, b = 50, t = 50)
+        )
+        
+        return(heatmap_and_color_key)
     }
     return(heatmap)
 } 

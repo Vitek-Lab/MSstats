@@ -87,7 +87,6 @@
 #' @import ggplot2
 #' @importFrom graphics axis image legend mtext par plot.new title plot
 #' @importFrom grDevices dev.off hcl pdf
-#' @importFrom magrittr %>%
 #' @importFrom plotly ggplotly style add_trace plot_ly subplot
 #' 
 #' 
@@ -158,7 +157,7 @@ dataProcessPlots = function(
                   og_plotly_plot = .fix.censored.points.legend.profileplots.plotly(og_plotly_plot)
 
                   if(toupper(featureName) == "NA") {
-                      og_plotly_plot <- og_plotly_plot %>% style(og_plotly_plot, showlegend = FALSE)
+                      og_plotly_plot <- style(og_plotly_plot, showlegend = FALSE)
                   }
                   plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
@@ -170,7 +169,7 @@ dataProcessPlots = function(
                   summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fix.censored.points.legend.profileplots.plotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
-                      summ_plotly_plot <- summ_plotly_plot %>% style(summ_plotly_plot, showlegend = FALSE)
+                      summ_plotly_plot <- style(summ_plotly_plot, showlegend = FALSE)
                   }
                   plotly_plots = c(plotly_plots, list(summ_plotly_plot))
               }
@@ -611,8 +610,8 @@ dataProcessPlots = function(
 #' @noRd
 .convert.ggplot.plotly = function(plot, tips = "all") {
     converted_plot <- ggplotly(plot,tooltip = tips)
-    converted_plot <- converted_plot %>% 
-        plotly::layout(
+    converted_plot <- plotly::layout(
+            converted_plot,
             width = 800,   # Set the width of the chart in pixels
             height = 600,  # Set the height of the chart in pixels
             title = list(
@@ -708,7 +707,7 @@ dataProcessPlots = function(
         plot$x$data[[i]]$name <- df$legend_group[[i]]
         plot$x$data[[i]]$legendgroup <- plot$x$data[[i]]$name
     }
-    plot <- plot %>% plotly::layout(legend=list(title=list(text="")))
+    plot <- plotly::layout(plot,legend=list(title=list(text="")))
     plot
 }
 

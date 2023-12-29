@@ -90,22 +90,24 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     )
     
     heatmap_plot = plot_ly(z = as.matrix(input),
-            zmin=x[1],
-            zmax=x[length(x)],
-            x = colnames(input),
-            xgap = 0,
-            y = rownames(input),
-            ygap = 0,
-            type = "heatmap",
-            hoverinfo="x+y+z",
-            showlegend=FALSE, showscale=FALSE,
-            colorscale = colorScale,
-            colorbar=list(ypad = 520, tick0=x[1], dtick=dltx,len=1,orientation="h"), width=800
-            ) %>%
-        plotly::layout(xaxis = label_formatter, 
-               plot_bgcolor  = "grey",
-               height=height 
-        )
+                           zmin = x[1],
+                           zmax = x[length(x)],
+                           x = colnames(input),
+                           xgap = 0,
+                           y = rownames(input),
+                           ygap = 0,
+                           type = "heatmap",
+                           hoverinfo = "x+y+z",
+                           showlegend = FALSE, 
+                           showscale = FALSE,
+                           colorscale = colorScale,
+                           colorbar = list(ypad = 520, tick0 = x[1], dtick = dltx, len = 1, orientation = "h"), 
+                           width = 800)
+    
+    heatmap_plot <- plotly::layout(heatmap_plot, 
+                                   xaxis = label_formatter, 
+                                   plot_bgcolor = "grey",
+                                   height = height)
     print(heatmap_plot)
     heatmap_plot
 }
