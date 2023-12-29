@@ -116,14 +116,14 @@ groupComparisonPlots = function(
     }
     
     if (type == "HEATMAP") { 
-        plot <- .plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
+        plotly_plot <- .plotHeatmap(input, logBase.pvalue, ylimUp, FCcutoff, sig, clustering, 
                      numProtein, colorkey, width, height, log_base_FC,
                      x.axis.size, y.axis.size, address, isPlotly)
         if(isPlotly) {
-            plotly_plot <- .convert.ggplot.plotly(plot)
             if(address != FALSE) {
                 .save.plotly.plot.html(list(plotly_plot),address,"Heatmap" ,width, height)
             }
+            # print($x$layout$height)
             return(plotly_plot)
         }
     }
@@ -237,7 +237,9 @@ groupComparisonPlots = function(
         plotly::style(hoverinfo = 'none')
     ####
     
-    savePlot(address, "Heatmap", width, height)
+    if(isPlotly == FALSE) {
+        savePlot(address, "Heatmap", width, height)
+    }
     for (j in seq_len(numheatmap)) {
         if (j != numheatmap) {
             partial_wide = wide[((j - 1) * numProtein + 1):(j * numProtein), ]
@@ -252,8 +254,6 @@ groupComparisonPlots = function(
     if(colorkey) {
         return(subplot(heatmap,color.key.plot,nrows=2) %>%
                    plotly::layout(
-                       # width = 800,   # Set the width of the chart in pixels
-                                  # height = 1800,
                                   annotations = list(
                        list(x = 0.5 , y = 1.1, text = "Heatmap", showarrow = FALSE, xref='paper', yref='paper',font = list(
                            size = 18
@@ -261,7 +261,7 @@ groupComparisonPlots = function(
                        list(x = 0.5 , y = 0.35, text = "Color Key", showarrow = FALSE, xref='paper', yref='paper',font = list(
                            size = 18
                        ))),
-                       margin = list(l = 50, r = 50, b = 50, t = 100)
+                       margin = list(l = 50, r = 50, b = 50, t = 50)
                    ))
     }
     return(heatmap)

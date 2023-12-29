@@ -97,12 +97,14 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
             y = rownames(input),
             ygap = 0,
             type = "heatmap",
+            hoverinfo="x+y+z",
             showlegend=FALSE, showscale=FALSE,
             colorscale = colorScale,
-            colorbar=list(ypad = 520, tick0=x[1], dtick=dltx,len=1,orientation="h")
+            colorbar=list(ypad = 520, tick0=x[1], dtick=dltx,len=1,orientation="h"), width=800
             ) %>%
         plotly::layout(xaxis = label_formatter, 
-               plot_bgcolor  = "grey"
+               plot_bgcolor  = "grey",
+               height=height 
         )
     print(heatmap_plot)
     heatmap_plot
