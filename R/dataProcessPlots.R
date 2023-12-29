@@ -149,7 +149,7 @@ dataProcessPlots = function(
       if(isPlotly) {
           og_plotly_plot = NULL
           summ_plotly_plot = NULL
-          if(rlang::has_name(plots, "original_plot")) {
+          if("original_plot" %in% names(plots)) {
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
                   og_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
@@ -162,7 +162,7 @@ dataProcessPlots = function(
                   plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
           }
-          if(rlang::has_name(plots, "summary_plot")) {
+          if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
                   summ_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
