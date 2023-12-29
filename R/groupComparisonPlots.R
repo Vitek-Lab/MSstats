@@ -123,7 +123,6 @@ groupComparisonPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(list(plotly_plot),address,"Heatmap" ,width, height)
             }
-            # print($x$layout$height)
             return(plotly_plot)
         }
     }

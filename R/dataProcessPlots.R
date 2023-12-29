@@ -316,7 +316,6 @@ dataProcessPlots = function(
     }
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
     for (i in seq_along(all_proteins)) {
-        print("how many forrr")
       single_protein = .getSingleProteinForProfile(processed, all_proteins, i)
       if (all(is.na(single_protein$ABUNDANCE))) {
         next()
@@ -393,7 +392,6 @@ dataProcessPlots = function(
       quant$analysis = "Run summary"
       quant$newABUNDANCE = quant$ABUNDANCE
       single_protein$analysis = "Processed feature-level data"
-      print(colnames(single_protein))
       combined = rbind(single_protein[
         , 
         list(PROTEIN, PEPTIDE, TRANSITION, FEATURE, LABEL,
@@ -401,7 +399,6 @@ dataProcessPlots = function(
       combined$analysis = factor(combined$analysis)
       combined$FEATURE = factor(combined$FEATURE)
       combined$RUN = as.numeric(combined$RUN)
-      print(colnames(combined))
       profile_plot = .makeSummaryProfilePlot(
         combined, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
@@ -547,7 +544,6 @@ dataProcessPlots = function(
   plots <- list()
   pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
   for (i in seq_along(all_proteins)) {
-      print("how many??")
     single_protein = summarized[PROTEIN == all_proteins[i], ]
     single_protein = na.omit(single_protein)
     single_protein[, GROUP := factor(GROUP)]
@@ -732,7 +728,6 @@ dataProcessPlots = function(
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
     doc <- .getPlotlyPlotHTML(plots, width, height)
-    print(typeof(doc))
     htmltools::save_html(html = doc, file = file_name) # works but lib same folder
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
     unlink(file_name)

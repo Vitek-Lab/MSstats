@@ -49,8 +49,6 @@
         input$is_censored = factor(input$is_censored, 
                                    levels = c("FALSE", "TRUE"))
     }
-    print(input)
-    print(unique(input$predicted))
     write.csv(input, file = "your_file_name.csv", row.names = T)
     featureName = toupper(featureName)
     if (featureName == "TRANSITION") {
@@ -71,12 +69,10 @@
                    size = dot.size.profile) +
         scale_shape_manual(values = c(16, 1),
                            labels = c("Detected data", "Censored missing data"))
-        print("IS CENS")
     } else {
         profile_plot = profile_plot +
             geom_point(size = dot.size.profile) +
             scale_shape_manual(values = c(16))
-        print("IS NOT CENS")
     }
     
     
@@ -157,7 +153,6 @@
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
     yaxis.name, lineNameAxis, groupNametemp
 ) {
-    print(input)
     write.csv(input, file = "your_file_name_summ.csv", row.names = T)
     RUN = ABUNDANCE = Name = NULL
     
