@@ -49,7 +49,6 @@
         input$is_censored = factor(input$is_censored, 
                                    levels = c("FALSE", "TRUE"))
     }
-    write.csv(input, file = "your_file_name.csv", row.names = T)
     featureName = toupper(featureName)
     if (featureName == "TRANSITION") {
         type_color = "FEATURE"
@@ -153,7 +152,6 @@
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
     yaxis.name, lineNameAxis, groupNametemp
 ) {
-    write.csv(input, file = "your_file_name_summ.csv", row.names = T)
     RUN = ABUNDANCE = Name = NULL
     
     num_features = data.table::uniqueN(input$FEATURE)
