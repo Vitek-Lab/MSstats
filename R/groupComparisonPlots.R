@@ -135,8 +135,8 @@ groupComparisonPlots = function(
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
-                plotly_plot <- .convert.ggplot.plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
-                plotly_plot <- .fix.legend.plotly.plots.volcano(plotly_plot)
+                plotly_plot <- .convertGgplot2Plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
+                plotly_plot <- .fixLegendPlotlyPlotsVolcano(plotly_plot)
                 plotly_plots = c(plotly_plots, list(plotly_plot))
             }
             if(address != FALSE) {
@@ -153,7 +153,7 @@ groupComparisonPlots = function(
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
-                plotly_plot <- .convert.ggplot.plotly(plot,tips=c("logFC"))
+                plotly_plot <- .convertGgplot2Plotly(plot,tips=c("logFC"))
                 plotly_plots = c(plotly_plots, list(plotly_plot))
             }
             if(address != FALSE) {

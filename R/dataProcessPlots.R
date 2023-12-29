@@ -152,9 +152,9 @@ dataProcessPlots = function(
           if("original_plot" %in% names(plots)) {
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
-                  og_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
-                  og_plotly_plot = .fix.legend.plotly.plots.dataprocess(og_plotly_plot)
-                  og_plotly_plot = .fix.censored.points.legend.profileplots.plotly(og_plotly_plot)
+                  og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
+                  og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
 
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot <- style(og_plotly_plot, showlegend = FALSE)
@@ -165,9 +165,9 @@ dataProcessPlots = function(
           if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
-                  summ_plotly_plot <- .convert.ggplot.plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
-                  summ_plotly_plot = .fix.legend.plotly.plots.dataprocess(summ_plotly_plot)
-                  summ_plotly_plot = .fix.censored.points.legend.profileplots.plotly(summ_plotly_plot)
+                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
+                  summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
+                  summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot <- style(summ_plotly_plot, showlegend = FALSE)
                   }
@@ -190,8 +190,8 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convert.ggplot.plotly(plot)
-              plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+              plotly_plot <- .convertGgplot2Plotly(plot)
+              plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
               plotly_plots = c(plotly_plots, list(plotly_plot))
           }
             
@@ -211,8 +211,8 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convert.ggplot.plotly(plot)
-              plotly_plot = .fix.legend.plotly.plots.dataprocess(plotly_plot)
+              plotly_plot <- .convertGgplot2Plotly(plot)
+              plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
               plotly_plots = c(plotly_plots, list(plotly_plot))
           }
           if(address != FALSE) {
@@ -608,7 +608,7 @@ dataProcessPlots = function(
 
 #' converter for plots from ggplot to plotly
 #' @noRd
-.convert.ggplot.plotly = function(plot, tips = "all") {
+.convertGgplot2Plotly = function(plot, tips = "all") {
     converted_plot <- ggplotly(plot,tooltip = tips)
     converted_plot <- plotly::layout(
             converted_plot,
@@ -641,7 +641,7 @@ dataProcessPlots = function(
     return(converted_plot)
 }
 
-.fix.legend.plotly.plots.dataprocess = function(plot) {
+.fixLegendPlotlyPlotsDataprocess = function(plot) {
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
     df$legend_group <- gsub("^\\((.*?),.*", "\\1", df$legend_entries)
     df$is_first <- !duplicated(df$legend_group)
@@ -660,7 +660,7 @@ dataProcessPlots = function(
 
 }
 
-.fix.censored.points.legend.profileplots.plotly = function(plot) {
+.fixCensoredPointsLegendProfilePlotsPlotly = function(plot) {
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
     detected_data = FALSE
     censored_data = FALSE
@@ -684,7 +684,7 @@ dataProcessPlots = function(
     plot
 }
 
-.fix.legend.plotly.plots.volcano = function(plot) {
+.fixLegendPlotlyPlotsVolcano = function(plot) {
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
     # Create a mapping
     color_mapping <- c("black" = "No regulation", "red" = "Up-regulated", "blue" = "Down-regulated")
