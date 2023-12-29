@@ -126,7 +126,6 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     legend.size, log_adjp
 ) {
     Protein = NULL
-    print(input)
     plot = ggplot(aes_string(x = "logFC", 
                              y = log_adjp,
                              color = "colgroup",
