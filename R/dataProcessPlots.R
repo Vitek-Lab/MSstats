@@ -177,7 +177,7 @@ dataProcessPlots = function(
           }
           
           if(address != FALSE) {
-              .save.plotly.plot.html(plotly_plots,address,"ProfilePlot" ,width, height)
+              .savePlotlyPlotHTML(plotly_plots,address,"ProfilePlot" ,width, height)
           }
           return(plotly_plots)
       }
@@ -197,7 +197,7 @@ dataProcessPlots = function(
           }
             
             if(address != FALSE) {
-                .save.plotly.plot.html(plotly_plots,address,"QCPlot" ,width, height)
+                .savePlotlyPlotHTML(plotly_plots,address,"QCPlot" ,width, height)
             }
             return(plotly_plots)
       }
@@ -217,7 +217,7 @@ dataProcessPlots = function(
               plotly_plots = c(plotly_plots, list(plotly_plot))
           }
           if(address != FALSE) {
-              .save.plotly.plot.html(plotly_plots,address,"ConditionPlot" ,width, height)
+              .savePlotlyPlotHTML(plotly_plots,address,"ConditionPlot" ,width, height)
           }
             return(plotly_plots)
       }
@@ -712,8 +712,7 @@ dataProcessPlots = function(
     plot
 }
 
-#' @export
-.get.plotly.plot.html = function(plots, width, height) {
+.getPlotlyPlotHTML = function(plots, width, height) {
     doc <- htmltools::tagList(lapply(plots,function(x) htmltools::div(x, style = "float:left;width:100%;")))
     # Set a specific width for each plot
     plot_width <- 800
@@ -730,11 +729,10 @@ dataProcessPlots = function(
     doc
 }
 
-#' @export
-.save.plotly.plot.html = function(plots, address, file_name, width, height) {
+.savePlotlyPlotHTML = function(plots, address, file_name, width, height) {
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
-    doc <- .get.plotly.plot.html(plots, width, height)
+    doc <- .getPlotlyPlotHTML(plots, width, height)
     print(typeof(doc))
     htmltools::save_html(html = doc, file = file_name) # works but lib same folder
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))

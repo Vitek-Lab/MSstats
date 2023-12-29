@@ -121,7 +121,7 @@ groupComparisonPlots = function(
                      x.axis.size, y.axis.size, address, isPlotly)
         if(isPlotly) {
             if(address != FALSE) {
-                .save.plotly.plot.html(list(plotly_plot),address,"Heatmap" ,width, height)
+                .savePlotlyPlotHTML(list(plotly_plot),address,"Heatmap" ,width, height)
             }
             # print($x$layout$height)
             return(plotly_plot)
@@ -140,7 +140,7 @@ groupComparisonPlots = function(
                 plotly_plots = c(plotly_plots, list(plotly_plot))
             }
             if(address != FALSE) {
-                .save.plotly.plot.html(plotly_plots,address,"VolcanoPlot" ,width, height)
+                .savePlotlyPlotHTML(plotly_plots,address,"VolcanoPlot" ,width, height)
             }
             return(plotly_plots)
         }
@@ -157,7 +157,7 @@ groupComparisonPlots = function(
                 plotly_plots = c(plotly_plots, list(plotly_plot))
             }
             if(address != FALSE) {
-                .save.plotly.plot.html(plotly_plots,address,"ComparisonPlot" ,width, height)
+                .savePlotlyPlotHTML(plotly_plots,address,"ComparisonPlot" ,width, height)
             }
             return(plotly_plots)
         }
