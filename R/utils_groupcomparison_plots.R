@@ -226,7 +226,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     logFC = ciw = NULL
     
     protein = unique(input$Protein)
-    plot = ggplot(input, aes_string(x = 'Label', y = 'logFC')) +
+    plot = ggplot(input, aes_string(x = "Label", y = "logFC")) +
         geom_errorbar(aes(ymax = logFC + ciw, ymin = logFC - ciw),
                       data = input,
                       width = 0.1,

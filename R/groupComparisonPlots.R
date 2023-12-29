@@ -241,7 +241,7 @@ groupComparisonPlots = function(
         )
     )
     
-    color.key.plot <- plotly::style(color.key.plot, hoverinfo = 'none')
+    color.key.plot <- plotly::style(color.key.plot, hoverinfo = "none")
     
     if(isPlotly == FALSE) {
         savePlot(address, "Heatmap", width, height)
@@ -268,8 +268,8 @@ groupComparisonPlots = function(
                     y = 1.1,
                     text = "Heatmap",
                     showarrow = FALSE,
-                    xref = 'paper',
-                    yref = 'paper',
+                    xref = "paper",
+                    yref = "paper",
                     font = list(
                         size = 18
                     )
@@ -279,8 +279,8 @@ groupComparisonPlots = function(
                     y = 0.35,
                     text = "Color Key",
                     showarrow = FALSE,
-                    xref = 'paper',
-                    yref = 'paper',
+                    xref = "paper",
+                    yref = "paper",
                     font = list(
                         size = 18
                     )
@@ -312,7 +312,7 @@ groupComparisonPlots = function(
     data.table::setnames(input, colname_log_fc, c("logFC"))
     
     if (address == FALSE) {
-        if (which.Comparison == 'all') {
+        if (which.Comparison == "all") {
             if (length(unique(input$Label)) > 1) {
                 stop('** Cannnot generate all volcano plots in a screen. Please set one comparison at a time.')
             }

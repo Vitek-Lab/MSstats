@@ -59,14 +59,14 @@
         type_color = "PEPTIDE"
     }
     
-    profile_plot = ggplot(input, aes_string(x = 'RUN', y = 'newABUNDANCE',
-                                            color = type_color, linetype = 'FEATURE')) +
+    profile_plot = ggplot(input, aes_string(x = "RUN", y = "newABUNDANCE",
+                                            color = type_color, linetype = "FEATURE")) +
         facet_grid(~LABEL) +
         geom_line(size = 0.5)
     
     if (is_censored) {
         profile_plot = profile_plot +
-        geom_point(aes_string(x = 'RUN', y = 'newABUNDANCE', color = type_color, shape = 'censored'),
+        geom_point(aes_string(x = "RUN", y = "newABUNDANCE", color = type_color, shape = "censored"),
                    data = input,
                    size = dot.size.profile) +
         scale_shape_manual(values = c(16, 1),

@@ -485,7 +485,7 @@ dataProcessPlots = function(
     plots <- c(plots, list(qc_plot))
   } 
   
-  if (protein != 'allonly') {
+  if (protein != "allonly") {
     all_proteins = as.character(levels(processed$PROTEIN))
     
     if (protein != "all") {
@@ -668,16 +668,16 @@ dataProcessPlots = function(
         if(!detected_data && df$legend_entries[[i]] == "FALSE") {
             plot$x$data[[i]]$name <- "Detected data"
             plot$x$data[[i]]$showlegend <- TRUE
-            # plot$x$data[[i]]$marker$color <- 'rgba(0,0,0,1)'
-            # plot$x$data[[i]]$marker$line$color <- 'rgba(0,0,0,1)'
+            # plot$x$data[[i]]$marker$color <- "rgba(0,0,0,1)"
+            # plot$x$data[[i]]$marker$line$color <- "rgba(0,0,0,1)"
             detected_data = TRUE
 
         }
         if(!censored_data && df$legend_entries[[i]] == "TRUE") {
             plot$x$data[[i]]$name <- "Censored missing data"
             plot$x$data[[i]]$showlegend <- TRUE
-            # plot$x$data[[i]]$marker$color <- 'rgba(0,0,0,1)'
-            # plot$x$data[[i]]$marker$line$color <- 'rgba(0,0,0,1)'
+            # plot$x$data[[i]]$marker$color <- "rgba(0,0,0,1)"
+            # plot$x$data[[i]]$marker$line$color <- "rgba(0,0,0,1)"
             censored_data = TRUE
         }
     }
