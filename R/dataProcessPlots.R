@@ -311,7 +311,7 @@ dataProcessPlots = function(
   output_plots[["summary_plot"]] = list()
   all_proteins = levels(processed$PROTEIN)
   if (originalPlot) {
-    if(isPlotly == FALSE) {
+    if(!isPlotly) {
         savePlot(address, "ProfilePlot", width, height)
     }
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
@@ -350,7 +350,7 @@ dataProcessPlots = function(
     
     close(pb)
     
-    if (address != FALSE & isPlotly == FALSE) {
+    if (address != FALSE & !isPlotly) {
       dev.off()
     } 
   }
@@ -360,7 +360,7 @@ dataProcessPlots = function(
                                  RUN = unique(summarized$RUN))
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
-    if(isPlotly == FALSE) {
+    if(!isPlotly) {
         savePlot(address, "ProfilePlot_wSummarization", width, height)
     }
     pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
@@ -411,7 +411,7 @@ dataProcessPlots = function(
     }
     close(pb)
     
-    if (address != FALSE & isPlotly == FALSE) {
+    if (address != FALSE & !isPlotly) {
       dev.off()
     } 
   }
@@ -469,7 +469,7 @@ dataProcessPlots = function(
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
                          ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
                          Name = levels(tempGroupName$GROUP))
-  if (isPlotly == FALSE) {
+  if (!isPlotly) {
       savePlot(address, "QCPlot", width, height)
   }
   plots <- list()
@@ -538,7 +538,7 @@ dataProcessPlots = function(
   yaxis.name = .getYaxis(processed)
   
   results = vector("list", length(all_proteins))
-  if(isPlotly == FALSE) {
+  if(!isPlotly) {
       savePlot(address, "ConditionPlot", width, height)
   }
   plots <- list()
@@ -583,7 +583,7 @@ dataProcessPlots = function(
   }
   close(pb)
   
-  if (address != FALSE & isPlotly == FALSE) {
+  if (address != FALSE & !isPlotly) {
     dev.off()
   }
   

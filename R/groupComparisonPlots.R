@@ -183,7 +183,7 @@ groupComparisonPlots = function(
         stop("At least two comparisons are needed for heatmaps.")
     }
     
-    if(isPlotly == FALSE) {
+    if(!isPlotly) {
         stop("Heatmap is only available using Plotly for now, set isPlotly = T to get the results")
     }
     
@@ -242,7 +242,7 @@ groupComparisonPlots = function(
     
     color.key.plot <- plotly::style(color.key.plot, hoverinfo = "none")
     
-    if(isPlotly == FALSE) {
+    if(!isPlotly) {
         savePlot(address, "Heatmap", width, height)
     }
     for (j in seq_len(numheatmap)) {
@@ -340,7 +340,7 @@ groupComparisonPlots = function(
     input[, Protein := as.character(Protein)]
     input[!is.na(issue) & issue == "oneConditionMissing", 
           Protein := paste0("*", Protein)]
-    if(isPlotly == FALSE) {
+    if(!isPlotly) {
         savePlot(address, "VolcanoPlot", width, height)
     }
     plots <- list()
@@ -404,7 +404,7 @@ groupComparisonPlots = function(
     
     all_proteins = unique(input$Protein)
     input$Protein = factor(input$Protein)
-    if(isPlotly == FALSE) {
+    if(!isPlotly) {
         savePlot(address, "ComparisonPlot", width, height)
     }
     plots <- list()
