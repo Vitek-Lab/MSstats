@@ -178,11 +178,11 @@ dataProcessPlots = function(
           if(address != FALSE) {
               .savePlotlyPlotHTML(plotly_plots,address,"ProfilePlot" ,width, height)
           }
-          return(plotly_plots)
+          plotly_plots
       }
   }
     
-  if (type == "QCPLOT") {
+  else if (type == "QCPLOT") {
       plots <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
                       text.size, text.angle, legend.size, dot.size.profile, width, height,
                       which.Protein, address, isPlotly)
@@ -198,11 +198,11 @@ dataProcessPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"QCPlot" ,width, height)
             }
-            return(plotly_plots)
+        plotly_plots
       }
   }
     
-  if (type == "CONDITIONPLOT") {
+  else if (type == "CONDITIONPLOT") {
       plots <- .plotCondition(processed, summarized, ylimUp, ylimDown, scale, interval,
                              x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                              dot.size.profile, dot.size.condition, width, height,
@@ -218,7 +218,7 @@ dataProcessPlots = function(
           if(address != FALSE) {
               .savePlotlyPlotHTML(plotly_plots,address,"ConditionPlot" ,width, height)
           }
-            return(plotly_plots)
+        plotly_plots
       }
   }
 }
@@ -416,7 +416,7 @@ dataProcessPlots = function(
     } 
   }
   if(isPlotly) {
-      return(output_plots)
+      output_plots
   }
   
 }
@@ -508,11 +508,11 @@ dataProcessPlots = function(
     } 
     close(pb)
   } 
-  if (isPlotly) {
-      return(plots)
-  }
   if (address != FALSE) {
     dev.off()
+  }
+  if (isPlotly) {
+      plots
   }
 } 
 
@@ -598,7 +598,7 @@ dataProcessPlots = function(
     .saveTable(result, address, "ConditionPlot_value")
   }
   if (isPlotly) {
-      return(plots)
+      plots
   }
 }
 
@@ -634,7 +634,7 @@ dataProcessPlots = function(
                 )
             )
         ) 
-    return(converted_plot)
+    converted_plot
 }
 
 .fixLegendPlotlyPlotsDataprocess = function(plot) {

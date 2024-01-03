@@ -123,10 +123,10 @@ groupComparisonPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(list(plotly_plot),address,"Heatmap" ,width, height)
             }
-            return(plotly_plot)
+            plotly_plot
         }
     }
-    if (type == "VOLCANOPLOT") {
+    else if (type == "VOLCANOPLOT") {
         plots <- .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
                      ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
                      text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly)
@@ -141,10 +141,10 @@ groupComparisonPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"VolcanoPlot" ,width, height)
             }
-            return(plotly_plots)
+            plotly_plots
         }
     }
-    if (type == "COMPARISONPLOT") {
+    else if (type == "COMPARISONPLOT") {
         plots <- .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
                         ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
                         log_base_FC, isPlotly)
@@ -158,7 +158,7 @@ groupComparisonPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"ComparisonPlot" ,width, height)
             }
-            return(plotly_plots)
+            plotly_plots
         }
     }
 }
@@ -287,10 +287,11 @@ groupComparisonPlots = function(
             ),
             margin = list(l = 50, r = 50, b = 50, t = 50)
         )
-        
-        return(heatmap_and_color_key)
+        heatmap_and_color_key
     }
-    return(heatmap)
+    else {
+        heatmap
+    }
 } 
 
 
@@ -370,11 +371,11 @@ groupComparisonPlots = function(
         print(plot)
         plots <- c(plots, list(plot))
     }
-    if (isPlotly) {
-        return(plots)
-    }
     if (address != FALSE) {
         dev.off()
+    }
+    if (isPlotly) {
+        plots
     }
 }
 
@@ -424,10 +425,10 @@ groupComparisonPlots = function(
         print(plot)
         plots <- c(plots, list(plot))
     }
-    if (isPlotly) {
-        return(plots)
-    }
     if (address != FALSE) {
         dev.off()
+    }
+    if (isPlotly) {
+        plots
     }
 }
