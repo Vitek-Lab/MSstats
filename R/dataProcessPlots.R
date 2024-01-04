@@ -715,7 +715,6 @@ dataProcessPlots = function(
 
     # Create a div for each plot with style settings
     divs <- lapply(plots, function(x) {
-        # htmltools::div(x, style = paste0("width:", plot_width, "; display:inline-block;"))
         htmltools::div(x, style = paste0("width:", plot_width, "px; height:", plot_height, "px; margin: 10px;"))
     })
 
@@ -727,8 +726,10 @@ dataProcessPlots = function(
 .savePlotlyPlotHTML = function(plots, address, file_name, width, height) {
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
+    print(file_name)
     doc <- .getPlotlyPlotHTML(plots, width, height)
     htmltools::save_html(html = doc, file = file_name) # works but lib same folder
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
     unlink(file_name)
+    unlink("lib",recursive = T)
 }
