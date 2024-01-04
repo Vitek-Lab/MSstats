@@ -113,7 +113,7 @@ dataProcessPlots = function(
   data, type, featureName = "Transition", ylimUp = FALSE, ylimDown = FALSE,
   scale = FALSE, interval = "CI", x.axis.size = 10, y.axis.size = 10,
   text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
-  dot.size.condition = 3, width = 10, height = 10, which.Protein = "all",
+  dot.size.condition = 3, width = 800, height = 600, which.Protein = "all",
   originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
   remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE
 ) {

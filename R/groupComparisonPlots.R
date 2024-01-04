@@ -93,7 +93,7 @@ groupComparisonPlots = function(
     ylimDown = FALSE, xlimUp = FALSE, x.axis.size = 10, y.axis.size = 10, 
     dot.size = 3, text.size = 4, text.angle = 0, legend.size = 13, 
     ProteinName = TRUE, colorkey = TRUE, numProtein = 100, clustering = "both", 
-    width = 10, height = 10, which.Comparison = "all", which.Protein = "all",
+    width = 800, height = 600, which.Comparison = "all", which.Protein = "all",
     address = "", isPlotly=FALSE
 ) {
     Label = Protein = NULL

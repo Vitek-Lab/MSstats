@@ -89,6 +89,19 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
         col=rep(cols,each=2)
     )
     
+    # Creating the custom hover text matrix
+    row_names <- rownames(input)
+    col_names <- colnames(input)
+    hover_text_matrix <- matrix("", nrow = nrow(input), ncol = ncol(input))
+    for (i in 1:nrow(input)) {
+        for (j in 1:ncol(input)) {
+            hover_text_matrix[i, j] <- sprintf("Comparison: %s<br>Protein: %s<br>Value: %.2f", 
+                                               col_names[j], 
+                                               row_names[i], 
+                                               input[i, j])
+        }
+    }
+    
     heatmap_plot = plot_ly(z = as.matrix(input),
                            zmin = x[1],
                            zmax = x[length(x)],
@@ -97,7 +110,8 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
                            y = rownames(input),
                            ygap = 0,
                            type = "heatmap",
-                           hoverinfo = "x+y+z",
+                           hoverinfo = "text",
+                           text=hover_text_matrix,
                            showlegend = FALSE, 
                            showscale = FALSE,
                            colorscale = colorScale,
