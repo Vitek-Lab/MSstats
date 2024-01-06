@@ -207,6 +207,9 @@ dataProcessPlots = function(
                              x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                              dot.size.profile, dot.size.condition, width, height,
                              which.Protein, save_condition_plot_result, address, isPlotly)
+      print(length(plots))
+      print("+++")
+      print(plots)
       plotly_plots <- list()
       if(isPlotly) {
           for(i in seq_along(plots)) {
@@ -542,8 +545,10 @@ dataProcessPlots = function(
       savePlot(address, "ConditionPlot", width, height)
   }
   plots <- list()
+  # plots <- vector("list", length(all_proteins))
   pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
   for (i in seq_along(all_proteins)) {
+    print("imm for")
     single_protein = summarized[PROTEIN == all_proteins[i], ]
     single_protein = na.omit(single_protein)
     single_protein[, GROUP := factor(GROUP)]
@@ -551,7 +556,7 @@ dataProcessPlots = function(
     if (all(is.na(single_protein$ABUNDANCE))) {
       next()
     }
-    
+    print("after next")
     sp_all = single_protein[, list(Mean = mean(ABUNDANCE, na.rm = TRUE),
                                    SD = sd(ABUNDANCE, na.rm = TRUE),
                                    numMeasurement = .N),
@@ -578,7 +583,9 @@ dataProcessPlots = function(
                                   text.size, text.angle, legend.size, 
                                   dot.size.condition, yaxis.name)
     print(con_plot)
+    print("near plot")
     plots <- c(plots, list(con_plot))
+    # plots[[i]] = con_plot
     setTxtProgressBar(pb, i)
   }
   close(pb)

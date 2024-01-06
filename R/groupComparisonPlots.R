@@ -130,13 +130,13 @@ groupComparisonPlots = function(
         plots <- .plotVolcano(input, which.Comparison, address, width, height, logBase.pvalue,
                      ylimUp, ylimDown, FCcutoff, sig, xlimUp, ProteinName, dot.size,
                      text.size, legend.size, x.axis.size, y.axis.size, log_base_FC, isPlotly)
-        plotly_plots <- list()
+        plotly_plots <- vector("list", length(plots))
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
                 plotly_plot <- .convertGgplot2Plotly(plot,tips=c("Protein","logFC","log10adjp","log2adjp"))
                 plotly_plot <- .fixLegendPlotlyPlotsVolcano(plotly_plot)
-                plotly_plots = c(plotly_plots, list(plotly_plot))
+                plotly_plots[[i]] = list(plotly_plot)
             }
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"VolcanoPlot" ,width, height)
@@ -148,12 +148,14 @@ groupComparisonPlots = function(
         plots <- .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
                         ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
                         log_base_FC, isPlotly)
-        plotly_plots <- list()
+        # plotly_plots <- list()
+        plotly_plots <- vector("list", length(plots))
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
                 plotly_plot <- .convertGgplot2Plotly(plot,tips=c("logFC"))
-                plotly_plots = c(plotly_plots, list(plotly_plot))
+                # plotly_plots = c(plotly_plots, list(plotly_plot))
+                plotly_plots[[i]] = list(plotly_plot)
             }
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"ComparisonPlot" ,width, height)
@@ -344,7 +346,7 @@ groupComparisonPlots = function(
     if(!isPlotly) {
         savePlot(address, "VolcanoPlot", width, height)
     }
-    plots <- list()
+    plots <- vector("list", length(all_labels))
     for (i in seq_along(all_labels)) {
         label_name = all_labels[i]
         single_label = input[Label == label_name, ]
@@ -369,7 +371,7 @@ groupComparisonPlots = function(
                             y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
                             legend.size, log_adjp)
         print(plot)
-        plots <- c(plots, list(plot))
+        plots[[i]] = plot
     }
     if (address != FALSE) {
         dev.off()
@@ -408,7 +410,7 @@ groupComparisonPlots = function(
     if(!isPlotly) {
         savePlot(address, "ComparisonPlot", width, height)
     }
-    plots <- list()
+    plots <- vector("list", length(all_proteins))
     log_fc_column = intersect(colnames(input), c("log2FC", "log10FC"))
     for (i in seq_along(all_proteins)) {
         single_protein = input[Protein == all_proteins[i], ] 		
@@ -423,7 +425,7 @@ groupComparisonPlots = function(
                                y.axis.size, text.angle, hjust, vjust, y.limdown, 
                                y.limup)
         print(plot)
-        plots <- c(plots, list(plot))
+        plots[[i]] = plot
     }
     if (address != FALSE) {
         dev.off()
