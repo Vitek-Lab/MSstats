@@ -148,13 +148,11 @@ groupComparisonPlots = function(
         plots <- .plotComparison(input, which.Protein, address, width, height, sig, ylimUp, 
                         ylimDown, text.angle, dot.size, x.axis.size, y.axis.size,
                         log_base_FC, isPlotly)
-        # plotly_plots <- list()
         plotly_plots <- vector("list", length(plots))
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
                 plotly_plot <- .convertGgplot2Plotly(plot,tips=c("logFC"))
-                # plotly_plots = c(plotly_plots, list(plotly_plot))
                 plotly_plots[[i]] = list(plotly_plot)
             }
             if(address != FALSE) {

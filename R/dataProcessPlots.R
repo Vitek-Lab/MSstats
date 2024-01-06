@@ -186,15 +186,14 @@ dataProcessPlots = function(
       plots <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
                       text.size, text.angle, legend.size, dot.size.profile, width, height,
                       which.Protein, address, isPlotly)
-      plotly_plots <- list()
+      plotly_plots <- vector("list", length(plots))
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
               plotly_plot <- .convertGgplot2Plotly(plot)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
-              plotly_plots = c(plotly_plots, list(plotly_plot))
+              plotly_plots[[i]] = list(plotly_plot)
           }
-            
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"QCPlot" ,width, height)
             }
@@ -207,16 +206,13 @@ dataProcessPlots = function(
                              x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                              dot.size.profile, dot.size.condition, width, height,
                              which.Protein, save_condition_plot_result, address, isPlotly)
-      print(length(plots))
-      print("+++")
-      print(plots)
-      plotly_plots <- list()
+      plotly_plots <- vector("list", length(plots))
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
               plotly_plot <- .convertGgplot2Plotly(plot)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
-              plotly_plots = c(plotly_plots, list(plotly_plot))
+              plotly_plots[[i]] = list(plotly_plot)
           }
           if(address != FALSE) {
               .savePlotlyPlotHTML(plotly_plots,address,"ConditionPlot" ,width, height)
@@ -475,19 +471,19 @@ dataProcessPlots = function(
   if (!isPlotly) {
       savePlot(address, "QCPlot", width, height)
   }
-  plots <- list()
+  all_proteins = as.character(levels(processed$PROTEIN))
+  plots <- vector("list", length(all_proteins) + 1) # +1 for all/allonly plot
   if (protein %in% c("all", "allonly")) {
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
                           yaxis.name)
     print(qc_plot)
-    plots <- c(plots, list(qc_plot))
+    plots[[i]] = qc_plot
   } 
   
   if (protein != "allonly") {
     all_proteins = as.character(levels(processed$PROTEIN))
-    
     if (protein != "all") {
       selected_proteins = getSelectedProteins(protein, all_proteins)
       processed = processed[PROTEIN %in% selected_proteins]
@@ -506,7 +502,7 @@ dataProcessPlots = function(
                             legend.size, label.color, cumGroupAxis, groupName,
                             lineNameAxis, yaxis.name)
       print(qc_plot)
-      plots <- c(plots, list(qc_plot))
+      plots[[i+1]] = qc_plot # to accomodate all proteins
       setTxtProgressBar(pb, i)
     } 
     close(pb)
@@ -515,6 +511,7 @@ dataProcessPlots = function(
     dev.off()
   }
   if (isPlotly) {
+      plots <- Filter(function(x) !is.null(x), plots) # remove if protein was not "all"
       plots
   }
 } 
@@ -544,11 +541,9 @@ dataProcessPlots = function(
   if(!isPlotly) {
       savePlot(address, "ConditionPlot", width, height)
   }
-  plots <- list()
-  # plots <- vector("list", length(all_proteins))
+  plots <- vector("list", length(all_proteins))
   pb = utils::txtProgressBar(min = 0, max = length(all_proteins), style = 3)
   for (i in seq_along(all_proteins)) {
-    print("imm for")
     single_protein = summarized[PROTEIN == all_proteins[i], ]
     single_protein = na.omit(single_protein)
     single_protein[, GROUP := factor(GROUP)]
@@ -556,7 +551,6 @@ dataProcessPlots = function(
     if (all(is.na(single_protein$ABUNDANCE))) {
       next()
     }
-    print("after next")
     sp_all = single_protein[, list(Mean = mean(ABUNDANCE, na.rm = TRUE),
                                    SD = sd(ABUNDANCE, na.rm = TRUE),
                                    numMeasurement = .N),
@@ -583,9 +577,7 @@ dataProcessPlots = function(
                                   text.size, text.angle, legend.size, 
                                   dot.size.condition, yaxis.name)
     print(con_plot)
-    print("near plot")
-    plots <- c(plots, list(con_plot))
-    # plots[[i]] = con_plot
+    plots[[i]] = con_plot
     setTxtProgressBar(pb, i)
   }
   close(pb)
@@ -733,7 +725,6 @@ dataProcessPlots = function(
 .savePlotlyPlotHTML = function(plots, address, file_name, width, height) {
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
-    print(file_name)
     doc <- .getPlotlyPlotHTML(plots, width, height)
     htmltools::save_html(html = doc, file = file_name) # works but lib same folder
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
