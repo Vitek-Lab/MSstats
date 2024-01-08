@@ -157,7 +157,7 @@ dataProcessPlots = function(
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
 
                   if(toupper(featureName) == "NA") {
-                      og_plotly_plot <- style(og_plotly_plot, showlegend = FALSE)
+                      og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
                   }
                   plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
@@ -169,7 +169,7 @@ dataProcessPlots = function(
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
-                      summ_plotly_plot <- style(summ_plotly_plot, showlegend = FALSE)
+                      summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
                   plotly_plots = c(plotly_plots, list(summ_plotly_plot))
               }
@@ -634,6 +634,17 @@ dataProcessPlots = function(
             )
         ) 
     converted_plot
+}
+
+.retainCensoredDataPoints = function(plot) {
+    df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
+    print(df)
+    for (i in seq_along(plot$x$data)) {
+        if (df$legend_entries[i] != "Detected data" && df$legend_entries[i] != "Censored missing data") {
+            plot$x$data[[i]]$showlegend <- FALSE
+        }
+    }
+    plot
 }
 
 .fixLegendPlotlyPlotsDataprocess = function(plot) {
