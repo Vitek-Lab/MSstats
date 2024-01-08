@@ -638,7 +638,6 @@ dataProcessPlots = function(
 
 .retainCensoredDataPoints = function(plot) {
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
-    print(df)
     for (i in seq_along(plot$x$data)) {
         if (df$legend_entries[i] != "Detected data" && df$legend_entries[i] != "Censored missing data") {
             plot$x$data[[i]]$showlegend <- FALSE
