@@ -657,24 +657,19 @@ dataProcessPlots = function(
 
 .fixCensoredPointsLegendProfilePlotsPlotly = function(plot) {
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
-    detected_data = FALSE
-    censored_data = FALSE
-    for (i in df$id) {
-        if(!detected_data && df$legend_entries[[i]] == "FALSE") {
-            plot$x$data[[i]]$name <- "Detected data"
-            plot$x$data[[i]]$showlegend <- TRUE
-            # plot$x$data[[i]]$marker$color <- "rgba(0,0,0,1)"
-            # plot$x$data[[i]]$marker$line$color <- "rgba(0,0,0,1)"
-            detected_data = TRUE
+    first_false_index <- which(df$legend_entries == "FALSE")[1]
+    first_true_index <- which(df$legend_entries == "TRUE")[1]
 
-        }
-        if(!censored_data && df$legend_entries[[i]] == "TRUE") {
-            plot$x$data[[i]]$name <- "Censored missing data"
-            plot$x$data[[i]]$showlegend <- TRUE
-            # plot$x$data[[i]]$marker$color <- "rgba(0,0,0,1)"
-            # plot$x$data[[i]]$marker$line$color <- "rgba(0,0,0,1)"
-            censored_data = TRUE
-        }
+    # Update plot data for the first occurrence of "FALSE"
+    if (!is.na(first_false_index)) {
+        plot$x$data[[first_false_index]]$name <- "Detected data"
+        plot$x$data[[first_false_index]]$showlegend <- TRUE
+    }
+
+    # Update plot data for the first occurrence of "TRUE"
+    if (!is.na(first_true_index)) {
+        plot$x$data[[first_true_index]]$name <- "Censored missing data"
+        plot$x$data[[first_true_index]]$showlegend <- TRUE
     }
     plot
 }
