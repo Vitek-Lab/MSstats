@@ -728,11 +728,23 @@ dataProcessPlots = function(
 }
 
 .savePlotlyPlotHTML = function(plots, address, file_name, width, height) {
+    print("Saving plots as HTML")
+    pb <- txtProgressBar(min = 0, max = 4, style = 3)
+    
+    setTxtProgressBar(pb, 1)
     file_name = getFileName(address, file_name, width, height)
     file_name = paste0(file_name,".html")
+    
+    setTxtProgressBar(pb, 2)
     doc <- .getPlotlyPlotHTML(plots, width, height)
+    
+    setTxtProgressBar(pb, 3)
     htmltools::save_html(html = doc, file = file_name) # works but lib same folder
+    
+    setTxtProgressBar(pb, 4)
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
     unlink(file_name)
     unlink("lib",recursive = T)
+    
+    close(pb)
 }
