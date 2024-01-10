@@ -183,10 +183,6 @@ groupComparisonPlots = function(
         stop("At least two comparisons are needed for heatmaps.")
     }
     
-    if(!isPlotly) {
-        stop("Heatmap is only available using Plotly for now, set isPlotly = T to get the results")
-    }
-    
     if (is.numeric(ylimUp)) {
         y.limUp = ylimUp 
     } else {
@@ -207,92 +203,87 @@ groupComparisonPlots = function(
     rownames(wide) = proteins
     wide = wide[rowSums(!is.na(wide)) != 0, colSums(!is.na(wide)) != 0]
     wide = .getOrderedMatrix(wide, clustering)
-    
-    # blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
-    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 14)
-    my.colors = blue.red.18
-    # my.colors = c(my.colors, "grey") # for NA
     up = 10 
     temp = 10 ^ (-sort(ceiling(seq(2, up, length = 10)[c(1, 2, 3, 5, 10)]), decreasing = TRUE))
     breaks = c(temp, sig)
     neg.breaks = log(breaks, log_base_pval)
     my.breaks = c(neg.breaks, 0, -neg.breaks[6:1], 101)
     blocks = c(-breaks, 1, breaks[6:1])
-    x.at = seq(-0.05, 1.05, length.out = 13)
     namepro = rownames(wide)
     totalpro = length(namepro)
     numheatmap = totalpro %/% numProtein + 1
-    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 12)
-    my.colors.rgb = lapply(blue.red.18, function(x) as.vector(col2rgb(x)))   
-    color.key.plot <- plotly::layout(
-        plot_ly(type = "image", z = list(my.colors.rgb)),
-        xaxis = list(
-            dtick = 0,
-            ticktext = as.character(blocks),
-            tickmode = "array",
-            tickvals = -0.5:length(blocks),
-            tickangle = 0,
-            title = "(sign) Adjusted p-value"
-        ),
-        yaxis = list(
-            ticks = "",
-            showticklabels = FALSE
-        )
-    )
     
-    color.key.plot <- plotly::style(color.key.plot, hoverinfo = "none")
-    
+    my.colors = maPalette(low = "blue", high = "red", mid = "black", k = 12)
+    my.colors = c(my.colors,"grey")
+    blocks = c(blocks,"NA")
+    my.colors.rgb = lapply(my.colors, function(x) as.vector(col2rgb(x)))   
+    color.key.plotly = .getColorKeyPlotly(my.colors.rgb, blocks)
+
     if(!isPlotly) {
+        if(colorkey) {
+            .getColorKeyGGPlot2(my.colors, blocks)
+        }
         savePlot(address, "Heatmap", width, height)
     }
+    blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 14)
     for (j in seq_len(numheatmap)) {
         if (j != numheatmap) {
             partial_wide = wide[((j - 1) * numProtein + 1):(j * numProtein), ]
         } else {
             partial_wide = wide[((j - 1) * numProtein + 1):nrow(wide), ]
         }
-        heatmap  = .makeHeatmap(partial_wide, my.colors, my.breaks, x.axis.size, y.axis.size, height)
+        if(isPlotly) {
+            heatmap  = .makeHeatmapPlotly(partial_wide, blue.red.18, my.breaks, x.axis.size, y.axis.size, height)
+        } else {
+            heatmap  = .makeHeatmapGgplot2(partial_wide, my.colors, my.breaks, x.axis.size, y.axis.size, height)
+        }
     } 
+    
     if (address != FALSE) {
         dev.off()
     }
-    if(colorkey) {
-        heatmap_and_color_key <- subplot(heatmap, color.key.plot, nrows = 2)
-        
-        heatmap_and_color_key <- plotly::layout(
-            heatmap_and_color_key,
-            annotations = list(
-                list(
-                    x = 0.5,
-                    y = 1.1,
-                    text = "Heatmap",
-                    showarrow = FALSE,
-                    xref = "paper",
-                    yref = "paper",
-                    font = list(
-                        size = 18
+    if(isPlotly) {
+        if(colorkey) {
+            heatmap_and_color_key <- subplot(heatmap, color.key.plotly, nrows = 2)
+            
+            heatmap_and_color_key <- plotly::layout(
+                heatmap_and_color_key,
+                annotations = list(
+                    list(
+                        x = 0.5,
+                        y = 1.1,
+                        text = "Heatmap",
+                        showarrow = FALSE,
+                        xref = "paper",
+                        yref = "paper",
+                        font = list(
+                            size = 18
+                        )
+                    ),
+                    list(
+                        x = 0.5,
+                        y = 0.35,
+                        text = "Color Key",
+                        showarrow = FALSE,
+                        xref = "paper",
+                        yref = "paper",
+                        font = list(
+                            size = 18
+                        )
                     )
                 ),
-                list(
-                    x = 0.5,
-                    y = 0.35,
-                    text = "Color Key",
-                    showarrow = FALSE,
-                    xref = "paper",
-                    yref = "paper",
-                    font = list(
-                        size = 18
-                    )
-                )
-            ),
-            margin = list(l = 50, r = 50, b = 50, t = 50)
-        )
-        heatmap_and_color_key
+                margin = list(l = 50, r = 50, b = 50, t = 50)
+            )
+            heatmap_and_color_key
+        }
+        else {
+            heatmap
+        } 
     }
-    else {
-        heatmap
-    }
+    
 } 
+
+
 
 
 #' Preprocess data for volcano plots and create them

@@ -60,13 +60,48 @@
 colMax <- function(data) sapply(data, max, na.rm = TRUE)
 colMin <- function(data) sapply(data, min, na.rm = TRUE)
 
+#' Create colorkey for ggplot2 heatmap
+.getColorKeyGGPlot2 = function(my.colors, blocks) {
+    x.at = seq(-0.05, 1.05, length.out = 14)
+    par(mar = c(3, 3, 3, 3), mfrow = c(3, 1), oma = c(3, 0, 3, 0))
+    plot.new()
+    image(z = matrix(seq(seq_len(length(my.colors) -1)), ncol = 1),
+          col = my.colors,
+          xaxt = "n",
+          yaxt = "n")
+    mtext("Color Key", side = 3,line = 1, cex = 3)
+    mtext("(sign) Adjusted p-value", side = 1, line = 3, at = 0.5, cex = 1.7)
+    mtext(blocks, side = 1, line = 1, at = x.at, cex = 1)
+}
+
+#' Create colorkey for plotly heatmap
+.getColorKeyPlotly = function(my.colors, blocks) {
+    color.key.plot <- plotly::layout(
+        plot_ly(type = "image", z = list(my.colors)),
+        xaxis = list(
+            dtick = 0,
+            ticktext = as.character(blocks),
+            tickmode = "array",
+            tickvals = -0.5:length(blocks),
+            tickangle = 0,
+            title = "(sign) Adjusted p-value"
+        ),
+        yaxis = list(
+            ticks = "",
+            showticklabels = FALSE
+        )
+    )
+    
+    color.key.plot <- plotly::style(color.key.plot, hoverinfo = "none")
+    color.key.plot
+}
+
 #' Create heatmap
 #' @param input data.table
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
-.makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size, height) {
+.makeHeatmapPlotly = function(input, my.colors, my.breaks, x.axis.size, y.axis.size, height) {
     par(oma = c(3, 0, 0, 4))
-
     label_formatter <- list(
         title = "",
         # titlefont = f1,
@@ -81,7 +116,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     x <- sort(c(x,-dltx/16,dltx/16))
     x <- x[x!=0]
     x.resc <- (x-min(x))/(max(x)-min(x))
-    
+
     # get color scale
     cols = my.colors
     colorScale <- data.frame(
@@ -125,6 +160,18 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     heatmap_plot
 }
 
+.makeHeatmapGgplot2 = function(input, my.colors, my.breaks, x.axis.size, y.axis.size,height) {
+    par(oma = c(3, 0, 0, 4))
+    heatmap.2(as.matrix(input),
+              col = my.colors,
+              Rowv = FALSE, Colv = FALSE,
+              dendrogram = "none", breaks = my.breaks,
+              trace = "none", na.color = "grey",
+              cexCol = (x.axis.size / 10),
+              cexRow = (y.axis.size / 10),
+              key = FALSE,
+              lhei = c(0.1, 0.9), lwid = c(0.1, 0.9))
+}
 
 #' Create a volcano plot
 #' @inheritParams groupComparisonPlots
