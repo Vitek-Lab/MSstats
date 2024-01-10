@@ -62,11 +62,10 @@
 #' which are features with bad quality, 
 #' 2) outliers that are flagged in the column, is_outlier=TRUE in Profile plots. 
 #' FALSE (default) shows all features and intensities in profile plots.
-#' @param address the name of folder that will store the results. 
-#' @param isPlotly This parameter is for MSstatsShiny application for plotly 
-#' render, this cannot be used for saving PDF files as plotly do not have 
-#' suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
-#' same time.
+#' @param address prefix for the filename that will store the results. 
+#' @param isPlotly Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+#' will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
+#' as PDF files
 #' Default folder is the current working directory. 
 #' The other assigned folder has to be existed under the current working directory.
 #'  An output pdf file is automatically created with the default name of 
