@@ -133,12 +133,11 @@ dataProcessPlots = function(
       stop("** Cannnot generate multiple plots in a screen. Please set one protein at a time.")
     }
   }
-  
+  warning("Avoid plotting all proteins as it can take a large amount of time 
+            to download the files")
   if(isPlotly & address != FALSE) {
       print("Plots will be saved as .HTML file as plotly is selected, set isPlotly = FALSE, if 
             you want to generate PDF using ggplot2")
-      print("Avoid plotting all proteins as it can take a large amount of time 
-            to download the files")
   }
   
   if (type == "PROFILEPLOT") {
