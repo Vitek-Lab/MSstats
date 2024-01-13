@@ -198,7 +198,8 @@ dataProcessPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"QCPlot" ,width, height)
             }
-        plotly_plots
+          plotly_plots <- unlist(plotly_plots, recursive = FALSE)
+          plotly_plots
       }
   }
     
@@ -218,7 +219,8 @@ dataProcessPlots = function(
           if(address != FALSE) {
               .savePlotlyPlotHTML(plotly_plots,address,"ConditionPlot" ,width, height)
           }
-        plotly_plots
+          plotly_plots <- unlist(plotly_plots, recursive = FALSE)
+          plotly_plots
       }
   }
 }

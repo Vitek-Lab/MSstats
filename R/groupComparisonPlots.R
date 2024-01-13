@@ -141,6 +141,7 @@ groupComparisonPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"VolcanoPlot" ,width, height)
             }
+            plotly_plots <- unlist(plotly_plots, recursive = FALSE)
             plotly_plots
         }
     }
@@ -158,6 +159,7 @@ groupComparisonPlots = function(
             if(address != FALSE) {
                 .savePlotlyPlotHTML(plotly_plots,address,"ComparisonPlot" ,width, height)
             }
+            plotly_plots <- unlist(plotly_plots, recursive = FALSE)
             plotly_plots
         }
     }
