@@ -23,7 +23,8 @@
 #' @param legend.size size of legend for color at the bottom of volcano plot.  Default is 7.
 #' @param ProteinName for volcano plot only, whether display protein names or not. TRUE (default) means protein names, which are significant, are displayed next to the points. FALSE means no protein names are displayed.
 #' @param colorkey TRUE(default) shows colorkey.
-#' @param numProtein The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
+#' @param numProtein For ggplot2: The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
+#' For Plotly: use this parameter to adjust the number of proteins to be displayed on the heatmap 
 #' @param clustering Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.
 #' @param width width of the saved file. Default is 10.
 #' @param height height of the saved file. Default is 10.
@@ -229,18 +230,21 @@ groupComparisonPlots = function(
         savePlot(address, "Heatmap", width, height)
     }
     blue.red.18 = maPalette(low = "blue", high = "red", mid = "black", k = 14)
-    for (j in seq_len(numheatmap)) {
-        if (j != numheatmap) {
-            partial_wide = wide[((j - 1) * numProtein + 1):(j * numProtein), ]
-        } else {
-            partial_wide = wide[((j - 1) * numProtein + 1):nrow(wide), ]
-        }
-        if(isPlotly) {
-            heatmap  = .makeHeatmapPlotly(partial_wide, blue.red.18, my.breaks, x.axis.size, y.axis.size, height)
-        } else {
+    if(isPlotly) {
+        # If plotly, plot all proteins on a single heatmap
+        heatmap  = .makeHeatmapPlotly(wide, blue.red.18, my.breaks, x.axis.size, y.axis.size, height, numProtein)
+    } else {
+        for (j in seq_len(numheatmap)) {
+            if (j != numheatmap) {
+                partial_wide = wide[((j - 1) * numProtein + 1):(j * numProtein), ]
+            } else {
+                partial_wide = wide[((j - 1) * numProtein + 1):nrow(wide), ]
+            }
             heatmap  = .makeHeatmapGgplot2(partial_wide, my.colors, my.breaks, x.axis.size, y.axis.size, height)
         }
-    } 
+    }
+    
+    
     
     if (address != FALSE) {
         dev.off()

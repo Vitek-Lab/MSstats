@@ -100,7 +100,8 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
 #' @param input data.table
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
-.makeHeatmapPlotly = function(input, my.colors, my.breaks, x.axis.size, y.axis.size, height) {
+.makeHeatmapPlotly = function(input, my.colors, my.breaks, x.axis.size, y.axis.size, height, numProtein) {
+    input <- input[1:pmin(numProtein, nrow(input)), ,drop=F]
     par(oma = c(3, 0, 0, 4))
     label_formatter <- list(
         title = "",
