@@ -481,7 +481,7 @@ dataProcessPlots = function(
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
                           yaxis.name)
     print(qc_plot)
-    plots[[i]] = qc_plot
+    plots[[1]] = qc_plot
   } 
   
   if (protein != "allonly") {
