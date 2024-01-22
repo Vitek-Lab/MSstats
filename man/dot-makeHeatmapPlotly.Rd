@@ -10,7 +10,8 @@
   my.breaks,
   x.axis.size,
   y.axis.size,
-  height
+  height,
+  numProtein
 )
 }
 \arguments{
@@ -21,6 +22,9 @@
 \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
 
 \item{height}{height of the saved file. Default is 10.}
+
+\item{numProtein}{For ggplot2: The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
+For Plotly: use this parameter to adjust the number of proteins to be displayed on the heatmap}
 }
 \description{
 Create heatmap

@@ -6,6 +6,10 @@
 \usage{
 .getColorKeyGGPlot2(my.colors, blocks)
 }
+\arguments{
+\item{my.colors}{blocks}
+}
 \description{
 Create colorkey for ggplot2 heatmap
 }
+\keyword{internal}

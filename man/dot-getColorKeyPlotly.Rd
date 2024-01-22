@@ -6,6 +6,10 @@
 \usage{
 .getColorKeyPlotly(my.colors, blocks)
 }
+\arguments{
+\item{my.colors}{blocks}
+}
 \description{
 Create colorkey for plotly heatmap
 }
+\keyword{internal}

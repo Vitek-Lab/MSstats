@@ -87,7 +87,7 @@
 #' @importFrom graphics axis image legend mtext par plot.new title plot
 #' @importFrom grDevices dev.off hcl pdf
 #' @importFrom plotly ggplotly style add_trace plot_ly subplot
-#' 
+#' @importFrom htmltools tagList div save_html
 #' 
 #' @export
 #' 

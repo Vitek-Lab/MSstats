@@ -35,7 +35,8 @@
 
 \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
 
-\item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.}
+\item{numProtein}{For ggplot2: The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
+For Plotly: use this parameter to adjust the number of proteins to be displayed on the heatmap}
 
 \item{colorkey}{TRUE(default) shows colorkey.}
 

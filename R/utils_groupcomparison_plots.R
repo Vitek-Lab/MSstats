@@ -61,6 +61,8 @@ colMax <- function(data) sapply(data, max, na.rm = TRUE)
 colMin <- function(data) sapply(data, min, na.rm = TRUE)
 
 #' Create colorkey for ggplot2 heatmap
+#' @param my.colors blocks
+#' @keywords internal
 .getColorKeyGGPlot2 = function(my.colors, blocks) {
     x.at = seq(-0.05, 1.05, length.out = 14)
     par(mar = c(3, 3, 3, 3), mfrow = c(3, 1), oma = c(3, 0, 3, 0))
@@ -75,6 +77,8 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
 }
 
 #' Create colorkey for plotly heatmap
+#' @param my.colors blocks
+#' @keywords internal
 .getColorKeyPlotly = function(my.colors, blocks) {
     color.key.plot <- plotly::layout(
         plot_ly(type = "image", z = list(my.colors)),
