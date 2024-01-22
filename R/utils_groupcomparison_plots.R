@@ -10,6 +10,8 @@
     if (selected_labels != "all") {
         if (is.character(selected_labels)) {
             chosen_labels = selected_labels
+            print("labels")
+            print(chosen_labels)
             wrong_labels = setdiff(chosen_labels, all_labels)
             if (length(wrong_labels) > 0) {
                 msg_1 = paste("Please check labels of comparisons.",
@@ -55,23 +57,126 @@
 }
 
 
+colMax <- function(data) sapply(data, max, na.rm = TRUE)
+colMin <- function(data) sapply(data, min, na.rm = TRUE)
+
+#' Create colorkey for ggplot2 heatmap
+#' @param my.colors blocks
+#' @keywords internal
+.getColorKeyGGPlot2 = function(my.colors, blocks) {
+    x.at = seq(-0.05, 1.05, length.out = 14)
+    par(mar = c(3, 3, 3, 3), mfrow = c(3, 1), oma = c(3, 0, 3, 0))
+    plot.new()
+    image(z = matrix(seq(seq_len(length(my.colors) -1)), ncol = 1),
+          col = my.colors,
+          xaxt = "n",
+          yaxt = "n")
+    mtext("Color Key", side = 3,line = 1, cex = 3)
+    mtext("(sign) Adjusted p-value", side = 1, line = 3, at = 0.5, cex = 1.7)
+    mtext(blocks, side = 1, line = 1, at = x.at, cex = 1)
+}
+
+#' Create colorkey for plotly heatmap
+#' @param my.colors blocks
+#' @keywords internal
+.getColorKeyPlotly = function(my.colors, blocks) {
+    color.key.plot <- plotly::layout(
+        plot_ly(type = "image", z = list(my.colors)),
+        xaxis = list(
+            dtick = 0,
+            ticktext = as.character(blocks),
+            tickmode = "array",
+            tickvals = -0.5:length(blocks),
+            tickangle = 0,
+            title = "(sign) Adjusted p-value"
+        ),
+        yaxis = list(
+            ticks = "",
+            showticklabels = FALSE
+        )
+    )
+    
+    color.key.plot <- plotly::style(color.key.plot, hoverinfo = "none")
+    color.key.plot
+}
+
 #' Create heatmap
 #' @param input data.table
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
-.makeHeatmap = function(input, my.colors, my.breaks, x.axis.size, y.axis.size) {
+.makeHeatmapPlotly = function(input, my.colors, my.breaks, x.axis.size, y.axis.size, height, numProtein) {
+    input <- input[1:pmin(numProtein, nrow(input)), ,drop=F]
+    par(oma = c(3, 0, 0, 4))
+    label_formatter <- list(
+        title = "",
+        # titlefont = f1,
+        showticklabels = TRUE,
+        tickangle = 45,
+        # tickfont = f2,
+        exponentformat = "E")
+    
+    # adjust my.breaks
+    x = my.breaks
+    dltx <- diff(x)[1]
+    x <- sort(c(x,-dltx/16,dltx/16))
+    x <- x[x!=0]
+    x.resc <- (x-min(x))/(max(x)-min(x))
+
+    # get color scale
+    cols = my.colors
+    colorScale <- data.frame(
+        z = c(0,rep(x.resc[2:(length(x.resc)-1)],each=2),1),
+        col=rep(cols,each=2)
+    )
+    
+    # Creating the custom hover text matrix
+    row_names <- rownames(input)
+    col_names <- colnames(input)
+    hover_text_matrix <- matrix("", nrow = nrow(input), ncol = ncol(input))
+    for (i in 1:nrow(input)) {
+        for (j in 1:ncol(input)) {
+            hover_text_matrix[i, j] <- sprintf("Comparison: %s<br>Protein: %s<br>Value: %.2f", 
+                                               col_names[j], 
+                                               row_names[i], 
+                                               input[i, j])
+        }
+    }
+    
+    heatmap_plot = plot_ly(z = as.matrix(input),
+                           zmin = x[1],
+                           zmax = x[length(x)],
+                           x = colnames(input),
+                           xgap = 0,
+                           y = rownames(input),
+                           ygap = 0,
+                           type = "heatmap",
+                           hoverinfo = "text",
+                           text=hover_text_matrix,
+                           showlegend = FALSE, 
+                           showscale = FALSE,
+                           colorscale = colorScale,
+                           colorbar = list(ypad = 520, tick0 = x[1], dtick = dltx, len = 1, orientation = "h"), 
+                           width = 800)
+    
+    heatmap_plot <- plotly::layout(heatmap_plot, 
+                                   xaxis = label_formatter, 
+                                   plot_bgcolor = "grey",
+                                   height = height)
+    heatmap_plot
+}
+
+.makeHeatmapGgplot2 = function(input, my.colors, my.breaks, x.axis.size, y.axis.size,height) {
     par(oma = c(3, 0, 0, 4))
     heatmap.2(as.matrix(input),
               col = my.colors,
               Rowv = FALSE, Colv = FALSE,
               dendrogram = "none", breaks = my.breaks,
               trace = "none", na.color = "grey",
-              cexCol = (x.axis.size / 10), 
+              cexCol = (x.axis.size / 10),
               cexRow = (y.axis.size / 10),
               key = FALSE,
-              lhei = c(0.1, 0.9), lwid = c(0.1, 0.9)) 
+              lhei = c(0.1, 0.9), lwid = c(0.1, 0.9))
 }
-
 
 #' Create a volcano plot
 #' @inheritParams groupComparisonPlots
@@ -86,7 +191,6 @@
     legend.size, log_adjp
 ) {
     Protein = NULL
-    
     plot = ggplot(aes_string(x = "logFC", 
                              y = log_adjp,
                              color = "colgroup",
@@ -186,7 +290,7 @@
     logFC = ciw = NULL
     
     protein = unique(input$Protein)
-    plot = ggplot(input, aes_string(x = 'Label', y = 'logFC')) +
+    plot = ggplot(input, aes_string(x = "Label", y = "logFC")) +
         geom_errorbar(aes(ymax = logFC + ciw, ymin = logFC - ciw),
                       data = input,
                       width = 0.1,
