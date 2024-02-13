@@ -33,7 +33,8 @@ Imports:
     grDevices,
     graphics,
     methods,
-    statmod
+    statmod,
+    parallel
 Suggests: 
     BiocStyle,
     knitr,

@@ -9,7 +9,8 @@ MSstatsGroupComparison(
   contrast_matrix,
   save_fitted_models,
   repeated,
-  samples_info
+  samples_info,
+  numberOfCores = 1
 )
 }
 \arguments{
@@ -22,6 +23,10 @@ MSstatsGroupComparison(
 \item{repeated}{logical, output of checkRepeatedDesign function}
 
 \item{samples_info}{data.table, output of getSamplesInfo function}
+
+\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
+a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+track progress.}
 }
 \description{
 Group comparison
