@@ -24,8 +24,8 @@
 
 \item{samples_info}{data.table, output of getSamplesInfo function}
 
-\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
-a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+\item{numberOfCores}{Number of cores for parallel processing. 
+A logfile named `MSstats_groupComparison_log_progress.log` is created to 
 track progress.}
 }
 \description{

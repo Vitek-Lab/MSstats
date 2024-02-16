@@ -445,8 +445,8 @@ getSamplesInfo = function(summarization_output) {
 #' @param save_fitted_models if TRUE, fitted models will be included in the output
 #' @param repeated logical, output of checkRepeatedDesign function
 #' @param samples_info data.table, output of getSamplesInfo function
-#' @param numberOfCores Number of cores for parallel processing. When > 1, 
-#' a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+#' @param numberOfCores Number of cores for parallel processing. 
+#' A logfile named `MSstats_groupComparison_log_progress.log` is created to 
 #' track progress.
 #' @keywords internal
 .groupComparisonWithMultipleCores = function(summarized_list, contrast_matrix,
