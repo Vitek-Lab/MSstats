@@ -141,42 +141,15 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 MSstatsGroupComparison = function(summarized_list, contrast_matrix,
                                   save_fitted_models, repeated, samples_info, 
                                   numberOfCores = 1) {
-    groups = colnames(contrast_matrix)
-    has_imputed = attr(summarized_list, "has_imputed")
-    all_proteins_id = seq_along(summarized_list)
-    test_results = vector("list", length(all_proteins_id))
     if (numberOfCores > 1) {
-        cl = parallel::makeCluster(numberOfCores)
-        parallel::clusterExport(cl, c("MSstatsGroupComparisonSingleProtein", 
-                            "contrast_matrix", "repeated", "groups", 
-                            "samples_info", "save_fitted_models", "has_imputed"), 
-                      envir = environment())
-        cat(paste0("Number of proteins to process: ", length(all_proteins_id)), 
-            sep = "\n", file = "MSstats_groupComparison_log_progress.log")
-        test_results = parallel::parLapply(cl, 1:length(all_proteins_id), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 protein comparisons", 
-                        sep = "\n", file = "MSstats_groupComparison_log_progress.log", append = TRUE)
-                }
-                return (MSstatsGroupComparisonSingleProtein(
-                    summarized_list[[i]], contrast_matrix, repeated,
-                    groups, samples_info, save_fitted_models, has_imputed
-                ))
-            })
-        parallel::stopCluster(cl)
+        return(.groupComparisonWithMultipleCores(summarized_list, contrast_matrix, 
+                                                 save_fitted_models, repeated, 
+                                                 samples_info, numberOfCores))
     } else {
-        pb = txtProgressBar(max = length(all_proteins_id), style = 3)
-        for (i in all_proteins_id) {
-            comparison_outputs = MSstatsGroupComparisonSingleProtein(
-                summarized_list[[i]], contrast_matrix, repeated,
-                groups, samples_info, save_fitted_models, has_imputed
-            )
-            test_results[[i]] = comparison_outputs
-            setTxtProgressBar(pb, i)
-        }
-        close(pb)
+        return(.groupComparisonWithSingleCore(summarized_list, contrast_matrix, 
+                                              save_fitted_models, repeated, 
+                                              samples_info))
     }
-    test_results
 }
 
 

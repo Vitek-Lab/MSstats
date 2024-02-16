@@ -439,3 +439,67 @@ getSamplesInfo = function(summarization_output) {
     result
 }
 
+#' Perform group comparison per protein in parallel
+#' @param summarized_list output of MSstatsPrepareForGroupComparison
+#' @param contrast_matrix contrast matrix
+#' @param save_fitted_models if TRUE, fitted models will be included in the output
+#' @param repeated logical, output of checkRepeatedDesign function
+#' @param samples_info data.table, output of getSamplesInfo function
+#' @param numberOfCores Number of cores for parallel processing. When > 1, 
+#' a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+#' track progress.
+#' @keywords internal
+.groupComparisonWithMultipleCores = function(summarized_list, contrast_matrix,
+                                             save_fitted_models, repeated, samples_info, 
+                                             numberOfCores) {
+    groups = colnames(contrast_matrix)
+    has_imputed = attr(summarized_list, "has_imputed")
+    all_proteins_id = seq_along(summarized_list)
+    cl = parallel::makeCluster(numberOfCores)
+    parallel::clusterExport(cl, c("MSstatsGroupComparisonSingleProtein", 
+                                  "contrast_matrix", "repeated", "groups", 
+                                  "samples_info", "save_fitted_models", "has_imputed"), 
+                            envir = environment())
+    cat(paste0("Number of proteins to process: ", length(all_proteins_id)), 
+        sep = "\n", file = "MSstats_groupComparison_log_progress.log")
+    test_results = parallel::parLapply(cl, 1:length(all_proteins_id), function(i) {
+        if (i %% 100 == 0) {
+            cat("Finished processing an additional 100 protein comparisons", 
+                sep = "\n", file = "MSstats_groupComparison_log_progress.log", append = TRUE)
+        }
+        return (MSstatsGroupComparisonSingleProtein(
+            summarized_list[[i]], contrast_matrix, repeated,
+            groups, samples_info, save_fitted_models, has_imputed
+        ))
+    })
+    parallel::stopCluster(cl)
+    return(test_results)
+}
+
+#' Perform group comparison per protein iteratively with a single loop
+#' @param summarized_list output of MSstatsPrepareForGroupComparison
+#' @param contrast_matrix contrast matrix
+#' @param save_fitted_models if TRUE, fitted models will be included in the output
+#' @param repeated logical, output of checkRepeatedDesign function
+#' @param samples_info data.table, output of getSamplesInfo function
+#' @keywords internal
+.groupComparisonWithSingleCore = function(summarized_list, contrast_matrix,
+                                             save_fitted_models, repeated, 
+                                             samples_info) {
+    groups = colnames(contrast_matrix)
+    has_imputed = attr(summarized_list, "has_imputed")
+    all_proteins_id = seq_along(summarized_list)
+    test_results = vector("list", length(all_proteins_id))
+    pb = txtProgressBar(max = length(all_proteins_id), style = 3)
+    for (i in all_proteins_id) {
+        comparison_outputs = MSstatsGroupComparisonSingleProtein(
+            summarized_list[[i]], contrast_matrix, repeated,
+            groups, samples_info, save_fitted_models, has_imputed
+        )
+        test_results[[i]] = comparison_outputs
+        setTxtProgressBar(pb, i)
+    }
+    close(pb)
+    return(test_results)
+}
+
