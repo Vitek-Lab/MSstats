@@ -455,25 +455,26 @@ getSamplesInfo = function(summarization_output) {
     groups = colnames(contrast_matrix)
     has_imputed = attr(summarized_list, "has_imputed")
     all_proteins_id = seq_along(summarized_list)
+    function_environment = environment()
     cl = parallel::makeCluster(numberOfCores)
     parallel::clusterExport(cl, c("MSstatsGroupComparisonSingleProtein", 
                                   "contrast_matrix", "repeated", "groups", 
                                   "samples_info", "save_fitted_models", "has_imputed"), 
-                            envir = environment())
+                            envir = function_environment)
     cat(paste0("Number of proteins to process: ", length(all_proteins_id)), 
         sep = "\n", file = "MSstats_groupComparison_log_progress.log")
-    test_results = parallel::parLapply(cl, 1:length(all_proteins_id), function(i) {
+    test_results = parallel::parLapply(cl, all_proteins_id, function(i) {
         if (i %% 100 == 0) {
             cat("Finished processing an additional 100 protein comparisons", 
                 sep = "\n", file = "MSstats_groupComparison_log_progress.log", append = TRUE)
         }
-        return (MSstatsGroupComparisonSingleProtein(
+        MSstatsGroupComparisonSingleProtein(
             summarized_list[[i]], contrast_matrix, repeated,
             groups, samples_info, save_fitted_models, has_imputed
-        ))
+        )
     })
     parallel::stopCluster(cl)
-    return(test_results)
+    test_results
 }
 
 #' Perform group comparison per protein iteratively with a single loop
@@ -500,6 +501,6 @@ getSamplesInfo = function(summarization_output) {
         setTxtProgressBar(pb, i)
     }
     close(pb)
-    return(test_results)
+    test_results
 }
 
