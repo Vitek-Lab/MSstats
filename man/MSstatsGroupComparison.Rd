@@ -26,7 +26,7 @@ MSstatsGroupComparison(
 
 \item{numberOfCores}{Number of cores for parallel processing. When > 1, 
 a logfile named `MSstats_groupComparison_log_progress.log` is created to 
-track progress.}
+track progress. Only works for Linux & Mac OS.}
 }
 \description{
 Group comparison

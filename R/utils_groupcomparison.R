@@ -447,7 +447,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param samples_info data.table, output of getSamplesInfo function
 #' @param numberOfCores Number of cores for parallel processing. 
 #' A logfile named `MSstats_groupComparison_log_progress.log` is created to 
-#' track progress.
+#' track progress. Only works for Linux & Mac OS.
 #' @keywords internal
 .groupComparisonWithMultipleCores = function(summarized_list, contrast_matrix,
                                              save_fitted_models, repeated, samples_info, 

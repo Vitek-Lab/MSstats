@@ -42,7 +42,7 @@ If `append = TRUE`, has to be a valid path to a file.}
 
 \item{numberOfCores}{Number of cores for parallel processing. When > 1, 
 a logfile named `MSstats_groupComparison_log_progress.log` is created to 
-track progress.}
+track progress. Only works for Linux & Mac OS.}
 }
 \value{
 list that consists of three elements: "ComparisonResult" - data.frame with results of statistical testing,
