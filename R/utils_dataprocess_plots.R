@@ -16,7 +16,6 @@
     }
 }
 
-
 #' Get data for a single protein to plot
 #' @param dataProcess output -> FeatureLevelData
 #' @param all_proteins character, set of protein names
@@ -57,18 +56,18 @@
         type_color = "PEPTIDE"
     }
     
-    profile_plot = ggplot(input, aes_string(x = 'RUN', y = 'ABUNDANCE', 
-                                            color = type_color, linetype = 'FEATURE')) +
+    profile_plot = ggplot(input, aes_string(x = "RUN", y = "newABUNDANCE",
+                                            color = type_color, linetype = "FEATURE")) +
         facet_grid(~LABEL) +
         geom_line(size = 0.5)
     
     if (is_censored) {
         profile_plot = profile_plot +
-            geom_point(aes_string(x = 'RUN', y = 'ABUNDANCE', color = type_color, shape = 'censored'), 
-                       data = input, 
-                       size = dot.size.profile) +
-            scale_shape_manual(values = c(16, 1), 
-                               labels = c("Detected data", "Censored missing data"))
+        geom_point(aes_string(x = "RUN", y = "newABUNDANCE", color = type_color, shape = "censored"),
+                   data = input,
+                   size = dot.size.profile) +
+        scale_shape_manual(values = c(16, 1),
+                           labels = c("Detected data", "Censored missing data"))
     } else {
         profile_plot = profile_plot +
             geom_point(size = dot.size.profile) +
@@ -157,16 +156,20 @@
     
     num_features = data.table::uniqueN(input$FEATURE)
     profile_plot = ggplot(data = input, 
-                          aes_string(x = "RUN", y = "ABUNDANCE", 
+                          aes_string(x = "RUN", y = "newABUNDANCE", 
                                      color = "analysis", linetype = "FEATURE", 
                                      size = "analysis")) +
         facet_grid(~LABEL) +
         geom_line(size = 0.5)
     
-    if (is_censored) {
+    if (is_censored) { # splitting into two layers to keep red above grey
         profile_plot = profile_plot +
-            geom_point(data = input, 
-                       aes_string(x = "RUN", y = "ABUNDANCE", 
+            geom_point(data = input[input$PEPTIDE != "Run summary"], 
+                       aes_string(x = "RUN", y = "newABUNDANCE", 
+                                  color = "analysis", size = "analysis", 
+                                  shape = "censored")) +
+            geom_point(data = input[input$PEPTIDE == "Run summary"], 
+                       aes_string(x = "RUN", y = "newABUNDANCE", 
                                   color = "analysis", size = "analysis", 
                                   shape = "censored")) +
             scale_shape_manual(values = c(16, 1), 
@@ -206,7 +209,7 @@
     } else {
         profile_plot = profile_plot +
             guides(color = color_guide) +
-            geom_point(aes_string(x = "RUN", y = "ABUNDANCE", size = "analysis",
+            geom_point(aes_string(x = "RUN", y = "newABUNDANCE", size = "analysis",
                                   color = "analysis"), data = input)
     }
     profile_plot
@@ -231,20 +234,21 @@
         plot_title = unique(input$PROTEIN)
     }
     
-    ggplot(input, aes_string(x = "RUN", y = "ABUNDANCE")) + 
-        facet_grid(~LABEL) + 
+    ggplot(input, aes_string(x = "RUN", y = "ABUNDANCE")) +
+        facet_grid(~LABEL) +
         geom_boxplot(aes_string(fill = "LABEL"), outlier.shape = 1,
-                     outlier.size = 1.5) + 
-        scale_fill_manual(values = label.color, guide = "none") + 
-        scale_x_discrete("MS runs", breaks = cumGroupAxis) + 
-        scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) + 
-        geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey", 
-                   linetype = "longdash") + 
-        labs(title  =  plot_title) + 
-        geom_text(data = groupName, aes(x = RUN, y = ABUNDANCE, label = Name), 
-                  size = text.size, angle = text.angle, color = "black") + 
+                     outlier.size = 1.5) +
+        scale_fill_manual(values = label.color, guide = "none") +
+        scale_x_discrete("MS runs", breaks = cumGroupAxis) +
+        scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
+        geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey",
+                   linetype = "longdash") +
+        labs(title  =  plot_title) +
+        geom_text(data = groupName, aes(x = RUN, y = ABUNDANCE, label = Name),
+                  size = text.size, angle = text.angle, color = "black") +
         theme_msstats("QCPLOT", x.axis.size, y.axis.size,
                       legend_size = NULL)
+    
 }
 
 

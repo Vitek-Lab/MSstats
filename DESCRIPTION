@@ -17,6 +17,7 @@ Imports:
     data.table,
     checkmate,
     MASS,
+    htmltools,
     limma,
     lme4,
     preprocessCore,
@@ -26,6 +27,7 @@ Imports:
     ggplot2,
     ggrepel,
     gplots,
+    plotly,
     marray,
     stats,
     grDevices,
@@ -45,7 +47,7 @@ biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.0
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
