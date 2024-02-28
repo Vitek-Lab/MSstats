@@ -17,7 +17,8 @@
   dot.size,
   x.axis.size,
   y.axis.size,
-  log_base_FC
+  log_base_FC,
+  isPlotly
 )
 }
 \arguments{
@@ -44,6 +45,11 @@
 \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
 
 \item{log_base_FC}{log base for log-fold changes - 2 or 10}
+
+\item{isPlotly}{This parameter is for MSstatsShiny application for plotly 
+render, this cannot be used for saving PDF files as plotly do not have 
+suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
+same time.}
 }
 \description{
 Preprocess data for comparison plots and create them

@@ -23,11 +23,12 @@ groupComparisonPlots(
   colorkey = TRUE,
   numProtein = 100,
   clustering = "both",
-  width = 10,
-  height = 10,
+  width = 800,
+  height = 600,
   which.Comparison = "all",
   which.Protein = "all",
-  address = ""
+  address = "",
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -63,7 +64,8 @@ groupComparisonPlots(
 
 \item{colorkey}{TRUE(default) shows colorkey.}
 
-\item{numProtein}{The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.}
+\item{numProtein}{For ggplot2: The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
+For Plotly: use this parameter to adjust the number of proteins to be displayed on the heatmap}
 
 \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
 
@@ -76,6 +78,11 @@ groupComparisonPlots(
 \item{which.Protein}{Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.}
 
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
+
+\item{isPlotly}{This parameter is for MSstatsShiny application for plotly 
+render, this cannot be used for saving PDF files as plotly do not have 
+suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
+same time.}
 }
 \description{
 To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, 
