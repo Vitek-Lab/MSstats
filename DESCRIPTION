@@ -34,14 +34,19 @@ Imports:
     graphics,
     methods,
     statmod,
-    parallel
+    parallel,
+    RCy3,
+    httr,
+    jsonlite,
+    r2r
 Suggests: 
     BiocStyle,
     knitr,
     rmarkdown,
     tinytest,
     covr,
-    markdown
+    markdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
@@ -55,3 +60,4 @@ Packaged: 2017-10-20 02:13:12 UTC; meenachoi
 LinkingTo: 
     Rcpp,
     RcppArmadillo
+Config/testthat/edition: 3
