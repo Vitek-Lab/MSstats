@@ -5,6 +5,7 @@
 #' @importFrom hgnc import_hgnc_dataset latest_archive_url filter_by_keyword
 #' @importFrom jsonlite toJSON
 #' @importFrom httr POST, add_headers
+#' @importFrom igraph graph_from_data_frame
 #' 
 #' @export
 #' 
@@ -26,14 +27,15 @@ visualizeNetworks = function(input) {
   hgnc_ids_2 = lapply(rows, function(x) x$hgnc_id2)
   vertices = data.frame(node = unlist(hgnc_ids_2), protein_id = input)
   edges = data.frame(
-      from = lapply(output, function(x) x$source_id), 
-      to = lapply(output, function(x) x$target_id),
-      evidence_count = lapply(output, function(x) x$data$evidence_count),
-      belief = lapply(output, function(x) x$data$belief),
-      stmt_type = lapply(output, function(x) x$data$stmt_type)
+      from = unlist(lapply(output, function(x) x$source_id)), 
+      to = unlist(lapply(output, function(x) x$target_id)),
+      evidence_count = unlist(lapply(output, function(x) x$data$evidence_count)),
+      belief = unlist(lapply(output, function(x) x$data$belief)),
+      stmt_type = unlist(lapply(output, function(x) x$data$stmt_type))
   )
   g <- graph_from_data_frame(edges, directed=TRUE, vertices=vertices)
-  L = layout.circle(g)
+  G = upgrade_graph(g)
+  L = layout.circle(G)
   vs <- V(G)
   es <- as.data.frame(get.edgelist(G))
   
@@ -42,23 +44,25 @@ visualizeNetworks = function(input) {
   Xn <- L[,1]
   Yn <- L[,2]
   
-  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = vs$label, hoverinfo = "text")
+  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(hgnc_ids_2), hoverinfo = "text")
   
   edge_shapes <- list()
   for(i in 1:Ne) {
       v0 <- es[i,]$V1
       v1 <- es[i,]$V2
+      index0 = match(v0, hgnc_ids_2)
+      index1 = match(v1, hgnc_ids_2)
       
       edge_shape = list(
           type = "line",
-          line = list(color = "#030303", width = 0.3),
-          x0 = Xn[v0],
-          y0 = Yn[v0],
-          x1 = Xn[v1],
-          y1 = Yn[v1]
+          line = list(color = "#030303", width = 0.1),
+          x0 = Xn[index0],
+          y0 = Yn[index0],
+          x1 = Xn[index1],
+          y1 = Yn[index1]
       )
       
-      edge_shapes[[i]] <- edge_shape
+      edge_shapes[[i]] = edge_shape
   }
   
   axis <- list(title = "", showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
