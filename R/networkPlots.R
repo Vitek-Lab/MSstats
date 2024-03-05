@@ -43,23 +43,23 @@ visualizeNetworks = function(input) {
   )
   g <- graph_from_data_frame(edges, directed=TRUE, vertices=vertices)
   G = upgrade_graph(g)
-  L = layout.circle(G)
+  L = layout.circle(G, order=order(degree(G)))
   vs <- V(G)
-  es <- as.data.frame(get.edgelist(G))
+  es <- as.data.frame(as_edgelist(G))
   
   Nv <- length(vs)
   Ne <- length(es[1]$V1)
   Xn <- L[,1]
   Yn <- L[,2]
   
-  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(hgnc_ids_2), hoverinfo = "text")
+  network = plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(hgnc_ids_2[order(degree(G))]), hoverinfo = "text")
   
   edge_shapes <- list()
   for(i in 1:Ne) {
       v0 <- es[i,]$V1
       v1 <- es[i,]$V2
-      index0 = match(v0, hgnc_ids_2)
-      index1 = match(v1, hgnc_ids_2)
+      index0 = match(v0, hgnc_ids_2[order(degree(G))])
+      index1 = match(v1, hgnc_ids_2[order(degree(G))])
       
       edge_shape = list(
           arrowcolor = "#030303",
