@@ -16,6 +16,7 @@
 visualizeNetworks = function(input) {
   # library(igraph)
   # library(plotly)
+    # load("model.RData")
     # new_model = model$ComparisonResult[model$ComparisonResult$adj.pvalue < 0.01 
     # & model$ComparisonResult$adj.pvalue != 0 & !is.na(model$ComparisonResult$adj.pvalue),]
     # genes = unique(new_model$Protein)
@@ -32,6 +33,8 @@ visualizeNetworks = function(input) {
   json_body = jsonlite::toJSON(groundings, auto_unbox = TRUE)
   res = POST(url, body = json_body, add_headers("Content-Type" = "application/json"), encode = "raw")
   output = content(res)
+  output = Filter(function(x) x$data$evidence_count > 5, output) # evidence count filter
+  output = Filter(function(x) x$data$stmt_type == "Complex", output)
   hgnc_ids_2 = lapply(rows, function(x) x$hgnc_id2)
   vertices = data.frame(node = unlist(hgnc_ids_2))
   edges = data.frame(
@@ -41,9 +44,12 @@ visualizeNetworks = function(input) {
       belief = unlist(lapply(output, function(x) x$data$belief)),
       stmt_type = unlist(lapply(output, function(x) x$data$stmt_type))
   )
-  g <- graph_from_data_frame(edges, directed=TRUE, vertices=vertices)
+  g = graph_from_data_frame(edges, directed=TRUE, vertices=vertices)
   G = upgrade_graph(g)
-  L = layout.circle(G, order=order(degree(G)))
+  isolated = which(degree(G)==0)
+  not_isolated = which(degree(G)>0)
+  G = delete_vertices(G, isolated)
+  L = layout.circle(G)
   vs <- V(G)
   es <- as.data.frame(as_edgelist(G))
   
@@ -52,14 +58,14 @@ visualizeNetworks = function(input) {
   Xn <- L[,1]
   Yn <- L[,2]
   
-  network = plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(hgnc_ids_2[order(degree(G))]), hoverinfo = "text")
+  network = plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = hgnc_ids_2[not_isolated], hoverinfo = "text")
   
   edge_shapes <- list()
   for(i in 1:Ne) {
       v0 <- es[i,]$V1
       v1 <- es[i,]$V2
-      index0 = match(v0, hgnc_ids_2[order(degree(G))])
-      index1 = match(v1, hgnc_ids_2[order(degree(G))])
+      index0 = match(v0, hgnc_ids_2[not_isolated])
+      index1 = match(v1, hgnc_ids_2[not_isolated])
       
       edge_shape = list(
           arrowcolor = "#030303",
