@@ -6,6 +6,7 @@
 #' @importFrom jsonlite toJSON
 #' @importFrom httr POST, add_headers
 #' @importFrom igraph graph_from_data_frame
+#' @importFrom plotly plot_ly layout.circle
 #' 
 #' @export
 #' 
@@ -44,7 +45,7 @@ visualizeNetworks = function(input) {
   Xn <- L[,1]
   Yn <- L[,2]
   
-  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(hgnc_ids_2), hoverinfo = "text")
+  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(input), hoverinfo = "text")
   
   edge_shapes <- list()
   for(i in 1:Ne) {
@@ -54,12 +55,15 @@ visualizeNetworks = function(input) {
       index1 = match(v1, hgnc_ids_2)
       
       edge_shape = list(
-          type = "line",
-          line = list(color = "#030303", width = 0.1),
-          x0 = Xn[index0],
-          y0 = Yn[index0],
-          x1 = Xn[index1],
-          y1 = Yn[index1]
+          arrowcolor = "#030303",
+          axref = "x",
+          ayref = "y",
+          ax = Xn[index0],
+          ay = Yn[index0],
+          xref = "x",
+          yref = "y",
+          x = Xn[index1],
+          y = Yn[index1]
       )
       
       edge_shapes[[i]] = edge_shape
@@ -70,7 +74,7 @@ visualizeNetworks = function(input) {
   fig <- layout(
       network,
       title = 'INDRA Network',
-      shapes = edge_shapes,
+      annotations = edge_shapes,
       xaxis = axis,
       yaxis = axis
   )
