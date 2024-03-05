@@ -16,17 +16,24 @@
 visualizeNetworks = function(input) {
   # library(igraph)
   # library(plotly)
+    # new_model = model$ComparisonResult[model$ComparisonResult$adj.pvalue < 0.01 
+    # & model$ComparisonResult$adj.pvalue != 0 & !is.na(model$ComparisonResult$adj.pvalue),]
+    # genes = unique(new_model$Protein)
+    # genes_final = lapply(genes, function(x) gsub("_.*","",x))
+    # genes_final = unlist(genes_final)
+    # input = genes_final
   input = c("O14558", "P04792", "P23141", "P01833", "Q6E0U4", "P60985", "P17661")
   url = "https://discovery.indra.bio/api/indra_subnetwork_relations"
   dt = import_hgnc_dataset(file = latest_archive_url())
   rows = lapply(input, function(x) filter_by_keyword(dt, x, cols = c("uniprot_ids")))
+  rows = Filter(function(x) length(x$hgnc_id2) == 1, rows)
   hgnc_ids = lapply(rows, function(x) list("HGNC", x$hgnc_id2))
   groundings = list(nodes = hgnc_ids)
   json_body = jsonlite::toJSON(groundings, auto_unbox = TRUE)
   res = POST(url, body = json_body, add_headers("Content-Type" = "application/json"), encode = "raw")
   output = content(res)
   hgnc_ids_2 = lapply(rows, function(x) x$hgnc_id2)
-  vertices = data.frame(node = unlist(hgnc_ids_2), protein_id = input)
+  vertices = data.frame(node = unlist(hgnc_ids_2))
   edges = data.frame(
       from = unlist(lapply(output, function(x) x$source_id)), 
       to = unlist(lapply(output, function(x) x$target_id)),
@@ -45,7 +52,7 @@ visualizeNetworks = function(input) {
   Xn <- L[,1]
   Yn <- L[,2]
   
-  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(input), hoverinfo = "text")
+  network <- plot_ly(x = ~Xn, y = ~Yn, mode = "markers", text = unlist(hgnc_ids_2), hoverinfo = "text")
   
   edge_shapes <- list()
   for(i in 1:Ne) {
@@ -80,14 +87,4 @@ visualizeNetworks = function(input) {
   )
   
   fig
-  
-  # Create a graph
-  # g <- graph_from_data_frame(input, directed = FALSE)
-  # 
-  # # Plot the graph
-  # p <- plot_ly(data = input, x = ~x, y = ~y, text = ~name, mode = "markers+text", textposition = "bottom center") %>%
-  #   add_trace(data = input, x = ~x, y = ~y, xend = ~xend, yend = ~yend, mode = "lines") %>%
-  #   layout(title = "Network Visualization", showlegend = FALSE)
-  # 
-  # p
 }
