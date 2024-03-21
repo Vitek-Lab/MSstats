@@ -112,7 +112,7 @@ dataProcess = function(
     processed = getProcessed(input)
     input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
                                            remove_uninformative_feature_outlier)
-    summarized = tryCatch(MSstatsSummarizeV2(input, summaryMethod,
+    summarized = tryCatch(MSstatsSummarizeWithMultipleCores(input, summaryMethod,
                                            MBimpute, censoredInt, 
                                            remove50missing, equalFeatureVar, 
                                            numberOfCores),
@@ -158,7 +158,7 @@ dataProcess = function(
 #' 
 #' @return list of length one with run-level data.
 #' 
-MSstatsSummarizeV2 = function(input, method, impute, censored_symbol,
+MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
                               remove50missing, equal_variance, numberOfCores = 1) {
     if (numberOfCores > 1) {
         protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
