@@ -448,6 +448,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param numberOfCores Number of cores for parallel processing. 
 #' A logfile named `MSstats_groupComparison_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS.
+#' @importFrom parallel makeCluster clusterExport parLapply stopCluster
 #' @keywords internal
 .groupComparisonWithMultipleCores = function(summarized_list, contrast_matrix,
                                              save_fitted_models, repeated, samples_info, 
@@ -483,6 +484,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param save_fitted_models if TRUE, fitted models will be included in the output
 #' @param repeated logical, output of checkRepeatedDesign function
 #' @param samples_info data.table, output of getSamplesInfo function
+#' @importFrom utils txtProgressBar setTxtProgressBar
 #' @keywords internal
 .groupComparisonWithSingleCore = function(summarized_list, contrast_matrix,
                                              save_fitted_models, repeated, 

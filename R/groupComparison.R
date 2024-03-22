@@ -7,7 +7,7 @@
 #' @param log_base base of the logarithm used in dataProcess.
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
 #' a logfile named `MSstats_groupComparison_log_progress.log` is created to 
-#' track progress. Only works for Linux & Mac OS.
+#' track progress. Only works for Linux & Mac OS. Default is 1.
 #' @inheritParams .documentFunction
 #'
 #' @details
@@ -115,9 +115,7 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
 #' a logfile named `MSstats_groupComparison_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS.
-#' 
-#' @importFrom utils txtProgressBar setTxtProgressBar
-#' @importFrom parallel makeCluster clusterExport parLapply stopCluster
+#'
 #' 
 #' @export
 #' 

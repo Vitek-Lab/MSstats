@@ -49,6 +49,9 @@
 #' which have more than 50\% missing values. FALSE is default.
 #' @param maxQuantileforCensored Maximum quantile for deciding censored missing values, default is 0.999
 #' @param fix_missing Optional, same as the `fix_missing` parameter in MSstatsConvert::MSstatsBalancedDesign function
+#' @param numberOfCores Number of cores for parallel processing. When > 1, 
+#' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
+#' track progress. Only works for Linux & Mac OS. Default is 1.
 #' @inheritParams .documentFunction
 #' 
 #' @importFrom utils sessionInfo
@@ -78,7 +81,8 @@ dataProcess = function(
     min_feature_count = 2, n_top_feature = 3, summaryMethod = "TMP", 
     equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
     remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
-    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL
+    use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
+    numberOfCores = 1
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path,
@@ -108,10 +112,10 @@ dataProcess = function(
     processed = getProcessed(input)
     input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
                                            remove_uninformative_feature_outlier)
-    input_split = split(input, input$PROTEIN)
-    summarized = tryCatch(MSstatsSummarize(input_split, summaryMethod,
+    summarized = tryCatch(MSstatsSummarizeWithMultipleCores(input, summaryMethod,
                                            MBimpute, censoredInt, 
-                                           remove50missing, equalFeatureVar),
+                                           remove50missing, equalFeatureVar, 
+                                           numberOfCores),
                           error = function(e) {
                               print(e)
                               NULL
@@ -123,6 +127,79 @@ dataProcess = function(
     output = MSstatsSummarizationOutput(input, summarized, processed,
                                         summaryMethod, MBimpute, censoredInt)
     output
+}
+
+#' Feature-level data summarization with multiple cores
+#' 
+#' @param input feature-level data processed by dataProcess subfunctions
+#' @param method summarization method: "linear" or "TMP" 
+#' @param equal_variance only for summaryMethod = "linear". Default is TRUE. 
+#' Logical variable for whether the model should account for heterogeneous variation 
+#' among intensities from different features. Default is TRUE, which assume equal
+#' variance among intensities from features. FALSE means that we cannot assume 
+#' equal variance among intensities from features, then we will account for
+#' heterogeneous variation from different features.
+#' @param censored_symbol Missing values are censored or at random. 
+#' 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
+#' '0' uses zero intensities as censored intensity. 
+#' In this case, NA intensities are missing at random. 
+#' The output from Skyline should use '0'. 
+#' Null assumes that all NA intensites are randomly missing.
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
+#' which have more than 50\% missing values. FALSE is default.
+#' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
+#' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
+#' FALSE uses the values assigned by cutoffCensored
+#' @param numberOfCores Number of cores for parallel processing. When > 1, 
+#' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
+#' track progress. Only works for Linux & Mac OS. Default is 1.
+#' 
+#' @importFrom parallel makeCluster parLapply stopCluster clusterExport  
+#' 
+#' @return list of length one with run-level data.
+#' 
+MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
+                              remove50missing, equal_variance, numberOfCores = 1) {
+    if (numberOfCores > 1) {
+        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+        num_proteins = length(protein_indices)
+        function_environment = environment()
+        cl = parallel::makeCluster(numberOfCores)
+        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
+                                      "MSstatsSummarizeSingleLinear",
+                                      "input", "impute", "censored_symbol",
+                                      "remove50missing", "protein_indices", 
+                                      "equal_variance"), 
+                                envir = function_environment)
+        cat(paste0("Number of proteins to process: ", num_proteins), 
+            sep = "\n", file = "MSstats_dataProcess_log_progress.log")
+        if (method == "TMP") {
+            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
+                if (i %% 100 == 0) {
+                    cat("Finished processing an additional 100 proteins", 
+                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
+                }
+                single_protein = input[protein_indices[[i]],]
+                MSstatsSummarizeSingleTMP(
+                    single_protein, impute, censored_symbol, remove50missing)
+            })
+        } else {
+            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
+                if (i %% 100 == 0) {
+                    cat("Finished processing an additional 100 proteins", 
+                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
+                }
+                single_protein = input[protein_indices[[i]],]
+                MSstatsSummarizeSingleLinear(single_protein, equal_variance)
+            })
+        }
+        parallel::stopCluster(cl)
+        return(summarized_results)
+    } else {
+        input_split = split(input, input$PROTEIN)
+        return(MSstatsSummarize(input_split, method, impute, censored_symbol, 
+                                remove50missing, equal_variance))
+    }
 }
 
 
@@ -175,7 +252,6 @@ dataProcess = function(
 #' 
 MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
                             remove50missing, equal_variance) {
-    
     num_proteins = length(proteins_list)
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
