@@ -76,7 +76,7 @@ DIAUmpiretoMSstatsFormat = function(
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path)
-
+    
     input = MSstatsConvert::MSstatsImport(list(Fragments = raw.frag, 
                                                Peptides = raw.pep, 
                                                Proteins = raw.pro), 
@@ -108,6 +108,15 @@ DIAUmpiretoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the DIAUmpiretoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the DIAUmpiretoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::DIAUmpiretoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -194,6 +203,15 @@ MaxQtoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the MaxQtoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the MaxQtoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::MaxQtoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -252,6 +270,15 @@ OpenMStoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the OpenMStoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the OpenMStoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::OpenMStoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -337,6 +364,15 @@ OpenSWATHtoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the OpenSWATHtoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the OpenSWATHtoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::OpenSWATHtoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -460,6 +496,15 @@ DIANNtoMSstatsFormat = function(input, annotation = NULL,
   getOption("MSstatsLog")("INFO", msg_final)
   getOption("MSstatsMsg")("INFO", msg_final)
   getOption("MSstatsLog")("INFO", "\n")
+  msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                          "notify you that the DIANNtoMSstatsFormat function",
+                          "currently available in both MSstats and MSstatsConvert,",
+                          "will undergo a transition process. Starting from release 3.21",
+                          "the DIANNtoMSstatsFormat function in MSstats will be deprecated.",
+                          "Please take the necessary steps to update your codebase",
+                          "and migrate to MSstatsConvert::DIANNtoMSstatsFormat before",
+                          "release 3.21 to avoid any disruptions to your workflow.")
+  getOption("MSstatsMsg")("WARN", msg_deprecation)
   input
 }
 
@@ -537,6 +582,15 @@ ProgenesistoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the ProgenesistoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the ProgenesistoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::ProgenesistoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -621,6 +675,15 @@ PDtoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the PDtoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the PDtoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::PDtoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -724,6 +787,15 @@ SkylinetoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the SkylinetoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the SkylinetoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::SkylinetoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -803,6 +875,15 @@ SpectronauttoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the SpectronauttoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the SpectronauttoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::SpectronauttoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
 
@@ -858,5 +939,14 @@ FragPipetoMSstatsFormat = function(
     getOption("MSstatsLog")("INFO", msg_final)
     getOption("MSstatsMsg")("INFO", msg_final)
     getOption("MSstatsLog")("INFO", "\n")
+    msg_deprecation = paste("** FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the FragPipetoMSstatsFormat function",
+                            "currently available in both MSstats and MSstatsConvert,",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the FragPipetoMSstatsFormat function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsConvert::FragPipetoMSstatsFormat before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    getOption("MSstatsMsg")("WARN", msg_deprecation)
     input
 }
