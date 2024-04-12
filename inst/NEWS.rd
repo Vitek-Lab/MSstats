@@ -2,6 +2,13 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.12.0 (2024-05-01)}{
+    \itemize{
+        \item groupComparison : Added numberOfCores parameter to enable parallel processing
+        \item dataProcess : Added numberOfCores parameter to enable parallel processing
+    }
+}
+
 \section{Version 4.10.0 (2023-10-23)}{
     \itemize{
         \item Added functions to convert SDRF annotation files into MSstats annotation format.
