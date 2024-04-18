@@ -12,7 +12,8 @@ groupComparison(
   use_log_file = TRUE,
   append = FALSE,
   verbose = TRUE,
-  log_file_path = NULL
+  log_file_path = NULL,
+  numberOfCores = 1
 )
 }
 \arguments{
@@ -38,6 +39,10 @@ to the console.}
 data processing will be saved. 
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
+
+\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
+a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+track progress. Only works for Linux & Mac OS. Default is 1.}
 }
 \value{
 list that consists of three elements: "ComparisonResult" - data.frame with results of statistical testing,

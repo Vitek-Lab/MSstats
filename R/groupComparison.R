@@ -5,6 +5,9 @@
 #' @param save_fitted_models logical, if TRUE, fitted models will be added to
 #' the output.
 #' @param log_base base of the logarithm used in dataProcess.
+#' @param numberOfCores Number of cores for parallel processing. When > 1, 
+#' a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+#' track progress. Only works for Linux & Mac OS. Default is 1.
 #' @inheritParams .documentFunction
 #'
 #' @details
@@ -44,7 +47,8 @@
 groupComparison = function(contrast.matrix, data, 
                            save_fitted_models = TRUE, log_base = 2,
                            use_log_file = TRUE, append = FALSE, 
-                           verbose = TRUE, log_file_path = NULL
+                           verbose = TRUE, log_file_path = NULL, 
+                           numberOfCores = 1
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path, 
@@ -61,7 +65,8 @@ groupComparison = function(contrast.matrix, data,
     getOption("MSstatsMsg")("INFO",
                             " == Start to test and get inference in whole plot ...")
     testing_results = MSstatsGroupComparison(split_summarized, contrast_matrix,
-                                             save_fitted_models, repeated, samples_info)
+                                             save_fitted_models, repeated, samples_info, 
+                                             numberOfCores)
     getOption("MSstatsLog")("INFO",
                             "== Comparisons for all proteins are done.")
     getOption("MSstatsMsg")("INFO",
@@ -107,8 +112,10 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' @param save_fitted_models if TRUE, fitted models will be included in the output
 #' @param repeated logical, output of checkRepeatedDesign function
 #' @param samples_info data.table, output of getSamplesInfo function
-#' 
-#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @param numberOfCores Number of cores for parallel processing. When > 1, 
+#' a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+#' track progress. Only works for Linux & Mac OS.
+#'
 #' 
 #' @export
 #' 
@@ -130,22 +137,17 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' group_comparison[[2]][[3]] # NULL, because we set save_fitted_models to FALSE
 #' 
 MSstatsGroupComparison = function(summarized_list, contrast_matrix,
-                                  save_fitted_models, repeated, samples_info) {
-    groups = colnames(contrast_matrix)
-    has_imputed = attr(summarized_list, "has_imputed")
-    all_proteins_id = seq_along(summarized_list)
-    test_results = vector("list", length(all_proteins_id))
-    pb = txtProgressBar(max = length(all_proteins_id), style = 3)
-    for (i in all_proteins_id) {
-        comparison_outputs = MSstatsGroupComparisonSingleProtein(
-            summarized_list[[i]], contrast_matrix, repeated, 
-            groups, samples_info, save_fitted_models, has_imputed
-        )
-        test_results[[i]] = comparison_outputs
-        setTxtProgressBar(pb, i)
+                                  save_fitted_models, repeated, samples_info, 
+                                  numberOfCores = 1) {
+    if (numberOfCores > 1) {
+        return(.groupComparisonWithMultipleCores(summarized_list, contrast_matrix, 
+                                                 save_fitted_models, repeated, 
+                                                 samples_info, numberOfCores))
+    } else {
+        return(.groupComparisonWithSingleCore(summarized_list, contrast_matrix, 
+                                              save_fitted_models, repeated, 
+                                              samples_info))
     }
-    close(pb)
-    test_results
 }
 
 
