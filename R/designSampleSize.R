@@ -212,6 +212,9 @@ designSampleSize = function(
 #' (4) power. The input is the result from function (\code{\link{designSampleSize}}.
 #' 
 #' @param data output from function designSampleSize.
+#' @param isPlotly Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+#' will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
+#' as PDF files
 #' 
 #' @details Data in the example is based on the results of sample size calculation from function \code{\link{designSampleSize}}
 #' 
@@ -246,7 +249,7 @@ designSampleSize = function(
 #'                                desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
 #' designSampleSizePlots(data=result.power)
 #' 
-designSampleSizePlots = function(data) {
+designSampleSizePlots = function(data, isPlotly = FALSE) {
     if (length(unique(data$numSample)) > 1) {
         index = "numSample"
     } else if (length(unique(data$power)) > 1) {
@@ -257,39 +260,104 @@ designSampleSizePlots = function(data) {
         stop ("Invalid input")
     }
     
-    text.size = 1.2	
-    axis.size = 1.3	
-    lab.size = 1.7
-    
+    if(isPlotly) {
+        axis.size <- 10
+        lab.size <- 12 
+        text.size <- 12
+    } else {
+        text.size = 1.2	
+        axis.size = 1.3	
+        lab.size = 1.7
+    }
     if (index == "numSample") {
-        plot(data$desiredFC, data$numSample, 
-             lwd=2, xlab="", ylab="", 
-             cex.axis=axis.size, type="l", xaxt="n")
-        axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-             labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
-             cex.axis=axis.size)
-        mtext("Desired fold change", 1, line=3.5, cex=lab.size)
-        mtext("Minimal number of biological replicates", 2, line=2.5, cex=lab.size)
-        legend("topright",
-               c(paste("FDR is", unique(data$FDR)),
-                 paste("Statistical power is", unique(data$power))),
-               bty="n",
-               cex=text.size)
+        if(isPlotly) {
+            p <- plot_ly(data, x = ~desiredFC, y = ~numSample, type = 'scatter', mode = 'lines',
+                         line = list(width = 2)) %>%
+                layout(
+                    xaxis = list(
+                        title = "Desired fold change", 
+                        tickvals = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                        ticktext = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                        tickfont = list(size = axis.size)
+                    ),
+                    yaxis = list(
+                        title = "Minimal number of biological replicates",
+                        tickfont = list(size = axis.size)
+                    ),
+                    annotations = list(
+                        list(
+                            x = 1, y = 1, xref = 'paper', yref = 'paper',
+                            text = sprintf("FDR is %s<br>Statistical power is %s", 
+                                           paste(unique(data$FDR), collapse = ", "),
+                                           paste(unique(data$power), collapse = ", ")),
+                            showarrow = FALSE,
+                            xanchor = 'right', yanchor = 'top',
+                            font = list(size = text.size)
+                        )
+                    ),
+                    margin = list(t = 50)  # Adjust top margin to avoid cutting off text
+                )
+            return(p)
+        }
+        else {
+            plot(data$desiredFC, data$numSample, 
+                 lwd=2, xlab="", ylab="", 
+                 cex.axis=axis.size, type="l", xaxt="n")
+            axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                 labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05),
+                 cex.axis=axis.size)
+            mtext("Desired fold change", 1, line=3.5, cex=lab.size)
+            mtext("Minimal number of biological replicates", 2, line=2.5, cex=lab.size)
+            legend("topright",
+                   c(paste("FDR is", unique(data$FDR)),
+                     paste("Statistical power is", unique(data$power))),
+                   bty="n",
+                   cex=text.size)
+        }
     }
     
     if (index == "power") {
-        plot(data$desiredFC, data$power, 
-             lwd=2, xlab="", ylab="", 
-             cex.axis=axis.size, type="l", xaxt="n")
-        axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-             labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-             cex.axis=axis.size)
-        mtext("Desired fold change", 1, line=3.5, cex=lab.size)
-        mtext("Power", 2, line=2.5, cex=lab.size)
-        legend("bottomright", 
-               c(paste("Number of replicates is", unique(data$numSample)), 
-                 paste("FDR is", unique(data$FDR))), 
-               bty="n", 
-               cex=text.size)
+        if(isPlotly) {
+            p <- plot_ly(data, x = ~desiredFC, y = ~power, type = 'scatter', mode = 'lines',
+                         line = list(width = 2)) %>%
+                layout(
+                    xaxis = list(
+                        title = "Desired fold change", 
+                        tickvals = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                        ticktext = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                        tickfont = list(size = axis.size)
+                    ),
+                    yaxis = list(
+                        title = "Power",
+                        tickfont = list(size = axis.size)
+                    ),
+                    showlegend = FALSE,  # Hide default legend
+                    annotations = list(
+                        list(
+                            x = 0.5, y = 0.5, xref = 'paper', yref = 'paper',
+                            text = paste("Number of replicates is", unique(data$numSample), "<br>FDR is", unique(data$FDR)),
+                            showarrow = FALSE,
+                            xanchor = 'right', yanchor = 'bottom',
+                            font = list(size = text.size)
+                        )
+                    ),
+                    margin = list(b = 100)  # Adjust bottom margin if necessary
+                )
+            return(p)
+        } else {
+            plot(data$desiredFC, data$power, 
+                 lwd=2, xlab="", ylab="", 
+                 cex.axis=axis.size, type="l", xaxt="n")
+            axis(1, at=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                 labels=seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                 cex.axis=axis.size)
+            mtext("Desired fold change", 1, line=3.5, cex=lab.size)
+            mtext("Power", 2, line=2.5, cex=lab.size)
+            legend("bottomright", 
+                   c(paste("Number of replicates is", unique(data$numSample)), 
+                     paste("FDR is", unique(data$FDR))), 
+                   bty="n", 
+                   cex=text.size)
+        }
     }
 }
