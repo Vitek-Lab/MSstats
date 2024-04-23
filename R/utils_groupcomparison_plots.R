@@ -18,7 +18,6 @@
                               "Result does not have the following comparisons:")
                 msg_2 = paste(wrong_labels, sep = ", ", collapse = ", ")
                 msg = paste(msg_1, msg_2)
-                getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             }
         }
