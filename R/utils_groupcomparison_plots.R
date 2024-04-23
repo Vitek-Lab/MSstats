@@ -26,7 +26,6 @@
             if (n_labels < max(selected_labels)) {
                 msg = paste("Please check your selection of comparisons. There are",
                             n_labels, "comparisons in this result.")
-                getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
                 chosen_labels = all_labels[selected_labels]
