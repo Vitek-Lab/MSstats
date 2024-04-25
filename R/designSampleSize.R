@@ -261,9 +261,9 @@ designSampleSizePlots = function(data, isPlotly = FALSE) {
     }
     
     if(isPlotly) {
-        axis.size <- 10
-        lab.size <- 12 
-        text.size <- 12
+        axis.size = 10
+        lab.size = 12 
+        text.size = 12
     } else {
         text.size = 1.2	
         axis.size = 1.3	
