@@ -272,31 +272,29 @@ designSampleSizePlots = function(data, isPlotly = FALSE) {
     if (index == "numSample") {
         if(isPlotly) {
             p <- plot_ly(data, x = ~desiredFC, y = ~numSample, type = 'scatter', mode = 'lines',
-                         line = list(width = 2)) %>%
-                layout(
-                    xaxis = list(
-                        title = "Desired fold change", 
-                        tickvals = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-                        ticktext = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-                        tickfont = list(size = axis.size)
-                    ),
-                    yaxis = list(
-                        title = "Minimal number of biological replicates",
-                        tickfont = list(size = axis.size)
-                    ),
-                    annotations = list(
-                        list(
-                            x = 1, y = 1, xref = 'paper', yref = 'paper',
-                            text = sprintf("FDR is %s<br>Statistical power is %s", 
-                                           paste(unique(data$FDR), collapse = ", "),
-                                           paste(unique(data$power), collapse = ", ")),
-                            showarrow = FALSE,
-                            xanchor = 'right', yanchor = 'top',
-                            font = list(size = text.size)
-                        )
-                    ),
-                    margin = list(t = 50)  # Adjust top margin to avoid cutting off text
+                         line = list(width = 2))
+            p <- layout(p, xaxis = list(
+                title = "Desired fold change", 
+                tickvals = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                ticktext = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                tickfont = list(size = axis.size)
+            ),
+            yaxis = list(
+                title = "Minimal number of biological replicates",
+                tickfont = list(size = axis.size)
+            ),
+            annotations = list(
+                list(
+                    x = 1, y = 1, xref = 'paper', yref = 'paper',
+                    text = sprintf("FDR is %s<br>Statistical power is %s", 
+                                   paste(unique(data$FDR), collapse = ", "),
+                                   paste(unique(data$power), collapse = ", ")),
+                    showarrow = FALSE,
+                    xanchor = 'right', yanchor = 'top',
+                    font = list(size = text.size)
                 )
+            ),
+            margin = list(t = 50))  # Adjust top margin to avoid cutting off text
             return(p)
         }
         else {
@@ -319,30 +317,28 @@ designSampleSizePlots = function(data, isPlotly = FALSE) {
     if (index == "power") {
         if(isPlotly) {
             p <- plot_ly(data, x = ~desiredFC, y = ~power, type = 'scatter', mode = 'lines',
-                         line = list(width = 2)) %>%
-                layout(
-                    xaxis = list(
-                        title = "Desired fold change", 
-                        tickvals = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-                        ticktext = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
-                        tickfont = list(size = axis.size)
-                    ),
-                    yaxis = list(
-                        title = "Power",
-                        tickfont = list(size = axis.size)
-                    ),
-                    showlegend = FALSE,  # Hide default legend
-                    annotations = list(
-                        list(
-                            x = 0.5, y = 0.5, xref = 'paper', yref = 'paper',
-                            text = paste("Number of replicates is", unique(data$numSample), "<br>FDR is", unique(data$FDR)),
-                            showarrow = FALSE,
-                            xanchor = 'right', yanchor = 'bottom',
-                            font = list(size = text.size)
-                        )
-                    ),
-                    margin = list(b = 100)  # Adjust bottom margin if necessary
+                         line = list(width = 2))
+            p <- layout(p, xaxis = list(
+                title = "Desired fold change", 
+                tickvals = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                ticktext = seq(min(data$desiredFC), max(data$desiredFC), 0.05), 
+                tickfont = list(size = axis.size)
+            ),
+            yaxis = list(
+                title = "Power",
+                tickfont = list(size = axis.size)
+            ),
+            showlegend = FALSE,  # Hide default legend
+            annotations = list(
+                list(
+                    x = 0.5, y = 0.5, xref = 'paper', yref = 'paper',
+                    text = paste("Number of replicates is", unique(data$numSample), "<br>FDR is", unique(data$FDR)),
+                    showarrow = FALSE,
+                    xanchor = 'right', yanchor = 'bottom',
+                    font = list(size = text.size)
                 )
+            ),
+            margin = list(b = 100))  # Adjust bottom margin if necessary
             return(p)
         } else {
             plot(data$desiredFC, data$power, 
