@@ -746,7 +746,7 @@ dataProcessPlots = function(
     setTxtProgressBar(pb, 4)
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
     unlink(file_name)
-    unlink("lib",recursive = T)
+    unlink("lib",recursive = TRUE)
     
     close(pb)
 }
