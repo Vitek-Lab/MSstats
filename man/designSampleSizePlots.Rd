@@ -4,10 +4,14 @@
 \alias{designSampleSizePlots}
 \title{Visualization for sample size calculation}
 \usage{
-designSampleSizePlots(data)
+designSampleSizePlots(data, isPlotly = FALSE)
 }
 \arguments{
 \item{data}{output from function designSampleSize.}
+
+\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
+as PDF files}
 }
 \value{
 Plot for estimated sample size with assigned variable.

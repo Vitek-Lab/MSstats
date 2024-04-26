@@ -48,7 +48,7 @@ biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-RoxygenNote: 7.3.0
+RoxygenNote: 7.3.1
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
