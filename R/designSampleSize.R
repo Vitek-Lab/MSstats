@@ -29,7 +29,7 @@
 #' desiredFC, numSample, FDR,  and power.
 #' 
 #' @importFrom stats median
-#' @importFrom plotly ggplotly style add_trace plot_ly subplot
+#' @importFrom plotly ggplotly style add_trace plot_ly subplot layout
 #' 
 #' @export
 #'  
