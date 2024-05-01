@@ -109,8 +109,12 @@ groupComparisonPlots = function(
     input = input[Label %in% chosen_labels]
     input[, Protein := factor(Protein)]
     input[, Label := factor(Label)]
-    warning("Avoid plotting all proteins as it can take a large amount of time 
+    
+    if(type == "HEATMAP" || type == "COMPARISONPLOT") {
+        warning("Avoid plotting all proteins as it can take a large amount of time 
             to download the files")
+    }
+    
     if(isPlotly & address != FALSE) {
         print("Plots will be saved as .HTML file as plotly is selected, set isPlotly = FALSE, if 
             you want to generate PDF using ggplot2")
