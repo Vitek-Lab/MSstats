@@ -203,7 +203,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
                            limits = c(y.limdown, y.limup)) +
         labs(title = unique(label_name))
     plot = plot +
-        scale_x_continuous(paste0("Log", log_base_pval, " fold change"),
+        scale_x_continuous(paste0("Log", log_base_FC, " fold change"),
                            limits = c(-x.lim, x.lim))
     if (ProteinName) {
         if (!(length(unique(input$colgroup)) == 1 & any(unique(input$colgroup) == "black"))) {
@@ -237,12 +237,12 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     }
     if (is.numeric(FCcutoff)) {
         FCcutpos = data.table::setnames(data.table("sigline", 
-                                                   log(FCcutoff, log_base_pval), 
+                                                   log(FCcutoff, log_base_FC), 
                                                    seq(y.limdown, y.limup, length.out = 10), 
                                                    "dotted"),
                                         c("Protein", "logFC", log_adjp, "line"))
         FCcutneg = data.table::setnames(data.table("sigline", 
-                                                   (-log(FCcutoff, log_base_pval)), 
+                                                   (-log(FCcutoff, log_base_FC)), 
                                                    seq(y.limdown, y.limup, length.out = 10), 
                                                    "dotted"),
                                         c("Protein", "logFC", log_adjp, "line"))
