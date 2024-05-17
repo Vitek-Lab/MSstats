@@ -30,8 +30,8 @@ In this case, NA intensities are missing at random.
 The output from Skyline should use '0'. 
 Null assumes that all NA intensites are randomly missing.}
 
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
-which have more than 50\% missing values. FALSE is default.}
+\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
+where every run has at least 50\% missing values for each peptide. FALSE is default.}
 
 \item{equal_variance}{only for summaryMethod = "linear". Default is TRUE. 
 Logical variable for whether the model should account for heterogeneous variation 
