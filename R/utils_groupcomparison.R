@@ -142,7 +142,7 @@ getSamplesInfo = function(summarization_output) {
                                        has_tech_replicates, weights) {
     if (!repeated) {
         if (!has_tech_replicates | is_single_subject) {
-            full_fit = lm(ABUNDANCE ~ GROUP, data = input)
+            full_fit = lm(ABUNDANCE ~ GROUP, data = input, weights=weights)
             df_full = full_fit[["df.residual"]]
         } else {
             full_fit = suppressMessages(try(
