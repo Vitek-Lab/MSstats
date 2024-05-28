@@ -45,8 +45,8 @@
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
 #' by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
+#' where every run has at least 50\% missing values for each peptide. FALSE is default.
 #' @param maxQuantileforCensored Maximum quantile for deciding censored missing values, default is 0.999
 #' @param fix_missing Optional, same as the `fix_missing` parameter in MSstatsConvert::MSstatsBalancedDesign function
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
@@ -145,8 +145,8 @@ dataProcess = function(
 #' In this case, NA intensities are missing at random. 
 #' The output from Skyline should use '0'. 
 #' Null assumes that all NA intensites are randomly missing.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
+#' where every run has at least 50\% missing values for each peptide. FALSE is default.
 #' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
 #' FALSE uses the values assigned by cutoffCensored
@@ -206,24 +206,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' Feature-level data summarization
 #' 
 #' @param proteins_list list of processed feature-level data
-#' @param method summarization method: "linear" or "TMP" 
-#' @param equal_variance only for summaryMethod = "linear". Default is TRUE. 
-#' Logical variable for whether the model should account for heterogeneous variation 
-#' among intensities from different features. Default is TRUE, which assume equal
-#' variance among intensities from features. FALSE means that we cannot assume 
-#' equal variance among intensities from features, then we will account for
-#' heterogeneous variation from different features.
-#' @param censored_symbol Missing values are censored or at random. 
-#' 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-#' '0' uses zero intensities as censored intensity. 
-#' In this case, NA intensities are missing at random. 
-#' The output from Skyline should use '0'. 
-#' Null assumes that all NA intensites are randomly missing.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
-#' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-#' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
-#' FALSE uses the values assigned by cutoffCensored
+#' @inheritParams MSstatsSummarizeWithMultipleCores
 #' 
 #' @importFrom data.table uniqueN
 #' @importFrom utils setTxtProgressBar
