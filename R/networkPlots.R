@@ -24,6 +24,8 @@ visualizeNetworks = function(input) {
   
   
   # Construct Cytoscape network
+  # NEXT STEP: CREATE EVIDENCE LINK TO INDRA DB WEBSITE HTML ASSEMBLER
+  # NEXT STEP: COLLAPSE EDGES WITH SAME SOURCE AND TARGET
   nodes = data.frame(id=input,
                      uniprot_id=uniprot_ids,
                       logFC=c(0.1,-0.3,-0.7,0.7,-0.6), 
