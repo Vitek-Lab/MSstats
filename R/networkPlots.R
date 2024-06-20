@@ -47,14 +47,14 @@ visualizeNetworks = function(input) {
   )
   nodeLabels = mapVisualProperty('Node Label','uniprot_id','p')
   edgeWidth = mapVisualProperty('Edge Width','evidenceCount','p')
-  createVisualStyle("Z3",
+  createVisualStyle("Y",
                     list(
+                        NODE_FILL_COLOR="lightblue",
                         NODE_SHAPE="ROUNDRECT",
-                        NODE_WIDTH=50,
-                        NODE_HEIGHT=30,
-                        NODE_LABEL_FONT_SIZE=5,
+                        NODE_SIZE=50,
+                        NODE_LABEL_FONT_SIZE=6,
                         NODE_LABEL_POSITION="center"), 
                     list(nodeLabels, arrowShapes, edgeWidth))
-  setVisualStyle("Z3")
+  setVisualStyle("Y")
   
 }
