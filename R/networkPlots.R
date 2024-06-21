@@ -12,8 +12,8 @@
 #'
 #'               
 visualizeNetworks = function(input) {
-  # Fetch data from INDRA
-  # input = c("1925", "2092", "3621", "25528", "10289")
+  # FUNCTION 1 - Fetch data from INDRA and return nodes and edges dataframes
+  input = c("1925", "2092", "3621", "25528", "10289")
   input = c("1103", "1104", "13575", "25528", "10289")
   uniprot_ids = c("BRD2_HUMAN", "BRD3_HUMAN", "BRD4_HUMAN", "NECP2_HUMAN", "RFA1_HUMAN")
   gene_id_map = hashmap()
@@ -42,8 +42,7 @@ visualizeNetworks = function(input) {
             query(gene_id_map, query(edge_data, x)$target_id), "&type=",
             query(edge_data, x)$data$stmt_type, "&format=html", sep=""))
   
-  
-  # Construct Cytoscape network
+
   nodes = data.frame(id=input,
                      uniprot_id=uniprot_ids,
                       logFC=c(0.1,-0.3,-0.7,0.7,-0.6), 
@@ -57,7 +56,7 @@ visualizeNetworks = function(input) {
                       evidenceLink=evidenceList,
                       stringsAsFactors=FALSE)
   
-  
+  # FUNCTION 2 - Create network from node and edge dataframes
   network_id = createNetworkFromDataFrames(nodes,edges, title="my first network", collection="DataFrame Example")
   arrowShapes = mapVisualProperty(
       'Edge Target Arrow Shape','interaction',
