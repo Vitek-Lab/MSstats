@@ -17,7 +17,7 @@
 fetchIndraData = function(input, pvalue_cutoff = 0.05, stmt_types = c("Complex")) {
     input = filter(input, adj.pvalue < pvalue_cutoff)
     input = filter(input, is.na(issue))
-    hgnc_ids = input$HgncId
+    hgnc_ids = as.character(input$HgncId)
     uniprot_ids = input$Protein
     gene_id_map = hashmap()
     gene_id_map[input$HgncId] = input$HgncName
@@ -80,7 +80,6 @@ visualizeNetworks = function(nodes, edges) {
       c("Arrow","Arrow","Arrow")
   )
   nodeLabels = mapVisualProperty('Node Label','uniprot_id','p')
-  edgeWidth = mapVisualProperty('Edge Width','evidenceCount','p')
   createVisualStyle("Y",
                     list(
                         NODE_FILL_COLOR="lightblue",
@@ -90,7 +89,6 @@ visualizeNetworks = function(nodes, edges) {
                         NODE_LABEL_POSITION="center"), 
                     list(
                         nodeLabels, 
-                        edgeWidth,
                         arrowShapes
                     ))
   setVisualStyle("Y")
