@@ -165,6 +165,8 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         num_proteins = length(protein_indices)
         function_environment = environment()
         cl = parallel::makeCluster(numberOfCores)
+        getOption("MSstatsLog")("INFO",
+                                "Starting the cluster setup for summarization")
         parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
                                       "MSstatsSummarizeSingleLinear",
                                       "input", "impute", "censored_symbol",
@@ -196,10 +198,67 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         parallel::stopCluster(cl)
         return(summarized_results)
     } else {
-        input_split = split(input, input$PROTEIN)
-        return(MSstatsSummarize(input_split, method, impute, censored_symbol, 
+        return(MSstatsSummarizeWithSingleCore(input, method, impute, censored_symbol, 
                                 remove50missing, equal_variance))
     }
+}
+
+#' Feature-level data summarization with 1 core
+#' 
+#' @inheritParams MSstatsSummarizeWithMultipleCores
+#' 
+#' @importFrom data.table uniqueN
+#' @importFrom utils setTxtProgressBar
+#' 
+#' @return list of length one with run-level data.
+#' 
+#' @export
+#' 
+#' @examples
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input = MSstatsSelectFeatures(input, "all")
+#' processed = getProcessed(input)
+#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+#' length(summarized) # list of summarization outputs for each protein
+#' head(summarized[[1]][[1]]) # run-level summary
+#' 
+MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
+                            remove50missing, equal_variance) {
+    
+            
+    protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+    num_proteins = length(protein_indices)
+    summarized_results = vector("list", num_proteins)
+    if (method == "TMP") {
+        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+        for (protein_id in seq_len(num_proteins)) {
+            single_protein = input[protein_indices[[protein_id]],]
+            summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
+                single_protein, impute, censored_symbol, remove50missing)
+            setTxtProgressBar(pb, protein_id)
+        }
+        close(pb)
+    } else {
+        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+        for (protein_id in seq_len(num_proteins)) {
+            single_protein = input[protein_indices[[protein_id]],]
+            summarized_result = MSstatsSummarizeSingleLinear(single_protein,
+                                                             equal_variance)
+            summarized_results[[protein_id]] = summarized_result
+            setTxtProgressBar(pb, protein_id)
+        }
+        close(pb)
+    }
+    summarized_results
 }
 
 
@@ -257,6 +316,15 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
         }
         close(pb)
     }
+    msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the MSstatsSummarize function",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the MSstatsSummarize function in MSstats will be deprecated",
+                            "in favor of MSstatsSummarizeWithSingleCore.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsSummarizeWithSingleCore before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    message(msg_deprecation)
     summarized_results
 }
 

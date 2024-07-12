@@ -16,7 +16,7 @@ MSstatsSummarizationOutput(
 \arguments{
 \item{input}{`data.table` in MSstats format}
 
-\item{summarized}{output of the `MSstatsSummarize` function}
+\item{summarized}{output of the `MSstatsSummarizeWithSingleCore` function}
 
 \item{processed}{output of MSstatsSelectFeatures}
 
@@ -53,8 +53,7 @@ input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 input = MSstatsSelectFeatures(input, "all")
 processed = getProcessed(input)
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-input_split = split(input, input$PROTEIN)
-summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
+summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
 output = output = MSstatsSummarizationOutput(input, summarized, processed,
 method, impute, cens)
 
