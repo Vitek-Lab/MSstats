@@ -4,7 +4,7 @@
 #' @param edges dataframe of edges
 #' @param pvalue_cutoff p-value cutoff for highlighting significant proteins. Default is 0.05
 #' @param logfc_cutoff log fold change cutoff for highlighting significant proteins. Default is 0.5
-#' @importFrom RCy3 createNetworkFromDataFrames mapVisualProperty createVisualStyle setVisualStyle setNodeColorMapping
+#' @importFrom RCy3 createNetworkFromDataFrames mapVisualProperty createVisualStyle setVisualStyle
 #' 
 #' @export
 #' 
@@ -25,13 +25,17 @@ visualizeSubnetwork = function(nodes, edges, pvalue_cutoff = 0.05, logfc_cutoff 
         EDGE_TARGET_ARROW_SHAPE="Arrow")
     VISUAL_STYLE_NAME = "MSstats-Indra Visual Style"
     
+    nodes$logFC_color = nodes$logFC
+    nodes$logFC_color[nodes$pvalue > pvalue_cutoff | abs(nodes$logFC) < logfc_cutoff] = 0
+    
     createNetworkFromDataFrames(nodes, edges)
-    control.points <- c (-logfc_cutoff, 0.0, logfc_cutoff)
-    colors <-  c ('#CC5522',  '#DD8855', '#FFFFFF','#5588DD','#2255CC')
-    RCy3::setNodeColorMapping("logFC", control.points, colors)
     
     VISUAL_STYLE_MAPPINGS = list(
-        mapVisualProperty('Node Label','id','p')
+        mapVisualProperty('Node Label','id','p'),
+        mapVisualProperty('Node Fill Color','logFC_color','c',
+                          c(-logfc_cutoff, 0.0, logfc_cutoff),
+                          c('#CC5522','#DD8855','#FFFFFF','#5588DD','#2255CC'))
+        
     )
     createVisualStyle(VISUAL_STYLE_NAME, DEFAULT_VISUAL_STYLE, VISUAL_STYLE_MAPPINGS)
     setVisualStyle(VISUAL_STYLE_NAME)
