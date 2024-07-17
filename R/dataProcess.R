@@ -181,7 +181,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                     cat("Finished processing an additional 100 proteins", 
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
-                single_protein = input[input$PROTEIN == proteins[[i]],]
+                single_protein = input[PROTEIN == proteins[i]]
                 MSstatsSummarizeSingleTMP(
                     single_protein, impute, censored_symbol, remove50missing)
             })
@@ -191,7 +191,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                     cat("Finished processing an additional 100 proteins", 
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
-                single_protein = input[input$PROTEIN == proteins[[i]],]
+                single_protein = input[PROTEIN == proteins[i]]
                 MSstatsSummarizeSingleLinear(single_protein, equal_variance)
             })
         }
@@ -241,7 +241,7 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
     if (method == "TMP") {
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
         for (protein_id in seq_len(num_proteins)) {
-            single_protein = input[input$PROTEIN == proteins[[protein_id]],]
+            single_protein = input[PROTEIN == proteins[protein_id]]
             summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
                 single_protein, impute, censored_symbol, remove50missing)
             setTxtProgressBar(pb, protein_id)
@@ -250,7 +250,7 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
     } else {
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
         for (protein_id in seq_len(num_proteins)) {
-            single_protein = input[input$PROTEIN == proteins[[protein_id]],]
+            single_protein = input[PROTEIN == proteins[protein_id]]
             summarized_result = MSstatsSummarizeSingleLinear(single_protein,
                                                              equal_variance)
             summarized_results[[protein_id]] = summarized_result
