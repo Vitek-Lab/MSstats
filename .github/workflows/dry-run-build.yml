@@ -11,7 +11,7 @@ jobs:
       - name: Setup R and Bioconductor
         uses: grimbough/bioc-actions/setup-bioc@v1
         with:
-          bioc-version: release
+          bioc-version: devel
       - name: Install dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
       - name: Build, Install, Check
