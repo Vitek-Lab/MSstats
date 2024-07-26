@@ -1,7 +1,7 @@
 #' Post-processing output from MSstats summarization
 #' 
 #' @param input `data.table` in MSstats format
-#' @param summarized output of the `MSstatsSummarize` function
+#' @param summarized output of the `MSstatsSummarizeWithSingleCore` function
 #' @param processed output of MSstatsSelectFeatures
 #' @param method name of the summarization method
 #' (`summaryMethod` parameter to `dataProcess`)
@@ -32,8 +32,7 @@
 #' input = MSstatsSelectFeatures(input, "all")
 #' processed = getProcessed(input)
 #' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-#' input_split = split(input, input$PROTEIN)
-#' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
+#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
 #' output = output = MSstatsSummarizationOutput(input, summarized, processed,
 #' method, impute, cens)
 #' 
