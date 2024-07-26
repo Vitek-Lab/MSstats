@@ -161,8 +161,8 @@ dataProcess = function(
 MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
                               remove50missing, equal_variance, numberOfCores = 1) {
     if (numberOfCores > 1) {
-        proteins = unique(input$PROTEIN)
-        num_proteins = length(proteins)
+        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+        num_proteins = length(protein_indices)
         function_environment = environment()
         cl = parallel::makeCluster(numberOfCores)
         getOption("MSstatsLog")("INFO",
@@ -170,7 +170,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
                                       "MSstatsSummarizeSingleLinear",
                                       "input", "impute", "censored_symbol",
-                                      "remove50missing", "proteins", 
+                                      "remove50missing", "protein_indices", 
                                       "equal_variance"), 
                                 envir = function_environment)
         cat(paste0("Number of proteins to process: ", num_proteins), 
@@ -181,7 +181,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                     cat("Finished processing an additional 100 proteins", 
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
-                single_protein = input[input$PROTEIN == proteins[[i]],]
+                single_protein = input[protein_indices[[i]],]
                 MSstatsSummarizeSingleTMP(
                     single_protein, impute, censored_symbol, remove50missing)
             })
@@ -191,7 +191,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                     cat("Finished processing an additional 100 proteins", 
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
-                single_protein = input[input$PROTEIN == proteins[[i]],]
+                single_protein = input[protein_indices[[i]],]
                 MSstatsSummarizeSingleLinear(single_protein, equal_variance)
             })
         }
@@ -235,13 +235,13 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
                             remove50missing, equal_variance) {
     
             
-    proteins = unique(input$PROTEIN)
-    num_proteins = length(proteins)
+    protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+    num_proteins = length(protein_indices)
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
         for (protein_id in seq_len(num_proteins)) {
-            single_protein = input[input$PROTEIN == proteins[[protein_id]],]
+            single_protein = input[protein_indices[[protein_id]],]
             summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
                 single_protein, impute, censored_symbol, remove50missing)
             setTxtProgressBar(pb, protein_id)
@@ -250,7 +250,7 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
     } else {
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
         for (protein_id in seq_len(num_proteins)) {
-            single_protein = input[input$PROTEIN == proteins[[protein_id]],]
+            single_protein = input[protein_indices[[protein_id]],]
             summarized_result = MSstatsSummarizeSingleLinear(single_protein,
                                                              equal_variance)
             summarized_results[[protein_id]] = summarized_result
