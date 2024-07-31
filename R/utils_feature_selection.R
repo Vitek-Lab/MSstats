@@ -28,6 +28,7 @@
 #' head(input_informative)
 #' 
 MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2) {
+    checkmate::assertChoice(method, c("all", "top3", "topN", "highQuality"))
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
     } else if (method == "highQuality") {
