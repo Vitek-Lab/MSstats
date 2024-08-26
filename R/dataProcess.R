@@ -440,7 +440,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                               newdata = .SD)]
         single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
         single_protein[, newABUNDANCE := ifelse(
-            censored & LABEL == "L" & REASON == "MNAR", 
+            censored & (LABEL == "L") & (REASON == "MNAR"), 
             predicted, newABUNDANCE)]
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
     } else {
