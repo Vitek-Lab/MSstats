@@ -63,3 +63,15 @@
     survival_fit = .fitSurvival(input[LABEL == "L", ])
     predict(survival_fit, newdata = input)
 }
+
+
+.modelFeatureIntensity = function(input){
+    input[, mean_feat_int :=mean(ABUNDANCE, na.rm=TRUE), 
+          by=list(PROTEIN, FEATURE)]
+    
+    upper = unname(quantile(input$mean_feat_int, 0.9, na.rm=TRUE))
+    input$REASON = ifelse(input$mean_feat_int >= upper, 
+                          "MAR", "MNAR")
+    input$mean_feat_int = NULL
+    return(input)
+}

@@ -97,6 +97,7 @@ dataProcess = function(
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
+    input = .modelFeatureIntensity(input)
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
     input = MSstatsMergeFractions(input)
     input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
@@ -438,8 +439,9 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         single_protein[, predicted := predict(survival_fit,
                                               newdata = .SD)]
         single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                                predicted, newABUNDANCE)]
+        single_protein[, newABUNDANCE := ifelse(
+            censored & LABEL == "L" & REASON == "MNAR", 
+            predicted, newABUNDANCE)]
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
     } else {
         survival = single_protein[, cols, with = FALSE]

@@ -105,7 +105,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
              "PrecursorCharge", "FragmentIon", "ProductCharge", 
              "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
     provided_cols = intersect(cols, colnames(input))
-    
+    print(provided_cols)
     if (length(provided_cols) < 10) {
         msg = paste("Missing columns in the input:", 
                     paste(setdiff(cols, colnames(input)), collapse = " "))
@@ -117,11 +117,12 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     
     balanced_cols = c("PeptideSequence", "PrecursorCharge", 
                       "FragmentIon", "ProductCharge")
+    print(head(input))
     input = MSstatsConvert::MSstatsBalancedDesign(
         input, balanced_cols, TRUE, TRUE, fix_missing)
     input = data.table::as.data.table(unclass(input))
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
-    
+    print(head(input))
     
     if (!is.numeric(input$INTENSITY)) {	
         suppressWarnings({
@@ -155,6 +156,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
         levels(input$ISOTOPELABELTYPE) = "L"
     }
     input
+    print(head(input))
 }
 
 
