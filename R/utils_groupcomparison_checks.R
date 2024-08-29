@@ -62,5 +62,5 @@
                                                               sep = "."))])
     run_counts = unique_annot[, list(NumRuns = data.table::uniqueN(RUN)),
                               by = "SUBJECT_NESTED"]
-    any(run_counts$NumRuns != 1)
+    any(run_counts[["NumRuns"]] > 1)
 }
