@@ -89,6 +89,7 @@ We have the following converters, which allow you to convert various types of ou
 8. ProgenesistoMSstatsFormat
 9. SkylinetoMSstatsFormat
 10. SpectronauttoMSstatsFormat
+11. MetamorpheusToMSstatsFormat
 
 We show an example of how to use the above said Formatters. 
 
@@ -184,13 +185,13 @@ After dataProcessing the input data, MSstats provides multiple plots to analyze 
 ```{r dataProcessPlots, results='hide', message=FALSE, warning=FALSE}
 
 # Profile plot
-dataProcessPlots(data=summarized, type="ProfilePlot")
+dataProcessPlots(data=summarized, type="ProfilePlot", address = FALSE, which.Protein = "P0ABU9")
 
 # Quality control plot
-dataProcessPlots(data=summarized, type="QCPlot")
+dataProcessPlots(data=summarized, type="QCPlot", address = FALSE, which.Protein = "P0ABU9")
 
 # Quantification plot for conditions
-dataProcessPlots(data=summarized, type="ConditionPlot")
+dataProcessPlots(data=summarized, type="ConditionPlot", address = FALSE, which.Protein = "P0ABU9")
 
 ```
 
@@ -232,7 +233,7 @@ Visualization for model-based analysis and summarizing differentially abundant p
 
 * __Comparison plot__ : For multiple comparisons per protein. It illustrates log-fold change and its variation of multiple comparisons for single protein. X-axis is comparison of interest. Y-axis is the log fold change. The red points are the estimated log fold change from the model. The error bars are the confidence interval with 0.95 significant level for log fold change. This interval is only based on the standard error, which is estimated from the model.
 
-```{r code GroupComparisonPlot}
+```
 groupComparisonPlots(
   model$ComparisonResult,
   type="Heatmap",
