@@ -77,7 +77,7 @@ head(annotation, 5)
 
 
 
-We have the following converters, which allow you to convert various types of output reports which include the feature level data to the required input format of MSstats.
+We have the following converters, which allow you to convert various types of output reports which include the feature level data to the required input format of MSstats. Further information about the converters can be found in the MSStatsConvert package.
 
 1. DIANNtoMSstatsFormat
 2. DIAUmpiretoMSstatsFormat
@@ -233,7 +233,7 @@ Visualization for model-based analysis and summarizing differentially abundant p
 
 * __Comparison plot__ : For multiple comparisons per protein. It illustrates log-fold change and its variation of multiple comparisons for single protein. X-axis is comparison of interest. Y-axis is the log fold change. The red points are the estimated log fold change from the model. The error bars are the confidence interval with 0.95 significant level for log fold change. This interval is only based on the standard error, which is estimated from the model.
 
-```
+``` {r GroupComparisonPlots}
 groupComparisonPlots(
   model$ComparisonResult,
   type="Heatmap",
