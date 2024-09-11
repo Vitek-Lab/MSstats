@@ -258,7 +258,7 @@ groupComparisonPlots(
   which.Comparison = "all",
   which.Protein = "all",
   address = FALSE,
-  isPlotly = TRUE
+  isPlotly = FALSE
 )
 
 
