@@ -56,7 +56,6 @@ We will also load the Annotation Dataset using MSstatsConvert. You can access th
 
 ``` {r code Load Dataset}
 library(MSstats)
-library(MSstatsConvert)
 
 # Load data
 pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
@@ -96,7 +95,7 @@ We show an example of how to use the above said Converters.
 
 ```{r Converter Files}
 
-# library(MSStatsConvert)
+library(MSstatsConvert)
 
 skyline_raw = system.file("tinytest/raw_data/Skyline/skyline_input.csv", 
                     package = "MSstatsConvert")
