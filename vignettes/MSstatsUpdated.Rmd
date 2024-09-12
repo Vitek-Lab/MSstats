@@ -1,5 +1,5 @@
 ---
-title: "MSStats Vignette"
+title: "MSstats: End to End Workflow"
 date: September 5th, 2024
 ---
 
@@ -14,7 +14,7 @@ options(width=110)
 
 ```{=html}
 <!--
-%\VignetteIndexEntry{MSstats: Protein/Peptide significance analysis}
+%\VignetteIndexEntry{MSstats: End to End Workflow}
 %\VignetteEngine{knitr::knitr}
 -->
 ```
@@ -49,13 +49,14 @@ library(MSstats)
 
 ### __1.1 Raw Data__ 
 
-To begin with, we will load sample datasets, including both annotated and plain data. The dataset you need can be found [here](insert Link for dataset here).
+To begin with, we will load sample datasets, including both annotated and plain data. The dataset you need can be found [here]( https://github.com/Vitek-Lab/MSstatsConvert/blob/devel/inst/tinytest/raw_data/PD/pd_input.csv).
 
-We will also load the Annotation Dataset using MSstatsConvert. You can access this dataset [here](insert Link for dataset here).
+We will also load the Annotation Dataset using MSstatsConvert. You can access this dataset [here](https://github.com/Vitek-Lab/MSstatsConvert/blob/devel/inst/tinytest/raw_data/PD/annot_pd.csv).
 
 
 ``` {r code Load Dataset}
 library(MSstats)
+library(MSstatsConvert)
 
 # Load data
 pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
@@ -91,34 +92,33 @@ We have the following converters, which allow you to convert various types of ou
 10. SpectronauttoMSstatsFormat
 11. MetamorpheusToMSstatsFormat
 
-We show an example of how to use the above said Formatters. 
+We show an example of how to use the above said Converters. 
 
 ```{r Converter Files}
 
-input_data = read.csv("../data/diann_report.tsv", 
-                      sep="\t")
-head(input_data)
+# library(MSStatsConvert)
 
-annotation_file = read.csv("../data/diann_annotation.csv")
-head(annotation_file)
+skyline_raw = system.file("tinytest/raw_data/Skyline/skyline_input.csv", 
+                    package = "MSstatsConvert")
+
+skyline = data.table::fread(skyline_raw)
+head(skyline, 5)
 
 ```
 
-```{r DIANNtoMSstatsFormat, results='hide', message=FALSE, warning=FALSE}
+```{r SkylinetoMSstatsFormat, results='hide', message=FALSE, warning=FALSE}
 
-msstats_format = MSstatsConvert::DIANNtoMSstatsFormat(input_data, 
-                                      annotation=annotation_file,
-                                      global_qvalue_cutoff = 0.01,
+msstats_format = MSstatsConvert::SkylinetoMSstatsFormat(skyline_raw,
                                       qvalue_cutoff = 0.01,
-                                      pg_qvalue_cutoff = 0.01,
                                       useUniquePeptide = TRUE,
                                       removeFewMeasurements = TRUE,
                                       removeOxidationMpeptides = TRUE,
-                                      removeProtein_with1Feature = TRUE,
-                                      MBR=TRUE)
+                                      removeProtein_with1Feature = TRUE)
+
+
 ```
 
-```{r DIANNtoMSstatsFormat head}
+```{r SkylinetoMSstatsFormat head}
 head(msstats_format)
 ```
 
@@ -129,20 +129,6 @@ head(msstats_format)
 The imported data from Step 1.1. now must be converted through MSStatsConvert package's PDtoMSstatsFormat converter.
 
 This function converts the Proteome discoverer output into the required input format for MSstats.
-
-```
-MSstatsConvert::PDtoMSstatsFormat(input,
-                              annotation,
-                              useNumProteinsColumn=FALSE,
-                              useUniquePeptide=TRUE,
-                              summaryforMultipleRows=max,
-                              fewMeasurements="remove",
-                              removeOxidationMpeptides=FALSE,
-                              removeProtein_with1Peptide=FALSE,
-                              which.quantification = 'Precursor.Area',
-                              which.proteinid = 'Protein.Group.Accessions',
-                              which.sequence = 'Sequence')
-```
 
 Actual Data modification can be seen below:
 
@@ -155,7 +141,7 @@ head(pd_imported)
 
 ### __1.4 Data Process__
 
-Once we import the dataset correctly with Formatter, we need to pre-process the data which is taken care by dataProcess.
+Once we import the dataset correctly with Converter, we need to pre-process the data which is taken care by dataProcess.
 
 This step is essentially Data pre-processing and quality control of MS runs of the original raw data into quantitative data for model fitting and group comparison.
 
@@ -208,10 +194,8 @@ It is applicable to multiple types of sample preparation, including label-free w
 ``` {r code groupComparison}
 
 # Model
-labels = unique(summarized$ProteinLevelData$GROUP)
-contrast_matrix = MSstatsContrastMatrix('pairwise', labels)
 
-model = groupComparison(contrast_matrix, summarized)
+model = groupComparison("pairwise", summarized)
 
 ```
 
@@ -220,6 +204,8 @@ Model Details
 ``` {r Model }
 
 head(model$ModelQC)
+
+head(model$ComparisonResult)
 
 ```
 
@@ -261,6 +247,34 @@ groupComparisonPlots(
   isPlotly = FALSE
 )
 
+
+
+groupComparisonPlots(
+  model$ComparisonResult,
+  type="VolcanoPlot",
+  sig = 0.05,
+  FCcutoff = FALSE,
+  logBase.pvalue = 10,
+  ylimUp = FALSE,
+  ylimDown = FALSE,
+  xlimUp = FALSE,
+  x.axis.size = 10,
+  y.axis.size = 10,
+  dot.size = 3,
+  text.size = 4,
+  text.angle = 0,
+  legend.size = 13,
+  ProteinName = TRUE,
+  colorkey = TRUE,
+  numProtein = 100,
+  clustering = "both",
+  width = 800,
+  height = 600,
+  which.Comparison = "Condition2 vs Condition4",
+  which.Protein = "all",
+  address = FALSE,
+  isPlotly = FALSE
+)
 
 ```
 
