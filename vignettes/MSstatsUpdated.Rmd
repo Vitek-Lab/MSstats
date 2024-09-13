@@ -81,6 +81,7 @@ This function converts the Proteome discoverer output into the required input fo
 Actual Data modification can be seen below:
 
 ```{r code PDtoMSstatsFormat}
+library(MSstatsConvert)
 
 pd_imported = MSstatsConvert::PDtoMSstatsFormat(pd, annotation, use_log_file = FALSE)
 
@@ -109,8 +110,6 @@ We have the following converters, which allow you to convert various types of ou
 We show an example of how to use the above said Converters. 
 
 ```{r Converter Files}
-
-library(MSstatsConvert)
 
 skyline_raw = system.file("tinytest/raw_data/Skyline/skyline_input.csv", 
                     package = "MSstatsConvert")
