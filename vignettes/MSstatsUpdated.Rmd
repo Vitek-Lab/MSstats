@@ -72,8 +72,23 @@ head(annotation, 5)
 
 ```
 
+### __1.2 Loading PD Data to MSstats__
 
-### __1.2 Converters__
+The imported data from Step 1.1. now must be converted through MSStatsConvert package's PDtoMSstatsFormat converter.
+
+This function converts the Proteome discoverer output into the required input format for MSstats.
+
+Actual Data modification can be seen below:
+
+```{r code PDtoMSstatsFormat}
+
+pd_imported = MSstatsConvert::PDtoMSstatsFormat(pd, annotation, use_log_file = FALSE)
+
+head(pd_imported)
+```
+
+
+### __1.3 Converters__
 
 
 
@@ -121,22 +136,6 @@ msstats_format = MSstatsConvert::SkylinetoMSstatsFormat(skyline_raw,
 head(msstats_format)
 ```
 
-
-
-### __1.3 Loading PD Data to MSstats__
-
-The imported data from Step 1.1. now must be converted through MSStatsConvert package's PDtoMSstatsFormat converter.
-
-This function converts the Proteome discoverer output into the required input format for MSstats.
-
-Actual Data modification can be seen below:
-
-```{r code PDtoMSstatsFormat}
-
-pd_imported = MSstatsConvert::PDtoMSstatsFormat(pd, annotation, use_log_file = FALSE)
-
-head(pd_imported)
-```
 
 ### __1.4 Data Process__
 
