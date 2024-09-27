@@ -42,7 +42,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 
 BiocManager::install("MSstats")
 library(MSstats)
-
+library(ggplot2)
 ```
 
 ## __1. Workflow__
