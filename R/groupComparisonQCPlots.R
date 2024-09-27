@@ -75,9 +75,9 @@ modelBasedQCPlots = function(
     }
     if (address == FALSE) {
         if(all(which.Protein == 'all')){
-        stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
+          stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
         } else if (length(which.Protein) > 1) {
-        stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
+          stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
         }
     }
     
@@ -94,7 +94,7 @@ modelBasedQCPlots = function(
                 dot.size, axis.size)
     } else if (toupper(type) == "RESIDUALPLOTS") {
         .plotResiduals(fitted_models, all_proteins, width, height,
-                    address, dot.size, axis.size)
+                      address, dot.size, axis.size)
     }
 }
 
