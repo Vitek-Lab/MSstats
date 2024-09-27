@@ -288,6 +288,8 @@ Results based on statistical models for whole plot level inference are accurate 
 
 ``` {r GroupComparisonQCplots, results='hide', message=FALSE, warning=FALSE}
 
+source("..//R//groupComparisonQCPlots.R")
+
 groupComparisonQCPlots(data=model, type="QQPlots", address=FALSE, which.Protein = "P0ABU9")
 
 
