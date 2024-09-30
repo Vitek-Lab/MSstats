@@ -57,18 +57,6 @@ modelBasedQCPlots = function(
     data, type, axis.size = 10, dot.size = 3, width = 10, height = 10, 
     which.Protein = "all", address = "", displayDeprecationMessage = TRUE
 ) {
-
-    if(displayDeprecationMessage){
-        msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
-                            "notify you that the modelBasedQCPlots function",
-                            "currently available in both MSstats",
-                            "will undergo a transition process. Starting from release 4.14(TBD)",
-                            "the modelBasedQCPlots function in MSstats will be deprecated.",
-                            "Please take the necessary steps to update your codebase",
-                            "and migrate to MSstats::.groupComparisonQCPlots before",
-                            "release 4.14 to avoid any disruptions to your workflow.")
-        message(msg_deprecation)
-    }
     if (length(setdiff(toupper(type), c("QQPLOTS","RESIDUALPLOTS"))) != 0) {
         stop(paste0("Input for type=", type, 
                     ". However,'type' should be one of QQPlots, ResidualPlots."))
@@ -95,6 +83,18 @@ modelBasedQCPlots = function(
     } else if (toupper(type) == "RESIDUALPLOTS") {
         .plotResiduals(fitted_models, all_proteins, width, height,
                       address, dot.size, axis.size)
+    }
+
+    if(displayDeprecationMessage){
+        msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the modelBasedQCPlots function",
+                            "currently available in both MSstats",
+                            "will undergo a transition process. Starting from release 4.14(TBD)",
+                            "the modelBasedQCPlots function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstats::.groupComparisonQCPlots before",
+                            "release 4.14 to avoid any disruptions to your workflow.")
+        message(msg_deprecation)
     }
 }
 
