@@ -42,7 +42,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 
 BiocManager::install("MSstats")
 library(MSstats)
-
+library(ggplot2)
 ```
 
 ## __1. Workflow__
@@ -217,6 +217,7 @@ Visualization for model-based analysis and summarizing differentially abundant p
 * __Comparison plot__ : For multiple comparisons per protein. It illustrates log-fold change and its variation of multiple comparisons for single protein. X-axis is comparison of interest. Y-axis is the log fold change. The red points are the estimated log fold change from the model. The error bars are the confidence interval with 0.95 significant level for log fold change. This interval is only based on the standard error, which is estimated from the model.
 
 ``` {r GroupComparisonPlots}
+
 groupComparisonPlots(
   model$ComparisonResult,
   type="Heatmap",
@@ -275,7 +276,28 @@ groupComparisonPlots(
 
 ```
 
-### __1.6 Sample Size Calculation__
+### __1.6 GroupComparisonQCPlots__
+
+To check and verify that the resultant data of groupComparison offers a Linear Model for whole plot inference, groupComparisonQC plots take the fitted Data and provide two ways of plotting:
+
+1. Normal Q-Q plot : Quantile-Quantile plots represents normal quantile-quantile plot for each protein after fitting models
+2. Residual plot : represents a plot of residuals versus fitted values for each protein in the dataset.
+
+Results based on statistical models for whole plot level inference are accurate as long as the assumptions of the model are met. The model assumes that the measurement errors are normally distributed with mean 0 and constant variance. The assumption of a constant variance can be checked by examining the residuals from the model.
+
+
+``` {r GroupComparisonQCplots, results='hide', message=FALSE, warning=FALSE}
+
+source("..//R//groupComparisonQCPlots.R")
+
+groupComparisonQCPlots(data=model, type="QQPlots", address=FALSE, which.Protein = "P0ABU9")
+
+
+groupComparisonQCPlots(data=model, type="ResidualPlots", address=FALSE, which.Protein = "P0ABU9")
+```
+
+
+### __1.7 Sample Size Calculation__
 
 Calculate sample size for future experiments of a Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment based on intensity-based linear model. The function fits the model and uses variance components to calculate sample size. The underlying model fitting with intensity-based linear model with technical MS run replication. Estimated sample size is rounded to 0 decimal. Two options of the calculation:
 
@@ -293,7 +315,7 @@ sample_size_calc = designSampleSize(model$FittedModel,
 
 
 
-### __1.6.1 Sample Size Calculation Plot__
+### __1.7.1 Sample Size Calculation Plot__
 
 To illustrate the relationship of desired fold change and the calculated minimal number sample size which are
 
@@ -307,7 +329,7 @@ designSampleSizePlots(sample_size_calc, isPlotly=FALSE)
 ```
 
 
-### __1.7 Quantification from groupComparison Data__
+### __1.8 Quantification from groupComparison Data__
 
 Model-based quantification for each condition or for each biological samples per protein in a targeted Selected Reaction Monitoring (SRM), Data-Dependent Acquisition (DDA or shotgun), and Data-Independent Acquisition (DIA or SWATH-MS) experiment. Quantification takes the processed data set by dataProcess as input and automatically generate the quantification results (data.frame) with long or matrix format. The quantification for endogenous samples is based on run summarization from subplot model, with TMP robust estimation.
 
