@@ -74,7 +74,5 @@ use_log_file = FALSE)
 modelBasedQCPlots(data=testResultOneComparison, type="QQPlots", address="")
 # residual plots
 modelBasedQCPlots(data=testResultOneComparison, type="ResidualPlots", address="")
-PLEASE USE groupComparisonQCPlots function for this functionality. 
-modelBasedQCPlots WILL BE DEPRECATED.
 
 }
