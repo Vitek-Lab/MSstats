@@ -2,6 +2,17 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.14.0 (2024-10-30)}{
+    \itemize{
+        \item Introduced GroupComparisonQC plots to visualize quality control.
+	\item Added a new vignette illustrating a full MSstats workflow.
+	\item Fixed bug for designs with technical replicates.
+	\item Optimized memory usage for large datasets.
+	\item Enabled multicore processing for improved performance.
+	\item Added interactive plotting functions using Plotly.
+    }
+}
+
 \section{Version 4.12.0 (2024-05-01)}{
     \itemize{
         \item groupComparison : Added numberOfCores parameter to enable parallel processing
