@@ -50,9 +50,10 @@
 #' # residual plots
 #' modelBasedQCPlots(data=testResultOneComparison, type="ResidualPlots", address="")
 #' 
+
 modelBasedQCPlots = function(
     data, type, axis.size = 10, dot.size = 3, width = 10, height = 10, 
-    which.Protein = "all", address = ""
+    which.Protein = "all", address = "", displayDeprecationMessage = TRUE
 ) {
     if (length(setdiff(toupper(type), c("QQPLOTS","RESIDUALPLOTS"))) != 0) {
         stop(paste0("Input for type=", type, 
@@ -60,9 +61,9 @@ modelBasedQCPlots = function(
     }
     if (address == FALSE) {
         if(all(which.Protein == 'all')){
-            stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
+          stop('** Cannnot generate all plots in a screen. Please set one protein at a time.')
         } else if (length(which.Protein) > 1) {
-            stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
+          stop('** Cannnot generate multiple plots in a screen. Please set one protein at a time.')
         }
     }
     
@@ -79,10 +80,21 @@ modelBasedQCPlots = function(
                 dot.size, axis.size)
     } else if (toupper(type) == "RESIDUALPLOTS") {
         .plotResiduals(fitted_models, all_proteins, width, height,
-                       address, dot.size, axis.size)
+                      address, dot.size, axis.size)
+    }
+
+    if(displayDeprecationMessage){
+        msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the modelBasedQCPlots function",
+                            "currently available in both MSstats",
+                            "will undergo a transition process. Starting from release 4.14(TBD)",
+                            "the modelBasedQCPlots function in MSstats will be deprecated.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstats::.groupComparisonQCPlots before",
+                            "release 4.14 to avoid any disruptions to your workflow.")
+        message(msg_deprecation)
     }
 }
-
 
 #' @importFrom stats resid quantile qnorm 
 #' @importFrom utils setTxtProgressBar
@@ -189,4 +201,66 @@ modelBasedQCPlots = function(
     if (address != FALSE) {
         dev.off()
     }
+}
+
+
+### new function which is a wrapper for modelBasedQCPlots
+#' Visualization for model-based quality control in fitting model
+#' 
+#' @description To check the assumption of linear model for whole plot inference, 
+#' groupComparisonQCPlots takes the results after fitting models from function 
+#' (\code{\link{groupComparison}}) as input and automatically generate two types 
+#' of figures in pdf files as output: 
+#' (1) normal quantile-quantile plot (specify "QQPlot" in option type) for checking
+#' normally distributed errors.; 
+#' (2) residual plot (specify "ResidualPlot" in option type).
+#'  
+#' @param data output from function groupComparison.
+#' @param type choice of visualization. "QQPlots" represents normal quantile-quantile 
+#' plot for each protein after fitting models. "ResidualPlots" represents a plot
+#' of residuals versus fitted values for each protein in the dataset.
+#' @param axis.size size of axes labels. Default is 10.
+#' @param dot.size size of points in the graph for residual plots and QQ plots. Default is 3.
+#' @param width width of the saved file. Default is 10.
+#' @param height height of the saved file. Default is 10.
+#' @param which.Protein Protein list to draw plots. List can be names of Proteins 
+#' or order numbers of Proteins from levels(testResultOneComparison$ComparisonResult$Protein). 
+#' Default is "all", which generates all plots for each protein.
+#' @param address name that will serve as a prefix to the name of output file.
+#' 
+#' @details Results based on statistical models for whole plot level inference are 
+#' accurate as long as the assumptions of the model are met. The model assumes that 
+#' the measurement errors are normally distributed with mean 0 and constant variance. 
+#' The assumption of a constant variance can be checked by examining the residuals from the model.
+#' \itemize{
+#' \item{QQPlots : a normal quantile-quantile plot for each protein is generated in order to check whether the errors are well approximated by a normal distribution. If points fall approximately along a straight line, then the assumption is appropriate for that protein. Only large deviations from the line are problematic.}
+#' \item{ResidualPlots : The plots of residuals against predicted(fitted) values. If it shows a random scatter, then the assumption is appropriate.}
+#' }
+#' 
+#' @return produce a pdf file
+#' 
+#' @export
+#' 
+#' @examples
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
+#' head(QuantData$FeatureLevelData)
+#' levels(QuantData$FeatureLevelData$GROUP)
+#' comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+#' row.names(comparison) <- "T7-T1"
+#' colnames(comparison) <- unique(QuantData$ProteinLevelData$GROUP)
+#' # Tests for differentially abundant proteins with models:
+#' # label-based SRM experiment with expanded scope of biological replication.
+#' testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData,
+#' use_log_file = FALSE)
+#' # normal quantile-quantile plots
+#' groupComparisonQCPlots(data=testResultOneComparison, type="QQPlots", address="")
+#' # residual plots
+#' groupComparisonQCPlots(data=testResultOneComparison, type="ResidualPlots", address="")
+#' 
+
+groupComparisonQCPlots = function(data, type, axis.size = 10, dot.size = 3, width = 10, height = 10, 
+    which.Protein = "all", address = ""){
+    
+    modelBasedQCPlots(data, type, axis.size, dot.size, width, height, 
+                                 which.Protein, address, FALSE)
 }

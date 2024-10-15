@@ -18,27 +18,33 @@
             # with single feature, not converge, wrong intercept
             # need to check
             fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
-                                    data = input, dist = "gaussian")
+                                    data = input, dist = "gaussian",
+                          control = list(maxiter=90))
         } else {
             if (countdf) {
                 fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
-                                        data = input, dist = "gaussian")
+                                        data = input, dist = "gaussian",
+                              control = list(maxiter=90))
             } else {
                 fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref,
-                                        data = input, dist = "gaussian")
+                                        data = input, dist = "gaussian",
+                              control = list(maxiter=90))
             }
         }
     } else {
         if (n_features == 1L) {
             fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
-                                    data = input, dist = "gaussian")    
+                                    data = input, dist = "gaussian",
+                          control = list(maxiter=90))
         } else {
             if (countdf) {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
-                                        data = input, dist = "gaussian")
+                                        data = input, dist = "gaussian",
+                              control = list(maxiter=90))
             } else {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ FEATURE + RUN,
-                                        data = input, dist = "gaussian")
+                                        data = input, dist = "gaussian", 
+                              control = list(maxiter=90))
             }
         }  
     }

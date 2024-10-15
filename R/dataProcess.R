@@ -45,8 +45,8 @@
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
 #' by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
+#' where every run has at least 50\% missing values for each peptide. FALSE is default.
 #' @param maxQuantileforCensored Maximum quantile for deciding censored missing values, default is 0.999
 #' @param fix_missing Optional, same as the `fix_missing` parameter in MSstatsConvert::MSstatsBalancedDesign function
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
@@ -145,8 +145,8 @@ dataProcess = function(
 #' In this case, NA intensities are missing at random. 
 #' The output from Skyline should use '0'. 
 #' Null assumes that all NA intensites are randomly missing.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
+#' where every run has at least 50\% missing values for each peptide. FALSE is default.
 #' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
 #' FALSE uses the values assigned by cutoffCensored
@@ -165,6 +165,8 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         num_proteins = length(protein_indices)
         function_environment = environment()
         cl = parallel::makeCluster(numberOfCores)
+        getOption("MSstatsLog")("INFO",
+                                "Starting the cluster setup for summarization")
         parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
                                       "MSstatsSummarizeSingleLinear",
                                       "input", "impute", "censored_symbol",
@@ -196,34 +198,74 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         parallel::stopCluster(cl)
         return(summarized_results)
     } else {
-        input_split = split(input, input$PROTEIN)
-        return(MSstatsSummarize(input_split, method, impute, censored_symbol, 
+        return(MSstatsSummarizeWithSingleCore(input, method, impute, censored_symbol, 
                                 remove50missing, equal_variance))
     }
+}
+
+#' Feature-level data summarization with 1 core
+#' 
+#' @inheritParams MSstatsSummarizeWithMultipleCores
+#' 
+#' @importFrom data.table uniqueN
+#' @importFrom utils setTxtProgressBar
+#' 
+#' @return list of length one with run-level data.
+#' 
+#' @export
+#' 
+#' @examples
+#' raw = DDARawData 
+#' method = "TMP"
+#' cens = "NA"
+#' impute = TRUE
+#' MSstatsConvert::MSstatsLogsSettings(FALSE)
+#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
+#' input = MSstatsMergeFractions(input)
+#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+#' input = MSstatsSelectFeatures(input, "all")
+#' processed = getProcessed(input)
+#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+#' length(summarized) # list of summarization outputs for each protein
+#' head(summarized[[1]][[1]]) # run-level summary
+#' 
+MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
+                            remove50missing, equal_variance) {
+    
+            
+    protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+    num_proteins = length(protein_indices)
+    summarized_results = vector("list", num_proteins)
+    if (method == "TMP") {
+        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+        for (protein_id in seq_len(num_proteins)) {
+            single_protein = input[protein_indices[[protein_id]],]
+            summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
+                single_protein, impute, censored_symbol, remove50missing)
+            setTxtProgressBar(pb, protein_id)
+        }
+        close(pb)
+    } else {
+        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+        for (protein_id in seq_len(num_proteins)) {
+            single_protein = input[protein_indices[[protein_id]],]
+            summarized_result = MSstatsSummarizeSingleLinear(single_protein,
+                                                             equal_variance)
+            summarized_results[[protein_id]] = summarized_result
+            setTxtProgressBar(pb, protein_id)
+        }
+        close(pb)
+    }
+    summarized_results
 }
 
 
 #' Feature-level data summarization
 #' 
 #' @param proteins_list list of processed feature-level data
-#' @param method summarization method: "linear" or "TMP" 
-#' @param equal_variance only for summaryMethod = "linear". Default is TRUE. 
-#' Logical variable for whether the model should account for heterogeneous variation 
-#' among intensities from different features. Default is TRUE, which assume equal
-#' variance among intensities from features. FALSE means that we cannot assume 
-#' equal variance among intensities from features, then we will account for
-#' heterogeneous variation from different features.
-#' @param censored_symbol Missing values are censored or at random. 
-#' 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-#' '0' uses zero intensities as censored intensity. 
-#' In this case, NA intensities are missing at random. 
-#' The output from Skyline should use '0'. 
-#' Null assumes that all NA intensites are randomly missing.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the runs 
-#' which have more than 50\% missing values. FALSE is default.
-#' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-#' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
-#' FALSE uses the values assigned by cutoffCensored
+#' @inheritParams MSstatsSummarizeWithMultipleCores
 #' 
 #' @importFrom data.table uniqueN
 #' @importFrom utils setTxtProgressBar
@@ -274,6 +316,15 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
         }
         close(pb)
     }
+    msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
+                            "notify you that the MSstatsSummarize function",
+                            "will undergo a transition process. Starting from release 3.21",
+                            "the MSstatsSummarize function in MSstats will be deprecated",
+                            "in favor of MSstatsSummarizeWithSingleCore.",
+                            "Please take the necessary steps to update your codebase",
+                            "and migrate to MSstatsSummarizeWithSingleCore before",
+                            "release 3.21 to avoid any disruptions to your workflow.")
+    message(msg_deprecation)
     summarized_results
 }
 
