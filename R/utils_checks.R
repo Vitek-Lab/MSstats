@@ -15,7 +15,7 @@ validateAnnotation = function(msstats_table, design_type = "group comparison") {
   }
   
   num_conditions_per_biorep = annotation[, list(NumConditions = data.table::uniqueN(Condition)), by = "BioReplicate"]
-  num_bioreps_per_condition = annotation[, list(NumBioReps = data.table::uniqueN(BioReplicate), by = "Condition"]
+  num_bioreps_per_condition = annotation[, list(NumBioReps = data.table::uniqueN(BioReplicate)), by = "Condition"]
   if (design_type == "group comparison") {
       if (all(num_conditions_per_biorep[["NumConditions"]] == 1L)) {
         return(TRUE)
