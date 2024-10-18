@@ -1,3 +1,43 @@
+#' Check if annotation matches intended experimental design
+#' 
+#' @param msstats_table output of a converter function
+#' @param design_type character, "group comparison" or "repeated measures"
+#' 
+#' @importFrom data.table as.data.table uniqueN
+#' 
+#' @return TRUE if annotation file is consistent with intended experimental design. Otherwise, an error is thrown
+#' @export
+#' 
+validateAnnotation = function(msstats_table, design_type = "group comparison") {
+  annotation = unique(data.table::as.data.table(msstats_table)[, list(BioReplicate, Condition)])
+  if (data.table::uniqueN(annotation[["Condition"]]) == 1) { 
+    stop("MSstats performs relative protein quantification, which requires more than one Condition. Please check the annotation file.")
+  }
+  
+  num_conditions_per_biorep = annotation[, list(NumConditions = data.table::uniqueN(Condition)), by = "BioReplicate"]
+  num_bioreps_per_condition = annotation[, list(NumBioReps = data.table::uniqueN(BioReplicate)), by = "Condition"]
+  if (design_type == "group comparison") {
+      if (all(num_conditions_per_biorep[["NumConditions"]] == 1L)) {
+        return(TRUE)
+      } else {
+        stop(paste("In group comparison design, each biological replicate should be assigned to a single condition.\n", 
+                   "Currently, some biological replicates match to multiple conditions"))
+      }
+    if (all(num_bioreps_per_condition[["NumBioReps"]] == 1L)) { 
+      message("Each condition only consists of a single biological replicate. Hypothesis testing for differential abundance will not be possible.")
+    }
+  } else if (design_type == "repeated measures") {
+    if (all(num_conditions_per_biorep[["NumConditions"]] > 1)) {
+      return(TRUE)
+    } else {
+      stop(paste("In repeated measures design, biological replicates should be measured across multiple conditions.\n",
+                 "Currently, each biological replicate matches to a different condition."))
+    }
+  } else {
+    stop("Unrecognized design type. Accepted values are 'group comparison' or 'repeated measures'")
+  }
+}
+
 #' Prepare data for processing by `dataProcess` function
 #' 
 #' @param input `data.table` in MSstats format
