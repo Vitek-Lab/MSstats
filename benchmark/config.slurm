@@ -9,5 +9,4 @@
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
 module load R
-
 Rscript R/benchmark.R
