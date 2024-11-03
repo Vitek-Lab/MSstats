@@ -46,6 +46,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: benchmark-output
-        path:  |
-        job_output.txt
-        job_error.txt
+        path: |
+          job_output.txt
+          job_error.txt
