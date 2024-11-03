@@ -13,8 +13,8 @@ export R_LIBS_USER=/home/raina.ans/library
 mkdir -p $R_LIBS_USER
 
 module load R
-Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager'); \
-BiocManager::install('MSstats', update = FALSE); \
-BiocManager::install('MSstatsConvert', update = FALSE); \
-install.packages(c('dplyr', 'stringr', 'ggplot2'))
+Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
+BiocManager::install('MSstats', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
+BiocManager::install('MSstatsConvert', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
+install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
 Rscript benchmark.R
