@@ -22,7 +22,7 @@ jobs:
 
     - name: Transfer Files to HPC
       run: |
-        scp benchmark.R config.slurm raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R
+        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R
 
     - name: Submit Slurm Job
       run: |
