@@ -12,7 +12,7 @@ module load gcc/9.3.0
 
 module load cmake/3.18.4 
 
-export R_LIBS_USER=/home/raina.ans/library 
+export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
 
 mkdir -p $R_LIBS_USER
 
