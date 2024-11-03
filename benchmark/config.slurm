@@ -9,4 +9,10 @@
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
 module load R
+Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager'); \
+BiocManager::install('MSstats', update = FALSE); \
+BiocManager::install('MSstatsConvert', update = FALSE); \
+install.packages('ggplot2', repos = 'https://cloud.r-project.org'); \
+install.packages('stringr', repos = 'https://cloud.r-project.org'); \
+install.packages('dplyr', repos = 'https://cloud.r-project.org')"
 Rscript benchmark.R
