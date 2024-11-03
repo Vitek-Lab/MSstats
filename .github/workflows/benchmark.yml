@@ -39,10 +39,13 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp raina.ans@login-00.discovery.neu.edu:R/job_output.txt job_output.txt
+        scp raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R/job_output.txt job_output.txt
+        scp raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R/job_error.txt job_error.txt
 
     - name: Upload Output as Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: benchmark-output
-        path: job_output.txt
+        path:  |
+        job_output.txt
+        job_error.txt
