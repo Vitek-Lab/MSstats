@@ -9,7 +9,6 @@
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
 export LC_ALL=C
-
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
 
 mkdir -p $R_LIBS_USER
