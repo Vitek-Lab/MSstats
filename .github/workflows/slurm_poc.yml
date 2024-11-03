@@ -1,0 +1,48 @@
+name: Run Simple R Script on HPC via Slurm
+
+on:
+  push:
+    branches:
+      - feature/ci-cd-pipeline
+
+jobs:
+  test-hpc:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set Up SSH Access
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H login-00.discovery.neu.edu >> ~/.ssh/known_hosts
+
+    - name: Transfer Files to HPC
+      run: |
+        scp benchmark.R config.slurm raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R
+
+    - name: Submit Slurm Job
+      run: |
+        ssh raina.ans@login-00.discovery.neu.edu "cd R && sbatch config.slurm"
+
+    - name: Monitor Slurm Job
+      run: |
+        ssh raina.ans@login-00.discovery.neu.edu "
+          while squeue -u raina.ans | grep -q 'R-test-job'; do
+            echo 'Job is still running...'
+            sleep 10
+          done
+        "
+
+    - name: Fetch Output
+      run: |
+        scp raina.ans@login-00.discovery.neu.edu:R/job_output.txt job_output.txt
+
+    - name: Upload Output as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-output
+        path: job_output.txt
