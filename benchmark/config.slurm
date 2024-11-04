@@ -4,14 +4,12 @@
 #SBATCH --error=job_error.txt
 #SBATCH --time=01:00:00         # Set the maximum run time
 #SBATCH --ntasks=1              # Number of tasks (one process)
-#SBATCH --cpus-per-task=4      # Use 8 CPU cores for the task
-#SBATCH --mem=64G              # Request 256GB of memory
+#SBATCH --cpus-per-task=8      # Use 8 CPU cores for the task
+#SBATCH --mem=128G              # Request 256GB of memory
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
 export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
-
-mkdir -p $R_LIBS_USER
 
 module load R
 Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
