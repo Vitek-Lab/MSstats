@@ -8,6 +8,8 @@
 #SBATCH --mem=128G              # Request 256GB of memory
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
+module load cmake/3.23.2
+
 export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
 
