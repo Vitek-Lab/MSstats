@@ -8,6 +8,7 @@
 #SBATCH --mem=128G              # Request 256GB of memory
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
+module load gcc/11.1.0
 module load cmake/3.23.2
 
 export LC_ALL=C
