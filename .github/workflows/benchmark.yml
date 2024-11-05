@@ -24,17 +24,22 @@ jobs:
       run: |
         scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R
 
-    - name: Submit Slurm Job
+    - name: Submit Slurm Job and Capture Job ID
+      id: submit_job
       run: |
-        ssh raina.ans@login-00.discovery.neu.edu "cd R && sbatch config.slurm"
+        ssh raina.ans@login-00.discovery.neu.edu "cd R && sbatch config.slurm" | tee job_id.txt
+        slurm_job_id=$(grep -oP '\d+' slurm_job_id.txt) 
+        echo "Slurm Job ID is $slurm_job_id"
+        echo "slurm_job_id=$slurm_job_id" >> $GITHUB_ENV  
 
     - name: Monitor Slurm Job
       run: |
         ssh raina.ans@login-00.discovery.neu.edu "
-          while squeue -u raina.ans | grep -q 'msstats_benchmark_job'; do
+          while squeue -j ${{ env.slurm_job_id }} | grep -q ${{ env.slurm_job_id }}; do
             echo 'Job is still running...'
             sleep 10
           done
+          echo 'Job has completed.'
         "
 
     - name: Fetch Output
