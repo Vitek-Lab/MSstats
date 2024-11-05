@@ -8,14 +8,14 @@
 #SBATCH --mem=128G              # Request 256GB of memory
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
-module load gcc/11.1.0
-module load cmake/3.23.2
+module load R-geospatial
 
-rm -rf $R_LIBS_USER/00LOCK-*
 export LC_ALL=C
-export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
+export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2-geospatial
 
-module load R/4.2.0
+mkdir -p $R_LIBS_USER
+
+module load R/4.4.0
 Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org', version = '3.16', force = TRUE); \
 BiocManager::install('MSstats', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
 BiocManager::install('MSstatsConvert', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
