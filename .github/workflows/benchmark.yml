@@ -31,7 +31,7 @@ jobs:
     - name: Monitor Slurm Job
       run: |
         ssh raina.ans@login-00.discovery.neu.edu "
-          while squeue -u raina.ans | grep -q 'R-test-job'; do
+          while squeue -u raina.ans | grep -q 'msstats_benchmark_job'; do
             echo 'Job is still running...'
             sleep 10
           done
