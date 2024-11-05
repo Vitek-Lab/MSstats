@@ -3,6 +3,7 @@ library(MSstats)
 library(ggplot2)
 library(dplyr)
 library(stringr)
+library(parallel)
 
 
 calculateResult <- function(summarized, label){
