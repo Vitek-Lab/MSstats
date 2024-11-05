@@ -12,7 +12,6 @@ module load gcc/11.1.0
 module load cmake/3.23.2
 
 rm -rf $R_LIBS_USER/00LOCK-*
-
 export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
 
