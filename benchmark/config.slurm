@@ -16,7 +16,7 @@ export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
 
 module load R
-Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
+Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org', version = '3.16', force = TRUE); \
 BiocManager::install('MSstats', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
 BiocManager::install('MSstatsConvert', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
 install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
