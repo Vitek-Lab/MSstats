@@ -15,7 +15,7 @@ rm -rf $R_LIBS_USER/00LOCK-*
 export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2
 
-module load R/4.2.1
+module load R/4.2.0
 Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org', version = '3.16', force = TRUE); \
 BiocManager::install('MSstats', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
 BiocManager::install('MSstatsConvert', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
