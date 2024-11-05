@@ -20,7 +20,7 @@ export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2-geospatial
 
 mkdir -p $R_LIBS_USER
 
-module load R/4.4.0
+module load R
 Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
 BiocManager::install('MSstats', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
 BiocManager::install('MSstatsConvert', lib = Sys.getenv('R_LIBS_USER'), update = FALSE); \
