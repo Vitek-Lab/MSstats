@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=msstats_benchmark_job
-##SBATCH --chdir=/work/VitekLab/Projects/Benchmarking/
+#SBATCH --chdir=/work/VitekLab/Projects/Benchmarking/
 #SBATCH --output=job_output.txt
 #SBATCH --error=job_error.txt
 #SBATCH --time=01:00:00         # Set the maximum run time
