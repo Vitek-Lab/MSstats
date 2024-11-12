@@ -45,8 +45,34 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+        # scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
+        # scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+        scp raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R/job_output.txt job_output.txt
+        scp raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R/job_error.txt job_error.txt
+    
+    
+    - name: Check Metrics in Output
+      run: |
+        THRESHOLD_FPR=0.2
+
+        METRICS=$(tail -n 20 job_output.txt | grep -E 'FPR|Accuracy|Recall|FDR' | tail -n 3)
+		echo METRICS
+        
+        FPR=$(echo "$METRICS" | grep -oP 'FPR\s+\K[0-9.]+')
+        ACCURACY=$(echo "$METRICS" | grep -oP 'Accuracy\s+\K[0-9.]+')
+        RECALL=$(echo "$METRICS" | grep -oP 'Recall\s+\K[0-9.]+')
+
+        echo "Extracted Metrics - FPR: $FPR, Accuracy: $ACCURACY, Recall: $RECALL"
+
+        if (( $(echo "$FPR > $THRESHOLD_FPR" | bc -l) )) || 
+           (( $(echo "$ACCURACY < $THRESHOLD_ACCURACY" | bc -l) )) || 
+           (( $(echo "$RECALL < $THRESHOLD_RECALL" | bc -l) )); then
+            echo "Metrics did not meet the thresholds."
+            exit 1
+        else
+            echo "Metrics are within acceptable range."
+        fi
+
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
