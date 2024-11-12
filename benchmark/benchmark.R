@@ -79,7 +79,11 @@ calculateResult <- function(summarized, label){
   
   # Recall
   recall <- TP / (TP + FN)
+
+  # False Discover Rate (FDR)
   
+  fdr <- FP/ (FP + TP)
+
   results <- data.frame(
     Label = label,
     TP = TP,
@@ -88,7 +92,8 @@ calculateResult <- function(summarized, label){
     FN = FN,
     FPR = FPR,
     Accuracy = accuracy,
-    Recall = recall
+    Recall = recall,
+    FDR = fdr
   )
   
   return(results)
