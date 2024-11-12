@@ -16,18 +16,19 @@ jobs:
     - name: Set Up SSH Access
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        touch ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H login-00.discovery.neu.edu >> ~/.ssh/known_hosts
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H login-00.discovery.neu.edu >> ~/.ssh/known_hosts || exit 1
 
     - name: Transfer Files to HPC
       run: |
-        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R
+        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
 
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
       run: |
-        ssh raina.ans@login-00.discovery.neu.edu "cd R && sbatch config.slurm" | tee slurm_job_id.txt
+        ssh raina.ans@login-00.discovery.neu.edu "cd R && sbatch config.slurm" | tee slurm_job_id.txt 
         slurm_job_id=$(grep -oP '\d+' slurm_job_id.txt) 
         echo "Slurm Job ID is $slurm_job_id"
         echo "slurm_job_id=$slurm_job_id" >> $GITHUB_ENV  
