@@ -123,11 +123,11 @@ data_process_tasks <- list(
   ),
   list(
     label = "Data process without Normalization",
-    result = function() dataProcess(msstats_format, normalization = "FALSE", n_top_feature = 20)
+    result = function() dataProcess(msstats_format, featureSubset = "topN", normalization = "FALSE", n_top_feature = 20)
   ),
   list(
     label = "Data process without Normalization with MBImpute False",
-    result = function() dataProcess(msstats_format, normalization = "FALSE", n_top_feature = 20, MBimpute = FALSE)
+    result = function() dataProcess(msstats_format, featureSubset = "topN", normalization = "FALSE", n_top_feature = 20, MBimpute = FALSE)
   )
 )
 
