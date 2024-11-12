@@ -45,8 +45,8 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output/job_output.txt job_output.txt
+        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output/job_error.txt job_error.txt
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
