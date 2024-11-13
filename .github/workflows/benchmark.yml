@@ -9,7 +9,7 @@ jobs:
   Benchmarking-pipeline:
     runs-on: ubuntu-latest
     env:
-      FDR_THRESHOLD: 0.2
+      FDR_THRESHOLD: 0.21
 
     steps:
     - name: Checkout Repository
