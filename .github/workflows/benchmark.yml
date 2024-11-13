@@ -30,7 +30,7 @@ jobs:
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
       run: |
-        ssh raina.ans@login-00.discovery.neu.edu "cd /work/VitekLab/Projects/Benchmarking/R && sbatch config.slurm" | tee slurm_job_id.txt 
+        ssh raina.ans@login-00.discovery.neu.edu "cd ../../work/VitekLab/Projects/Benchmarking && sbatch config.slurm" | tee slurm_job_id.txt 
         slurm_job_id=$(grep -oP '\d+' slurm_job_id.txt) 
         echo "Slurm Job ID is $slurm_job_id"
         echo "slurm_job_id=$slurm_job_id" >> $GITHUB_ENV  
