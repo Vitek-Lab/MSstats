@@ -52,7 +52,7 @@ jobs:
 
     - name: Extract and Check FDR Values
       run: |
-        grep -A 5 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
+        grep -A 4 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
         
         if awk -v threshold="$FDR_THRESHOLD" '
           NR > 1 {
