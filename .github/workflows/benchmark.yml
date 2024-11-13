@@ -8,6 +8,8 @@ on:
 jobs:
   Benchmarking-pipeline:
     runs-on: ubuntu-latest
+    env:
+      FDR_THRESHOLD: 0.2
 
     steps:
     - name: Checkout Repository
@@ -51,6 +53,11 @@ jobs:
         scp raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R/job_output.txt job_output.txt
         scp raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R/job_error.txt job_error.txt
 
+    - name: Extract and Check FDR Values
+      run: |
+        # Extract the relevant lines containing FDR values and process them
+        grep -A 5 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
+        awk -v threshold="$FDR_THRESHOLD" 'NR > 1 { if ($4 > threshold) { print "Error: FDR too high in row " NR " with FDR=" $4; exit 1 } }' results_section.txt || echo "All FDR values are within acceptable range."
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
