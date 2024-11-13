@@ -23,7 +23,8 @@ jobs:
 
     - name: Transfer Files to HPC
       run: |
-        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
+        # scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
+        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/home/raina.ans/R || exit 1
 
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
