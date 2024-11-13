@@ -57,7 +57,9 @@ jobs:
       run: |
         # Extract the relevant lines containing FDR values and process them
         grep -A 5 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
-        awk -v threshold="$FDR_THRESHOLD" 'NR > 1 { if ($4 > threshold) { print "Error: FDR too high in row " NR " with FDR=" $4; exit 1 } }' results_section.txt || echo "All FDR values are within acceptable range."
+        if awk -v threshold= $FDR_THRESHOLD 'NR > 1 { if ($5 > threshold) { print "Error: FDR too high in row " NR " with FDR=" $5; exit 1 } }' results_section.txt; then
+          echo "All FDR values are within acceptable range."
+        fi
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
