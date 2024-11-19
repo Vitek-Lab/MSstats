@@ -72,6 +72,31 @@ calculateResult <- function(summarized, label){
   cat("True Negatives", TN, "\n")
   cat("False Negatives", FN, "\n")
   
+  ecoli_comparisonResult %>% 
+      filter(is.finite(log2FC)) %>% 
+      ggplot() + geom_boxplot(aes(y=log2FC)) +
+      geom_hline(aes(yintercept=-2), linetype="dashed", color="red", linewidth=2) +
+      theme_bw() + 
+      labs(title = "Boxplot of log2FC for E. coli",
+           y = "log2FC")
+  
+  human_comparisonResult %>% 
+      filter(is.finite(log2FC)) %>% 
+      ggplot() + geom_boxplot(aes(y=log2FC)) +
+      geom_hline(aes(yintercept=-2), linetype="dashed", color="blue", linewidth=2) +
+      theme_bw() + 
+      labs(title = "Boxplot of log2FC for Human",
+           y = "log2FC")
+  
+  
+  yeast_comparisonResult %>% 
+      filter(is.finite(log2FC)) %>% 
+      ggplot() + geom_boxplot(aes(y=log2FC)) +
+      geom_hline(aes(yintercept=-2), linetype="dashed", color="green", linewidth=2) +
+      theme_bw() + 
+      labs(title = "Boxplot of log2FC for Yeast",
+           y = "log2FC")
+  
   FPR <- FP / (FP + TN)
   
   # Accuracy
