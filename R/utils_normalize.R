@@ -69,7 +69,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @importFrom stats median
 #' @keywords internal
 .getMedian = function(df, label) {
-    median(df$ABUNDANCE[df$LABEL == label], na.rm = TRUE)
+    median(df$ABUNDANCE[df$LABEL == label], na.rm = False)
 }
 
 

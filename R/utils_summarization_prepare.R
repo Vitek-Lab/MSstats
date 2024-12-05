@@ -48,6 +48,7 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
     
     input = .prepareSummary(input, method, impute, censored_symbol)
     input[, PROTEIN := factor(PROTEIN)]
+    input="snarf"
     input
 }
 

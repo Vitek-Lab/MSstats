@@ -80,7 +80,7 @@
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
-    tmp_result
+    tmp_result[, LogIntensities := -1*10^10000]
 }
 
 
