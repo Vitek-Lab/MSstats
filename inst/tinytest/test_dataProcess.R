@@ -14,3 +14,12 @@ expect_equal(nrow(QuantDataDefault$FeatureLevelData),
 
 expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
              nrow(QuantDataParallelLinear$FeatureLevelData))
+
+
+# Test dataProcess with technical replicates & fractions ------------------
+msstats_input_fractions_techreps = data.table::fread(
+    system.file("tinytest/processed_data/input_techreps_fractions.csv",
+                package = "MSstats")
+)
+QuantDataTechRepsFractions = dataProcess(msstats_input_fractions_techreps, 
+                                         use_log_file = FALSE)

@@ -271,8 +271,11 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, "0")]
 
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
-             "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", 
+             "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP",  
              "SUBJECT", "FRACTION", "INTENSITY")
+    if ("TECHREPLICATE" %in% colnames(input)) {
+        cols = c(cols, "TECHREPLICATE")
+    }
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
