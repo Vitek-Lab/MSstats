@@ -274,7 +274,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP",  
              "SUBJECT", "FRACTION", "INTENSITY")
     if ("TECHREPLICATE" %in% colnames(input)) {
-        cols = c(cols, "TECHREPLICATE")
+        cols = unique(c(cols, "TECHREPLICATE"))
     }
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }

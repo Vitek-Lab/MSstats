@@ -23,3 +23,5 @@ msstats_input_fractions_techreps = data.table::fread(
 )
 QuantDataTechRepsFractions = dataProcess(msstats_input_fractions_techreps, 
                                          use_log_file = FALSE)
+expect_true(!is.null(QuantDataTechRepsFractions))
+expect_true(nrow(QuantDataTechRepsFractions$FeatureLevelData) > 0)

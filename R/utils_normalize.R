@@ -292,7 +292,7 @@ MSstatsMergeFractions = function(input) {
                 run_info[, GROUP_ORIGINAL := as.character(GROUP_ORIGINAL)]
                 run_info[, SUBJECT_ORIGINAL := as.character(SUBJECT_ORIGINAL)]
                 for (k in seq_len(nrow(run_info))) {
-                    input[originalRUN %in% run_info$originalRUN[k], "newRun"] = paste(paste(run_info[k, 1:4], collapse = "_"), 'merged', sep = "_")  # seems to be not populated 
+                    input[originalRUN %in% run_info$originalRUN[k], "newRun"] = paste(paste(run_info[k, 1:4], collapse = "_"), 'merged', sep = "_")
                 }
                 
                 select_fraction = input[!is.na(ABUNDANCE) & ABUNDANCE > 0, 
