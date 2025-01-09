@@ -1,0 +1,77 @@
+name: Run Simple R Script on HPC via Slurm
+
+on:
+  push:
+    branches:
+      - feature/ci-cd-pipeline
+      # - devel
+
+jobs:
+  Benchmarking-pipeline:
+    runs-on: ubuntu-latest
+    env:
+      FDR_THRESHOLD: 0.21
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set Up SSH Access
+      run: |
+        mkdir -p ~/.ssh
+        touch ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H login-00.discovery.neu.edu >> ~/.ssh/known_hosts || exit 1
+
+    - name: Transfer Files to HPC
+      run: |
+        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
+
+    - name: Submit Slurm Job and Capture Job ID
+      id: submit_job
+      run: |
+        ssh raina.ans@login-00.discovery.neu.edu "cd /work/VitekLab/Projects/Benchmarking && sbatch config.slurm" | tee slurm_job_id.txt 
+        slurm_job_id=$(grep -oP '\d+' slurm_job_id.txt) 
+        echo "Slurm Job ID is $slurm_job_id"
+        echo "slurm_job_id=$slurm_job_id" >> $GITHUB_ENV  
+
+    - name: Monitor Slurm Job
+      run: |
+        ssh raina.ans@login-00.discovery.neu.edu "
+          while squeue -j ${{ env.slurm_job_id }} | grep -q ${{ env.slurm_job_id }}; do
+            echo 'Job Id : ${{ env.slurm_job_id }} is still running...'
+            sleep 10
+          done
+          echo 'Job has completed.'
+        "
+
+    - name: Fetch Output
+      run: |
+        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
+        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+
+    - name: Extract and Check FDR Values
+      run: |
+        grep -A 4 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
+        
+        if awk -v threshold="$FDR_THRESHOLD" '
+          NR > 1 {
+            if ($5 > threshold) {
+              print "Error: FDR too high in row " NR " with FDR=" $5
+              exit 1
+            }
+          }
+        ' results_section.txt; then
+          echo "All FDR values are within acceptable range."
+        else
+          exit 1
+        fi
+
+    - name: Upload Output as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-output
+        path: |
+          job_output.txt
+          job_error.txt

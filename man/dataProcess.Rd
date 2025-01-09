@@ -110,6 +110,45 @@ If `append = TRUE`, has to be a valid path to a file.}
 a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 track progress. Only works for Linux & Mac OS. Default is 1.}
 }
+\value{
+A list containing:
+\describe{
+  \item{FeatureLevelData}{A data frame with feature-level information after processing. Columns include:
+    \describe{
+      \item{PROTEIN}{Identifier for the protein associated with the feature.}
+      \item{PEPTIDE}{Identifier for the peptide sequence.}
+      \item{TRANSITION}{Identifier for the transition, typically representing a specific ion pair.}
+      \item{FEATURE}{Unique identifier for the feature, which could be a combination of peptide and transition.}
+      \item{LABEL}{Specifies the isotopic labeling of peptides, notably for SRM-based experiments. "L" indicates light-labeled peptides while "H" denotes heavy-labeled peptides.}
+      \item{GROUP}{Experimental group identifier.}
+      \item{RUN}{Identifier for the specific MS run.}
+      \item{SUBJECT}{Subject identifier within the experimental group.}
+      \item{FRACTION}{Fraction identifier if fractionation was performed.}
+      \item{originalRUN}{Original run identifier before any processing.}
+      \item{censored}{Logical indicator of whether the intensity value is considered missing or below limit of detection.}
+      \item{INTENSITY}{Original intensity measurement of the feature in the given run.}
+      \item{ABUNDANCE}{Processed abundance or intensity value after log-transformation and normalization.}
+      \item{newABUNDANCE}{The ABUNDANCE column but includes imputed missing values. It is the column that is used for protein summarization.}
+      \item{predicted}{Predicted intensity values for censored data, typically derived from a statistical model.}
+    }
+  }
+  \item{ProteinLevelData}{A data frame with run-level summarized information for each protein. Columns include:
+    \describe{
+      \item{RUN}{Identifier for the specific MS run.}
+      \item{Protein}{Identifier for the protein.}
+      \item{LogIntensities}{Log-transformed intensities for the protein in each run.}
+      \item{originalRUN}{Original run identifier before any processing.}
+      \item{GROUP}{Experimental group identifier.}
+      \item{SUBJECT}{Subject identifier within the experimental group.}
+      \item{TotalGroupMeasurements}{Total number of feature measurements for the protein in the given group.}
+      \item{NumMeasuredFeatures}{Number of features measured for the protein in the given run.}
+      \item{MissingPercentage}{Percentage of missing feature values for the protein in the given run.}
+      \item{more50missing}{Logical indicator of whether more than 50 percent of the features values are missing for the protein in the given run.}
+      \item{NumImputedFeature}{Number of features for which values were imputed due to missing or censored data for the protein in the given run.}
+    }
+  }
+}
+}
 \description{
 Process MS data: clean, normalize and summarize before differential analysis
 }
