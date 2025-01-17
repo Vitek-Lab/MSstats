@@ -218,7 +218,6 @@ Reference: [Kohler et al. 2024](https://www.nature.com/articles/s41596-024-01000
 Four options for normalization are included in MSstats: median, quantile, global standards and no normalization. There is no single best normalization for all experiments. Researchers must consider the assumptions underlying each normalization option and the appropriateness of the assumptions for their study. Below, we summarize the normalization options, their assumptions and the effect on downstream statistical analysis.
 
 ```{r echo=FALSE, message=FALSE}
-library(knitr)
 library(kableExtra)
 
 # Data for the table
