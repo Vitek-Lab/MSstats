@@ -38,7 +38,8 @@ There are three different normalizations supported:
 based on reference signals is performed. 
 'quantile' represents quantile normalization based on reference signals 
 'globalStandards' represents normalization with global standards proteins. 
-If FALSE, no normalization is performed.}
+If FALSE, no normalization is performed.  See MSstats vignettes for 
+recommendations on which normalization option to use.}
 
 \item{nameStandards}{optional vector of global standard peptide names. 
 Required only for normalization with global standard peptides.}
@@ -47,7 +48,8 @@ Required only for normalization with global standard peptides.}
 "top3" uses top 3 features which have highest average of log-intensity across runs. 
 "topN" uses top N features which has highest average of log-intensity across runs. 
 It needs the input for n_top_feature option. 
-"highQuality" flags uninformative feature and outliers.}
+"highQuality" flags uninformative feature and outliers. See MSstats vignettes for 
+recommendations on which feature selection option to use.}
 
 \item{remove_uninformative_feature_outlier}{optional. Only required if 
 featureSubset = "highQuality". TRUE allows to remove 
@@ -82,8 +84,9 @@ The output from Skyline should use '0'.
 Null assumes that all NA intensites are randomly missing.}
 
 \item{MBimpute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
-by Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
+TRUE (default) imputes missing values with 'NA' or '0' (depending on censoredInt option) 
+by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
+See MSstats vignettes for recommendations on which imputation option to use.}
 
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
 where every run has at least 50\% missing values for each peptide. FALSE is default.}

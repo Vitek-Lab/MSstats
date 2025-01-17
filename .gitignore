@@ -7,4 +7,5 @@
 *.txt
 .codiumai
 .idea
+*.Rproj
 
