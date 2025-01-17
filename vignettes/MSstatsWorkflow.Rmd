@@ -220,7 +220,6 @@ Four options for normalization are included in MSstats: median, quantile, global
 ```{r echo=FALSE, message=FALSE}
 library(kableExtra)
 
-# Data for the table
 table_data <- data.frame(
   Name = c("Median", "", "Quantile", "", "Global standards", "", "", "None", ""),
   Description = c(
@@ -253,9 +252,12 @@ table_data <- data.frame(
   )
 )
 
-# Create the table
-kable(table_data, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
+tryCatch({
+  kable(table_data, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+}, error = function(e) {
+  stop(paste0("Error in rendering the normalization options table: ", e$message))
+})
 ```
 
 If the assumptions of the normalization are not verified, the normalization may, in fact, increase bias or variance of the estimated log fold change. For example, if the experiment is not randomized and the experimental artifacts are confounded with the conditions, the median and quantile normalizations will introduce bias.
@@ -274,7 +276,6 @@ Using all features will simply leverage all available information to infer the u
 Missing value imputation attempts to infer feature intensities in runs in which they were not measured. MSstats imputes these values by using an accelerated failure time model
 
 ```{r echo=FALSE, message=FALSE}
-# Table 2 data
 imputation_table <- data.frame(
   Name = c("Imputation", "No imputation"),
   Description = c(
@@ -291,10 +292,13 @@ imputation_table <- data.frame(
   )
 )
 
-# Render Table 2
-kable(imputation_table, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
+tryCatch({
+  kable(imputation_table, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
   kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed")) %>%
   column_spec(2:4, width = "30em")
+}, error = function(e) {
+  stop(paste0("Error in rendering the imputation options table: ", e$message))
+})
 ```
 
 ### __1.4.2 Data Process Plots__
