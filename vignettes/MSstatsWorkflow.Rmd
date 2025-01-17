@@ -209,7 +209,96 @@ head(summarized$SummaryMethod)
 
 ```
 
-### __1.4.1 Data Process Plots__
+### __1.4.1 Data Processing Options__
+
+Reference: [Kohler et al. 2024](https://www.nature.com/articles/s41596-024-01000-3#Sec20)
+
+#### Normalization
+
+Four options for normalization are included in MSstats: median, quantile, global standards and no normalization. There is no single best normalization for all experiments. Researchers must consider the assumptions underlying each normalization option and the appropriateness of the assumptions for their study. Below, we summarize the normalization options, their assumptions and the effect on downstream statistical analysis.
+
+```{r echo=FALSE, message=FALSE}
+library(knitr)
+library(kableExtra)
+
+# Data for the table
+table_data <- data.frame(
+  Name = c("Median", "", "Quantile", "", "Global standards", "", "", "None", ""),
+  Description = c(
+    "Equalize medians of all log feature intensities in each run", "",
+    "Equalize the distributions of all log feature intensities in each run", "",
+    "Equalize median log-intensities of endogenous or spiked-in reference peptides or proteins. Apply adjustment to the remainder of log feature intensities", "", "",
+    "Do not apply any normalization", ""
+  ),
+  Assumption = c(
+    "All steps of data collection and acquisition were randomized",
+    "Most of the proteins in the experiment are the same and have the same concentration for all of the runs. The experimental artifacts affect every peptide in a run by the same constant amount",
+    "All steps of data collection and acquisition were randomized",
+    "Most of the proteins in the experiment are the same and have the same concentration for all of the runs. The experimental artifacts affect every peptide non-linearly, as a function of its log intensity",
+    "All steps of data collection and acquisition were randomized",
+    "The reference peptides or proteins are present in each run and have the same concentration for all of the runs. All experimental artifacts occur only after standards were added.",
+    "The experimental artifacts affect every protein in a run by the same constant amount",
+    "All steps of data collection and acquisition were randomized",
+    "The experiment has no systematic artifacts or has been normalized in another custom manner"
+  ),
+  Effect = c(
+    "The normalization estimates the artifact deviations in each run with a single quantity, reducing overfitting",
+    "The normalization reduces bias and variance of the estimated log fold change",
+    "The normalization estimates the artifact deviations in each run with a complex non-linear function, potentially leading to overfitting",
+    "The normalization reduces bias and variance of the estimated log fold change but may over-correct",
+    "The normalization estimates the artifact deviations in each run with a single quantity, which reduces overfitting",
+    "The normalization estimates the artifact deviations from a small number of peptides, which may increase overfitting. The normalization does not eliminate artifacts that occurred before adding spiked references",
+    "The normalization reduces bias and variance of the estimated log fold change",
+    "All patterns of variation of interest and of nuisance variation are preserved",
+    ""
+  )
+)
+
+# Create the table
+kable(table_data, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+```
+
+If the assumptions of the normalization are not verified, the normalization may, in fact, increase bias or variance of the estimated log fold change. For example, if the experiment is not randomized and the experimental artifacts are confounded with the conditions, the median and quantile normalizations will introduce bias.
+
+#### Feature Selection
+Feature selection is used to determine which protein features should be used to infer the overall protein abundance in a sample. The options here are:
+
+- Using all features
+- Using the top ‘N’ features
+- Removing uninformative features and outliers
+
+Using all features will simply leverage all available information to infer the underlying protein abundance. Top ‘N’ features selects a pre-specified number of features with the highest average intensity across all runs for protein-level inference. This option is useful if you believe that the features with lower average intensity are less reliable, or in cases in which some of the proteins have a very large number of features (such as in DIA experiments). For any individual protein, it is usually possible to determine changes in abundance by looking at the peaks with highest intensity; in these cases, using all features results in redundancy while greatly increasing the computational processing time. Finally, removing uninformative features and outliers attempts to select the ‘best’ features by removing features that have too many missing values, that are too noisy or have outliers.
+
+#### Missing Value Imputation
+
+Missing value imputation attempts to infer feature intensities in runs in which they were not measured. MSstats imputes these values by using an accelerated failure time model
+
+```{r echo=FALSE, message=FALSE}
+# Table 2 data
+imputation_table <- data.frame(
+  Name = c("Imputation", "No imputation"),
+  Description = c(
+    "Infer missing feature intensities by using an accelerated failure time model. It will not impute for runs in which all features are missing",
+    "Do not apply imputation"
+  ),
+  Assumption = c(
+    "Features are missing for reasons of low abundance (e.g., features are missing not at random)",
+    "Assume no information about reasons for missingness or that features are missing at random"
+  ),
+  Effect = c(
+    "If the assumption is true, imputation will remove bias toward high intensities in the summarization step. Otherwise, bias will be introduced via inaccurate imputation",
+    "If the assumption is true, no new bias will be introduced. Otherwise, if features are missing for reasons of low abundance, summarized values will be biased toward high intensities"
+  )
+)
+
+# Render Table 2
+kable(imputation_table, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
+  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+  column_spec(2:4, width = "30em")
+```
+
+### __1.4.2 Data Process Plots__
 
 After processing the input data, `MSstats` provides multiple plots to analyze the 
 results. Here we show the various types of plots we can use. By default, a 
