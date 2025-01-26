@@ -27,12 +27,12 @@ remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_
 remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER')); \
 install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
 
-echo "Executing script: benchmark_Dowell2021-HEqe408_LFQ.R"
+R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R")
 
-Rscript benchmark_Dowell2021-HEqe408_LFQ.R
-wait
-
-echo "Executing script: benchmark_Puyvelde2022-HYE5600735_LFQ.R"
-Rscript benchmark_Puyvelde2022-HYE5600735_LFQ.R
-
-wait
+for script in "${R_SCRIPTS[@]}"; do
+    echo "Executing script: $script" >> job_output.txt  
+    Rscript "$script" >> job_output.txt 2>> job_error.txt
+    wait  
+    echo "Finished executing script: $script" >> job_output.txt  
+    echo -e "\n\n"
+done
