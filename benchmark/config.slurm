@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=msstats_benchmark_job
+#SBATCH --job-name=msstats_benchmark_job_updated
 #SBATCH --chdir=/work/VitekLab/Projects/Benchmarking/
 #SBATCH --output=job_output.txt
 #SBATCH --error=job_error.txt
