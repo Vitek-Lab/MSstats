@@ -21,14 +21,6 @@ fragpipe_raw <- data.table::fread(dataset_config$file)
 
 head(fragpipe_raw)
 
-fragpipe_raw$Condition = unlist(lapply(fragpipe_raw$Run, function(x){
-  paste(str_split(x, "\\_")[[1]][4:5], collapse="_")
-}))
-
-fragpipe_raw$BioReplicate = unlist(lapply(fragpipe_raw$Run, function(x){
-  paste(str_split(x, "\\_")[[1]][4:7], collapse="_")
-}))
-
 msstats_format = MSstatsConvert::FragPipetoMSstatsFormat(fragpipe_raw, use_log_file = FALSE)
 
 
