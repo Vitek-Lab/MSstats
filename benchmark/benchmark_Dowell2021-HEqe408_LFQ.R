@@ -8,7 +8,7 @@ source("calculateMetrics.R")
 
 config <- fromJSON("scriptController.json", simplifyVector = FALSE)
 
-dataset_config <- config$datasets[[1]]
+dataset_config <- config$datasets[[2]]
 dataset_config <- as.list(dataset_config)
 
 cat("Processing Dataset:", dataset_config$name, "\n")
