@@ -3,7 +3,7 @@ name: Run Simple R Script on HPC via Slurm
 on:
   push:
     branches:
-      - feature/ci-cd-pipeline
+      - feature/multiple-scripts
       # - devel
 
 jobs:
