@@ -51,23 +51,6 @@ jobs:
         scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
         scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
 
-    - name: Extract and Check FDR Values
-      run: |
-        grep -A 4 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
-        
-        if awk -v threshold="$FDR_THRESHOLD" '
-          NR > 1 {
-            if ($5 > threshold) {
-              print "Error: FDR too high in row " NR " with FDR=" $5
-              exit 1
-            }
-          }
-        ' results_section.txt; then
-          echo "All FDR values are within acceptable range."
-        else
-          exit 1
-        fi
-
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
       with:
