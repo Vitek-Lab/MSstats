@@ -30,6 +30,9 @@ install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER
 echo "Executing script: benchmark_Dowell2021-HEqe408_LFQ.R"
 
 Rscript benchmark_Dowell2021-HEqe408_LFQ.R
+wait
 
 echo "Executing script: benchmark_Puyvelde2022-HYE5600735_LFQ.R"
 Rscript benchmark_Puyvelde2022-HYE5600735_LFQ.R
+
+wait
