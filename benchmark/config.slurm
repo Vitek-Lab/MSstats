@@ -3,6 +3,7 @@
 #SBATCH --chdir=/work/VitekLab/Projects/Benchmarking/
 #SBATCH --output=job_output.txt
 #SBATCH --error=job_error.txt
+#SBATCH --open-mode=append
 #SBATCH --time=01:00:00         # Set the maximum run time
 #SBATCH --ntasks=1              # Number of tasks (one process)
 #SBATCH --cpus-per-task=8      # Use 8 CPU cores for the task
