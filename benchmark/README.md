@@ -1,11 +1,11 @@
 
 # Benchmarking Setup Documentation
 
-## 1. benchmark.R
+## 1. benchmark_{Name_of_Dataset}.R
 
-This R script contains the benchmarking logic for the MSstats-based proteomics data analysis. 
-It executes specific workflows to analyze proteomics datasets, compute metrics (e.g., False Discovery Rate (FDR)), 
-and ensure the validity of the MSstats library's updates. The script reads input data, processes it, and outputs benchmarking metrics.
+These R scripts contain the benchmarking logic for the MSstats-based proteomics data analysis. 
+They execute specific workflows to analyze proteomics datasets, compute metrics (e.g., False Discovery Rate (FDR)), 
+and ensure the validity of the MSstats library's updates. The scripts read input data, process it, and output benchmarking metrics.
 
 ## 2. config.slurm
 
@@ -26,12 +26,12 @@ The file contains instructions for setting up the R environment, pulling the req
 
 Ensure you have access to the following:
 - An HPC account with SLURM job scheduler.
-- Required R dependencies installed (check `benchmark.R` for library imports).
+- Required R dependencies installed (check `benchmark_{Name_of_Dataset}.R` for library imports).
 - A GitHub account with access to the repository containing these files.
 
 ### 2. Setup HPC Environment
 
-1. Transfer the `benchmark.R` and `config.slurm` files to your HPC environment.
+1. Transfer the benchmark R scripts and `config.slurm` files to your HPC environment.
 2. Modify the `config.slurm` file to include your job-specific parameters (e.g., email, account name, partitions).
 3. Submit the job using `sbatch config.slurm`.
 
@@ -43,7 +43,7 @@ Ensure you have access to the following:
 
 ### 4. Verify Execution
 
-1. Check the SLURM job output logs for successful execution of the `benchmark.R` script.
+1. Check the SLURM job output logs for successful execution of the `benchmark_{Name_of_dataset}.R` script.
 2. Validate that the benchmarking metrics are generated correctly.
 3. Monitor the GitHub Actions logs to ensure the workflows execute without errors.
 
