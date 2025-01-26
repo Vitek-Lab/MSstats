@@ -28,7 +28,7 @@ install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER
 
 R_SCRIPTS=("benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Dowell2021-HEqe408_LFQ.R")
 
-for script in $R_SCRIPTS; do
-    echo "Executing script: $script"
-    Rscript "$script"
+for script in "${R_SCRIPTS[@]}"; do
+    echo "Executing script: $script" >> job_output.txt
+    Rscript "$script" >> job_output.txt 2>> job_error.txt
 done
