@@ -26,7 +26,7 @@ jobs:
 
     - name: Transfer Files to HPC
       run: |
-        scp -O benchmark/benchmark.R benchmark/benchmark1.R benchmark/calculateMetrics.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
+        scp -O benchmark/benchmark_Dowell2021-HEqe408_LFQ.R benchmark/benchmark_Puyvelde2022-HYE5600735_LFQ.R benchmark/scriptController.json benchmark/calculateMetrics.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
 
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
@@ -48,8 +48,8 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+        scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
+        scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
 
     - name: Extract and Check FDR Values
       run: |

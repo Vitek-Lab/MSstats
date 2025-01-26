@@ -26,7 +26,7 @@ remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_
 remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER')); \
 install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
 
-R_SCRIPTS=("benchmark.R" "benchmark1.R")
+R_SCRIPTS=("benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Dowell2021-HEqe408_LFQ.R")
 
 for script in $R_SCRIPTS; do
     echo "Executing script: $script"
