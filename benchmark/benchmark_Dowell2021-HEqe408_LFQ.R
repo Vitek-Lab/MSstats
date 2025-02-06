@@ -8,7 +8,7 @@ source("calculateMetrics.R")
 
 config <- fromJSON("scriptController.json", simplifyVector = FALSE)
 
-dataset_config <- config$datasets[[2]]
+dataset_config <- config$datasets[["DDA-Dowell2021-HEqe408_LFQ"]]
 dataset_config <- as.list(dataset_config)
 
 cat("Processing Dataset:", dataset_config$name, "\n")
@@ -54,7 +54,7 @@ summarized_results <- mclapply(data_process_tasks, function(task) {
 
 results_list <- mclapply(summarized_results, function(res) {
   calculateResult(res$summarized, res$label, dataset_config$samples)
-}, mc.cores = detectCores() - 1)
+}, mc.cores = num_cores)
 
 
 final_results <- do.call(rbind, results_list)

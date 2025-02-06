@@ -51,6 +51,10 @@ Ensure you have access to the following:
 
 # SSH Access Setup for a New User
 
+## Why is SSH Needed
+
+In this setup, SSH is needed to securely connect to the HPC cluster, submit SLURM jobs, and transfer benchmarking scripts and results. Private keys without passwords are essential for automation, allowing GitHub Actions to authenticate and run benchmarks without manual input. This ensures smooth execution of workflows, enabling continuous integration without interruptions. It also enhances security by eliminating the risks of password-based authentication while maintaining controlled access.
+
 ## Steps to Set Up SSH Access for a New User
 
 ### 1. Generate SSH Key Pair
@@ -71,15 +75,10 @@ You can check this by navigating to shell through Discovery Cluster Dashboard > 
 
 1. SSH into the remote server using an existing account with sufficient privileges:
    ```bash
-   ssh existing_user@remote_server (raina.ans@login-00.discovery.neu.edu)
+   ssh existing_user@remote_server (e.g. raina.ans@login-00.discovery.neu.edu)
    ```
 
-2. Switch to the new user account (if created):
-   ```bash
-   sudo su - new_user
-   ```
-
-3. Append the public key to the `authorized_keys` file:
+2. Append the public key to the `authorized_keys` file:
    ```bash
    mkdir -p ~/.ssh
    echo "paste_the_public_key_here" >> ~/.ssh/authorized_keys
@@ -89,6 +88,7 @@ You can check this by navigating to shell through Discovery Cluster Dashboard > 
 ---
 
 ### 3. Verify the New User's SSH Access
+
 From the new user's local machine, attempt to log in to the remote server:
 ```bash
 ssh new_user@remote_server

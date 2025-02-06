@@ -1,22 +1,36 @@
 {
-    "datasets": [
-      {
-        "name": "DDA-Puyvelde2022",
-        "file": "/work/VitekLab/Data/MS/Benchmarking/DDA-Puyvelde2022/DDA-Puyvelde2022-HYE5600735_LFQ/FragPipe/TOP0/MSstats.csv",
-        "samples": {
-          "Human": {"pattern": "_HUMAN$", "type": "negative"},
-          "Ecoli": {"pattern": "_ECOLI$", "type": "positive"},
-          "Yeast": {"pattern": "_YEAST$", "type": "positive"}  
-        }
-      },
-      {
-        "name": "DDA-Dowell2021-HEqe408_LFQ",
-        "file": "/work/VitekLab/Data/MS/Benchmarking/DDA-Dowell2021-HEqe408_LFQ/FragPipe/TOP0/MSstats.csv",
-        "samples": {
-          "Human": {"pattern": "_HUMAN$", "type": "negative"},
-          "Ecoli": {"pattern": "_ECOLI$", "type": "positive"}
+  "datasets": {
+    "DDA-Puyvelde2022-HYE5600735_LFQ": {
+      "name": "DDA-Puyvelde2022-HYE5600735_LFQ",
+      "file": "/work/VitekLab/Data/MS/Benchmarking/DDA-Puyvelde2022/DDA-Puyvelde2022-HYE5600735_LFQ/FragPipe/TOP0/MSstats_fixed.csv",
+      "samples": {
+        "Human": {
+          "pattern": "_HUMAN$",
+          "type": "insignificant"
+        },
+        "Ecoli": {
+          "pattern": "_ECOLI$",
+          "type": "significant"
+        },
+        "Yeast": {
+          "pattern": "_YEAST$",
+          "type": "significant"
         }
       }
-    ]
+    },
+    "DDA-Dowell2021-HEqe408_LFQ": {
+      "name": "DDA-Dowell2021-HEqe408_LFQ",
+      "file": "/work/VitekLab/Data/MS/Benchmarking/DDA-Dowell2021-HEqe408_LFQ/FragPipe/TOP0/MSstats.csv",
+      "samples": {
+        "Human": {
+          "pattern": "_HUMAN$",
+          "type": "insignificant"
+        },
+        "Ecoli": {
+          "pattern": "_ECOLI$",
+          "type": "significant"
+        }
+      }
+    }
   }
-  
+}

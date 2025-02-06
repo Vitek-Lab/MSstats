@@ -8,7 +8,7 @@ source("calculateMetrics.R")
 
 config <- fromJSON("scriptController.json", simplifyVector = FALSE)
 
-dataset_config <- config$datasets[[1]]
+dataset_config <- config$datasets[["DDA-Puyvelde2022-HYE5600735_LFQ"]]
 dataset_config <- as.list(dataset_config)
 
 cat("Processing Dataset:", dataset_config$name, "\n")
@@ -21,13 +21,15 @@ fragpipe_raw <- data.table::fread(dataset_config$file)
 
 head(fragpipe_raw)
 
-fragpipe_raw$Condition = unlist(lapply(fragpipe_raw$Run, function(x){
-  paste(str_split(x, "\\_")[[1]][4:5], collapse="_")
-}))
+# Useful for future datasets where BioReplicate and Condition columns are missing
 
-fragpipe_raw$BioReplicate = unlist(lapply(fragpipe_raw$Run, function(x){
-  paste(str_split(x, "\\_")[[1]][4:7], collapse="_")
-}))
+# fragpipe_raw$Condition = unlist(lapply(fragpipe_raw$Run, function(x){
+#   paste(str_split(x, "\\_")[[1]][4:5], collapse="_")
+# }))
+
+# fragpipe_raw$BioReplicate = unlist(lapply(fragpipe_raw$Run, function(x){
+#   paste(str_split(x, "\\_")[[1]][4:7], collapse="_")
+# }))
 
 msstats_format = MSstatsConvert::FragPipetoMSstatsFormat(fragpipe_raw, use_log_file = FALSE)
 
@@ -62,7 +64,7 @@ summarized_results <- mclapply(data_process_tasks, function(task) {
 
 results_list <- mclapply(summarized_results, function(res) {
   calculateResult(res$summarized, res$label, dataset_config$samples)
-}, mc.cores = detectCores() - 1)
+}, mc.cores = num_cores)
 
 
 final_results <- do.call(rbind, results_list)

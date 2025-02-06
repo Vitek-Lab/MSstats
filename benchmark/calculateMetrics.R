@@ -13,11 +13,13 @@ calculateResult <- function(summarized, label, samples) {
   
   for (sample_name in names(samples)) {
     sample <- samples[[sample_name]]
-    is_positive <- sample$type == "positive"
+    ## significant implies positives
+    ## insignificant implies negative
+    is_significant <- sample$type == "significant"
     
     filtered_proteins <- comparisonResult %>% filter(grepl(sample$pattern, Protein))
     
-    if (is_positive) {
+    if (is_significant) {
       TP <- TP + nrow(filtered_proteins %>% filter(adj.pvalue < 0.05))
       FN <- FN + nrow(filtered_proteins %>% filter(adj.pvalue >= 0.05))
     } else {
