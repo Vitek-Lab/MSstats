@@ -96,6 +96,17 @@ ssh new_user@remote_server
 
 If successful, the new user should be logged into the remote server.
 
+### 4. Add private key as secret in the MSStats repo
+
+### Adding a Private Key as a GitHub Secret
+1. Navigate to your GitHub repository.
+2. Go to Settings > Secrets and variables > Actions.
+4. Enter a name (e.g., `SSH_PRIVATE_KEY`).
+6. Click New repository secret > Add secret.
+-->
+
+### Using the Secret in a GitHub Actions Workflow
+To use this secret in a GitHub Actions workflow, see the current configured secret's use case.
 
 ### Notes
 - Ensure proper permissions are set on the `.ssh` directory and `authorized_keys` file.

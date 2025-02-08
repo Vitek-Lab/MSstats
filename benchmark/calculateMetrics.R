@@ -13,8 +13,6 @@ calculateResult <- function(summarized, label, samples) {
   
   for (sample_name in names(samples)) {
     sample <- samples[[sample_name]]
-    ## significant implies positives
-    ## insignificant implies negative
     is_significant <- sample$type == "significant"
     
     filtered_proteins <- comparisonResult %>% filter(grepl(sample$pattern, Protein))
