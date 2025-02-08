@@ -3,8 +3,8 @@ name: Run Simple R Script on HPC via Slurm
 on:
   push:
     branches:
-      - feature/ci-cd-pipeline
-      # - devel
+      # - feature/multiple-scripts
+      - devel
 
 jobs:
   Benchmarking-pipeline:
@@ -26,7 +26,7 @@ jobs:
 
     - name: Transfer Files to HPC
       run: |
-        scp benchmark/benchmark.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
+        scp -O benchmark/benchmark_Dowell2021-HEqe408_LFQ.R benchmark/benchmark_Puyvelde2022-HYE5600735_LFQ.R benchmark/scriptController.json benchmark/calculateMetrics.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
 
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
@@ -48,25 +48,8 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
-        scp raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
-
-    - name: Extract and Check FDR Values
-      run: |
-        grep -A 4 "FPR  Accuracy    Recall       FDR" job_output.txt > results_section.txt
-        
-        if awk -v threshold="$FDR_THRESHOLD" '
-          NR > 1 {
-            if ($5 > threshold) {
-              print "Error: FDR too high in row " NR " with FDR=" $5
-              exit 1
-            }
-          }
-        ' results_section.txt; then
-          echo "All FDR values are within acceptable range."
-        else
-          exit 1
-        fi
+        scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
+        scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4

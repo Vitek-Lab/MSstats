@@ -1,8 +1,9 @@
 #!/bin/bash
-#SBATCH --job-name=msstats_benchmark_job
+#SBATCH --job-name=msstats_benchmark_job_updated
 #SBATCH --chdir=/work/VitekLab/Projects/Benchmarking/
 #SBATCH --output=job_output.txt
 #SBATCH --error=job_error.txt
+#SBATCH --open-mode=append
 #SBATCH --time=01:00:00         # Set the maximum run time
 #SBATCH --ntasks=1              # Number of tasks (one process)
 #SBATCH --cpus-per-task=8      # Use 8 CPU cores for the task
@@ -10,7 +11,6 @@
 #SBATCH --partition=short       # Use the 'short' partition (or change as needed)
 
 module load R-geospatial
-
 
 module load gcc/11.1.0
 module load cmake/3.23.2
@@ -27,4 +27,12 @@ remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_
 remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER')); \
 install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
 
-Rscript benchmark.R
+R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R")
+
+for script in "${R_SCRIPTS[@]}"; do
+    echo "Executing script: $script" >> job_output.txt  
+    Rscript "$script" >> job_output.txt 2>> job_error.txt
+    wait  
+    echo "Finished executing script: $script" >> job_output.txt  
+    echo -e "\n\n"
+done
