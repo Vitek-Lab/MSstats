@@ -85,7 +85,7 @@ NumericVector get_feature_run(NumericVector find_runs, NumericVector find_featur
     NumericVector find_run_feature = intersect(find_runs, find_features);
     int n_rows = counts.nrow();
     NumericVector rf(0);
-    if ((find_run_feature.length() != 0) & !(find_run_feature[0] == -1)) {
+    if ((find_run_feature.length() != 0) && !(find_run_feature[0] == -1)) {
         CharacterVector temp_rf = coef_names[find_run_feature];
         rf = rep(1 / n_rows, temp_rf.length());
         rf.attr("names") = temp_rf;

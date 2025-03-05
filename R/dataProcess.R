@@ -8,14 +8,16 @@
 #' based on reference signals is performed. 
 #' 'quantile' represents quantile normalization based on reference signals 
 #' 'globalStandards' represents normalization with global standards proteins. 
-#' If FALSE, no normalization is performed.
+#' If FALSE, no normalization is performed.  See MSstats vignettes for 
+#' recommendations on which normalization option to use.
 #' @param nameStandards optional vector of global standard peptide names. 
 #' Required only for normalization with global standard peptides.
 #' @param featureSubset "all" (default) uses all features that the data set has. 
 #' "top3" uses top 3 features which have highest average of log-intensity across runs. 
 #' "topN" uses top N features which has highest average of log-intensity across runs. 
 #' It needs the input for n_top_feature option. 
-#' "highQuality" flags uninformative feature and outliers.
+#' "highQuality" flags uninformative feature and outliers. See MSstats vignettes for 
+#' recommendations on which feature selection option to use.
 #' @param remove_uninformative_feature_outlier optional. Only required if 
 #' featureSubset = "highQuality". TRUE allows to remove 
 #' 1) noisy features (flagged in the column feature_quality with "Uninformative"),
@@ -43,8 +45,9 @@
 #' The output from Skyline should use '0'. 
 #' Null assumes that all NA intensites are randomly missing.
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-#' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
+#' TRUE (default) imputes missing values with 'NA' or '0' (depending on censoredInt option) 
 #' by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
+#' See MSstats vignettes for recommendations on which imputation option to use.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
 #' where every run has at least 50\% missing values for each peptide. FALSE is default.
 #' @param maxQuantileforCensored Maximum quantile for deciding censored missing values, default is 0.999
