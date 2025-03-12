@@ -353,7 +353,50 @@ head(model$ComparisonResult)
 
 ```
 
-### __1.5.1 groupComparisonPlot__
+
+### __1.5.1 How to Account for Covariates__
+
+If you’re comparing disease vs. control, you may also want to account for other factors (covariates) like gender. Here’s how you can do that step-by-step:
+
+#### Step 1: Set up your conditions  
+In your annotation file, define each condition as a combination of the disease status and the covariate. For example, you could label your samples like this:  
+- `Control_Male`  
+- `Control_Female`  
+- `Disease_Male`  
+- `Disease_Female`  
+
+#### Step 2: Create a contrast matrix  
+The contrast matrix defines how you want to compare the groups. The order of the conditions in the matrix should match the order you define:
+
+**Example 1: Compare Control vs. Disease**  
+If you want to compare **control vs. disease** (averaging over gender), you can define the contrast matrix like this:
+
+```{r}
+# Order of conditions: control_male, control_female, disease_male, disease_female
+contrast.matrix = matrix(c(0.5, 0.5, -0.5, -0.5), nrow = 1)
+colnames(contrast.matrix) = c("Control_Male", "Control_Female", "Disease_Male", "Disease_Female")
+row.names(contrast.matrix) <- "Control - Disease"
+```
+
+- `0.5` for `Control_Male` and `Control_Female` means you’re averaging the control samples.  
+- `-0.5` for `Disease_Male` and `Disease_Female` means you’re averaging the disease samples and subtracting them from the control average.  
+
+**Example 2: Compare Male vs. Female**
+If you want to compare **male vs. female** (averaging over disease status), set up the contrast matrix like this:
+
+```{r}
+# Order of conditions: control_male, control_female, disease_male, disease_female
+contrast.matrix = matrix(c(0.5, -0.5, 0.5, -0.5), nrow = 1)
+colnames(contrast.matrix) = c("Control_Male", "Control_Female", "Disease_Male", "Disease_Female")
+row.names(contrast.matrix) <- "Male - Female"
+```
+
+- 0.5 for Control_Male and Disease_Male means you’re averaging the male samples.
+- -0.5 for Control_Female and Disease_Female means you’re averaging the female samples and subtracting them from the male average.
+
+This setup allows you to control for gender while testing the main effect of disease, or vice versa.
+
+### __1.5.2 groupComparisonPlot__
 
 Visualization for model-based analysis and summarizing differentially abundant 
 proteins. To summarize the results of log-fold changes and adjusted p-values 
