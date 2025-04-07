@@ -21,11 +21,16 @@
 #'     \describe{
 #'       \item{Protein}{The name of the protein for which the comparison is made.}
 #'       \item{Label}{The label of the comparison, typically derived from the `contrast.matrix`.}
-#'       \item{log2FC}{The log2 fold change between the conditions being compared. The base of the logarithm is specified by the `log_base` parameter.}
-#'       \item{SE}{The standard error of the log2 fold change estimate.}
-#'       \item{Tvalue}{The t-statistic value for the comparison.}
-#'       \item{DF}{The degrees of freedom associated with the t-statistic.}
-#'       \item{pvalue}{The p-value for the statistical test of the comparison.}
+#'       \item{log2FC}{The log2 fold change between the conditions being compared. The base of the logarithm is specified by the `log_base` parameter.
+#'          \itemize{
+#'              \item{`log2FC = Inf` or `-Inf`: This occurs when one condition has entirely missing measurements for a protein, resulting in an undefined ratio.}
+#'              \item{`log2FC` is a numeric value but all other columns are `NA`: This occurs when there is only one sample per condition. Fold change can be estimated, but variance cannot be estimated, so no statistical testing is possible.}
+#'          }
+#'       }
+#'       \item{SE}{The standard error of the log2 fold change estimate. May be `NA` when variance cannot be estimated (e.g., when only one sample per group).}
+#'       \item{Tvalue}{The t-statistic value for the comparison. May be `NA` when variance cannot be estimated (e.g., when only one sample per group).}
+#'       \item{DF}{The degrees of freedom associated with the t-statistic. A value of 0 indicates that, although variance could be estimated, the total number of observations is too small to support hypothesis testing.}
+#'       \item{pvalue}{The p-value for the statistical test of the comparison. Applicable if degrees of freedom is greater than 0}
 #'       \item{adj.pvalue}{The adjusted p-value using the Benjamini-Hochberg method for controlling the false discovery rate.}
 #'       \item{issue}{Any issues encountered during the comparison.  NA indicates no issues. "oneConditionMissing" occurs when data for one of the conditions being compared is entirely missing for a particular protein.}
 #'       \item{MissingPercentage}{The percentage of missing features for a given protein across all runs. This column is included only if missing values were imputed.}
