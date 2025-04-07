@@ -302,74 +302,6 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
     summarized_results
 }
 
-
-#' Feature-level data summarization
-#' 
-#' @param proteins_list list of processed feature-level data
-#' @inheritParams MSstatsSummarizeWithMultipleCores
-#' 
-#' @importFrom data.table uniqueN
-#' @importFrom utils setTxtProgressBar
-#' 
-#' @return list of length one with run-level data.
-#' 
-#' @export
-#' 
-#' @examples
-#' raw = DDARawData 
-#' method = "TMP"
-#' cens = "NA"
-#' impute = TRUE
-#' MSstatsConvert::MSstatsLogsSettings(FALSE)
-#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
-#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
-#' input = MSstatsMergeFractions(input)
-#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
-#' input = MSstatsSelectFeatures(input, "all")
-#' processed = getProcessed(input)
-#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-#' input_split = split(input, input$PROTEIN)
-#' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
-#' length(summarized) # list of summarization outputs for each protein
-#' head(summarized[[1]][[1]]) # run-level summary
-#' 
-MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
-                            remove50missing, equal_variance) {
-    num_proteins = length(proteins_list)
-    summarized_results = vector("list", num_proteins)
-    if (method == "TMP") {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in seq_len(num_proteins)) {
-            single_protein = proteins_list[[protein_id]]
-            summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
-                single_protein, impute, censored_symbol, remove50missing)
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
-    } else {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in seq_len(num_proteins)) {
-            single_protein = proteins_list[[protein_id]]
-            summarized_result = MSstatsSummarizeSingleLinear(single_protein,
-                                                             equal_variance)
-            summarized_results[[protein_id]] = summarized_result
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
-    }
-    msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
-                            "notify you that the MSstatsSummarize function",
-                            "will undergo a transition process. Starting from release 3.21",
-                            "the MSstatsSummarize function in MSstats will be deprecated",
-                            "in favor of MSstatsSummarizeWithSingleCore.",
-                            "Please take the necessary steps to update your codebase",
-                            "and migrate to MSstatsSummarizeWithSingleCore before",
-                            "release 3.21 to avoid any disruptions to your workflow.")
-    message(msg_deprecation)
-    summarized_results
-}
-
-
 #' Linear model-based summarization for a single protein
 #' 
 #' @param single_protein feature-level data for a single protein
@@ -433,7 +365,7 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
 #' Tukey Median Polish summarization for a single protein
 #' 
 #' @param single_protein feature-level data for a single protein
-#' @inheritParams MSstatsSummarize
+#' @inheritParams MSstatsSummarizeWithSingleCore
 #' 
 #' @return list of two data.tables: one with fitted survival model,
 #' the other with protein-level data
