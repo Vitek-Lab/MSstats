@@ -62,7 +62,7 @@ NumericVector get_ref(const CharacterVector& coef_names, const NumericVector& fi
                       const NumericVector& contrast_matrix, const DataFrame& input,
                       const bool is_reference) {
     NumericVector ref(0);
-    if ((find_ref.length() != 0) & !(find_ref[0] == -1)) {
+    if ((find_ref.length() != 0) && !(find_ref[0] == -1)) {
         if (is_reference) {
             CharacterVector temp_ref = coef_names[find_ref];
             ref = rep(0.0, find_ref.length());
