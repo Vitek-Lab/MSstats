@@ -412,7 +412,7 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
     is_single_feature = .checkSingleFeature(single_protein)
     
     fit = try(.fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
-                              equal_variances), silent = TRUE)
+                              equal_variances, weights), silent = TRUE)
     
     if (inherits(fit, "try-error")) {
         msg = paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))

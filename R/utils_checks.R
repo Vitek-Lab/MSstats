@@ -140,13 +140,20 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 #' @importFrom data.table uniqueN as.data.table
 #' @keywords internal
 .checkUnProcessedDataValidity = function(input, fix_missing, fill_incomplete) {
+  
     input = data.table::as.data.table(unclass(input))
+    
+    if (!"AnomalyScores" %in% colnames(input)){
+      input$AnomalyScores = NA
+    }
+    
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
              "PrecursorCharge", "FragmentIon", "ProductCharge", 
-             "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
+             "IsotopeLabelType", "Condition", "BioReplicate", "Run", 
+             "Intensity", "AnomalyScores")
     provided_cols = intersect(cols, colnames(input))
     
-    if (length(provided_cols) < 10) {
+    if (length(provided_cols) < 11) {
         msg = paste("Missing columns in the input:", 
                     paste(setdiff(cols, colnames(input)), collapse = " "))
         getOption("MSstatsLog")("ERROR", msg)
@@ -178,13 +185,16 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
                      colnames(input))
     input = input[, cols, with = FALSE]
     
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
-    input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
+    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, 
+                          input$PRECURSORCHARGE, sep = "_")
+    input$TRANSITION = paste(input$FRAGMENTION, 
+                             input$PRODUCTCHARGE, sep = "_")
     
     if (data.table::uniqueN(input$ISOTOPELABELTYPE) > 2) {
-        getOption("MSstatsLog")("ERROR",  
-                                paste("There are more than two levels of labeling.",
-                                      "So far, only label-free or reference-labeled experiment are supported. - stop"))
+        getOption("MSstatsLog")(
+          "ERROR",  paste(
+            "There are more than two levels of labeling.",
+            "So far, only label-free or reference-labeled experiment are supported. - stop"))
         stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
     }
     
@@ -272,7 +282,7 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP",  
-             "SUBJECT", "FRACTION", "INTENSITY")
+             "SUBJECT", "FRACTION", "INTENSITY", "ANOMALYSCORES")
     if ("TECHREPLICATE" %in% colnames(input)) {
         cols = unique(c(cols, "TECHREPLICATE"))
     }
