@@ -7,6 +7,7 @@
 groupComparison(
   contrast.matrix,
   data,
+  weights = NULL,
   save_fitted_models = TRUE,
   log_base = 2,
   use_log_file = TRUE,

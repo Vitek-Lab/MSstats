@@ -350,8 +350,9 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
         pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
         for (protein_id in seq_len(num_proteins)) {
             single_protein = proteins_list[[protein_id]]
-            summarized_result = MSstatsSummarizeSingleLinear(single_protein,
-                                                             equal_variance)
+            summarized_result = MSstatsSummarizeSingleLinear(
+                single_protein, impute, censored_symbol, remove50missing, 
+                equal_variance)
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
         }
@@ -378,6 +379,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 #' @return list with protein-level data
 #' 
 #' @importFrom stats xtabs
+#' @importFrom pcaMethods pca
 #' 
 #' @export
 #' 
@@ -398,8 +400,44 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 #' single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]])
 #' head(single_protein_summary[[1]])
 #' 
-MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) {
+MSstatsSummarizeSingleLinear = function(single_protein, 
+                                        impute,
+                                        censored_symbol, 
+                                        remove50missing, 
+                                        equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
+    
+    cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
+                                                 "FEATURE", "ref"))
+    single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
+                                        (n_obs_run > 0 & !is.na(n_obs_run))]
+    if (nrow(single_protein) == 0) {
+        return(list(NULL, NULL))
+    }
+    single_protein[, RUN := factor(RUN)]
+    single_protein[, FEATURE := factor(FEATURE)]
+    if (impute & any(single_protein[["censored"]])) {
+        survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
+                                                   with = FALSE])
+        sigma2 = survival_fit$scale^2
+        single_protein[, c("predicted", "imputation_var") := {
+            pred = predict(survival_fit, newdata = .SD, se.fit = TRUE)
+            list(pred$fit, pred$se.fit^2 + sigma2)
+        }]
+        single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
+        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
+                                                predicted, newABUNDANCE)]
+        survival = single_protein[, c(cols, "predicted"), with = FALSE]
+    } else {
+        survival = single_protein[, cols, with = FALSE]
+        survival[, predicted := NA]
+    }
+    
+    if (all(!is.na(single_protein$ANOMALYSCORES))){
+        single_protein = .calculate_weights(single_protein)
+    } else {
+        single_protein$weights = NA
+    }
     
     label = data.table::uniqueN(single_protein$LABEL) > 1
     single_protein = single_protein[!is.na(ABUNDANCE)]
@@ -411,8 +449,9 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
     counts = as.matrix(counts)
     is_single_feature = .checkSingleFeature(single_protein)
     
-    fit = try(.fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
-                              equal_variances, weights), silent = TRUE)
+    # fit = try(, silent = TRUE)
+    fit = .fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
+                              equal_variances)
     
     if (inherits(fit, "try-error")) {
         msg = paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))

@@ -7,6 +7,7 @@
 MSstatsGroupComparison(
   summarized_list,
   contrast_matrix,
+  weights,
   save_fitted_models,
   repeated,
   samples_info,

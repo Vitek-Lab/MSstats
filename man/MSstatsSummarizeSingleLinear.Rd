@@ -4,7 +4,13 @@
 \alias{MSstatsSummarizeSingleLinear}
 \title{Linear model-based summarization for a single protein}
 \usage{
-MSstatsSummarizeSingleLinear(single_protein, equal_variances = TRUE)
+MSstatsSummarizeSingleLinear(
+  single_protein,
+  impute,
+  censored_symbol,
+  remove50missing,
+  equal_variances = TRUE
+)
 }
 \arguments{
 \item{single_protein}{feature-level data for a single protein}

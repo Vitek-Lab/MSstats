@@ -7,6 +7,7 @@
 .fitModelSingleProtein(
   input,
   contrast_matrix,
+  weights,
   has_tech_replicates,
   is_single_subject,
   repeated,

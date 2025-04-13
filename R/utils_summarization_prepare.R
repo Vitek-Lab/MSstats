@@ -103,11 +103,11 @@ getProcessed = function(input) {
 #' @return data.table
 #' @keywords internal
 .prepareSummary = function(input, method, impute, censored_symbol) {
-    if (method == "TMP") {
-        input = .prepareTMP(input, impute, censored_symbol)
-    } else {
-        input = .prepareLinear(input, FALSE, censored_symbol)
-    }
+    # if (method == "TMP") {
+    input = .prepareTMP(input, impute, censored_symbol)
+    # } else {
+    #     input = .prepareLinear(input, FALSE, censored_symbol)
+    # }
     input
 }
 
