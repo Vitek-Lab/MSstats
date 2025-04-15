@@ -103,6 +103,13 @@ double get_quant(const NumericVector& coefs, const NumericVector& contrast) {
     return (result(0, 0));
 }
 
+double get_quant_var(const NumericVector& contrast,
+                     const NumericMatrix& cov_mat) {
+    arma::colvec c = as<arma::colvec>(contrast);
+    arma::mat sigma = as<arma::mat>(cov_mat);
+    double var = arma::as_scalar(c.t() * sigma * c);
+    return var;
+}
 
 NumericVector combine_contrast(bool is_reference, NumericVector intercept, 
                                NumericVector features, NumericVector runs, 
@@ -159,16 +166,19 @@ NumericVector make_contrast_run_quant(DataFrame input,
 
 
 // [[Rcpp::export]]
-NumericVector get_linear_summary(const DataFrame& input,
+DataFrame get_linear_summary(const DataFrame& input,
                                  const NumericVector& coefs,
                                  const NumericMatrix& counts,
-                                 const bool is_labeled) {
+                                 const bool is_labeled,
+                                 const NumericMatrix& cov_mat) {
     CharacterVector runs = input["RUN"];
     CharacterVector unique_runs = unique(runs);
     CharacterVector ref = {"ref"};
     unique_runs = setdiff(unique_runs, ref);
     int num_runs = unique_runs.length();
+    
     NumericVector log_intensities(num_runs);
+    NumericVector variances(num_runs);
     
     for (int run_id = 0; run_id < num_runs; ++run_id) {
         NumericVector contrast_matrix(num_runs);
@@ -180,6 +190,7 @@ NumericVector get_linear_summary(const DataFrame& input,
                                                          is_labeled);
         double quantified = get_quant(coefs, contrast);
         log_intensities(run_id) = quantified;
+        variances[run_id] = get_quant_var(contrast, cov_mat);
     }
     
     if (is_labeled) {
@@ -189,7 +200,11 @@ NumericVector get_linear_summary(const DataFrame& input,
                                                          contrast_matrix, 
                                                          counts, true, true);
         log_intensities.push_back(get_quant(coefs, contrast));
+        variances.push_back(get_quant_var(contrast, cov_mat));
     }
     
-    return(log_intensities);
+    return DataFrame::create(
+        Named("LogIntensities") = log_intensities,
+        Named("Variance") = variances
+    );
 }

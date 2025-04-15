@@ -86,7 +86,7 @@ getSamplesInfo = function(summarization_output) {
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
 #' @importFrom stats resid fitted
 #' @keywords internal
-.fitModelSingleProtein = function(input, contrast_matrix, weights,
+.fitModelSingleProtein = function(input, contrast_matrix,
                                   has_tech_replicates, is_single_subject, 
                                   repeated, groups, samples_info,
                                   save_fitted_models, has_imputed) {
@@ -104,7 +104,7 @@ getSamplesInfo = function(summarization_output) {
         fitted_values = NA
         fit = NULL
     } else {
-        fitted_model = .fitModelForGroupComparison(input, weights, repeated,
+        fitted_model = .fitModelForGroupComparison(input, repeated,
                                                    is_single_subject,
                                                    has_tech_replicates)
         result = .getAllComparisons(input, fitted_model, contrast_matrix,
@@ -136,21 +136,28 @@ getSamplesInfo = function(summarization_output) {
 #' Choose a model type (fixed/mixed effects) and fit it for a single protein
 #' @inheritParams .fitModelSingleProtein
 #' @keywords internal
-.fitModelForGroupComparison = function(input, weights, repeated, 
+.fitModelForGroupComparison = function(input, repeated, 
                                        is_single_subject, has_tech_replicates) {
+    
+    if ("Variance" %in% colnames(input) & !all(is.na(input$Variance))){
+        weight_input = 1/input$Variance
+    } else {
+        weight_input = NULL
+    }
+    
     if (!repeated) {
         if (!has_tech_replicates | is_single_subject) {
-            full_fit = lm(ABUNDANCE ~ GROUP, data = input, weights=weights)
+            full_fit = lm(ABUNDANCE ~ GROUP, data = input, weights=weight_input)
             df_full = full_fit[["df.residual"]]
         } else {
             full_fit = suppressMessages(try(
                 lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), 
-                           data = input, weights=weights),
+                           data = input, weights=weight_input),
                 TRUE
             ))
             df_full = suppressMessages(try(
                 lm(ABUNDANCE ~ GROUP + SUBJECT, 
-                   data = input, weights=weights)$df.residual,
+                   data = input, weights=weight_input)$df.residual,
                 TRUE
             ))
         }
@@ -158,14 +165,14 @@ getSamplesInfo = function(summarization_output) {
         ## time-course
         if (is_single_subject) {
             full_fit = lm(ABUNDANCE ~ GROUP,
-                          data = input, weights=weights)
+                          data = input, weights=weight_input)
             df_full = full_fit$df.residual
         } else {
             ## no single subject
             if (!has_tech_replicates) {
                 full_fit = suppressMessages(try(
                     lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), 
-                               data = input, weights=weights),
+                               data = input, weights=weight_input),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
@@ -176,12 +183,12 @@ getSamplesInfo = function(summarization_output) {
                 full_fit = suppressMessages(try(
                     lme4::lmer(
                         ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
-                        data = input, weights=weights),
+                        data = input, weights=weight_input),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
                     lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT,
-                       data = input, weights=weights)$df.residual,
+                       data = input, weights=weight_input)$df.residual,
                     TRUE
                 ))
             }
@@ -456,7 +463,7 @@ getSamplesInfo = function(summarization_output) {
 #' @importFrom parallel makeCluster clusterExport parLapply stopCluster
 #' @keywords internal
 .groupComparisonWithMultipleCores = function(summarized_list, contrast_matrix,
-                                             weights, save_fitted_models, 
+                                             save_fitted_models, 
                                              repeated, samples_info, 
                                              numberOfCores) {
     groups = colnames(contrast_matrix)
@@ -465,7 +472,7 @@ getSamplesInfo = function(summarization_output) {
     function_environment = environment()
     cl = parallel::makeCluster(numberOfCores)
     parallel::clusterExport(cl, c("MSstatsGroupComparisonSingleProtein", 
-                                  "contrast_matrix", "weights", "repeated", 
+                                  "contrast_matrix", "repeated", 
                                   "groups", "samples_info", 
                                   "save_fitted_models", "has_imputed"), 
                             envir = function_environment)
@@ -477,7 +484,7 @@ getSamplesInfo = function(summarization_output) {
                 sep = "\n", file = "MSstats_groupComparison_log_progress.log", append = TRUE)
         }
         MSstatsGroupComparisonSingleProtein(
-            summarized_list[[i]], contrast_matrix, weights, repeated,
+            summarized_list[[i]], contrast_matrix, repeated,
             groups, samples_info, save_fitted_models, has_imputed
         )
     })
@@ -494,7 +501,7 @@ getSamplesInfo = function(summarization_output) {
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @keywords internal
 .groupComparisonWithSingleCore = function(summarized_list, contrast_matrix,
-                                          weights, save_fitted_models, 
+                                          save_fitted_models, 
                                           repeated, samples_info) {
     groups = colnames(contrast_matrix)
     has_imputed = attr(summarized_list, "has_imputed")
@@ -503,7 +510,7 @@ getSamplesInfo = function(summarization_output) {
     pb = txtProgressBar(max = length(all_proteins_id), style = 3)
     for (i in all_proteins_id) {
         comparison_outputs = MSstatsGroupComparisonSingleProtein(
-            summarized_list[[i]], contrast_matrix, weights, repeated,
+            summarized_list[[i]], contrast_matrix, repeated,
             groups, samples_info, save_fitted_models, has_imputed
         )
         test_results[[i]] = comparison_outputs

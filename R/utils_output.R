@@ -110,11 +110,11 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' @param censored_symbol censored missing value indicator
 #' @keywords internal
 .finalizeInput = function(input, summarized, method, impute, censored_symbol) {
-    if (method == "TMP") {
-        input = .finalizeTMP(input, censored_symbol, impute, summarized)
-    } else {
-        input = .finalizeLinear(input, censored_symbol)
-    }
+    # if (method == "TMP") {
+    input = .finalizeTMP(input, censored_symbol, impute, summarized)
+    # } else {
+    #     input = .finalizeLinear(input, censored_symbol)
+    # }
     input
 }
 

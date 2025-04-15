@@ -78,7 +78,7 @@
 #' # table for result
 #' testResultOneComparison$ComparisonResult
 #'
-groupComparison = function(contrast.matrix, data, weights=NULL,
+groupComparison = function(contrast.matrix, data, 
                            save_fitted_models = TRUE, log_base = 2,
                            use_log_file = TRUE, append = FALSE, 
                            verbose = TRUE, log_file_path = NULL, 
@@ -99,7 +99,7 @@ groupComparison = function(contrast.matrix, data, weights=NULL,
     getOption("MSstatsMsg")(
         "INFO", " == Start to test and get inference in whole plot ...")
     testing_results = MSstatsGroupComparison(split_summarized, contrast_matrix,
-                                             weights, save_fitted_models, 
+                                             save_fitted_models, 
                                              repeated, samples_info, 
                                              numberOfCores)
     getOption("MSstatsLog")("INFO",
@@ -171,17 +171,17 @@ MSstatsPrepareForGroupComparison = function(summarization_output) {
 #' group_comparison[[1]][[2]] # comparison result
 #' group_comparison[[2]][[3]] # NULL, because we set save_fitted_models to FALSE
 #' 
-MSstatsGroupComparison = function(summarized_list, contrast_matrix, weights,
+MSstatsGroupComparison = function(summarized_list, contrast_matrix,
                                   save_fitted_models, repeated, samples_info, 
                                   numberOfCores = 1) {
     if (numberOfCores > 1) {
         return(.groupComparisonWithMultipleCores(summarized_list, 
-                                                 contrast_matrix, weights,
+                                                 contrast_matrix,
                                                  save_fitted_models, repeated, 
                                                  samples_info, numberOfCores))
     } else {
         return(.groupComparisonWithSingleCore(summarized_list, contrast_matrix, 
-                                              weights, save_fitted_models, 
+                                              save_fitted_models, 
                                               repeated, samples_info))
     }
 }
@@ -273,7 +273,7 @@ MSstatsGroupComparisonOutput = function(input, summarization_output, log_base = 
 #' single_output # same as a single element of MSstatsGroupComparison output
 #' 
 MSstatsGroupComparisonSingleProtein = function(single_protein, contrast_matrix,
-                                               weights, repeated, groups, 
+                                               repeated, groups, 
                                                samples_info, save_fitted_models,
                                                has_imputed) {
     single_protein = .prepareSingleProteinForGC(single_protein)
@@ -281,7 +281,7 @@ MSstatsGroupComparisonSingleProtein = function(single_protein, contrast_matrix,
     has_tech_reps = .checkTechReplicate(single_protein)
     
     fitted_model = try(.fitModelSingleProtein(single_protein, contrast_matrix,
-                                              weights, has_tech_reps, 
+                                              has_tech_reps, 
                                               is_single_subject, repeated, 
                                               groups, samples_info,
                                               save_fitted_models, has_imputed),

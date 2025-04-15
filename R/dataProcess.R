@@ -424,7 +424,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
             pred = predict(survival_fit, newdata = .SD, se.fit = TRUE)
             list(pred$fit, pred$se.fit^2 + sigma2)
         }]
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
+        single_protein[, predicted := ifelse(censored & (LABEL == "L"), 
+                                             predicted, NA)]
         single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
                                                 predicted, newABUNDANCE)]
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
@@ -440,7 +441,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     }
     
     label = data.table::uniqueN(single_protein$LABEL) > 1
-    single_protein = single_protein[!is.na(ABUNDANCE)]
+    single_protein = single_protein[!is.na(newABUNDANCE)]
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
     
@@ -460,12 +461,16 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         result = NULL
     } else {
         cf = summary(fit)$coefficients[, 1]
+        cov_mat = vcov(fit)
+        
         result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
-        log_intensities = get_linear_summary(single_protein, cf,
-                                             counts, label)
-        result[, LogIntensities := log_intensities]
+        extracted_values = get_linear_summary(single_protein, cf,
+                                             counts, label, cov_mat)
+        # extracted_values = get_run_estimates_simple(fit, single_protein, counts)
+        
+        result = cbind(result, extracted_values)
     }
-    list(result)
+    list(result, survival)
 }
 
 
