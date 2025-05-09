@@ -166,7 +166,8 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
                       "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsBalancedDesign(
         input, balanced_cols, TRUE, TRUE, fix_missing,
-        anomaly_metrics = c("ANOMALYSCORES"))
+        anomaly_metrics = c("AnomalyScores"))
+
     input = data.table::as.data.table(unclass(input))
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
     
