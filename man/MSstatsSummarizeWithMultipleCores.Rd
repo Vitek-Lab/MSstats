@@ -11,7 +11,8 @@ MSstatsSummarizeWithMultipleCores(
   censored_symbol,
   remove50missing,
   equal_variance,
-  numberOfCores = 1
+  numberOfCores = 1,
+  aft_iterations
 )
 }
 \arguments{

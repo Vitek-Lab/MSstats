@@ -8,7 +8,8 @@ MSstatsSummarizeSingleTMP(
   single_protein,
   impute,
   censored_symbol,
-  remove50missing
+  remove50missing,
+  aft_iterations
 )
 }
 \arguments{

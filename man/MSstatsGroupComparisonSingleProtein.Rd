@@ -7,7 +7,6 @@
 MSstatsGroupComparisonSingleProtein(
   single_protein,
   contrast_matrix,
-  weights,
   repeated,
   groups,
   samples_info,

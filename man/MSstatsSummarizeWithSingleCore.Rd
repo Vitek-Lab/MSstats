@@ -10,7 +10,8 @@ MSstatsSummarizeWithSingleCore(
   impute,
   censored_symbol,
   remove50missing,
-  equal_variance
+  equal_variance,
+  aft_iterations
 )
 }
 \arguments{
