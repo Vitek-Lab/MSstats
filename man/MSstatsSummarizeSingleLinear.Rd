@@ -9,6 +9,7 @@ MSstatsSummarizeSingleLinear(
   impute,
   censored_symbol,
   remove50missing,
+  aft_iterations,
   equal_variances = TRUE
 )
 }

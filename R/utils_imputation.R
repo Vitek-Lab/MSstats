@@ -1,7 +1,7 @@
 #' @importFrom data.table uniqueN
 #' @importFrom survival survreg Surv
 #' @keywords internal
-.fitSurvival = function(input) {
+.fitSurvival = function(input, aft_iterations) {
     FEATURE = RUN = NULL
     
     missingness_filter = is.finite(input$newABUNDANCE)
@@ -19,32 +19,32 @@
             # need to check
             fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
                                     data = input, dist = "gaussian",
-                          control = list(maxiter=90))
+                          control = list(maxiter=aft_iterations))
         } else {
             if (countdf) {
                 fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
                                         data = input, dist = "gaussian",
-                              control = list(maxiter=90))
+                              control = list(maxiter=aft_iterations))
             } else {
                 fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref,
                                         data = input, dist = "gaussian",
-                              control = list(maxiter=90))
+                              control = list(maxiter=aft_iterations))
             }
         }
     } else {
         if (n_features == 1L) {
             fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
                                     data = input, dist = "gaussian",
-                          control = list(maxiter=90))
+                          control = list(maxiter=aft_iterations))
         } else {
             if (countdf) {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
                                         data = input, dist = "gaussian",
-                              control = list(maxiter=90))
+                              control = list(maxiter=aft_iterations))
             } else {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ FEATURE + RUN,
                                         data = input, dist = "gaussian", 
-                              control = list(maxiter=90))
+                              control = list(maxiter=aft_iterations))
             }
         }  
     }

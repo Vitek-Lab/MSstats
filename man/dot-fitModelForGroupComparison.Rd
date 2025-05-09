@@ -6,7 +6,6 @@
 \usage{
 .fitModelForGroupComparison(
   input,
-  weights,
   repeated,
   is_single_subject,
   has_tech_replicates
