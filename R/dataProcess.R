@@ -237,17 +237,20 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                 }
                 single_protein = input[protein_indices[[i]],]
                 MSstatsSummarizeSingleLinear(
-                    single_protein, 
-                    aft_iterations=aft_iterations, 
-                    equal_variance=equal_variance)
+                    single_protein,
+                    impute, 
+                    censored_symbol, 
+                    remove50missing,
+                    aft_iterations)
             })
         }
         parallel::stopCluster(cl)
         return(summarized_results)
     } else {
         return(MSstatsSummarizeWithSingleCore(input, method, impute, 
-                                              censored_symbol, remove50missing, 
-                                              equal_variance, aft_iterations))
+                                              censored_symbol, 
+                                              remove50missing, 
+                                              aft_iterations))
     }
 }
 
@@ -301,9 +304,8 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
         for (protein_id in seq_len(num_proteins)) {
             single_protein = input[protein_indices[[protein_id]],]
             summarized_result = MSstatsSummarizeSingleLinear(
-                single_protein,
-                aft_iterations=aft_iterations,
-                equal_variance=equal_variance)
+              input, method, impute, censored_symbol, 
+              remove50missing, aft_iterations)
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
         }
@@ -363,7 +365,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
             single_protein = proteins_list[[protein_id]]
             summarized_result = MSstatsSummarizeSingleLinear(
                 single_protein, impute, censored_symbol, remove50missing, 
-                aft_iterations, equal_variance)
+                aft_iterations)
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
         }
