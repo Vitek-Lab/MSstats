@@ -250,6 +250,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         return(MSstatsSummarizeWithSingleCore(input, method, impute, 
                                               censored_symbol, 
                                               remove50missing, 
+                                              equal_variance,
                                               aft_iterations))
     }
 }
@@ -304,7 +305,7 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
         for (protein_id in seq_len(num_proteins)) {
             single_protein = input[protein_indices[[protein_id]],]
             summarized_result = MSstatsSummarizeSingleLinear(
-              input, method, impute, censored_symbol, 
+              input, impute, censored_symbol, 
               remove50missing, aft_iterations)
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
@@ -450,7 +451,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     }
     
     if (all(!is.na(single_protein$ANOMALYSCORES))){
-        single_protein = .calculate_weights(single_protein)
+        # single_protein = .calculate_weights(single_protein)
+        single_protein$weights = 1 / single_protein$ANOMALYSCORES
     } else {
         single_protein$weights = NA
     }

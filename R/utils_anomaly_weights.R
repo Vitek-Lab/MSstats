@@ -14,37 +14,30 @@
     
     data = .normalize_anomalies(data)
 
-    w_stats = data[, .(
-        shapiro_W = tryCatch(
-            shapiro.test(unlist(normalized_score))$statistic,
-            error = function(e) NA_real_
-        )
-    ), by = PEPTIDE]
+    # w_stats = data[, .(
+    #     shapiro_W = tryCatch(
+    #         shapiro.test(unlist(normalized_score))$statistic,
+    #         error = function(e) NA_real_
+    #     )
+    # ), by = PEPTIDE]
     
     # Join the W stats back into the original data.table
     data = merge(data, w_stats, by = "PEPTIDE", all.x = TRUE)
     
     anomaly_scores = data$normalized_score
     imputation_var = ifelse(data$censored, data$imputation_var, NA)
-    norm_score = data$shapiro_W
     
     if (sum(is.na(imputation_var)) == length(imputation_var)){
         weights = anomaly_scores
-        # resPPCA = pca(matrix(
-        #     c(anomaly_scores, norm_score), ncol=2), 
-        #     method="ppca", center=TRUE, nPcs=1,
-        #     seed=1, maxIterations = 10000)
-        # weights = (abs(resPPCA@loadings[[1]]) * anomaly_scores
-        # ) + (abs(resPPCA@loadings[[2]]) * norm_score)
     } else {
         resPPCA = pca(matrix(
-            c(anomaly_scores, imputation_var), ncol=2), #, norm_score
+            c(anomaly_scores, imputation_var), ncol=2), 
             method="ppca", center=TRUE, nPcs=1,
             seed=1, maxIterations = 10000)
         weights = (abs(resPPCA@loadings[[1]]) * anomaly_scores
-        ) + ifelse(
-                is.na(imputation_var), 0, 
-                abs(resPPCA@loadings[[2]]) * imputation_var)# + (abs(resPPCA@loadings[[3]]) * norm_score
+                   ) + ifelse(
+                       is.na(imputation_var), 0, 
+                       abs(resPPCA@loadings[[2]]) * imputation_var)
     }
     
     data$raw_weights = weights
