@@ -297,7 +297,6 @@ groupComparisonPlots = function(
 
 
 #' Preprocess data for volcano plots and create them
-#' @importFrom data.table fifelse
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
 .plotVolcano = function(
@@ -336,8 +335,8 @@ groupComparisonPlots = function(
     } else {
         logFC_cutoff = log(FCcutoff, log_base_FC)
     }
-    input[, colgroup := fifelse(adj.pvalue < sig & logFC > logFC_cutoff, "red",
-                                fifelse(adj.pvalue < sig & logFC < -logFC_cutoff, "blue", 
+    input[, colgroup := ifelse(adj.pvalue < sig & logFC > logFC_cutoff, "red",
+                                ifelse(adj.pvalue < sig & logFC < -logFC_cutoff, "blue", 
                                         "black"))]
     input[, colgroup := factor(colgroup, levels = c("black", "blue", "red"))]
     input[, Protein := as.character(Protein)]
