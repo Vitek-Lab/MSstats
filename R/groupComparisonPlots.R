@@ -335,9 +335,9 @@ groupComparisonPlots = function(
     } else {
         logFC_cutoff = log(FCcutoff, log_base_FC)
     }
-    input[, colgroup := ifelse(adj.pvalue >= sig, "black",
-                               ifelse(logFC > logFC_cutoff,
-                                      "red", "blue"))]
+    input[, colgroup := ifelse(adj.pvalue <= sig & logFC >= logFC_cutoff, "red",
+                                ifelse(adj.pvalue <= sig & logFC <= -logFC_cutoff, "blue", 
+                                        "black"))]
     input[, colgroup := factor(colgroup, levels = c("black", "blue", "red"))]
     input[, Protein := as.character(Protein)]
     input[!is.na(issue) & issue == "oneConditionMissing", 
