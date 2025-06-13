@@ -26,7 +26,7 @@ jobs:
 
     - name: Transfer Files to HPC
       run: |
-        scp -O benchmark/benchmark_Dowell2021-HEqe408_LFQ.R benchmark/benchmark_Puyvelde2022-HYE5600735_LFQ.R benchmark/scriptController.json benchmark/calculateMetrics.R benchmark/config.slurm raina.ans@login.explorer.northeastern.edu:/projects/VitekLab/Projects/Benchmarking || exit 1
+        scp -r benchmark raina.ans@login.explorer.northeastern.edu:/projects/VitekLab/Projects/Benchmarking || exit 1
 
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
