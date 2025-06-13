@@ -21,24 +21,24 @@ jobs:
         mkdir -p ~/.ssh
         touch ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        ssh-keyscan -H login-00.discovery.neu.edu >> ~/.ssh/known_hosts || exit 1
+        echo "${{ secrets.SSH_PRIVATE_KEY_EXPLORER }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H login.explorer.northeastern.edu >> ~/.ssh/known_hosts || exit 1
 
     - name: Transfer Files to HPC
       run: |
-        scp -O benchmark/benchmark_Dowell2021-HEqe408_LFQ.R benchmark/benchmark_Puyvelde2022-HYE5600735_LFQ.R benchmark/scriptController.json benchmark/calculateMetrics.R benchmark/config.slurm raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking || exit 1
+        scp -O benchmark/benchmark_Dowell2021-HEqe408_LFQ.R benchmark/benchmark_Puyvelde2022-HYE5600735_LFQ.R benchmark/scriptController.json benchmark/calculateMetrics.R benchmark/config.slurm raina.ans@login.explorer.northeastern.edu:/work/VitekLab/Projects/Benchmarking || exit 1
 
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
       run: |
-        ssh raina.ans@login-00.discovery.neu.edu "cd /work/VitekLab/Projects/Benchmarking && sbatch config.slurm" | tee slurm_job_id.txt 
+        ssh raina.ans@login.explorer.northeastern.edu "cd /work/VitekLab/Projects/Benchmarking && sbatch config.slurm" | tee slurm_job_id.txt 
         slurm_job_id=$(grep -oP '\d+' slurm_job_id.txt) 
         echo "Slurm Job ID is $slurm_job_id"
         echo "slurm_job_id=$slurm_job_id" >> $GITHUB_ENV  
 
     - name: Monitor Slurm Job
       run: |
-        ssh raina.ans@login-00.discovery.neu.edu "
+        ssh raina.ans@login.explorer.northeastern.edu "
           while squeue -j ${{ env.slurm_job_id }} | grep -q ${{ env.slurm_job_id }}; do
             echo 'Job Id : ${{ env.slurm_job_id }} is still running...'
             sleep 10
@@ -48,8 +48,8 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
-        scp -O raina.ans@login-00.discovery.neu.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+        scp -O raina.ans@login.explorer.northeastern.edu:/work/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
+        scp -O raina.ans@login.explorer.northeastern.edu:/work/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
