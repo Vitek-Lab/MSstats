@@ -31,7 +31,7 @@ jobs:
     - name: Submit Slurm Job and Capture Job ID
       id: submit_job
       run: |
-        ssh raina.ans@login.explorer.northeastern.edu "cd /projects/VitekLab/Projects/Benchmarking && sbatch config.slurm" | tee slurm_job_id.txt 
+        ssh raina.ans@login.explorer.northeastern.edu "cd /projects/VitekLab/Projects/Benchmarking/benchmark && sbatch config.slurm" | tee slurm_job_id.txt 
         slurm_job_id=$(grep -oP '\d+' slurm_job_id.txt) 
         echo "Slurm Job ID is $slurm_job_id"
         echo "slurm_job_id=$slurm_job_id" >> $GITHUB_ENV  
@@ -48,8 +48,8 @@ jobs:
 
     - name: Fetch Output
       run: |
-        scp -O raina.ans@login.explorer.northeastern.edu:/projects/VitekLab/Projects/Benchmarking/job_output.txt job_output.txt
-        scp -O raina.ans@login.explorer.northeastern.edu:/projects/VitekLab/Projects/Benchmarking/job_error.txt job_error.txt
+        scp -O raina.ans@login.explorer.northeastern.edu:/projects/VitekLab/Projects/Benchmarking/benchmark/job_output.txt job_output.txt
+        scp -O raina.ans@login.explorer.northeastern.edu:/projects/VitekLab/Projects/Benchmarking/benchmark/job_error.txt job_error.txt
 
     - name: Upload Output as Artifact
       uses: actions/upload-artifact@v4
