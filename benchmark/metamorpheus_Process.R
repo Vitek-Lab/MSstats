@@ -1,4 +1,4 @@
-calculate_Metrics(QuantData, Label, protein_mappings){
+calculate_Metrics <- function(QuantData, protein_mappings, label){
 
     # dataProcessPlots(QuantData, "QCPlot", which.Protein = "allonly", address = FALSE, isPlotly = TRUE)
 
@@ -33,7 +33,7 @@ calculate_Metrics(QuantData, Label, protein_mappings){
 
     results <- data.frame(
     Label = label,
-    FDR = fdr
+    FDR = FDR
   )
   
   return(results)

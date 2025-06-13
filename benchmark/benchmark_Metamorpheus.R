@@ -1,6 +1,7 @@
 library(MSstatsConvert)
 library(MSstats)
 library(tidyverse)
+library(parallel)
 
 source("metamorpheus_Process.R")
 
@@ -10,13 +11,16 @@ dataset_config <- config$datasets[["DDA-Solivais2024-Metamorpheus_NoMBR_LFQ"]]
 dataset_config <- as.list(dataset_config)
 
 cat("Processing Dataset:", dataset_config$name, "\n")
-cat("Dataset File Path:", dataset_config$file, "\n")
 
-filePath = dataset_config$parent + "/" + dataset_config$data
-annotPath = dataset_config$parent + "/"
+filePath <- file.path(dataset_config$parent, dataset_config$data)
+annotPath <- dataset_config$parent
 
 input = data.table::fread(file.path(filePath, "QuantifiedPeaks.tsv"))
 annot = data.table::fread(file.path(annotPath, "annotation.csv"))
+
+
+cat("Dataset File Path:", filePath, "\n")
+cat("Dataset File Path:", annotPath, "\n")
 
 input = input %>% filter(!str_detect(`Protein Group`, ";")) # remove multiple protein group in same cell
 input = input %>% filter(!str_detect(`Protein Group`, "DECOY")) # remove decoys
@@ -31,27 +35,27 @@ output = MetamorpheusToMSstatsFormat(input, annot)
 data_process_tasks <- list(
   list(
     label = "Data process with Normalized Data",
-    result = function() dataProcess(msstats_format, featureSubset = "topN", n_top_feature = 20)
+    result = function() dataProcess(output, featureSubset = "topN", n_top_feature = 20)
   ),
   list(
     label = "Data process with Normalization and MBImpute False",
-    result = function() dataProcess(msstats_format, featureSubset = "topN", n_top_feature = 20, MBimpute = FALSE)
+    result = function() dataProcess(output, featureSubset = "topN", n_top_feature = 20, MBimpute = FALSE)
   ),
   list(
     label = "Data process without Normalization",
-    result = function() dataProcess(msstats_format, featureSubset = "topN", normalization = "FALSE", n_top_feature = 20)
+    result = function() dataProcess(output, featureSubset = "topN", normalization = "FALSE", n_top_feature = 20)
   ),
   list(
     label = "Data process without Normalization with MBImpute False",
-    result = function() dataProcess(msstats_format, featureSubset = "topN", normalization = "FALSE", n_top_feature = 20, MBimpute = FALSE)
+    result = function() dataProcess(output, featureSubset = "topN", normalization = "FALSE", n_top_feature = 20, MBimpute = FALSE)
   ),
   list(
     label = "Data process without Normalization and Imputation On for all features",
-    result = function() dataProcess(msstats_format, featureSubset = "all", normalization = "FALSE", MBimpute = FALSE)
+    result = function() dataProcess(output, featureSubset = "all", normalization = "FALSE", MBimpute = FALSE)
   ),
   list(
     label = "Data process without Normalization and Imputation On for top3 features",
-    result = function() dataProcess(msstats_format, featureSubset = "top3", normalization = "FALSE", MBimpute = FALSE)
+    result = function() dataProcess(output, featureSubset = "top3", normalization = "FALSE", MBimpute = FALSE)
   )
 )
     
