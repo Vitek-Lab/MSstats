@@ -2,7 +2,7 @@
   "datasets": {
     "DDA-Puyvelde2022-HYE5600735_LFQ": {
       "name": "DDA-Puyvelde2022-HYE5600735_LFQ",
-      "file": "/work/VitekLab/Data/MS/Benchmarking/DDA-Puyvelde2022/DDA-Puyvelde2022-HYE5600735_LFQ/FragPipe/TOP0/MSstats_fixed.csv",
+      "file": "/projects/VitekLab/Data/MS/Benchmarking/DDA-Puyvelde2022/DDA-Puyvelde2022-HYE5600735_LFQ/FragPipe/TOP0/MSstats_fixed.csv",
       "samples": {
         "Human": {
           "pattern": "_HUMAN$",
@@ -20,7 +20,7 @@
     },
     "DDA-Dowell2021-HEqe408_LFQ": {
       "name": "DDA-Dowell2021-HEqe408_LFQ",
-      "file": "/work/VitekLab/Data/MS/Benchmarking/DDA-Dowell2021-HEqe408_LFQ/FragPipe/TOP0/MSstats.csv",
+      "file": "/projects/VitekLab/Data/MS/Benchmarking/DDA-Dowell2021-HEqe408_LFQ/FragPipe/TOP0/MSstats.csv",
       "samples": {
         "Human": {
           "pattern": "_HUMAN$",
