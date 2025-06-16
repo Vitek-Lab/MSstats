@@ -9,13 +9,12 @@
 #SBATCH --cpus-per-task=8      # Use 8 CPU cores for the task
 #SBATCH --mem=256G              # Request 256GB of memory
 #SBATCH --partition=short       
-module load R-geospatial
+module load R
 
-module load gcc/11.1.0
-module load cmake/3.23.2
+module load cmake/3.30.2
 
 export LC_ALL=C
-export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2-geospatial
+export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
 
 
 mkdir -p $R_LIBS_USER
