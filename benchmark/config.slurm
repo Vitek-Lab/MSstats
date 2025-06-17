@@ -19,8 +19,7 @@ export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
 
 mkdir -p $R_LIBS_USER
 
-module load R
-Rscript -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
+Rscript -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages(c('remotes', 'nloptr'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
 remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_LIBS_USER')); \
 remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER')); \
 install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
