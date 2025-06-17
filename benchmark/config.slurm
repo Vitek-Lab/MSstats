@@ -14,7 +14,7 @@ module load R
 module load cmake/3.30.2
 
 export LC_ALL=C
-export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2-geospatial
+export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
 
 
 mkdir -p $R_LIBS_USER
