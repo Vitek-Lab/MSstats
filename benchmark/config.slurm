@@ -20,10 +20,17 @@ export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
 
 mkdir -p $R_LIBS_USER
 
-Rscript -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages(c('remotes', 'nloptr'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
-remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_LIBS_USER')); \
-remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER')); \
-install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
+Rscript -e "
+if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org');
+for (pkg in c('dplyr', 'stringr', 'ggplot2')) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')
+  }
+}
+remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_LIBS_USER'));
+remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER'));
+"
+
 
 R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Metamorpheus.R")
 
