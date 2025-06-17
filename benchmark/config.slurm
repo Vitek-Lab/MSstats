@@ -14,6 +14,7 @@ module load R
 module load cmake/3.30.2
 
 export LC_ALL=C
+export LD_LIBRARY_PATH=/shared/EL9/explorer/R/4.4.1/lib64/R/lib:$LD_LIBRARY_PATH
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
 
 
