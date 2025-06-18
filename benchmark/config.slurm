@@ -42,9 +42,8 @@ for (pkg in c("dplyr", "stringr", "ggplot2")) {
         install.packages(pkg, repos = "https://cloud.r-project.org")
     }
 }
-
+BiocManager::install(c("MSstatsConvert", "preprocessCore"), force = TRUE)
 remotes::install_github("Vitek-Lab/MSstats", ref = "devel")
-remotes::install_github("Vitek-Lab/MSstatsConvert", ref = "master")
 '
 
 R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Metamorpheus.R")
