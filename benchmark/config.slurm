@@ -16,7 +16,10 @@ module load cmake/3.30.2
 export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
 
-export LD_LIBRARY_PATH=/shared/EL9/explorer/R/4.4.1/lib64/R/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+mkdir -p $HOME/lib_fix
+ln -sf /shared/EL9/explorer/R/4.4.1/lib64/R/lib/libRlapack.so $HOME/lib_fix/libRlapack.so
+
+export LD_LIBRARY_PATH=$HOME/lib_fix:/shared/EL9/explorer/R/4.4.1/lib64/R/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
 mkdir -p $R_LIBS_USER
 
@@ -28,7 +31,6 @@ ldd $(find ~/R -name nloptr.so | head -n 1) >> job_output.txt 2>> job_error.txt
 Rscript -e '
 .libPaths("/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4")
 Sys.unsetenv("R_LIBS")
-cat("R version: ", R.version$version.string, "\n")
 cat(".libPaths():\n"); print(.libPaths())
 
 if (!requireNamespace("remotes", quietly = TRUE))
