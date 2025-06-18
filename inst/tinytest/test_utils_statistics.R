@@ -22,7 +22,7 @@ input <- data.table::data.table(
   )
 )
 
-.logMissingness(input)
+MSstats:::.logMissingness(input)
 
 expect_true(
   any(grepl("Some features are completely missing.*PEPTIDE2|PEPTIDE3", logged_msgs)),
