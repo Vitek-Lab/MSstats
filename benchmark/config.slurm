@@ -15,13 +15,12 @@ module load cmake/3.30.2
 
 export LC_ALL=C
 export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
+mkdir -p $R_LIBS_USER
 
 mkdir -p $HOME/lib_fix
-ln -sf /shared/EL9/explorer/R/4.4.1/lib64/R/lib/libRlapack.so $HOME/lib_fix/libRlapack.so
+ln -sf /shared/EL9/explorer/R/4.4.1/lib64/R/lib/libRlapack.so $HOME/lib_fix/libRlapack.so.3
 
-export LD_LIBRARY_PATH=$HOME/lib_fix:/shared/EL9/explorer/R/4.4.1/lib64/R/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-
-mkdir -p $R_LIBS_USER
+export LD_LIBRARY_PATH=$HOME/lib_fix:/shared/EL9/explorer/R/4.4.1/lib64/R/lib:/usr/lib64:$LD_LIBRARY_PATH
 
 echo "Running ldd on preprocessCore.so" >> job_output.txt
 ldd $(find ~/R -name preprocessCore.so | head -n 1) >> job_output.txt 2>> job_error.txt
@@ -35,6 +34,8 @@ cat(".libPaths():\n"); print(.libPaths())
 
 if (!requireNamespace("remotes", quietly = TRUE))
     install.packages("remotes", repos = "https://cloud.r-project.org")
+
+install.packages("nloptr", type = "source", repos = "https://cloud.r-project.org")
 
 for (pkg in c("dplyr", "stringr", "ggplot2")) {
     if (!requireNamespace(pkg, quietly = TRUE)) {
