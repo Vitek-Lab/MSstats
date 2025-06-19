@@ -143,16 +143,23 @@
     ABUNDANCE = AllMissing = NumMissing = NumTotal = AnyAllMissing = NULL
     FEATURE = FractionMissing = RUN = NULL
     
-    missing = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
-                           NumTotal = .N), 
-                    by = c("LABEL", "GROUP", "FEATURE")]
-    missing[, AllMissing := NumMissing == NumTotal]
-    missing[, AnyAllMissing := any(AllMissing), by = c("LABEL", "FEATURE")]
+    input[, is_na_abundance := is.na(ABUNDANCE)]
+    missing = input[, .(
+        NumMissing = sum(is_na_abundance),
+        NumTotal = .N
+    ), by = .(LABEL, GROUP, FEATURE)]
+    missing[, AllMissing := (NumMissing == NumTotal)]
+    any_all_missing = missing[AllMissing == TRUE, 
+                              .(AnyAllMissing = TRUE), 
+                              by = .(LABEL, FEATURE)]
+    missing = merge(missing, any_all_missing, 
+                    by = c("LABEL", "FEATURE"), all.x = TRUE)
+    missing[is.na(AnyAllMissing), AnyAllMissing := FALSE]
     missing_in_any = as.character(missing[(AnyAllMissing), FEATURE])
-    # TODO: LOG, which features have AnyAllMissing
-    
-    missing_by_run = input[, list(NumMissing = sum(is.na(ABUNDANCE), na.rm = TRUE),
-                                  NumTotal = .N), by = "RUN"]
+    missing_by_run = input[, .(
+        NumMissing = sum(is_na_abundance),
+        NumTotal = .N
+    ), by = "RUN"]
     missing_by_run[, FractionMissing := NumMissing / NumTotal]
     missing_by_run = as.character(missing_by_run[FractionMissing > 0.75, 
                                                  unique(RUN)])
