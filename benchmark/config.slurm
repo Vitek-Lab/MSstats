@@ -50,7 +50,7 @@ R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE56007
 
 for script in "${R_SCRIPTS[@]}"; do
     echo "Executing script: $script" >> job_output.txt
-    Rscript "$script" >> job_output.txt 2>> job_error.txt
+    stdbuf -oL -eL Rscript "$script" >> job_output.txt 2>> job_error.txt
     wait
     echo "Finished executing script: $script" >> job_output.txt
     echo -e "\n\n"
