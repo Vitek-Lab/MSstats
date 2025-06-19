@@ -21,11 +21,6 @@ ln -sf /shared/EL9/explorer/R/4.4.1/lib64/R/lib/libRlapack.so $HOME/lib_fix/libR
 
 export LD_LIBRARY_PATH=$HOME/lib_fix:/shared/EL9/explorer/R/4.4.1/lib64/R/lib:/usr/lib64:$LD_LIBRARY_PATH
 
-echo "Running ldd on preprocessCore.so" >> job_output.txt
-ldd $(find ~/R -name preprocessCore.so | head -n 1) >> job_output.txt 2>> job_error.txt
-echo "Running ldd on nloptr.so" >> job_output.txt
-ldd $(find ~/R -name nloptr.so | head -n 1) >> job_output.txt 2>> job_error.txt
-
 Rscript -e '
 .libPaths("/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4")
 Sys.unsetenv("R_LIBS")
@@ -45,7 +40,7 @@ BiocManager::install(c("MSstatsConvert", "preprocessCore"), force = TRUE)
 remotes::install_github("Vitek-Lab/MSstats", ref = "devel", force = TRUE)
 '
 
-R_SCRIPTS=("benchmark_Metamorpheus.R" "benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R")
+R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Metamorpheus.R" )
 
 for script in "${R_SCRIPTS[@]}"; do
     echo "Executing script: $script" >> job_output.txt
