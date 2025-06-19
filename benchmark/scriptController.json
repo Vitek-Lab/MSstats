@@ -46,6 +46,21 @@
           "type": "significant"
         }
       }
+    },
+    "DDA-Solivais2024-Metamorpheus_MBR_LFQ": {
+      "name": "DDA-Solivais2024-Metamorpheus_MBR_LFQ",
+      "parent": "/projects/VitekLab/Data/MS/Benchmarking/DDA-Solivais2024_Metamorpheus/Current",
+      "data":"FlashLFQ_v1.0_NoNormalization_wPIP",
+      "samples": {
+        "Human": {
+          "pattern": "_HUMAN$",
+          "type": "insignificant"
+        },
+        "Ecoli": {
+          "pattern": "_ECOLI$",
+          "type": "significant"
+        }
+      }
     }
   }
 }
