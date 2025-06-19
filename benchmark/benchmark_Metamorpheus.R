@@ -68,13 +68,37 @@ summarized_results <- mclapply(data_process_tasks, function(task) {
   list(label = task$label, summarized = task$result())
 }, mc.cores = num_cores)	
 
+cat("Summarized Results:\n")
+print(str(summarized_results))
+flush.console()
 
-results_list <- mclapply(summarized_results, function(res) {
-  calculate_Metrics(res$summarized, protein_mappings, res$label)
-}, mc.cores = num_cores)
+
+results_list <- lapply(summarized_results, function(res) {
+  cat("Processing result for:", res$label, "\n")
+  flush.console()
+  out <- tryCatch({
+    calculate_Metrics(res$summarized, protein_mappings, res$label)
+  }, error = function(e) {
+    message("Error in calculate_Metrics for ", res$label, ": ", e$message)
+    NULL
+  })
+  print(str(out))
+  flush.console()
+  out
+})
+
+cat("Results List structure:\n")
+print(str(results_list))
+flush.console()
+
+final_results <- tryCatch({
+  do.call(rbind, results_list)
+}, error = function(e) {
+  message("Error during rbind: ", e$message)
+  NULL
+})
 
 
-final_results <- do.call(rbind, results_list)
 end_time <- Sys.time()
 total_time <- end_time - start_time
 print(final_results)
