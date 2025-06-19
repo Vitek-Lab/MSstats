@@ -1,7 +1,8 @@
 library(MSstatsConvert)
 library(MSstats)
-library(tidyverse)
 library(parallel)
+library(stringr)
+library(jsonlite)
 
 source("metamorpheus_Process.R")
 
