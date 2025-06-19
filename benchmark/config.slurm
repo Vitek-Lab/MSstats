@@ -45,7 +45,7 @@ BiocManager::install(c("MSstatsConvert", "preprocessCore"), force = TRUE)
 remotes::install_github("Vitek-Lab/MSstats", ref = "devel", force = TRUE)
 '
 
-R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Metamorpheus.R")
+R_SCRIPTS=("benchmark_Metamorpheus.R" "benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R")
 
 for script in "${R_SCRIPTS[@]}"; do
     echo "Executing script: $script" >> job_output.txt
