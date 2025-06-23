@@ -85,6 +85,9 @@ dataProcessPlots(QuantData,
 # Count by Condition
 annot[, .N, by = Condition]
 
+# Set as data table for data.table operations
+setDT(QuantData$ProteinLevelData)
+
 # Add Country and DiseaseClass columns
 QuantData$ProteinLevelData[, `:=`(
   Country = fifelse(grepl("Australia", GROUP), "Australia",
