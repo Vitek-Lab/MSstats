@@ -35,7 +35,6 @@ Internal standards were used for normalization.
 # Load necessary libraries
 library(MSstats)
 library(ggplot2)
-library(tidyverse)
 ```
 
 ```{r}
@@ -83,23 +82,18 @@ dataProcessPlots(QuantData,
 **NOTE:** MSstats uses the GROUP column to perform differential abundance analysis. Let's first examine the values in this column. There are 6 unique group labels, annotated in the format: DiseaseClass_SampleLocation.
 
 ```{r}
-annot %>% group_by(Condition) %>% summarize(n())
+# Count by Condition
+annot[, .N, by = Condition]
 
-QuantData$ProteinLevelData = QuantData$ProteinLevelData %>%
-  mutate(
-    Country = case_when(
-      grepl("Australia", GROUP) ~ "Australia",
-      grepl("NewYork", GROUP) ~ "NewYork",
-      grepl("Zurich", GROUP) ~ "Zurich",
-      TRUE ~ "Other"
-    ),
-    DiseaseClass = case_when(
-      grepl("MPM", GROUP) ~ "MPM",
-      grepl("ASB", GROUP) ~ "ASB",
-      grepl("Healthy", GROUP) ~ "Healthy",
-      TRUE ~ "Other"
-    )
-  )
+# Add Country and DiseaseClass columns
+QuantData$ProteinLevelData[, `:=`(
+  Country = fifelse(grepl("Australia", GROUP), "Australia",
+             fifelse(grepl("NewYork", GROUP), "NewYork",
+             fifelse(grepl("Zurich", GROUP), "Zurich", "Other"))),
+  DiseaseClass = fifelse(grepl("MPM", GROUP), "MPM",
+                  fifelse(grepl("ASB", GROUP), "ASB",
+                  fifelse(grepl("Healthy", GROUP), "Healthy", "Other")))
+)]
 ```
 
 ```{r}
@@ -128,11 +122,14 @@ We'll look into interaction plots to verify if the source of the data explains t
 ```{r}
 # Interaction plots Australia vs NY (majority of samples collected at these two locations)
 
-pl_data %>%
-  filter(Country %in% c("Australia", "NewYork")) %>%
-  group_by(Protein, Country, DiseaseClass) %>%
-  summarise(mean_intensity = mean(LogIntensities), .groups = "drop") %>%
-  ggplot(aes(x = DiseaseClass, y = mean_intensity, color = Country, group = Country)) +
+# Filter and compute mean intensity
+plot_data <- pl_data[Country %in% c("Australia", "NewYork"),
+  .(mean_intensity = mean(LogIntensities, na.rm = TRUE)),
+  by = .(Protein, Country, DiseaseClass)
+]
+
+# Plot using ggplot2
+ggplot(plot_data, aes(x = DiseaseClass, y = mean_intensity, color = Country, group = Country)) +
   geom_line() +
   geom_point() +
   facet_wrap(~Protein, scales = "free_y") +
