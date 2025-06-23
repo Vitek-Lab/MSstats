@@ -103,7 +103,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
   subset_input = input[n_obs > 1 & n_obs_run > 0 & nonmissing_all, 
                        .(PROTEIN, FEATURE, LABEL, newABUNDANCE, nonmissing_all)]
   grouped = subset_input[, .(
-      MinValue = min(newABUNDANCE, na.rm = TRUE),
+      MinValue = min(newABUNDANCE, na.rm = TRUE)
   ), by = .(PROTEIN, FEATURE, LABEL)]
   grouped[, NinetyNine := 0.99 * MinValue]
   input[grouped, ABUNDANCE_cut := NinetyNine, 
