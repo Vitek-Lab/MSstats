@@ -1,0 +1,215 @@
+
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=7, warning=FALSE, message=FALSE)
+options(width=110)
+```
+
+<!--
+%\VignetteIndexEntry{MSstats: Covariates in Differential Analysis}
+%\VignetteEngine{knitr::knitr}
+-->
+
+**Study Source**: <https://pmc.ncbi.nlm.nih.gov/articles/PMC7541795/>\
+**Acquisition Type**: SRM (Selected Reaction Monitoring)\
+**Identification**: Targeted peptides from prior discovery study
+
+## Background and Study Design
+
+This case study demonstrates how to analyze targeted SRM proteomics data using the MSstats package in R and show how to incorporate covariates into the model.
+
+The study investigates whether a previously identified panel of protein biomarkers can reliably distinguish MPM patients from healthy controls. Blood plasma was collected from individuals grouped as follows:
+
+-   **MPM Patients** (n = 44)\
+-   **Cancer-Free Asbestos-Exposed Donors** (n = 42)\
+-   **Healthy Control Serum** (n = 6)
+
+Internal standards were used for normalization.
+
+## Part 1: Load libraries, data, and run converter
+
+```{r load-packages, message=FALSE}
+# Load necessary libraries
+library(MSstats)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r}
+# load data 
+input = data.table::fread("https://zenodo.org/records/15721648/files/MSstatsInput.csv")
+annot = data.table::fread("https://zenodo.org/records/15721648/files/annotation.csv")
+
+# use converter to put in proper MSstats format  
+output = MSstatsConvert::SkylinetoMSstatsFormat(input, annot)
+```
+
+## Part 2: Normalization and Protein Summarization
+
+This step processes the peptide-level data, handles missing values, and summarizes to protein-level using tukey's median polish.
+
+```{r data-process}
+QuantData = dataProcess(
+  output,
+  normalization = "equalizeMedians",
+  summaryMethod = "TMP",
+  featureSubset = "all",
+  MBimpute = TRUE,
+  use_log_file = FALSE
+)
+
+QuantData_nonorm = dataProcess(output, 
+                        normalization = "none",
+                        use_log_file = FALSE)
+
+
+# visualize post normalization 
+dataProcessPlots(QuantData_nonorm, 
+                 "QCPlot", 
+                 which.Protein = "allonly", 
+                 address = FALSE)
+
+dataProcessPlots(QuantData, 
+                 "QCPlot", 
+                 which.Protein = "allonly", 
+                 address = FALSE)
+```
+
+## Part 3: Covariates in Differential Analysis
+
+**NOTE:** MSstats uses the GROUP column to perform differential abundance analysis. Let's first examine the values in this column. There are 6 unique group labels, annotated in the format: DiseaseClass_SampleLocation.
+
+```{r}
+annot %>% group_by(Condition) %>% summarize(n())
+
+QuantData$ProteinLevelData = QuantData$ProteinLevelData %>%
+  mutate(
+    Country = case_when(
+      grepl("Australia", GROUP) ~ "Australia",
+      grepl("NewYork", GROUP) ~ "NewYork",
+      grepl("Zurich", GROUP) ~ "Zurich",
+      TRUE ~ "Other"
+    ),
+    DiseaseClass = case_when(
+      grepl("MPM", GROUP) ~ "MPM",
+      grepl("ASB", GROUP) ~ "ASB",
+      grepl("Healthy", GROUP) ~ "Healthy",
+      TRUE ~ "Other"
+    )
+  )
+```
+
+```{r}
+pl_data = QuantData$ProteinLevelData
+
+ggplot(pl_data, aes(x = DiseaseClass, y = LogIntensities)) +
+  geom_boxplot() +
+  facet_wrap(~Protein, scales = "free_y") +
+  labs(title = "Protein Abundance by Disease Class", y = "Log2 Intensity") +
+  theme_bw()
+```
+
+```{r}
+ggplot(pl_data, aes(x = Country, y = LogIntensities)) +
+  geom_boxplot() +
+  facet_wrap(~Protein, scales = "free_y") +
+  labs(title = "Abundance by Disease and Country", y = "Log2 Intensity") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Interaction Plot
+
+We'll look into interaction plots to verify if the source of the data explains the variation in abundance data.
+
+```{r}
+# Interaction plots Australia vs NY (majority of samples collected at these two locations)
+
+pl_data %>%
+  filter(Country %in% c("Australia", "NewYork")) %>%
+  group_by(Protein, Country, DiseaseClass) %>%
+  summarise(mean_intensity = mean(LogIntensities), .groups = "drop") %>%
+  ggplot(aes(x = DiseaseClass, y = mean_intensity, color = Country, group = Country)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~Protein, scales = "free_y") +
+  labs(
+    title = "Interaction Plot by Protein",
+    y = "Mean Log2 Intensity",
+    x = "Disease Class"
+  ) +
+  theme_bw()
+
+```
+
+## Part 4: Differential Analysis
+
+```{r}
+
+comparison_matrix = matrix(c(
+  -1/2,  -1/2,  0, 1/3, 1/3, 1/3,   # ASB vs MPM
+  -1/2,  -1/2,  1, 0, 0, 0,   # ASB vs Healthy
+  0,  0,  1, -1/3, -1/3, -1/3,   # MPM vs Healthy 
+  0, -1, 0, 0, 1, 0 # ASB New York vs MPM New York
+), nrow = 4, byrow = TRUE)
+
+colnames(comparison_matrix) = levels(factor(QuantData$ProteinLevelData$GROUP))
+rownames(comparison_matrix) = c("ASB_vs_MPM", "ASB_vs_Healthy", "MPM_vs_Healthy", "ASB New York vs MPM New York")
+
+model_res_covar = groupComparison(
+  contrast.matrix = comparison_matrix,
+  data = QuantData,
+  use_log_file = FALSE
+)
+
+model_res_covar$ComparisonResult
+```
+
+```{r}
+#MPM vs Healthy 
+groupComparisonPlots(
+  data = model_res_covar$ComparisonResult,
+  type = "VolcanoPlot",
+  FCcutoff = 2,
+  logBase.pvalue = 2,
+   which.Comparison = "MPM_vs_Healthy",
+  address = FALSE
+)
+
+# ASB_vs_Healthy
+groupComparisonPlots(
+  data = model_res_covar$ComparisonResult,
+  type = "VolcanoPlot",
+  FCcutoff = 2,
+  logBase.pvalue = 2,
+   which.Comparison = "ASB_vs_Healthy",
+  address = FALSE
+)
+
+# MPM_vs_ASB
+groupComparisonPlots(
+  data = model_res_covar$ComparisonResult,
+  type = "VolcanoPlot",
+  FCcutoff = 2,
+  logBase.pvalue = 2,
+   which.Comparison = "ASB_vs_MPM",
+  address = FALSE
+)
+
+# ASB New York vs MPM New York
+groupComparisonPlots(
+  data = model_res_covar$ComparisonResult,
+  type = "VolcanoPlot",
+  FCcutoff = 2,
+  logBase.pvalue = 2,
+   which.Comparison = "ASB New York vs MPM New York",
+  address = FALSE
+)
+
+
+```
+
+ASB vs MPM detects no proteins as differentially abundant, but inspecting the interaction effect shows multiple proteins are only differentially abundant in NYC due to an interaction effect, so you would ideally want to do the specific ASB New York vs MPM New York comparison.
