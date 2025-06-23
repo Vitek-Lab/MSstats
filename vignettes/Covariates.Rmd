@@ -35,6 +35,7 @@ Internal standards were used for normalization.
 # Load necessary libraries
 library(MSstats)
 library(ggplot2)
+library(data.table)
 ```
 
 ```{r}
