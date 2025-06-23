@@ -100,9 +100,14 @@ MSstatsHandleMissing = function(input, summary_method, impute,
   input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, 
                                    FALSE, nonmissing_all)] 
   grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
-  input[n_obs > 1 & n_obs_run > 0, 
-        ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
-        by = grouping_vars]
+  subset_input = input[n_obs > 1 & n_obs_run > 0 & nonmissing_all, 
+                       .(PROTEIN, FEATURE, LABEL, newABUNDANCE, nonmissing_all)]
+  grouped = subset_input[, .(
+      MinValue = min(newABUNDANCE, na.rm = TRUE),
+  ), by = .(PROTEIN, FEATURE, LABEL)]
+  grouped[, NinetyNine := 0.99 * MinValue]
+  input[grouped, ABUNDANCE_cut := NinetyNine, 
+        on = c("PROTEIN", "FEATURE", "LABEL")]
   input[, any_censored := any(censored & n_obs > 1 & n_obs_run > 0),
         by = "PROTEIN"]
   if (censored_symbol == "NA") {

@@ -23,8 +23,9 @@
     num_proteins = data.table::uniqueN(input$PROTEIN)
     peptides_per_protein = input[, list(peptide_count = data.table::uniqueN(PEPTIDE)),
                                  by = "PROTEIN"]
-    features_per_peptide = input[, list(feature_count = data.table::uniqueN(FEATURE)),
-                                 by = "PEPTIDE"]
+    unique_peptide_feature_pairs = unique(input[, .(PEPTIDE, FEATURE)])
+    features_per_peptide = unique_peptide_feature_pairs[, .(feature_count = .N), 
+                                                        by = PEPTIDE]
     features_per_protein = input[, list(feature_count = data.table::uniqueN(FEATURE)),
                                  by = "PROTEIN"]
     features_per_protein = features_per_protein[feature_count == 1L, PROTEIN]
