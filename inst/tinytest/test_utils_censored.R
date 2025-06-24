@@ -1,5 +1,5 @@
 # Test .setCensoredByThreshold
-dt_na <- data.table(
+dt_na <- data.table::data.table(
   PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", 
               "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
   FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", 
@@ -33,7 +33,7 @@ imputed_val_p1 <- dt_na[
 ]
 expect_equal(imputed_val_p1, expected_val_p1)
 
-dt_zero <- data.table(
+dt_zero <- data.table::data.table(
   PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", 
               "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
   FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", 
