@@ -1,5 +1,5 @@
 # Test .setCensoredByThreshold
-dt <- data.table(
+dt_na <- data.table(
   PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", 
               "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
   FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", 
@@ -23,7 +23,6 @@ dt <- data.table(
 )
 
 # === Run NA-based test ===
-dt_na <- copy(dt)
 MSstats:::.setCensoredByThreshold(dt_na, censored_symbol = "NA", remove50missing = FALSE)
 
 # Check imputation for P1-F1-L (should be 0.99 * 1.5)
@@ -34,7 +33,7 @@ imputed_val_p1 <- dt_na[
 ]
 expect_equal(imputed_val_p1, expected_val_p1)
 
-dt <- data.table(
+dt_zero <- data.table(
   PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", 
               "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
   FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", 
@@ -56,7 +55,6 @@ dt <- data.table(
   total_features = c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
                      2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
 )
-dt_zero <- copy(dt)
 MSstats:::.setCensoredByThreshold(dt_zero, censored_symbol = "0", remove50missing = FALSE)
 
 # Check imputation for P2-F1-L
