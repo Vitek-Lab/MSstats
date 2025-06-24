@@ -7,7 +7,7 @@ options(MSstatsLog = function(level, msg) {
 })
 options(MSstatsMsg = function(level, msg) {})  # no-op for this test
 
-# Simulate a small, realistic MS data input
+## Simulate a small, realistic MS data input
 input <- data.table::data.table(
   PROTEIN = c("P1", "P1", "P1", "P2", "P2", "P3"),
   PEPTIDE = c("pep1", "pep1", "pep2", "pep3", "pep3", "pep4"),
@@ -18,13 +18,13 @@ input <- data.table::data.table(
   GROUP_ORIGINAL = c("Control", "Control", "Control", "Treatment", "Treatment", "Treatment")
 )
 
-# Run the function
+## Run the function
 MSstats:::.logSummaryStatistics(input)
 
-# Extract logged messages
+## Extract logged messages
 msgs <- log_env$messages
 
-# Check for summary stats
+## Check for summary stats
 expect_true(
   any(grepl("# proteins:\\s*3", msgs)),
   info = "Should log the correct number of proteins (3)"
@@ -38,13 +38,13 @@ expect_true(
   info = "Should log the feature per peptide range (1–2)"
 )
 
-# Check for message about proteins with only one feature (P3)
+## Check for message about proteins with only one feature (P3)
 expect_true(
   any(grepl("Some proteins have only one feature.*P3", msgs)),
   info = "Should log that P3 has only one feature"
 )
 
-# Check sample-level summary
+## Check sample-level summary
 expect_true(
   any(grepl("# runs", msgs)) &&
     any(grepl("# bioreplicates", msgs)) &&
