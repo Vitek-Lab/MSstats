@@ -79,9 +79,9 @@ above graph in Profile Plot. Default is 7.}
 
 \item{dot.size.condition}{size of dots in condition plot. Default is 3.}
 
-\item{width}{width of the saved file. Default is 10.}
+\item{width}{width of the saved file in pixels. Default is 800 pixels.}
 
-\item{height}{height of the saved file. Default is 10.}
+\item{height}{height of the saved file in pixels. Default is 600 pixels.}
 
 \item{which.Protein}{Protein list to draw plots. List can be names of Proteins
 or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).

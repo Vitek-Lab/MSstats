@@ -31,9 +31,9 @@
 
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 
-\item{width}{width of the saved file. Default is 10.}
+\item{width}{width of the saved file in pixels. Default is 800.}
 
-\item{height}{height of the saved file. Default is 10.}
+\item{height}{height of the saved file in pixels. Default is 600.}
 
 \item{ylimUp}{for all three plots, upper limit for y-axis. FALSE (default) for volcano plot/heatmap use maximum of -log2 (adjusted p-value) or -log10 (adjusted p-value). FALSE (default) for comparison plot uses maximum of log-fold change + CI.}
 
