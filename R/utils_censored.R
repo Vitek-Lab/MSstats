@@ -105,7 +105,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
       MinValue = min(newABUNDANCE, na.rm = TRUE)
   ), by = .(PROTEIN, FEATURE, LABEL)]
   grouped[, NinetyNine := 0.99 * MinValue]
-  input[grouped, ABUNDANCE_cut := NinetyNine,
+  input[grouped, ABUNDANCE_cut := ifelse(n_obs > 1 & n_obs_run > 0, NinetyNine, NA), 
         on = c("PROTEIN", "FEATURE", "LABEL")]
   input[, any_censored := any(censored & n_obs > 1 & n_obs_run > 0),
         by = "PROTEIN"]
