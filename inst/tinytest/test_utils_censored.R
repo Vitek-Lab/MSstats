@@ -1,7 +1,5 @@
 # Test .setCensoredByThreshold
-library(data.table)
-
-dt_na <- data.table(
+dt_na <- data.table::data.table(
     PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
     FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", "F3", "F3", "F4", "F4", "F3", "F4", "F3", "F3", "F4", "F4", "F3", "F4"),
     LABEL = c("L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H"),
