@@ -119,15 +119,6 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 }
 
 
-#' Utility function: get 0.99 * minimum of non-missing values
-#' @param abundance abundances values
-#' @param nonmissing logical vector
-#' @keywords internal
-.getMin = function(abundance, nonmissing) {
-    0.99 * min(abundance[nonmissing], na.rm = TRUE)
-}
-
-
 #' Identify non-missing values
 #' @param input `data.table` in MSstats format
 #' @param impute if TRUE, missing values are supposed to be imputed
