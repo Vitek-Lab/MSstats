@@ -81,7 +81,9 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 }
 
 
-#' Set censored values based on minimum in run/feature/run or feature
+#' Set censored values based on minimum in run/feature/run or feature.
+#' This is used to initialize the AFT imputation model by supplying the maximum 
+#' possible values for left-censored data as the `time` input to the Surv function.
 #' @param input `data.table` in MSstats format
 #' @param censored_symbol censoredInt parameter to `dataProcess`
 #' @param remove50missing if TRUE, features with at least 50% missing values

@@ -2,7 +2,9 @@
 % Please edit documentation in R/utils_censored.R
 \name{.setCensoredByThreshold}
 \alias{.setCensoredByThreshold}
-\title{Set censored values based on minimum in run/feature/run or feature}
+\title{Set censored values based on minimum in run/feature/run or feature.
+This is used to initialize the AFT imputation model by supplying the maximum 
+possible values for left-censored data as the `time` input to the Surv function.}
 \usage{
 .setCensoredByThreshold(input, censored_symbol, remove50missing)
 }
@@ -15,6 +17,8 @@
 will be removed}
 }
 \description{
-Set censored values based on minimum in run/feature/run or feature
+Set censored values based on minimum in run/feature/run or feature.
+This is used to initialize the AFT imputation model by supplying the maximum 
+possible values for left-censored data as the `time` input to the Surv function.
 }
 \keyword{internal}
