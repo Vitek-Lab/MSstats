@@ -81,7 +81,9 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 }
 
 
-#' Set censored values based on minimum in run/feature/run or feature
+#' Set censored values based on minimum in run/feature/run or feature.
+#' This is used to initialize the AFT imputation model by supplying the maximum 
+#' possible values for left-censored data as the `time` input to the Surv function.
 #' @param input `data.table` in MSstats format
 #' @param censored_symbol censoredInt parameter to `dataProcess`
 #' @param remove50missing if TRUE, features with at least 50% missing values
@@ -99,10 +101,15 @@ MSstatsHandleMissing = function(input, summary_method, impute,
   
   input[, nonmissing_all := ifelse(total_features > 1 & n_obs <= 1, 
                                    FALSE, nonmissing_all)] 
-  grouping_vars = c("PROTEIN", "FEATURE", "LABEL")
-  input[n_obs > 1 & n_obs_run > 0, 
-        ABUNDANCE_cut := .getMin(newABUNDANCE, nonmissing_all),
-        by = grouping_vars]
+  valid_observations = input[n_obs > 1 & n_obs_run > 0 & nonmissing_all,
+                       .(PROTEIN, FEATURE, LABEL, newABUNDANCE)]
+  min_abundance_by_group = valid_observations[, .(
+      min_abundance = min(newABUNDANCE, na.rm = TRUE)
+  ), by = .(PROTEIN, FEATURE, LABEL)]
+  min_abundance_by_group[, abundance_cutoff := 0.99 * min_abundance]
+  input[min_abundance_by_group, ABUNDANCE_cut := ifelse(
+        n_obs > 1 & n_obs_run > 0, abundance_cutoff, NA
+      ), on = c("PROTEIN", "FEATURE", "LABEL")]
   input[, any_censored := any(censored & n_obs > 1 & n_obs_run > 0),
         by = "PROTEIN"]
   if (censored_symbol == "NA") {
@@ -112,15 +119,6 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     input[, newABUNDANCE := ifelse(!nonmissing_all & newABUNDANCE == 0 & is.finite(ABUNDANCE_cut) & any_censored, 
                                    ABUNDANCE_cut, newABUNDANCE)]
   }
-}
-
-
-#' Utility function: get 0.99 * minimum of non-missing values
-#' @param abundance abundances values
-#' @param nonmissing logical vector
-#' @keywords internal
-.getMin = function(abundance, nonmissing) {
-    0.99 * min(abundance[nonmissing], na.rm = TRUE)
 }
 
 

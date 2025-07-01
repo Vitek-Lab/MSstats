@@ -85,7 +85,8 @@ Null assumes that all NA intensites are randomly missing.}
 
 \item{MBimpute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 TRUE (default) imputes missing values with 'NA' or '0' (depending on censoredInt option) 
-by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
+by Accelerated failure model. If set to FALSE, no missing values are imputed. 
+FALSE is appropriate only when missingness is assumed to be at random.
 See MSstats vignettes for recommendations on which imputation option to use.}
 
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
