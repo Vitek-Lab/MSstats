@@ -164,10 +164,10 @@
     
     if (!is_labeled) {
         if (is_single_feature) {
-            linear_model = lm(newABUNDANCE ~ RUN , data = input, 
+            linear_model = rlm(newABUNDANCE ~ RUN , data = input, 
                               weights=weight_input)
         } else {
-            linear_model = lm(newABUNDANCE ~ FEATURE + RUN, 
+            linear_model = rlm(newABUNDANCE ~ FEATURE + RUN, 
                               data = input, weights=weight_input)
         }
     } else {

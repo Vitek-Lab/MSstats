@@ -551,7 +551,6 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
             }
         })
         
-        print(converged)
         if (converged) {
             single_protein[, predicted := predict(survival_fit, newdata = .SD)]
         } else {

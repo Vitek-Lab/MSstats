@@ -288,6 +288,10 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     if ("TECHREPLICATE" %in% colnames(input)) {
         cols = unique(c(cols, "TECHREPLICATE"))
     }
+    if (!"ANOMALYSCORES" %in% colnames(input)) {
+        input[, ANOMALYSCORES := NA_real_]
+    }
+    
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
