@@ -31,7 +31,8 @@
 #' It that case, it specifies number of top features that will be used.
 #' Default is 3, which means to use top 3 features.
 #' @param summaryMethod "TMP" (default) means Tukey's median polish, 
-#' which is robust estimation method. "linear" uses linear mixed model.
+#' which is robust estimation method. "linear" uses linear mixed model. If 
+#' anomaly detection algorithm is performed, "linear" must be used.
 #' @param equalFeatureVar only for summaryMethod = "linear". default is TRUE. 
 #' Logical variable for whether the model should account for heterogeneous variation 
 #' among intensities from different features. Default is TRUE, which assume equal 
@@ -305,8 +306,9 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
         for (protein_id in seq_len(num_proteins)) {
             single_protein = input[protein_indices[[protein_id]],]
             summarized_result = MSstatsSummarizeSingleLinear(
-              input, impute, censored_symbol, 
+                single_protein, impute, censored_symbol, 
               remove50missing, aft_iterations)
+
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
         }
@@ -451,7 +453,6 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     }
     
     if (all(!is.na(single_protein$ANOMALYSCORES))){
-        # single_protein = .calculate_weights(single_protein)
         single_protein$weights = 1 / single_protein$ANOMALYSCORES
     } else {
         single_protein$weights = NA

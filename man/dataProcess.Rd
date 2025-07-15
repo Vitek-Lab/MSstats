@@ -68,7 +68,8 @@ It that case, it specifies number of top features that will be used.
 Default is 3, which means to use top 3 features.}
 
 \item{summaryMethod}{"TMP" (default) means Tukey's median polish, 
-which is robust estimation method. "linear" uses linear mixed model.}
+which is robust estimation method. "linear" uses linear mixed model. If 
+anomaly detection algorithm is performed, "linear" must be used.}
 
 \item{equalFeatureVar}{only for summaryMethod = "linear". default is TRUE. 
 Logical variable for whether the model should account for heterogeneous variation 
