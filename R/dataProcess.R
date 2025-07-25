@@ -197,7 +197,7 @@ dataProcess = function(
 #' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS. Default is 1.
 #' 
-#' @importFrom parallel makeCluster parLapply stopCluster clusterExport  
+#' @importFrom parallel makeCluster parLapply stopCluster clusterExport
 #' 
 #' @return list of length one with run-level data.
 #' 
@@ -280,7 +280,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' input = MSstatsSelectFeatures(input, "all")
 #' processed = getProcessed(input)
 #' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE, 100)
 #' length(summarized) # list of summarization outputs for each protein
 #' head(summarized[[1]][[1]]) # run-level summary
 #' 
@@ -395,7 +395,6 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 #' @return list with protein-level data
 #' 
 #' @importFrom stats xtabs
-#' @importFrom pcaMethods pca
 #' 
 #' @export
 #' 
@@ -413,7 +412,7 @@ MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
 #' input = MSstatsSelectFeatures(input, "all")
 #' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
 #' input_split = split(input, input$PROTEIN)
-#' single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]])
+#' single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]], impute, cens, TRUE, 100)
 #' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleLinear = function(single_protein, 
@@ -520,7 +519,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
 #' input_split = split(input, input$PROTEIN)
 #' single_protein_summary = MSstatsSummarizeSingleTMP(input_split[[1]],
-#'                                                    impute, cens, FALSE)
+#'                                                    impute, cens, FALSE, 100)
 #' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 

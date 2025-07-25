@@ -51,7 +51,7 @@ input = MSstatsSelectFeatures(input, "all")
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
 input_split = split(input, input$PROTEIN)
 single_protein_summary = MSstatsSummarizeSingleTMP(input_split[[1]],
-                                                   impute, cens, FALSE)
+                                                   impute, cens, FALSE, 100)
 head(single_protein_summary[[1]])
 
 }

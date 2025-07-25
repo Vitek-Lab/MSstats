@@ -59,7 +59,7 @@ input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 input = MSstatsSelectFeatures(input, "all")
 processed = getProcessed(input)
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE, 100)
 length(summarized) # list of summarization outputs for each protein
 head(summarized[[1]][[1]]) # run-level summary
 

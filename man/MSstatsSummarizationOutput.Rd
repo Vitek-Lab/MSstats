@@ -53,7 +53,7 @@ input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 input = MSstatsSelectFeatures(input, "all")
 processed = getProcessed(input)
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE, 100)
 output = output = MSstatsSummarizationOutput(input, summarized, processed,
 method, impute, cens)
 

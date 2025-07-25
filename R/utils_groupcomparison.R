@@ -177,7 +177,7 @@ getSamplesInfo = function(summarization_output) {
                 ))
                 df_full = suppressMessages(try(
                     lm(ABUNDANCE ~ GROUP + SUBJECT, 
-                       data = input, weights=weights)$df.residual,
+                       data = input, weights=weight_input)$df.residual,
                     TRUE))
             } else {
                 full_fit = suppressMessages(try(
