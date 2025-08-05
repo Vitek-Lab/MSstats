@@ -375,3 +375,91 @@ ggplot(data=merged_results) +
 We can see the advantage of `MSstats+` in the standard error estimates. `MSstats+` downweights poorly quantified measurements and runs, which can lead to much better estimates of the true standard error. In this example `MSstats+` downweighted the runs which added a large amount of uncertainty, leading to it identifying all proteins as differentially abundant. 
 
 
+## MSstatsBig
+
+MSstats+ can also be used in conjunction with MSstatsBig to analyze large DIA 
+datasets. The workflow leverages the MSstatsBig converter and an external 
+execution of the MSstats+ isolation forest. An example of how to do this is 
+shown below.
+
+This section of the vignette does not run automatically and must be executed 
+manually.
+
+```{r eval=FALSE, include=TRUE}
+library(MSstatsBig)
+
+# Define file path to data
+spectronaut_raw = system.file(
+    "tinytest/raw_data/Spectronaut/spectronaut_quality_input.csv",
+    package = "MSstatsConvert")
+
+# Run MSstatsBig converter
+converted_data = bigSpectronauttoMSstatsFormat(
+  input_file=spectronaut_raw,
+  output_file_name="output_file.csv",
+  intensity = "F.PeakHeight",
+  filter_by_excluded = TRUE,
+  filter_by_identified = FALSE,
+  filter_by_qvalue = TRUE,
+  qvalue_cutoff = 0.01,
+  filter_unique_peptides = TRUE,
+  aggregate_psms = TRUE,
+  filter_few_obs = FALSE,
+  remove_annotation = FALSE,
+  calculateAnomalyScores=TRUE,
+  anomalyModelFeatures=c("FG.ShapeQualityScore (MS1)",
+                         "FG.ShapeQualityScore (MS2)",
+                         "EG.ApexRT"),
+  backend="arrow")
+converted_data = dplyr::collect(converted_data)
+
+# Prepare info for anomaly model
+# Get temporal ordering from input file (can also be done externally)
+temporal = fread(spectronaut_raw)[
+    , .SD[1], by = .(`R.Run Date (Formatted)`, R.FileName)]
+
+temporal = temporal[, Run.TimeParsed := as.POSIXct(
+    `R.Run Date (Formatted)`, format = "%m/%d/%Y %I:%M:%S %p")][
+  order(Run.TimeParsed)][
+  , !"Run.TimeParsed"]
+
+temporal$Order = 1:nrow(temporal)
+temporal$Run = temporal$R.FileName
+temporal = temporal[, c("Run", "Order")]
+
+# Specify anomaly model parameters
+anomalyModelFeatures=c("FG.ShapeQualityScore (MS2)",
+                       "FG.ShapeQualityScore (MS1)",
+                       "EG.ApexRT")
+anomalyModelFeatures = MSstatsConvert:::.standardizeColnames(anomalyModelFeatures)
+
+anomalyModelFeatureTemporal=c("mean_decrease",
+                              "mean_decrease",
+                              "dispersion_increase")
+
+n_trees=100
+max_depth="auto"
+numberOfCores=1
+
+# Run anomaly detection model
+msstats_input = MSstatsConvert::MSstatsAnomalyScores(
+  as.data.table(converted_data), anomalyModelFeatures,
+  anomalyModelFeatureTemporal, .5, 100, temporal, n_trees,
+  max_depth, numberOfCores)
+head(msstats_input)
+
+```
+
+This code will run the MSstatsBig converter and then run the anomaly model. This
+workflow leads to a much faster processing speed compared to using the standard 
+converter, and allows users to work with Spectronaut files which may be too 
+large to fit into memory. After running the anomaly model, the resulting data 
+can be input into the MSstats+ workflow reviewed previously.
+
+One note here is the temporal ordering. In this example, we extracted the 
+temporal run order directly from the Spectronaut file. However, in practice this
+may not be appropriate for big data files. In cases where the data is large, 
+this ordering should be extracted externally and provided by the user, or the 
+user should sample the Spectronaut file rather than load it all into memory.
+
+
