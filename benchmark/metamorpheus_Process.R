@@ -20,13 +20,13 @@ calculate_Metrics <- function(QuantData, protein_mappings, task_label, alpha = 0
     filter(Organism == "Escherichia coli (strain K12)") %>%
     pull(`Protein Groups`)
 
-  comp <- model$ComparisonResult %>%
+  filtered_comparison_result <- model$ComparisonResult %>%
     mutate(ecoli = Protein %in% ecoli_ids) %>%
     filter(is.na(issue))
 
-  labels <- unique(comp$Label)
+  labels <- unique(filtered_comparison_result$Label)
   result_rows <- lapply(labels, function(lbl) {
-    df <- comp %>% filter(Label == lbl)
+    df <- filtered_comparison_result %>% filter(Label == lbl)
     sig <- df %>% filter(adj.pvalue < alpha)
 
     tp <- sig %>% filter(ecoli) %>% nrow()
