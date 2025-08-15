@@ -24,7 +24,7 @@ calculate_Metrics <- function(QuantData, protein_mappings, task_label, alpha = 0
     mutate(ecoli = Protein %in% ecoli_ids) %>%
     filter(is.na(issue))
 
-  labels <- unique(filtered_results$Label)
+  labels <- rownames(comparison)
   result_rows <- lapply(labels, function(lbl) {
     df <- filtered_results %>% filter(Label == lbl)
     sig <- df %>% filter(adj.pvalue < alpha)
