@@ -29,7 +29,9 @@ runBenchmarkForMetaMorpheusData <- function(datasetPath, config) {
   input = input %>% filter(!str_detect(`Protein Group`, "DECOY")) # remove decoys
 
   protein_mappings = data.table::fread(file.path(filePath, "QuantifiedProteins.tsv"))
-  protein_mappings = protein_mappings %>% filter(Organism %in% c("Escherichia coli (strain K12)", "Homo sapiens"))
+  valid_organisms <- unique(input$Organism)
+
+  protein_mappings = protein_mappings %>% filter(Organism %in% valid_organisms)
 
   input = input %>% filter(`Protein Group` %in% protein_mappings$`Protein Groups`)
 
