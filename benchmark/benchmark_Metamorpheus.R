@@ -31,11 +31,13 @@ runBenchmarkForMetaMorpheusData <- function(datasetPath, config) {
   protein_mappings = data.table::fread(file.path(filePath, "QuantifiedProteins.tsv"))
 
   valid_organisms <- unique(input$Organism)
-  
+
   if (is.null(valid_organisms) || length(valid_organisms) == 0) {
     valid_organisms <- unique(input$`Organism.y`)
   }
 
+  print("Organisms")
+  print(valid_organisms)
   protein_mappings = protein_mappings %>%
     filter(Organism %in% valid_organisms)
 
