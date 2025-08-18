@@ -36,7 +36,7 @@ runBenchmarkForMetaMorpheusData <- function(datasetPath, config) {
 
   input = input %>% filter(`Protein Group` %in% protein_mappings$`Protein Groups`)
 
-  output = MetamorpheusToMSstatsFormat(input, annot, removeFewMeasurements = FALSE, removeProtein_with1Feature = FALSE)
+  output = MetamorpheusToMSstatsFormat(input, annot)
 
   data_process_tasks <- list(
     list(
