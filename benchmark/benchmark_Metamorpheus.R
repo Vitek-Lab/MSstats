@@ -35,7 +35,8 @@ runBenchmarkForMetaMorpheusData <- function(datasetPath, config) {
   if (is.null(valid_organisms) || length(valid_organisms) == 0) {
     valid_organisms <- unique(input$`Organism.y`)
   }
-
+  
+  print(colnames(input))
   print("Organisms")
   print(valid_organisms)
   protein_mappings = protein_mappings %>%
