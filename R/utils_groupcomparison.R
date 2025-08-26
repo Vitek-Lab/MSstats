@@ -406,7 +406,7 @@ getSamplesInfo = function(summarization_output) {
                                  NumImputedFeature = sum(NumImputedFeature, 
                                                          na.rm = TRUE)),
                             by = "GROUP"]
-        counts = counts[match(colnames(contrast_matrix), GROUP)]
+        counts <- counts[match(intersect(colnames(contrast_matrix), GROUP), GROUP), ]
     
     empty_conditions = setdiff(samples_info$GROUP, unique(counts$GROUP))
     if (length(empty_conditions) !=0) {
