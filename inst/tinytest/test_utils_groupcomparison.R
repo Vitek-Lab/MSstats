@@ -74,7 +74,6 @@ expect_equal(length(output$MissingPercentage), 1, info = "Empty conditions: Miss
 expect_true(is.numeric(output$MissingPercentage), info = "Empty conditions: Numeric output")
 
 ## Test 4: Multiple contrasts with different missing patterns
-## THIS TEST IS FAILING, NEED TO MAKE SURE IT DOES NOT FAIL
 
 contrast_matrix <- matrix(c(1, -1, 0, 
                             0, 1, -1, 
