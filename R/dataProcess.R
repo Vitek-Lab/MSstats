@@ -136,7 +136,8 @@ dataProcess = function(
         list(method = featureSubset, n_top = n_top_feature,
              remove_uninformative = remove_uninformative_feature_outlier),
         list(method = summaryMethod, equal_var = equalFeatureVar),
-        list(symbol = censoredInt, MB = MBimpute))
+        list(symbol = censoredInt, MB = MBimpute),
+        colnames(raw))
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
