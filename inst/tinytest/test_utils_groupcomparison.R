@@ -1,17 +1,15 @@
-library(data.table)
-
 # Test suite for .countMissingPercentage function
 ## Test 1: Basic functionality with no missing values
 contrast_matrix <- matrix(c(1, -1, 0, 
                             0, 1, -1), nrow = 2, ncol = 3, byrow = TRUE)
 colnames(contrast_matrix) <- c("Group1", "Group2", "Group3")
-summarized <- data.table(
+summarized <- data.table::data.table(
     GROUP = c("Group1", "Group1", "Group2", "Group2", "Group3", "Group3"),
     TotalGroupMeasurements = c(100, 100, 100, 100, 100, 100),
     NumMeasuredFeature = c(50, 50, 50, 50, 50, 50),
     NumImputedFeature = c(0, 0, 0, 0, 0, 0)
 )
-result <- data.table(
+result <- data.table::data.table(
     logFC = c(6.154384, 6.154384),
     SE = c(0.2917031, 0.2917031),
     Tvalue = c(21.09811, 21.09811),
@@ -21,7 +19,7 @@ result <- data.table(
     Label = c("Group1 - Group2", "Group2 - Group3"),
     issue = c(NA, NA)
 )
-samples_info <- data.table(GROUP = c("Group1", "Group2", "Group3"), NumRuns = c(2, 2, 2))
+samples_info <- data.table::data.table(GROUP = c("Group1", "Group2", "Group3"), NumRuns = c(2, 2, 2))
 output <- MSstats:::.countMissingPercentage(
     contrast_matrix, summarized, result, samples_info, FALSE
 )
@@ -33,14 +31,14 @@ expect_true(all(names(output) %in% c(names(result), "MissingPercentage")), info 
 ## Test 2: With imputed values
 contrast_matrix <- matrix(c(1, -1), nrow = 1, ncol = 2)
 colnames(contrast_matrix) <- c("Group1", "Group2")
-summarized <- data.table(
+summarized <- data.table::data.table(
     GROUP = c("Group1", "Group2"),
     TotalGroupMeasurements = c(100, 100),
     NumMeasuredFeature = c(80, 70),
     NumImputedFeature = c(10, 20)
 )
 result <- list()
-samples_info <- data.table(GROUP = c("Group1", "Group2"), NumRuns = c(10, 10))
+samples_info <- data.table::data.table(GROUP = c("Group1", "Group2"), NumRuns = c(10, 10))
 output <- MSstats:::.countMissingPercentage(contrast_matrix, summarized, result, samples_info, TRUE)
 expected_missing <- 1 - (80 + 70) / (100 + 100) # 0.25
 expected_imputed <- (10 + 20) / (100 + 100) # 0.15
@@ -50,7 +48,7 @@ expect_equal(output$ImputationPercentage[1], expected_imputed, info = "Imputed v
 ## Test 3: With empty conditions (groups not in summarized data)
 contrast_matrix <- matrix(c(1, -1, 0), nrow = 1, ncol = 3)
 colnames(contrast_matrix) <- c("Group1", "Group2", "Group3")
-summarized <- data.table(
+summarized <- data.table::data.table(
     GROUP = c("Group1"),
     TotalGroupMeasurements = c(100),
     NumMeasuredFeature = c(80),
@@ -58,7 +56,7 @@ summarized <- data.table(
 )
 
 result <- list()
-samples_info <- data.table(GROUP = c("Group1", "Group2", "Group3"), NumRuns = c(10, 10, 10))
+samples_info <- data.table::data.table(GROUP = c("Group1", "Group2", "Group3"), NumRuns = c(10, 10, 10))
 output <- MSstats:::.countMissingPercentage(contrast_matrix, summarized, result, samples_info, FALSE)
 expect_equal(length(output$MissingPercentage), 1, info = "Empty conditions: MissingPercentage length")
 expect_true(is.numeric(output$MissingPercentage), info = "Empty conditions: Numeric output")
@@ -68,14 +66,14 @@ contrast_matrix <- matrix(c(1, -1, 0,
                             0, 1, -1, 
                             1, 0, -1), nrow = 3, ncol = 3, byrow = TRUE)
 colnames(contrast_matrix) <- c("Group3", "Group2", "Group1")
-summarized <- data.table(
+summarized <- data.table::data.table(
     GROUP = c("Group1", "Group2", "Group3"),
     TotalGroupMeasurements = c(100, 100, 100),
     NumMeasuredFeature = c(90, 80, 70),
     NumImputedFeature = c(5, 10, 15)
 )
 result <- list()
-samples_info <- data.table(
+samples_info <- data.table::data.table(
     GROUP = c("Group3", "Group2", "Group1"), 
     NumRuns = c(1, 1, 1)
 )
@@ -100,14 +98,14 @@ expect_equal(output$ImputationPercentage[3], expected_imputed_3, info = "Column 
 ## Test 5: Edge case with all values missing in one group
 contrast_matrix <- matrix(c(1, -1), nrow = 1, ncol = 2)
 colnames(contrast_matrix) <- c("Group1", "Group2")
-summarized <- data.table(
+summarized <- data.table::data.table(
     GROUP = c("Group1", "Group2"),
     TotalGroupMeasurements = c(0, 100),
     NumMeasuredFeature = c(0, 80),
     NumImputedFeature = c(0, 20)
 )
 result <- list()
-samples_info <- data.table(GROUP = c("Group1", "Group2"), NumRuns = c(10, 10))
+samples_info <- data.table::data.table(GROUP = c("Group1", "Group2"), NumRuns = c(10, 10))
 output <- MSstats:::.countMissingPercentage(contrast_matrix, summarized, result, samples_info, FALSE)
 expected_missing <- 1 - (0 + 80) / (0 + 100) # 0.2
 expect_equal(output$MissingPercentage[1], expected_missing, info = "Complete missing group: Missing percentage calculation")
@@ -115,14 +113,14 @@ expect_equal(output$MissingPercentage[1], expected_missing, info = "Complete mis
 ## Test 6: Test with complex contrast matrix (multiple comparisons)
 contrast_matrix <- matrix(c(0.5, 0.5, -1, 1, -1, 0), nrow = 2, ncol = 3, byrow = TRUE)
 colnames(contrast_matrix) <- c("Group1", "Group2", "Group3")
-summarized <- data.table(
+summarized <- data.table::data.table(
     GROUP = c("Group1", "Group2", "Group3"),
     TotalGroupMeasurements = c(200, 150, 100),
     NumMeasuredFeature = c(180, 120, 80),
     NumImputedFeature = c(10, 15, 5)
 )
 result <- list()
-samples_info <- data.table(GROUP = c("Group1", "Group2", "Group3"), NumRuns = c(20, 15, 10))
+samples_info <- data.table::data.table(GROUP = c("Group1", "Group2", "Group3"), NumRuns = c(20, 15, 10))
 output <- MSstats:::.countMissingPercentage(contrast_matrix, summarized, result, samples_info, TRUE)
 expected_missing_1 <- 1 - 380 / 450  
 expected_imputed_1 <- 30 / 450       
