@@ -3,7 +3,7 @@ library(data.table)
 # Test suite for .countMissingPercentage function
 ## Test 1: Basic functionality with no missing values
 contrast_matrix <- matrix(c(1, -1, 0, 
-                            0, 1, -1), nrow = 2, ncol = 3)
+                            0, 1, -1), nrow = 2, ncol = 3, byrow = TRUE)
 colnames(contrast_matrix) <- c("Group1", "Group2", "Group3")
 
 summarized <- data.table(
@@ -78,7 +78,7 @@ expect_true(is.numeric(output$MissingPercentage), info = "Empty conditions: Nume
 
 contrast_matrix <- matrix(c(1, -1, 0, 
                             0, 1, -1, 
-                            1, 0, -1), nrow = 3, ncol = 3)
+                            1, 0, -1), nrow = 3, ncol = 3, byrow = TRUE)
 colnames(contrast_matrix) <- c("Group3", "Group2", "Group1")
 
 summarized <- data.table(
@@ -89,7 +89,10 @@ summarized <- data.table(
 )
 
 result <- list()
-samples_info <- data.table(GROUP = c("Group3", "Group2", "Group1"), NumRuns = c(1, 1, 1))
+samples_info <- data.table(
+    GROUP = c("Group3", "Group2", "Group1"), 
+    NumRuns = c(1, 1, 1)
+)
 
 # Execute
 output <- MSstats:::.countMissingPercentage(contrast_matrix, summarized, result, samples_info, TRUE)
@@ -220,7 +223,7 @@ expect_true("MissingPercentage" %in% names(output), info = "Preserve existing: M
 # Complex contrast matrix with multiple non-zero values
 
 
-contrast_matrix <- matrix(c(1, 1, -2, 0.5, -0.5, 0), nrow = 2, ncol = 3)
+contrast_matrix <- matrix(c(0.5, 0.5, -1, 0.5, -0.5, 0), nrow = 2, ncol = 3, byrow = TRUE)
 colnames(contrast_matrix) <- c("Group1", "Group2", "Group3")
 
 summarized <- data.table(
