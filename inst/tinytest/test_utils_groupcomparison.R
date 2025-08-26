@@ -26,7 +26,10 @@ output <- MSstats:::.countMissingPercentage(
 expect_equal(length(output$MissingPercentage), 2, info = "Basic functionality: MissingPercentage length")
 expect_equal(output$MissingPercentage, c(0, 0), info = "Basic functionality: No missing values")
 expect_true(is.null(output$ImputationPercentage), info = "Basic functionality: No imputation when has_imputed = FALSE")
-expect_true(all(names(output) %in% c(names(result), "MissingPercentage")), info = "Basic functionality: Preserve existing result data")
+expect_true(all(names(result) %in% names(output)), 
+            info = "Basic functionality: Preserve existing result columns")
+expect_true(setequal(names(output), c(names(result), "MissingPercentage")), 
+            info = "Basic functionality: No extraneous columns added")
 
 ## Test 2: With imputed values
 contrast_matrix <- matrix(c(1, -1), nrow = 1, ncol = 2)
