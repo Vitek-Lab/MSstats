@@ -11,7 +11,7 @@ MSstatsSummarizeWithSingleCore(
   censored_symbol,
   remove50missing,
   equal_variance,
-  aft_iterations
+  aft_iterations = 90
 )
 }
 \arguments{

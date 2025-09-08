@@ -10,7 +10,8 @@
   standards_names,
   feature_selection,
   summarization,
-  imputation
+  imputation,
+  input_columns
 )
 }
 \arguments{
@@ -24,6 +25,8 @@
 \item{summarization}{list with elements: method.}
 
 \item{imputation}{list with elements: cutoff, symbol.}
+
+\item{input_columns}{character vector of input columns}
 }
 \description{
 Check validity of parameters to dataProcess function
