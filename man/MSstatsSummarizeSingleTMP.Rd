@@ -28,6 +28,8 @@ Null assumes that all NA intensites are randomly missing.}
 
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
 where every run has at least 50\% missing values for each peptide. FALSE is default.}
+
+\item{aft_iterations}{number of iterations for AFT model fitting}
 }
 \value{
 list of two data.tables: one with fitted survival model,

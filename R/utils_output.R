@@ -10,12 +10,10 @@
 #' @param censored_symbol censored missing value indicator 
 #' (`censoredInt` parameter to `dataProcess`)
 #' 
-#' @return list that consists of the following elements:
-#' \itemize{
-#' \item{FeatureLevelData}{ - feature-level data after processing} 
-#' \item{ProteinLevelData}{ - protein-level (summarized) data}
-#' \item{SummaryMethod}{ (string) - name of summarization method that was used}
-#' }
+#' @return A list with the following elements:
+#'   \item{FeatureLevelData}{Feature-level data after processing.}
+#'   \item{ProteinLevelData}{Protein-level (summarized) data.}
+#'   \item{SummaryMethod}{String: name of the summarization method used.}
 #' 
 #' @export
 #' 

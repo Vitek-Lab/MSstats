@@ -40,9 +40,9 @@ For Plotly: use this parameter to adjust the number of proteins to be displayed 
 
 \item{colorkey}{TRUE(default) shows colorkey.}
 
-\item{width}{width of the saved file. Default is 10.}
+\item{width}{width of the saved file in pixels. Default is 800.}
 
-\item{height}{height of the saved file. Default is 10.}
+\item{height}{height of the saved file in pixels. Default is 600.}
 
 \item{log_base_FC}{log base for log-fold changes - 2 or 10}
 

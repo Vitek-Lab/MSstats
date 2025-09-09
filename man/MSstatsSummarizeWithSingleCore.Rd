@@ -39,6 +39,8 @@ among intensities from different features. Default is TRUE, which assume equal
 variance among intensities from features. FALSE means that we cannot assume 
 equal variance among intensities from features, then we will account for
 heterogeneous variation from different features.}
+
+\item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
 }
 \value{
 list of length one with run-level data.

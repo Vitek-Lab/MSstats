@@ -12,9 +12,9 @@
 #' recommendations on which normalization option to use.
 #' @param nameStandards optional vector of global standard peptide names. 
 #' Required only for normalization with global standard peptides.
-#' @param featureSubset "all" (default) uses all features that the data set has. 
+#' @param featureSubset "topN" (default) uses top N features which has highest average of log-intensity across runs. 
 #' "top3" uses top 3 features which have highest average of log-intensity across runs. 
-#' "topN" uses top N features which has highest average of log-intensity across runs. 
+#' "all" uses all features that the data set has (not recommended in DIA experiments).
 #' It needs the input for n_top_feature option. 
 #' "highQuality" flags uninformative feature and outliers. See MSstats vignettes for 
 #' recommendations on which feature selection option to use.
@@ -27,9 +27,11 @@
 #' @param min_feature_count optional. Only required if featureSubset = "highQuality".
 #' Defines a minimum number of informative features a protein needs to be considered
 #' in the feature selection algorithm.
-#' @param n_top_feature optional. Only required if featureSubset = 'topN'.  
-#' It that case, it specifies number of top features that will be used.
-#' Default is 3, which means to use top 3 features.
+#' @param n_top_feature Specifies the number of top features to use in summarization (100 default). 
+#' Only required if featureSubset = 'topN'.  
+#' Default is 100, which means to use top 100 features. 
+#' Smaller numbers can be set to improve processing times. This option is by default on 
+#' at a high number (100) to improve processing times without affecting differential analysis.
 #' @param summaryMethod "TMP" (default) means Tukey's median polish, 
 #' which is robust estimation method. "linear" uses linear mixed model. If 
 #' anomaly detection algorithm is performed, "linear" must be used.
@@ -47,7 +49,8 @@
 #' Null assumes that all NA intensites are randomly missing.
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
 #' TRUE (default) imputes missing values with 'NA' or '0' (depending on censoredInt option) 
-#' by Accelated failure model. FALSE uses the values assigned by cutoffCensored.
+#' by Accelerated failure model. If set to FALSE, no missing values are imputed. 
+#' FALSE is appropriate only when missingness is assumed to be at random.
 #' See MSstats vignettes for recommendations on which imputation option to use.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
 #' where every run has at least 50\% missing values for each peptide. FALSE is default.
@@ -120,8 +123,8 @@
 #' 
 dataProcess = function(
     raw, logTrans = 2, normalization = "equalizeMedians", nameStandards = NULL,
-    featureSubset = "all", remove_uninformative_feature_outlier = FALSE, 
-    min_feature_count = 2, n_top_feature = 3, summaryMethod = "TMP", 
+    featureSubset = "topN", remove_uninformative_feature_outlier = FALSE, 
+    min_feature_count = 2, n_top_feature = 100, summaryMethod = "TMP", 
     equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
     remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
@@ -197,6 +200,7 @@ dataProcess = function(
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
 #' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS. Default is 1.
+#' @param aft_iterations Number of iterations for AFT model fitting. Default is 90.
 #' 
 #' @importFrom parallel makeCluster parLapply stopCluster clusterExport
 #' 
@@ -260,6 +264,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' Feature-level data summarization with 1 core
 #' 
 #' @inheritParams MSstatsSummarizeWithMultipleCores
+#' @param aft_iterations Number of iterations for AFT model fitting. Default is 90.
 #' 
 #' @importFrom data.table uniqueN
 #' @importFrom utils setTxtProgressBar
@@ -318,79 +323,13 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
     summarized_results
 }
 
-
-#' Feature-level data summarization
-#' 
-#' @param proteins_list list of processed feature-level data
-#' @inheritParams MSstatsSummarizeWithMultipleCores
-#' 
-#' @importFrom data.table uniqueN
-#' @importFrom utils setTxtProgressBar
-#' 
-#' @return list of length one with run-level data.
-#' 
-#' @export
-#' 
-#' @examples
-#' raw = DDARawData 
-#' method = "TMP"
-#' cens = "NA"
-#' impute = TRUE
-#' MSstatsConvert::MSstatsLogsSettings(FALSE)
-#' input = MSstatsPrepareForDataProcess(raw, 2, NULL)
-#' input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
-#' input = MSstatsMergeFractions(input)
-#' input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
-#' input = MSstatsSelectFeatures(input, "all")
-#' processed = getProcessed(input)
-#' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-#' input_split = split(input, input$PROTEIN)
-#' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
-#' length(summarized) # list of summarization outputs for each protein
-#' head(summarized[[1]][[1]]) # run-level summary
-#' 
-MSstatsSummarize = function(proteins_list, method, impute, censored_symbol,
-                            remove50missing, aft_iterations, equal_variance) {
-    num_proteins = length(proteins_list)
-    summarized_results = vector("list", num_proteins)
-    if (method == "TMP") {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in seq_len(num_proteins)) {
-            single_protein = proteins_list[[protein_id]]
-            summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
-                single_protein, impute, censored_symbol, remove50missing,
-                aft_iterations)
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
-    } else {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in seq_len(num_proteins)) {
-            single_protein = proteins_list[[protein_id]]
-            summarized_result = MSstatsSummarizeSingleLinear(
-                single_protein, impute, censored_symbol, remove50missing, 
-                aft_iterations)
-            summarized_results[[protein_id]] = summarized_result
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
-    }
-    msg_deprecation = paste("FUNCTION DEPRECATION NOTICE: We would like to",
-                            "notify you that the MSstatsSummarize function",
-                            "will undergo a transition process. Starting from release 3.21",
-                            "the MSstatsSummarize function in MSstats will be deprecated",
-                            "in favor of MSstatsSummarizeWithSingleCore.",
-                            "Please take the necessary steps to update your codebase",
-                            "and migrate to MSstatsSummarizeWithSingleCore before",
-                            "release 3.21 to avoid any disruptions to your workflow.")
-    message(msg_deprecation)
-    summarized_results
-}
-
-
 #' Linear model-based summarization for a single protein
 #' 
 #' @param single_protein feature-level data for a single protein
+#' @param impute boolean for whether imputation should be performed
+#' @param censored_symbol Character string indicating how censored values are represented 
+#' @param remove50missing if TRUE, proteins with more than 50\% missing values in each run are removed
+#' @param aft_iterations number of iterations for AFT model fitting
 #' @param equal_variances if TRUE, observation are assumed to be homoskedastic
 #' 
 #' @return list with protein-level data
@@ -496,7 +435,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #' Tukey Median Polish summarization for a single protein
 #' 
 #' @param single_protein feature-level data for a single protein
-#' @inheritParams MSstatsSummarize
+#' @param aft_iterations number of iterations for AFT model fitting
+#' @inheritParams MSstatsSummarizeWithSingleCore
 #' 
 #' @return list of two data.tables: one with fitted survival model,
 #' the other with protein-level data

@@ -99,11 +99,20 @@ getSelectedProteins = function(chosen_proteins, all_proteins) {
 #' 
 savePlot = function(name_base, file_name, width, height) {
     if (name_base != FALSE) {
-        file_path = getFileName(name_base, file_name, width, height)
+        width_inches = .convertPixelsToInches(width)
+        height_inches = .convertPixelsToInches(height)
+        file_path = getFileName(name_base, file_name, 
+                                width, height)
         file_path = paste0(file_path,".pdf")
-        pdf(file_path, width = width, height = height)
+        pdf(file_path, width = width_inches, height = height_inches)
     }
     NULL
+}
+
+.convertPixelsToInches = function(pixels) {
+    # Convert pixels to inches (using standard 72 DPI)
+    inches = pixels / 72
+    return(inches)
 }
 
 getFileName = function(name_base, file_name, width, height) {

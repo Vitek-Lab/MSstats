@@ -16,6 +16,14 @@ MSstatsSummarizeSingleLinear(
 \arguments{
 \item{single_protein}{feature-level data for a single protein}
 
+\item{impute}{boolean for whether imputation should be performed}
+
+\item{censored_symbol}{Character string indicating how censored values are represented}
+
+\item{remove50missing}{if TRUE, proteins with more than 50\% missing values in each run are removed}
+
+\item{aft_iterations}{number of iterations for AFT model fitting}
+
 \item{equal_variances}{if TRUE, observation are assumed to be homoskedastic}
 }
 \value{

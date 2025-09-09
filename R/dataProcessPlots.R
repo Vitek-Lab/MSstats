@@ -45,8 +45,8 @@
 #' above graph in Profile Plot. Default is 7.
 #' @param dot.size.profile size of dots in profile plot. Default is 2.
 #' @param dot.size.condition size of dots in condition plot. Default is 3.
-#' @param width width of the saved file. Default is 10.
-#' @param height height of the saved file. Default is 10.
+#' @param width width of the saved file in pixels. Default is 800 pixels.
+#' @param height height of the saved file in pixels. Default is 600 pixels.
 #' @param which.Protein Protein list to draw plots. List can be names of Proteins
 #' or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).
 #' Default is "all", which generates all plots for each protein. 
