@@ -136,7 +136,8 @@ dataProcess = function(
         list(method = featureSubset, n_top = n_top_feature,
              remove_uninformative = remove_uninformative_feature_outlier),
         list(method = summaryMethod, equal_var = equalFeatureVar),
-        list(symbol = censoredInt, MB = MBimpute))
+        list(symbol = censoredInt, MB = MBimpute),
+        colnames(raw))
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
@@ -203,7 +204,7 @@ dataProcess = function(
 #' 
 MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
                               remove50missing, equal_variance, numberOfCores = 1,
-                              aft_iterations) {
+                              aft_iterations = 90) {
     if (numberOfCores > 1) {
         protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
         num_proteins = length(protein_indices)
@@ -285,7 +286,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' head(summarized[[1]][[1]]) # run-level summary
 #' 
 MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
-                            remove50missing, equal_variance, aft_iterations) {
+                            remove50missing, equal_variance, aft_iterations = 90) {
     
             
     protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
@@ -419,7 +420,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
                                         impute,
                                         censored_symbol, 
                                         remove50missing, 
-                                        aft_iterations,
+                                        aft_iterations = 90,
                                         equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
     
@@ -523,7 +524,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
-                                     remove50missing, aft_iterations) {
+                                     remove50missing, aft_iterations = 90) {
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",

@@ -9,7 +9,7 @@ MSstatsSummarizeSingleTMP(
   impute,
   censored_symbol,
   remove50missing,
-  aft_iterations
+  aft_iterations = 90
 )
 }
 \arguments{

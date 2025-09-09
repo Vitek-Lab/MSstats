@@ -12,7 +12,7 @@ MSstatsSummarizeWithMultipleCores(
   remove50missing,
   equal_variance,
   numberOfCores = 1,
-  aft_iterations
+  aft_iterations = 90
 )
 }
 \arguments{

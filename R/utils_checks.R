@@ -86,15 +86,23 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 #' @param feature_selection list with elements: remove_uninformative
 #' @param summarization list with elements: method.
 #' @param imputation list with elements: cutoff, symbol.
+#' @param input_columns character vector of input columns
 #' @keywords internal
 .checkDataProcessParams = function(log_base, normalization_method,
                                    standards_names, feature_selection, 
-                                   summarization, imputation) {
+                                   summarization, imputation, input_columns) {
     checkmate::assertChoice(log_base, c(2, 10), .var.name = "logTrans")
     checkmate::assertChoice(summarization$method, c("linear", "TMP"),
-                            .var.name = "summaryMethod") 
+                            .var.name = "summaryMethod")
     getOption("MSstatsLog")("INFO", paste("Summary method:", 
                                           summarization$method))
+    if ("AnomalyScores" %in% input_columns) {
+        if (summarization$method != "linear") {
+            stop("AnomalyScores column detected in your input columns.  ",
+                 "Please set summaryMethod to 'linear' to use anomaly scores for protein summarization, ",
+                 "or remove the AnomalyScores column from your input data.")
+        }
+    }
     checkmate::assertChoice(imputation$symbol, c("0", "NA"), 
                             null.ok = TRUE, .var.name = "censoredInt")
     getOption("MSstatsLog")("INFO", paste("censoredInt:", imputation$symbol))
