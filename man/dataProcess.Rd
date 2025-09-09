@@ -9,10 +9,10 @@ dataProcess(
   logTrans = 2,
   normalization = "equalizeMedians",
   nameStandards = NULL,
-  featureSubset = "all",
+  featureSubset = "topN",
   remove_uninformative_feature_outlier = FALSE,
   min_feature_count = 2,
-  n_top_feature = 3,
+  n_top_feature = 100,
   summaryMethod = "TMP",
   equalFeatureVar = TRUE,
   censoredInt = "NA",
@@ -44,9 +44,9 @@ recommendations on which normalization option to use.}
 \item{nameStandards}{optional vector of global standard peptide names. 
 Required only for normalization with global standard peptides.}
 
-\item{featureSubset}{"all" (default) uses all features that the data set has. 
+\item{featureSubset}{"topN" (default) uses top N features which has highest average of log-intensity across runs. 
 "top3" uses top 3 features which have highest average of log-intensity across runs. 
-"topN" uses top N features which has highest average of log-intensity across runs. 
+"all" uses all features that the data set has (not recommended in DIA experiments).
 It needs the input for n_top_feature option. 
 "highQuality" flags uninformative feature and outliers. See MSstats vignettes for 
 recommendations on which feature selection option to use.}
@@ -62,9 +62,11 @@ for run-level summarization.}
 Defines a minimum number of informative features a protein needs to be considered
 in the feature selection algorithm.}
 
-\item{n_top_feature}{optional. Only required if featureSubset = 'topN'.
-It that case, it specifies number of top features that will be used.
-Default is 3, which means to use top 3 features.}
+\item{n_top_feature}{Specifies the number of top features to use in summarization (100 default). 
+Only required if featureSubset = 'topN'.  
+Default is 100, which means to use top 100 features. 
+Smaller numbers can be set to improve processing times. This option is by default on 
+at a high number (100) to improve processing times without affecting differential analysis.}
 
 \item{summaryMethod}{"TMP" (default) means Tukey's median polish, 
 which is robust estimation method. "linear" uses linear mixed model.}
