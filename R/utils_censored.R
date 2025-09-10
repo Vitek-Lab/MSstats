@@ -29,7 +29,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
                                 missing_symbol, censored_cutoff) {
     INTENSITY = LABEL = ABUNDANCE = censored = NULL
     
-    if ((summary_method == "TMP" & impute) & !is.null(missing_symbol)) {
+    if (impute & !is.null(missing_symbol)) {
         input$censored = FALSE
         ## if intensity = 1, but abundance > cutoff after normalization, it also should be censored.
         if (!is.null(censored_cutoff)) {

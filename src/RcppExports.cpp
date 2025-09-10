@@ -40,8 +40,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // get_linear_summary
-NumericVector get_linear_summary(const DataFrame& input, const NumericVector& coefs, const NumericMatrix& counts, const bool is_labeled);
-RcppExport SEXP _MSstats_get_linear_summary(SEXP inputSEXP, SEXP coefsSEXP, SEXP countsSEXP, SEXP is_labeledSEXP) {
+DataFrame get_linear_summary(const DataFrame& input, const NumericVector& coefs, const NumericMatrix& counts, const bool is_labeled, const NumericMatrix& cov_mat);
+RcppExport SEXP _MSstats_get_linear_summary(SEXP inputSEXP, SEXP coefsSEXP, SEXP countsSEXP, SEXP is_labeledSEXP, SEXP cov_matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -49,7 +49,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const NumericVector& >::type coefs(coefsSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type counts(countsSEXP);
     Rcpp::traits::input_parameter< const bool >::type is_labeled(is_labeledSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_linear_summary(input, coefs, counts, is_labeled));
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type cov_mat(cov_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_linear_summary(input, coefs, counts, is_labeled, cov_mat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -70,7 +71,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_MSstats_get_estimable_fixed_random", (DL_FUNC) &_MSstats_get_estimable_fixed_random, 2},
     {"_MSstats_make_contrast_run_quant", (DL_FUNC) &_MSstats_make_contrast_run_quant, 6},
-    {"_MSstats_get_linear_summary", (DL_FUNC) &_MSstats_get_linear_summary, 4},
+    {"_MSstats_get_linear_summary", (DL_FUNC) &_MSstats_get_linear_summary, 5},
     {"_MSstats_median_polish_summary", (DL_FUNC) &_MSstats_median_polish_summary, 3},
     {NULL, NULL, 0}
 };

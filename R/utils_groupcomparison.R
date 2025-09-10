@@ -86,9 +86,9 @@ getSamplesInfo = function(summarization_output) {
 #' @param has_imputed if TRUE, missing values have been imputed by dataProcess
 #' @importFrom stats resid fitted
 #' @keywords internal
-.fitModelSingleProtein = function(input, contrast_matrix, has_tech_replicates,
-                                  is_single_subject, repeated, groups,
-                                  samples_info,
+.fitModelSingleProtein = function(input, contrast_matrix,
+                                  has_tech_replicates, is_single_subject, 
+                                  repeated, groups, samples_info,
                                   save_fitted_models, has_imputed) {
     GROUP = SUBJECT = NULL
     
@@ -136,19 +136,28 @@ getSamplesInfo = function(summarization_output) {
 #' Choose a model type (fixed/mixed effects) and fit it for a single protein
 #' @inheritParams .fitModelSingleProtein
 #' @keywords internal
-.fitModelForGroupComparison = function(input, repeated, is_single_subject,
-                                       has_tech_replicates) {
+.fitModelForGroupComparison = function(input, repeated, 
+                                       is_single_subject, has_tech_replicates) {
+    
+    if ("Variance" %in% colnames(input) & !all(is.na(input$Variance))){
+        weight_input = 1/input$Variance
+    } else {
+        weight_input = NULL
+    }
+    
     if (!repeated) {
         if (!has_tech_replicates | is_single_subject) {
-            full_fit = lm(ABUNDANCE ~ GROUP, data = input)
+            full_fit = lm(ABUNDANCE ~ GROUP, data = input, weights=weight_input)
             df_full = full_fit[["df.residual"]]
         } else {
             full_fit = suppressMessages(try(
-                lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
+                lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), 
+                           data = input, weights=weight_input),
                 TRUE
             ))
             df_full = suppressMessages(try(
-                lm(ABUNDANCE ~ GROUP + SUBJECT, data = input)$df.residual,
+                lm(ABUNDANCE ~ GROUP + SUBJECT, 
+                   data = input, weights=weight_input)$df.residual,
                 TRUE
             ))
         }
@@ -156,27 +165,30 @@ getSamplesInfo = function(summarization_output) {
         ## time-course
         if (is_single_subject) {
             full_fit = lm(ABUNDANCE ~ GROUP,
-                          data = input)
+                          data = input, weights=weight_input)
             df_full = full_fit$df.residual
         } else {
             ## no single subject
             if (!has_tech_replicates) {
                 full_fit = suppressMessages(try(
-                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), data = input),
+                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT), 
+                               data = input, weights=weight_input),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
-                    lm(ABUNDANCE ~ GROUP + SUBJECT, data = input)$df.residual,
+                    lm(ABUNDANCE ~ GROUP + SUBJECT, 
+                       data = input, weights=weight_input)$df.residual,
                     TRUE))
             } else {
                 full_fit = suppressMessages(try(
-                    lme4::lmer(ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
-                               data = input),
+                    lme4::lmer(
+                        ABUNDANCE ~ GROUP + (1|SUBJECT) + (1|GROUP:SUBJECT),
+                        data = input, weights=weight_input),
                     TRUE
                 ))
                 df_full = suppressMessages(try(
                     lm(ABUNDANCE ~ GROUP + SUBJECT + GROUP:SUBJECT,
-                       data = input)$df.residual,
+                       data = input, weights=weight_input)$df.residual,
                     TRUE
                 ))
             }
@@ -452,7 +464,8 @@ getSamplesInfo = function(summarization_output) {
 #' @importFrom parallel makeCluster clusterExport parLapply stopCluster
 #' @keywords internal
 .groupComparisonWithMultipleCores = function(summarized_list, contrast_matrix,
-                                             save_fitted_models, repeated, samples_info, 
+                                             save_fitted_models, 
+                                             repeated, samples_info, 
                                              numberOfCores) {
     groups = colnames(contrast_matrix)
     has_imputed = attr(summarized_list, "has_imputed")
@@ -460,8 +473,9 @@ getSamplesInfo = function(summarization_output) {
     function_environment = environment()
     cl = parallel::makeCluster(numberOfCores)
     parallel::clusterExport(cl, c("MSstatsGroupComparisonSingleProtein", 
-                                  "contrast_matrix", "repeated", "groups", 
-                                  "samples_info", "save_fitted_models", "has_imputed"), 
+                                  "contrast_matrix", "repeated", 
+                                  "groups", "samples_info", 
+                                  "save_fitted_models", "has_imputed"), 
                             envir = function_environment)
     cat(paste0("Number of proteins to process: ", length(all_proteins_id)), 
         sep = "\n", file = "MSstats_groupComparison_log_progress.log")
@@ -488,8 +502,8 @@ getSamplesInfo = function(summarization_output) {
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @keywords internal
 .groupComparisonWithSingleCore = function(summarized_list, contrast_matrix,
-                                             save_fitted_models, repeated, 
-                                             samples_info) {
+                                          save_fitted_models, 
+                                          repeated, samples_info) {
     groups = colnames(contrast_matrix)
     has_imputed = attr(summarized_list, "has_imputed")
     all_proteins_id = seq_along(summarized_list)

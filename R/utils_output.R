@@ -10,12 +10,10 @@
 #' @param censored_symbol censored missing value indicator 
 #' (`censoredInt` parameter to `dataProcess`)
 #' 
-#' @return list that consists of the following elements:
-#' \itemize{
-#' \item{FeatureLevelData}{ - feature-level data after processing} 
-#' \item{ProteinLevelData}{ - protein-level (summarized) data}
-#' \item{SummaryMethod}{ (string) - name of summarization method that was used}
-#' }
+#' @return A list with the following elements:
+#'   \item{FeatureLevelData}{Feature-level data after processing.}
+#'   \item{ProteinLevelData}{Protein-level (summarized) data.}
+#'   \item{SummaryMethod}{String: name of the summarization method used.}
 #' 
 #' @export
 #' 
@@ -32,7 +30,7 @@
 #' input = MSstatsSelectFeatures(input, "all")
 #' processed = getProcessed(input)
 #' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE, 100)
 #' output = output = MSstatsSummarizationOutput(input, summarized, processed,
 #' method, impute, cens)
 #' 
@@ -110,11 +108,11 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' @param censored_symbol censored missing value indicator
 #' @keywords internal
 .finalizeInput = function(input, summarized, method, impute, censored_symbol) {
-    if (method == "TMP") {
-        input = .finalizeTMP(input, censored_symbol, impute, summarized)
-    } else {
-        input = .finalizeLinear(input, censored_symbol)
-    }
+    # if (method == "TMP") {
+    input = .finalizeTMP(input, censored_symbol, impute, summarized)
+    # } else {
+    #     input = .finalizeLinear(input, censored_symbol)
+    # }
     input
 }
 

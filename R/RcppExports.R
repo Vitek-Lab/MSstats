@@ -9,8 +9,8 @@ make_contrast_run_quant <- function(input, coefs, contrast_matrix, counts, is_la
     .Call(`_MSstats_make_contrast_run_quant`, input, coefs, contrast_matrix, counts, is_labeled, is_reference)
 }
 
-get_linear_summary <- function(input, coefs, counts, is_labeled) {
-    .Call(`_MSstats_get_linear_summary`, input, coefs, counts, is_labeled)
+get_linear_summary <- function(input, coefs, counts, is_labeled, cov_mat) {
+    .Call(`_MSstats_get_linear_summary`, input, coefs, counts, is_labeled, cov_mat)
 }
 
 median_polish_summary <- function(x, eps = 0.01, maxiter = 10L) {

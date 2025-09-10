@@ -156,11 +156,19 @@
 #' @keywords internal
 .fitLinearModel = function(input, is_single_feature, is_labeled,
                            equal_variances) {
+    if (all(!is.na(input$weights))){
+        weight_input = input$weights
+    } else {
+        weight_input = NULL
+    }
+    
     if (!is_labeled) {
         if (is_single_feature) {
-            linear_model = lm(ABUNDANCE ~ RUN , data = input)
+            linear_model = lm(newABUNDANCE ~ RUN , data = input, 
+                              weights=weight_input)
         } else {
-            linear_model = lm(ABUNDANCE ~ FEATURE + RUN , data = input)
+            linear_model = lm(newABUNDANCE ~ FEATURE + RUN, 
+                              data = input, weights=weight_input)
         }
     } else {
         if (is_single_feature) {

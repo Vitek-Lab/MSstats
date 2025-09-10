@@ -11,7 +11,8 @@ MSstatsSummarizeWithMultipleCores(
   censored_symbol,
   remove50missing,
   equal_variance,
-  numberOfCores = 1
+  numberOfCores = 1,
+  aft_iterations = 90
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ heterogeneous variation from different features.}
 \item{numberOfCores}{Number of cores for parallel processing. When > 1, 
 a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 track progress. Only works for Linux & Mac OS. Default is 1.}
+
+\item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
 }
 \value{
 list of length one with run-level data.

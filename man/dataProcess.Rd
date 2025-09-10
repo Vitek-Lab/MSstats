@@ -24,7 +24,8 @@ dataProcess(
   append = FALSE,
   verbose = TRUE,
   log_file_path = NULL,
-  numberOfCores = 1
+  numberOfCores = 1,
+  aft_iterations = 90
 )
 }
 \arguments{
@@ -69,7 +70,8 @@ Smaller numbers can be set to improve processing times. This option is by defaul
 at a high number (100) to improve processing times without affecting differential analysis.}
 
 \item{summaryMethod}{"TMP" (default) means Tukey's median polish, 
-which is robust estimation method. "linear" uses linear mixed model.}
+which is robust estimation method. "linear" uses linear mixed model. If 
+anomaly detection algorithm is performed, "linear" must be used.}
 
 \item{equalFeatureVar}{only for summaryMethod = "linear". default is TRUE. 
 Logical variable for whether the model should account for heterogeneous variation 
@@ -115,6 +117,8 @@ If `append = TRUE`, has to be a valid path to a file.}
 \item{numberOfCores}{Number of cores for parallel processing. When > 1, 
 a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 track progress. Only works for Linux & Mac OS. Default is 1.}
+
+\item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
 }
 \value{
 A list containing:

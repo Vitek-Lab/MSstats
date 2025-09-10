@@ -27,6 +27,10 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
                                           remove_uninformative_feature_outlier) {
     ABUNDANCE = feature_quality = is_outlier = PROTEIN = NULL
     
+    if (!"ANOMALYSCORES" %in% colnames(input)) {
+        input[, ANOMALYSCORES := NA]
+    }
+    
     label = data.table::uniqueN(input$LABEL) == 2
     if (label) {
         input[, ref := factor(ifelse(LABEL == "L", RUN, 0))]
@@ -103,11 +107,11 @@ getProcessed = function(input) {
 #' @return data.table
 #' @keywords internal
 .prepareSummary = function(input, method, impute, censored_symbol) {
-    if (method == "TMP") {
-        input = .prepareTMP(input, impute, censored_symbol)
-    } else {
-        input = .prepareLinear(input, FALSE, censored_symbol)
-    }
+    # if (method == "TMP") {
+    input = .prepareTMP(input, impute, censored_symbol)
+    # } else {
+    #     input = .prepareLinear(input, FALSE, censored_symbol)
+    # }
     input
 }
 

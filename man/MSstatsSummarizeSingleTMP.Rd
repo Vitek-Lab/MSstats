@@ -8,7 +8,8 @@ MSstatsSummarizeSingleTMP(
   single_protein,
   impute,
   censored_symbol,
-  remove50missing
+  remove50missing,
+  aft_iterations = 90
 )
 }
 \arguments{
@@ -27,6 +28,8 @@ Null assumes that all NA intensites are randomly missing.}
 
 \item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
 where every run has at least 50\% missing values for each peptide. FALSE is default.}
+
+\item{aft_iterations}{number of iterations for AFT model fitting}
 }
 \value{
 list of two data.tables: one with fitted survival model,
@@ -50,7 +53,7 @@ input = MSstatsSelectFeatures(input, "all")
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
 input_split = split(input, input$PROTEIN)
 single_protein_summary = MSstatsSummarizeSingleTMP(input_split[[1]],
-                                                   impute, cens, FALSE)
+                                                   impute, cens, FALSE, 100)
 head(single_protein_summary[[1]])
 
 }

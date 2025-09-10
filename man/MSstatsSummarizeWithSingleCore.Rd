@@ -10,7 +10,8 @@ MSstatsSummarizeWithSingleCore(
   impute,
   censored_symbol,
   remove50missing,
-  equal_variance
+  equal_variance,
+  aft_iterations = 90
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ among intensities from different features. Default is TRUE, which assume equal
 variance among intensities from features. FALSE means that we cannot assume 
 equal variance among intensities from features, then we will account for
 heterogeneous variation from different features.}
+
+\item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
 }
 \value{
 list of length one with run-level data.
@@ -58,7 +61,7 @@ input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 input = MSstatsSelectFeatures(input, "all")
 processed = getProcessed(input)
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE, 100)
 length(summarized) # list of summarization outputs for each protein
 head(summarized[[1]][[1]]) # run-level summary
 

@@ -86,15 +86,23 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 #' @param feature_selection list with elements: remove_uninformative
 #' @param summarization list with elements: method.
 #' @param imputation list with elements: cutoff, symbol.
+#' @param input_columns character vector of input columns
 #' @keywords internal
 .checkDataProcessParams = function(log_base, normalization_method,
                                    standards_names, feature_selection, 
-                                   summarization, imputation) {
+                                   summarization, imputation, input_columns) {
     checkmate::assertChoice(log_base, c(2, 10), .var.name = "logTrans")
     checkmate::assertChoice(summarization$method, c("linear", "TMP"),
-                            .var.name = "summaryMethod") 
+                            .var.name = "summaryMethod")
     getOption("MSstatsLog")("INFO", paste("Summary method:", 
                                           summarization$method))
+    if ("AnomalyScores" %in% input_columns) {
+        if (summarization$method != "linear") {
+            stop("AnomalyScores column detected in your input columns.  ",
+                 "Please set summaryMethod to 'linear' to use anomaly scores for protein summarization, ",
+                 "or remove the AnomalyScores column from your input data.")
+        }
+    }
     checkmate::assertChoice(imputation$symbol, c("0", "NA"), 
                             null.ok = TRUE, .var.name = "censoredInt")
     getOption("MSstatsLog")("INFO", paste("censoredInt:", imputation$symbol))
@@ -140,13 +148,20 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 #' @importFrom data.table uniqueN as.data.table
 #' @keywords internal
 .checkUnProcessedDataValidity = function(input, fix_missing, fill_incomplete) {
+  
     input = data.table::as.data.table(unclass(input))
+    
+    if (!"AnomalyScores" %in% colnames(input)){
+      input$AnomalyScores = NA
+    }
+    
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
              "PrecursorCharge", "FragmentIon", "ProductCharge", 
-             "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
+             "IsotopeLabelType", "Condition", "BioReplicate", "Run", 
+             "Intensity", "AnomalyScores")
     provided_cols = intersect(cols, colnames(input))
     
-    if (length(provided_cols) < 10) {
+    if (length(provided_cols) < 11) {
         msg = paste("Missing columns in the input:", 
                     paste(setdiff(cols, colnames(input)), collapse = " "))
         getOption("MSstatsLog")("ERROR", msg)
@@ -158,7 +173,9 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     balanced_cols = c("PeptideSequence", "PrecursorCharge", 
                       "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsBalancedDesign(
-        input, balanced_cols, TRUE, TRUE, fix_missing)
+        input, balanced_cols, TRUE, TRUE, fix_missing,
+        anomaly_metrics = c("AnomalyScores"))
+
     input = data.table::as.data.table(unclass(input))
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
     
@@ -178,13 +195,16 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
                      colnames(input))
     input = input[, cols, with = FALSE]
     
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
-    input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
+    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, 
+                          input$PRECURSORCHARGE, sep = "_")
+    input$TRANSITION = paste(input$FRAGMENTION, 
+                             input$PRODUCTCHARGE, sep = "_")
     
     if (data.table::uniqueN(input$ISOTOPELABELTYPE) > 2) {
-        getOption("MSstatsLog")("ERROR",  
-                                paste("There are more than two levels of labeling.",
-                                      "So far, only label-free or reference-labeled experiment are supported. - stop"))
+        getOption("MSstatsLog")(
+          "ERROR",  paste(
+            "There are more than two levels of labeling.",
+            "So far, only label-free or reference-labeled experiment are supported. - stop"))
         stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
     }
     
@@ -272,10 +292,14 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
 
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP",  
-             "SUBJECT", "FRACTION", "INTENSITY")
+             "SUBJECT", "FRACTION", "INTENSITY", "ANOMALYSCORES")
     if ("TECHREPLICATE" %in% colnames(input)) {
         cols = unique(c(cols, "TECHREPLICATE"))
     }
+    if (!"ANOMALYSCORES" %in% colnames(input)) {
+        input[, ANOMALYSCORES := NA_real_]
+    }
+    
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
