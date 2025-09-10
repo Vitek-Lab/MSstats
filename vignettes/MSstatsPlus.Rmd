@@ -20,11 +20,11 @@ designed to incorporate the underlying spectral peak quality into differential
 analysis, going beyond peak intensity alone. It integrates the underlying 
 spectral peaks using an isolation forest (iForest) for anomaly detection, which
 integrates all the peak quality metrics into a single score. This score is then 
-used as weights in protein-level summarization weighted linear regression. After 
+used a weight in protein-level summarization. After 
 protein-level summarization, the estimates of underlying protein abundance and 
-the estimates associated variance are used as weights in a second weighted 
-linear model which is used to perform differential analysis. It can be used 
-for experiments with simple group comparison designs, or more complex designs 
+their associated variance are used as weights in a second weighted 
+linear model which is used to perform differential analysis. The models can be 
+applied to experiments with simple group comparison designs, or more complex designs 
 (e.g. comparing more than two experimental conditions, or a repeated measure 
 design, such as a time course).
 
@@ -50,13 +50,13 @@ The main iForest algorithm for `MSstats+` is implemented in the `MSstatsConvert`
 package (a dependency of `MSstats`). The `MSstatsConvert` package contains 
 individual converters for each spectral processing tool. Currently, `MSstats+` 
 only has a dedicated converter for `Spectronaut`, however more converters are 
-in development. For integration with other tools, please reach out on the 
-`MSstats` Google Group: \url{https://groups.google.com/g/msstats}. 
+in development and can be implemented manually (see below), For integration with
+other tools, please reach out on the `MSstats` Google Group: \url{https://groups.google.com/g/msstats}. 
 
 ### Load data
 
 First we will load the Spectronaut report of identified and quantified peaks. It
-is necessary that users output all the spectral peak quality data along with 
+is necessary that users output the spectral peak quality data along with 
 these peaks. These spectral peak quality metrics must be at least at the 
 precursor-level (i.e., the column headers must not start with `F.`). There are 
 multiple options for columns that can be extracted, some 
@@ -64,7 +64,7 @@ examples include: `FG.ShapeQualityScore (MS1)`, `FG.ShapeQualityScore (MS2)`,
 and `EG.DeltaRT`. Users can include as many quality metrics as they want, 
 however we recommend using only quality metrics that are key indicators of the
 quality of a spectral peak. Including too many quality metrics may lead to
-overfitting of the iForest model. We include functionality to assess the 
+the iForest model fitting noise. We include additional functionality to assess the 
 performance of the model (discussed below).
 
 An example output from Spectronaut is included in the 
@@ -134,7 +134,8 @@ head(msstats_input)
 Key parameters for `MSstats+`:
 - `calculateAnomalyScores`: Set to `TRUE` to use the iForest algorithm to 
   calculate anomaly scores for each spectral peak.
-- `anomalyModelFeatures`: A character vector of the column names of the quality         metrics to be used in the iForest model. These must be at the precursor-level 
+- `anomalyModelFeatures`: A character vector of the column names of the quality 
+   metrics to be used in the iForest model. These must be at the precursor-level 
    or higher (i.e., the column headers must not start with `F.`).
 - `anomalyModelFeatureTemporal`: A character vector of the same length as
    `anomalyModelFeatures` indicating the temporal direction of each quality 
@@ -461,5 +462,4 @@ temporal run order directly from the Spectronaut file. However, in practice this
 may not be appropriate for big data files. In cases where the data is large, 
 this ordering should be extracted externally and provided by the user, or the 
 user should sample the Spectronaut file rather than load it all into memory.
-
 
