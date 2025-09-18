@@ -189,10 +189,10 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     legend.size, log_adjp
 ) {
     Protein = NULL
-    plot = ggplot(aes_string(x = "logFC", 
-                             y = log_adjp,
-                             color = "colgroup",
-                             label = "Protein"),
+    plot = ggplot(aes(x = .data$logFC, 
+                             y = .data[[log_adjp]],
+                             color = .data$colgroup,
+                             label = .data$Protein),
                   data = input) +
         geom_point(size = dot.size) +
         scale_colour_manual(values = c("gray65", "blue", "red"), 
@@ -209,7 +209,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
         if (!(length(unique(input$colgroup)) == 1 & any(unique(input$colgroup) == "black"))) {
             plot = plot +
                 geom_text_repel(data = input[input$colgroup != "black", ],
-                                aes(label = Protein),
+                                aes(label = .data$Protein),
                                 size = text.size,
                                 col = "black")
         }
@@ -226,7 +226,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     if (!FCcutoff) {
         plot = plot +
             geom_line(data = sigcut,
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
                       size = 0.6,
                       show.legend = TRUE) +
@@ -248,17 +248,17 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
                                         c("Protein", "logFC", log_adjp, "line"))
         plot = plot +
             geom_line(data = sigcut, 
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
                       size = 0.6,
                       show.legend = TRUE) +
             geom_line(data = FCcutpos,
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
                       size = 0.6,
                       show.legend = TRUE) +
             geom_line(data = FCcutneg,
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
                       size = 0.6) +
             scale_linetype_manual(values = c("dotted" = 3, "twodash" = 6),
@@ -288,8 +288,8 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     logFC = ciw = NULL
     
     protein = unique(input$Protein)
-    plot = ggplot(input, aes_string(x = "Label", y = "logFC")) +
-        geom_errorbar(aes(ymax = logFC + ciw, ymin = logFC - ciw),
+    plot = ggplot(input, aes(x = .data$Label, y = .data$logFC)) +
+        geom_errorbar(aes(ymax = .data$logFC + .data$ciw, ymin = .data$logFC - .data$ciw),
                       data = input,
                       width = 0.1,
                       colour = "red") +
