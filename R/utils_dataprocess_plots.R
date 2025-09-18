@@ -59,7 +59,7 @@
     profile_plot = ggplot(input, aes(x = .data$RUN, y = .data$newABUNDANCE,
                                             color = .data[[type_color]], linetype = .data$FEATURE)) +
         facet_grid(~LABEL) +
-        geom_line(size = 0.5)
+        geom_line(linewidth = 0.5)
     
     if (is_censored) {
         profile_plot = profile_plot +
@@ -160,7 +160,7 @@
                                      color = .data$analysis, linetype = .data$FEATURE, 
                                      size = .data$analysis)) +
         facet_grid(~LABEL) +
-        geom_line(size = 0.5)
+        geom_line(linewidth = 0.5)
     
     if (is_censored) { # splitting into two layers to keep red above grey
         profile_plot = profile_plot +
@@ -283,7 +283,7 @@
     plot = plot +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_hline(yintercept = 0, linetype = "twodash", 
-                   colour = "darkgrey", size = 0.6) +
+                   colour = "darkgrey", linewidth = 0.6) +
         labs(title = unique(single_protein$PROTEIN)) +
         theme_msstats("CONDITIONPLOT", x.axis.size, y.axis.size, 
                       text_angle = text.angle)

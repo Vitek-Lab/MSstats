@@ -228,7 +228,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
             geom_line(data = sigcut,
                       aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6,
+                      linewidth = 0.6,
                       show.legend = TRUE) +
             scale_linetype_manual(values = c("twodash" = 6),
                                   labels = c(paste0("Adj p-value cutoff (", sig, ")"))) +
@@ -250,17 +250,17 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
             geom_line(data = sigcut, 
                       aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6,
+                      linewidth = 0.6,
                       show.legend = TRUE) +
             geom_line(data = FCcutpos,
                       aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6,
+                      linewidth = 0.6,
                       show.legend = TRUE) +
             geom_line(data = FCcutneg,
                       aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6) +
+                      linewidth = 0.6) +
             scale_linetype_manual(values = c("dotted" = 3, "twodash" = 6),
                                   labels = c(paste0("Fold change cutoff (", FCcutoff, ")"),
                                              paste0("Adj p-value cutoff (", sig, ")"))) +
@@ -299,7 +299,7 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
         geom_hline(yintercept = 0, 
                    linetype = "twodash", 
                    colour = "darkgrey", 
-                   size = 0.6) +
+                   linewidth = 0.6) +
         labs(title = protein) +
         theme_msstats("COMPARISONPLOT", x.axis.size, y.axis.size, 
                       text_angle = text.angle, text_hjust = hjust, 
