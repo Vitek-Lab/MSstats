@@ -20,7 +20,7 @@ start_time <- Sys.time()
 fragpipe_raw <- data.table::fread(dataset_config$file)
 
 head(fragpipe_raw)
-msstats_format = MSstatsConvert::FragPipetoMSstatsFormat(fragpipe_raw, use_log_file = FALSE)
+msstats_format <- MSstatsConvert::FragPipetoMSstatsFormat(fragpipe_raw, use_log_file = FALSE)
 
 
 data_process_tasks <- list(
@@ -44,11 +44,11 @@ data_process_tasks <- list(
 
 start_time <- Sys.time()
 
-num_cores <- detectCores() - 1 
+num_cores <- detectCores() - 1
 
 summarized_results <- mclapply(data_process_tasks, function(task) {
   list(label = task$label, summarized = task$result())
-}, mc.cores = num_cores)	
+}, mc.cores = num_cores)
 
 
 results_list <- mclapply(summarized_results, function(res) {
