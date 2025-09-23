@@ -9,8 +9,8 @@ BiocStyle::markdown()
 ```
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=10, fig.height=7, warning=FALSE, message=FALSE)
-options(width=110)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 7, warning = FALSE, message = FALSE)
+options(width = 110)
 ```
 
 ```{=html}
@@ -51,8 +51,9 @@ Kohler et al, Nature Protocols 19, 2915–2938 (2024).
 To install this package, start R (version “4.0”) and enter:
 
 ``` {r code Installation}
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
 
 BiocManager::install("MSstats")
 library(MSstats)
@@ -74,18 +75,19 @@ this dataset [here](https://github.com/Vitek-Lab/MSstatsConvert/blob/devel/inst/
 library(MSstats)
 
 # Load data
-pd_raw = system.file("tinytest/raw_data/PD/pd_input.csv", 
-                    package = "MSstatsConvert")
+pd_raw <- system.file("tinytest/raw_data/PD/pd_input.csv",
+  package = "MSstatsConvert"
+)
 
-annotation_raw = system.file("tinytest/raw_data/PD/annot_pd.csv", 
-                   package = "MSstatsConvert")
+annotation_raw <- system.file("tinytest/raw_data/PD/annot_pd.csv",
+  package = "MSstatsConvert"
+)
 
-pd = data.table::fread(pd_raw)
-annotation = data.table::fread(annotation_raw)
+pd <- data.table::fread(pd_raw)
+annotation <- data.table::fread(annotation_raw)
 
 head(pd, 5)
 head(annotation, 5)
-
 ```
 
 ### __1.2 Loading PD Data to MSstats__
@@ -101,8 +103,9 @@ Actual data modification can be seen below:
 ```{r code PDtoMSstatsFormat}
 library(MSstatsConvert)
 
-pd_imported = MSstatsConvert::PDtoMSstatsFormat(pd, annotation, 
-                                                use_log_file = FALSE)
+pd_imported <- MSstatsConvert::PDtoMSstatsFormat(pd, annotation,
+  use_log_file = FALSE
+)
 
 head(pd_imported)
 ```
@@ -130,25 +133,22 @@ We show an example of how to use the above said Converters. For more information
 about using the individual converters please see the coresponding documentation.
 
 ```{r Converter Files}
+skyline_raw <- system.file("tinytest/raw_data/Skyline/skyline_input.csv",
+  package = "MSstatsConvert"
+)
 
-skyline_raw = system.file("tinytest/raw_data/Skyline/skyline_input.csv", 
-                    package = "MSstatsConvert")
-
-skyline = data.table::fread(skyline_raw)
+skyline <- data.table::fread(skyline_raw)
 head(skyline, 5)
-
 ```
 
 ```{r SkylinetoMSstatsFormat, results='hide', message=FALSE, warning=FALSE}
-
-msstats_format = MSstatsConvert::SkylinetoMSstatsFormat(skyline_raw,
-                                      qvalue_cutoff = 0.01,
-                                      useUniquePeptide = TRUE,
-                                      removeFewMeasurements = TRUE,
-                                      removeOxidationMpeptides = TRUE,
-                                      removeProtein_with1Feature = TRUE)
-
-
+msstats_format <- MSstatsConvert::SkylinetoMSstatsFormat(skyline_raw,
+  qvalue_cutoff = 0.01,
+  useUniquePeptide = TRUE,
+  removeFewMeasurements = TRUE,
+  removeOxidationMpeptides = TRUE,
+  removeProtein_with1Feature = TRUE
+)
 ```
 
 ```{r SkylinetoMSstatsFormat head}
@@ -189,24 +189,23 @@ summarization is also available as an option.
 
 
 ``` {r code dataProcess}
-summarized = dataProcess(
-    pd_imported,
-    logTrans = 2,
-    normalization = "equalizeMedians",
-    featureSubset = "all",
-    n_top_feature = 3,
-    summaryMethod = "TMP",
-    equalFeatureVar = TRUE,
-    censoredInt = "NA",
-    MBimpute = TRUE
-    )
+summarized <- dataProcess(
+  pd_imported,
+  logTrans = 2,
+  normalization = "equalizeMedians",
+  featureSubset = "all",
+  n_top_feature = 3,
+  summaryMethod = "TMP",
+  equalFeatureVar = TRUE,
+  censoredInt = "NA",
+  MBimpute = TRUE
+)
 
 head(summarized$FeatureLevelData)
 
 head(summarized$ProteinLevelData)
 
 head(summarized$SummaryMethod)
-
 ```
 
 ### __1.4.1 Data Processing Options__
@@ -252,12 +251,15 @@ table_data <- data.frame(
   )
 )
 
-tryCatch({
-  kable(table_data, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
-  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
-}, error = function(e) {
-  stop(paste0("Error in rendering the normalization options table: ", e$message))
-})
+tryCatch(
+  {
+    kable(table_data, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
+      kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+  },
+  error = function(e) {
+    stop(paste0("Error in rendering the normalization options table: ", e$message))
+  }
+)
 ```
 
 If the assumptions of the normalization are not verified, the normalization may, in fact, increase bias or variance of the estimated log fold change. For example, if the experiment is not randomized and the experimental artifacts are confounded with the conditions, the median and quantile normalizations will introduce bias.
@@ -292,13 +294,16 @@ imputation_table <- data.frame(
   )
 )
 
-tryCatch({
-  kable(imputation_table, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
-  kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed")) %>%
-  column_spec(2:4, width = "30em")
-}, error = function(e) {
-  stop(paste0("Error in rendering the imputation options table: ", e$message))
-})
+tryCatch(
+  {
+    kable(imputation_table, "html", escape = FALSE, col.names = c("Name", "Description", "Assumption", "Effect")) %>%
+      kable_styling(full_width = TRUE, bootstrap_options = c("striped", "hover", "condensed")) %>%
+      column_spec(2:4, width = "30em")
+  },
+  error = function(e) {
+    stop(paste0("Error in rendering the imputation options table: ", e$message))
+  }
+)
 ```
 
 ### __1.4.2 Data Process Plots__
@@ -310,19 +315,23 @@ generated. Alternatively, the `address` parameter can be set to `FALSE` which
 will output the plots directly.
 
 ```{r dataProcessPlots, results='hide', message=FALSE, warning=FALSE}
-
 # Profile plot
-dataProcessPlots(data=summarized, type="ProfilePlot", 
-                 address = FALSE, which.Protein = "P0ABU9")
+dataProcessPlots(
+  data = summarized, type = "ProfilePlot",
+  address = FALSE, which.Protein = "P0ABU9"
+)
 
 # Quality control plot
-dataProcessPlots(data=summarized, type="QCPlot", 
-                 address = FALSE, which.Protein = "P0ABU9")
+dataProcessPlots(
+  data = summarized, type = "QCPlot",
+  address = FALSE, which.Protein = "P0ABU9"
+)
 
 # Quantification plot for conditions
-dataProcessPlots(data=summarized, type="ConditionPlot", 
-                 address = FALSE, which.Protein = "P0ABU9")
-
+dataProcessPlots(
+  data = summarized, type = "ConditionPlot",
+  address = FALSE, which.Protein = "P0ABU9"
+)
 ```
 
 
@@ -338,19 +347,15 @@ information on creating contrast matrices, please see the citation linked
 at the beginning of this document.
 
 ``` {r code groupComparison}
-
-model = groupComparison("pairwise", summarized)
-
+model <- groupComparison("pairwise", summarized)
 ```
 
 Model Details
 
 ``` {r Model }
-
 head(model$ModelQC)
 
 head(model$ComparisonResult)
-
 ```
 
 
@@ -373,8 +378,8 @@ If you want to compare **control vs. disease** (averaging over gender), you can 
 
 ```{r}
 # Order of conditions: control_male, control_female, disease_male, disease_female
-contrast.matrix = matrix(c(0.5, 0.5, -0.5, -0.5), nrow = 1)
-colnames(contrast.matrix) = c("Control_Male", "Control_Female", "Disease_Male", "Disease_Female")
+contrast.matrix <- matrix(c(0.5, 0.5, -0.5, -0.5), nrow = 1)
+colnames(contrast.matrix) <- c("Control_Male", "Control_Female", "Disease_Male", "Disease_Female")
 row.names(contrast.matrix) <- "Control - Disease"
 ```
 
@@ -386,8 +391,8 @@ If you want to compare **male vs. female** (averaging over disease status), set 
 
 ```{r}
 # Order of conditions: control_male, control_female, disease_male, disease_female
-contrast.matrix = matrix(c(0.5, -0.5, 0.5, -0.5), nrow = 1)
-colnames(contrast.matrix) = c("Control_Male", "Control_Female", "Disease_Male", "Disease_Female")
+contrast.matrix <- matrix(c(0.5, -0.5, 0.5, -0.5), nrow = 1)
+colnames(contrast.matrix) <- c("Control_Male", "Control_Female", "Disease_Male", "Disease_Female")
 row.names(contrast.matrix) <- "Male - Female"
 ```
 
@@ -433,10 +438,9 @@ confidence interval with 0.95 significant level for log fold change. This
 interval is only based on the standard error, which is estimated from the model.
 
 ``` {r GroupComparisonPlots}
-
 groupComparisonPlots(
   model$ComparisonResult,
-  type="Heatmap",
+  type = "Heatmap",
   sig = 0.05,
   FCcutoff = FALSE,
   logBase.pvalue = 10,
@@ -465,7 +469,7 @@ groupComparisonPlots(
 
 groupComparisonPlots(
   model$ComparisonResult,
-  type="VolcanoPlot",
+  type = "VolcanoPlot",
   sig = 0.05,
   FCcutoff = FALSE,
   logBase.pvalue = 10,
@@ -489,7 +493,6 @@ groupComparisonPlots(
   address = FALSE,
   isPlotly = FALSE
 )
-
 ```
 
 ### __1.6 GroupComparisonQCPlots__
@@ -511,15 +514,18 @@ from the model.
 
 
 ``` {r GroupComparisonQCplots, results='hide', message=FALSE, warning=FALSE}
-
 source("..//R//groupComparisonQCPlots.R")
 
-groupComparisonQCPlots(data=model, type="QQPlots", address=FALSE, 
-                       which.Protein = "P0ABU9")
+groupComparisonQCPlots(
+  data = model, type = "QQPlots", address = FALSE,
+  which.Protein = "P0ABU9"
+)
 
 
-groupComparisonQCPlots(data=model, type="ResidualPlots", address=FALSE, 
-                       which.Protein = "P0ABU9")
+groupComparisonQCPlots(
+  data = model, type = "ResidualPlots", address = FALSE,
+  which.Protein = "P0ABU9"
+)
 ```
 
 
@@ -537,12 +543,11 @@ sample size is rounded to 0 decimal. Two options of the calculation:
 * power
 
 ```{r Sample Size}
-
-sample_size_calc = designSampleSize(model$FittedModel,
-                                    desiredFC=c(1.75,2.5),
-                                    power = TRUE,
-                                    numSample=5)
-
+sample_size_calc <- designSampleSize(model$FittedModel,
+  desiredFC = c(1.75, 2.5),
+  power = TRUE,
+  numSample = 5
+)
 ```
 
 
@@ -554,9 +559,7 @@ number sample size which are
 The input is the result from function `designSampleSize`.
 
 ```{r Sample Size plot}
-
-designSampleSizePlots(sample_size_calc, isPlotly=FALSE)
-
+designSampleSizePlots(sample_size_calc, isPlotly = FALSE)
 ```
 
 
@@ -583,20 +586,24 @@ median among run quantification corresponding MS runs.
 condition per protein. It is median among sample quantification.
 
 ```{r Quantification}
-sample_quant_long = quantification(summarized,
-                             type = "Sample",
-                             format = "long")
+sample_quant_long <- quantification(summarized,
+  type = "Sample",
+  format = "long"
+)
 sample_quant_long
-sample_quant_wide = quantification(summarized,
-                              type = "Sample",
-                              format = "matrix")
+sample_quant_wide <- quantification(summarized,
+  type = "Sample",
+  format = "matrix"
+)
 sample_quant_wide
-group_quant_long = quantification(summarized,
-                                  type = "Group",
-                                  format = "long")
+group_quant_long <- quantification(summarized,
+  type = "Group",
+  format = "long"
+)
 group_quant_long
-group_quant_wide = quantification(summarized,
-                                  type = "Group",
-                                  format = "matrix")
+group_quant_wide <- quantification(summarized,
+  type = "Group",
+  format = "matrix"
+)
 group_quant_wide
 ```

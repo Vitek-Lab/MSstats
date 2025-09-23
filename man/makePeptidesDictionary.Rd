@@ -20,8 +20,8 @@ with global standards. It is useful for running the summarization workflow
 outside of the dataProcess function.
 }
 \examples{
-input = data.table::as.data.table(DDARawData)
-peptides_dict = makePeptidesDictionary(input, "GLOBALSTANDARDS")
+input <- data.table::as.data.table(DDARawData)
+peptides_dict <- makePeptidesDictionary(input, "GLOBALSTANDARDS")
 head(peptides_dict) # ready to be passed to the MSstatsNormalize function
 
 }

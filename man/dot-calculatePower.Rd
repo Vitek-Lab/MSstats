@@ -14,10 +14,10 @@
 )
 }
 \arguments{
-\item{desiredFC}{the range of a desired fold change which includes the lower 
+\item{desiredFC}{the range of a desired fold change which includes the lower
 and upper values of the desired fold change.}
 
-\item{FDR}{a pre-specified false discovery ratio (FDR) to control the overall 
+\item{FDR}{a pre-specified false discovery ratio (FDR) to control the overall
 false positive rate. Default is 0.05}
 
 \item{delta}{difference between means (?)}
@@ -26,8 +26,8 @@ false positive rate. Default is 0.05}
 
 \item{median_sigma_subject}{median standard deviation per subject}
 
-\item{numSample}{minimal number of biological replicates per condition. 
-TRUE represents you require to calculate the sample size for this category, 
+\item{numSample}{minimal number of biological replicates per condition.
+TRUE represents you require to calculate the sample size for this category,
 else you should input the exact number of biological replicates.}
 }
 \description{

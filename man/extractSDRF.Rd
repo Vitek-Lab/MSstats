@@ -14,7 +14,7 @@ extractSDRF(
 )
 }
 \arguments{
-\item{data}{MSstats formatted data that is the output of a dedicated 
+\item{data}{MSstats formatted data that is the output of a dedicated
 converter, such as `MaxQtoMSstatsFormat`, `SkylinetoMSstatsFormat`, ect.}
 
 \item{run_name}{Run column name in SDRF data}
@@ -26,23 +26,26 @@ converter, such as `MaxQtoMSstatsFormat`, `SkylinetoMSstatsFormat`, ect.}
 \item{fraction}{Fraction column name in SDRF data (if applicable). Default is
 `NULL`. If there are no fractions keep `NULL`.}
 
-\item{meta_data}{A data.frame including any additional meta data for the SDRF 
-file that is not included in MSstats. This meta data will be added into the 
-final SDRF file. Please ensure the run names in the meta data matches the 
+\item{meta_data}{A data.frame including any additional meta data for the SDRF
+file that is not included in MSstats. This meta data will be added into the
+final SDRF file. Please ensure the run names in the meta data matches the
 run names in the MSstats data.}
 }
 \description{
 Extract experimental design from MSstats format into SDRF format
 }
 \examples{
-mq_ev = data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_ev.csv",
-                                      package = "MSstatsConvert"))
-mq_pg = data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_pg.csv",
-                                      package = "MSstatsConvert"))
-annot = data.table::fread(system.file("tinytest/raw_data/MaxQuant/annotation.csv",
-                                      package = "MSstatsConvert"))
-maxq_imported = MaxQtoMSstatsFormat(mq_ev, annot, mq_pg, use_log_file = FALSE)
+mq_ev <- data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_ev.csv",
+  package = "MSstatsConvert"
+))
+mq_pg <- data.table::fread(system.file("tinytest/raw_data/MaxQuant/mq_pg.csv",
+  package = "MSstatsConvert"
+))
+annot <- data.table::fread(system.file("tinytest/raw_data/MaxQuant/annotation.csv",
+  package = "MSstatsConvert"
+))
+maxq_imported <- MaxQtoMSstatsFormat(mq_ev, annot, mq_pg, use_log_file = FALSE)
 head(maxq_imported)
 
-SDRF_file = extractSDRF(maxq_imported)
+SDRF_file <- extractSDRF(maxq_imported)
 }

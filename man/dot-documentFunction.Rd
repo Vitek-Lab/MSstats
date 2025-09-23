@@ -9,7 +9,7 @@
 \arguments{
 \item{removeFewMeasurements}{TRUE (default) will remove the features that have 1 or 2 measurements across runs.}
 
-\item{useUniquePeptide}{TRUE (default) removes peptides that are assigned for more than one proteins. 
+\item{useUniquePeptide}{TRUE (default) removes peptides that are assigned for more than one proteins.
 We assume to use unique peptide for each protein.}
 
 \item{summaryforMultipleRows}{max(default) or sum - when there are multiple measurements for certain feature and certain run, use highest or sum of multiple intensities.}
@@ -31,8 +31,8 @@ to an existing log file.}
 \item{verbose}{logical. If TRUE, information about data processing wil be printed
 to the console.}
 
-\item{log_file_path}{character. Path to a file to which information about 
-data processing will be saved. 
+\item{log_file_path}{character. Path to a file to which information about
+data processing will be saved.
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
 }

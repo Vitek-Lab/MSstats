@@ -79,17 +79,17 @@ For Plotly: use this parameter to adjust the number of proteins to be displayed 
 
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 
-\item{isPlotly}{This parameter is for MSstatsShiny application for plotly 
-render, this cannot be used for saving PDF files as plotly do not have 
+\item{isPlotly}{This parameter is for MSstatsShiny application for plotly
+render, this cannot be used for saving PDF files as plotly do not have
 suppprt for PDFs currently. address and isPlotly cannot be set as TRUE at the
 same time.}
 }
 \description{
-To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins, 
-groupComparisonPlots takes testing results from function (\code{\link{groupComparison}}) as input and 
-automatically generate three types of figures in pdf files as output : 
-(1) volcano plot (specify "VolcanoPlot" in option type) for each comparison separately; 
-(2) heatmap (specify "Heatmap" in option type) for multiple comparisons ; 
+To summarize the results of log-fold changes and adjusted p-values for differentially abundant proteins,
+groupComparisonPlots takes testing results from function (\code{\link{groupComparison}}) as input and
+automatically generate three types of figures in pdf files as output :
+(1) volcano plot (specify "VolcanoPlot" in option type) for each comparison separately;
+(2) heatmap (specify "Heatmap" in option type) for multiple comparisons ;
 (3) comparison plot (specify "ComparisonPlot" in option type) for multiple comparisons per protein.
 }
 \details{
@@ -100,40 +100,54 @@ automatically generate three types of figures in pdf files as output :
 }
 }
 \examples{
-QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
 ## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
-comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
-comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
-comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
-comparison<-rbind(comparison1,comparison2, comparison3)
-row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
-groups = levels(QuantData$ProteinLevelData$GROUP)
+comparison1 <- matrix(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0), nrow = 1)
+comparison2 <- matrix(c(-1, 0, 0, 0, 0, 0, 1, 0, 0, 0), nrow = 1)
+comparison3 <- matrix(c(-1, 0, 0, 0, 0, 0, 0, 0, 1, 0), nrow = 1)
+comparison <- rbind(comparison1, comparison2, comparison3)
+row.names(comparison) <- c("T3-T1", "T7-T1", "T9-T1")
+groups <- levels(QuantData$ProteinLevelData$GROUP)
 colnames(comparison) <- groups[order(as.numeric(groups))]
-testResultMultiComparisons<-groupComparison(contrast.matrix=comparison,
-data=QuantData, 
-use_log_file = FALSE)
+testResultMultiComparisons <- groupComparison(
+  contrast.matrix = comparison,
+  data = QuantData,
+  use_log_file = FALSE
+)
 testResultMultiComparisons$ComparisonResult
 # Volcano plot with FDR cutoff = 0.05 and no FC cutoff
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot",
-logBase.pvalue=2, address="Ex1_")
-# Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100, 
+groupComparisonPlots(
+  data = testResultMultiComparisons$ComparisonResult, type = "VolcanoPlot",
+  logBase.pvalue = 2, address = "Ex1_"
+)
+# Volcano plot with FDR cutoff = 0.05, FC cutoff = 70, upper y-axis limit = 100,
 # and no protein name displayed
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot",
-FCcutoff=70, logBase.pvalue=2, ylimUp=100, ProteinName=FALSE,address="Ex2_")
+groupComparisonPlots(
+  data = testResultMultiComparisons$ComparisonResult, type = "VolcanoPlot",
+  FCcutoff = 70, logBase.pvalue = 2, ylimUp = 100, ProteinName = FALSE, address = "Ex2_"
+)
 # Heatmap with FDR cutoff = 0.05
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap", 
-logBase.pvalue=2, address="Ex1_")
+groupComparisonPlots(
+  data = testResultMultiComparisons$ComparisonResult, type = "Heatmap",
+  logBase.pvalue = 2, address = "Ex1_"
+)
 # Heatmap with FDR cutoff = 0.05 and FC cutoff = 70
 # FCcutoff=70 is for demonstration purpose
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap",
-FCcutoff=70, logBase.pvalue=2, address="Ex2_")
+groupComparisonPlots(
+  data = testResultMultiComparisons$ComparisonResult, type = "Heatmap",
+  FCcutoff = 70, logBase.pvalue = 2, address = "Ex2_"
+)
 # Comparison Plot
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot",
-address="Ex1_")
+groupComparisonPlots(
+  data = testResultMultiComparisons$ComparisonResult, type = "ComparisonPlot",
+  address = "Ex1_"
+)
 # Comparison Plot
-groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot",
-ylimUp=8, ylimDown=-1, address="Ex2_")
+groupComparisonPlots(
+  data = testResultMultiComparisons$ComparisonResult, type = "ComparisonPlot",
+  ylimUp = 8, ylimDown = -1, address = "Ex2_"
+)
 
 }

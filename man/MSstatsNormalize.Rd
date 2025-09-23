@@ -19,10 +19,10 @@ MSstatsNormalize(
 "QUANTILE" normalization for quantile normalization from `preprocessCore` package,
 "GLOBALSTANDARDS" for normalization based on selected peptides or proteins.}
 
-\item{peptides_dict}{`data.table` of names of peptides and their corresponding 
+\item{peptides_dict}{`data.table` of names of peptides and their corresponding
 features.}
 
-\item{standards}{character vector with names of standards, required if 
+\item{standards}{character vector with names of standards, required if
 "GLOBALSTANDARDS" method was selected.}
 }
 \value{
@@ -32,13 +32,13 @@ data.table
 Normalize MS data
 }
 \examples{
-raw = DDARawData 
-method = "TMP"
-cens = "NA"
-impute = TRUE
+raw <- DDARawData
+method <- "TMP"
+cens <- "NA"
+impute <- TRUE
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-input = MSstatsPrepareForDataProcess(raw, 2, NULL)
-input = MSstatsNormalize(input, "EQUALIZEMEDIANS") # median normalization
+input <- MSstatsPrepareForDataProcess(raw, 2, NULL)
+input <- MSstatsNormalize(input, "EQUALIZEMEDIANS") # median normalization
 head(input)
 
 }

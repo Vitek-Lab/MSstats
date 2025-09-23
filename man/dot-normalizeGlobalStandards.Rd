@@ -9,10 +9,10 @@
 \arguments{
 \item{input}{data.table in MSstats format}
 
-\item{peptides_dict}{`data.table` of names of peptides and their corresponding 
+\item{peptides_dict}{`data.table` of names of peptides and their corresponding
 features.}
 
-\item{standards}{character vector with names of standards, required if 
+\item{standards}{character vector with names of standards, required if
 "GLOBALSTANDARDS" method was selected.}
 }
 \description{

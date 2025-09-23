@@ -8,7 +8,7 @@ MSstatsContrastMatrix(contrasts, conditions, labels = NULL)
 }
 \arguments{
 \item{contrasts}{One of the following:
-i) list of lists. Each sub-list consists of two vectors that name 
+i) list of lists. Each sub-list consists of two vectors that name
 conditions that will be compared. See the details section for more information
 ii) matrix. In this case, it's correctness will be checked
 iii) "pairwise". In this case, pairwise comparison matrix will be generated

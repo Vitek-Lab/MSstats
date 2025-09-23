@@ -26,31 +26,31 @@
 
 \item{all_proteins}{character vector of protein names}
 
-\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and 
+\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and
 QC Plot, and "Condition" in Condition Plot. Default is 10.}
 
 \item{y.axis.size}{size of y-axis labels. Default is 10.}
 
-\item{text.size}{size of labels represented each condition at the top of 
+\item{text.size}{size of labels represented each condition at the top of
 graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
-of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
+of graph in Profile Plot and QC plot or x-axis labeling in Condition plot.
 Default is 0.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}
 }
 \description{
-To illustrate the quantitative data after data-preprocessing and 
-quality control of MS runs, dataProcessPlots takes the quantitative data from 
-function (\code{\link{dataProcess}}) as input and automatically generate 
-three types of figures in pdf files as output : 
-(1) profile plot (specify "ProfilePlot" in option type), 
-to identify the potential sources of variation for each protein; 
-(2) quality control plot (specify "QCPlot" in option type), 
-to evaluate the systematic bias between MS runs; 
-(3) mean plot for conditions (specify "ConditionPlot" in option type), 
+To illustrate the quantitative data after data-preprocessing and
+quality control of MS runs, dataProcessPlots takes the quantitative data from
+function (\code{\link{dataProcess}}) as input and automatically generate
+three types of figures in pdf files as output :
+(1) profile plot (specify "ProfilePlot" in option type),
+to identify the potential sources of variation for each protein;
+(2) quality control plot (specify "QCPlot" in option type),
+to evaluate the systematic bias between MS runs;
+(3) mean plot for conditions (specify "ConditionPlot" in option type),
 to illustrate mean and variability of each condition per protein.
 }
 \details{
@@ -62,21 +62,21 @@ to illustrate mean and variability of each condition per protein.
 The input of this function is the quantitative data from function \code{\link{dataProcess}}.
 }
 \examples{
-# Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, 
-# three biological replicates, and no technical replicates which is a time-course experiment. 
-# The goal is to provide pre-analysis visualization by automatically generate two types of figures 
-# in two separate pdf files. 
-# Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, 
+# Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests,
+# three biological replicates, and no technical replicates which is a time-course experiment.
+# The goal is to provide pre-analysis visualization by automatically generate two types of figures
+# in two separate pdf files.
+# Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7,
 # whereas, Protein PMG2 (gene name GPM2) is not.
 
-QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
 # Profile plot
-dataProcessPlots(data=QuantData,type="ProfilePlot")
-# Quality control plot 
-dataProcessPlots(data=QuantData,type="QCPlot")	
+dataProcessPlots(data = QuantData, type = "ProfilePlot")
+# Quality control plot
+dataProcessPlots(data = QuantData, type = "QCPlot")
 # Quantification plot for conditions
-dataProcessPlots(data=QuantData,type="ConditionPlot")
+dataProcessPlots(data = QuantData, type = "ConditionPlot")
 
 }
 \keyword{internal}

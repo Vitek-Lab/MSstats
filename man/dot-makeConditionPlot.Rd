@@ -22,23 +22,23 @@
 \arguments{
 \item{input}{data.table}
 
-\item{scale}{for "ConditionPlot" only, FALSE(default) means each conditional 
-level is not scaled at x-axis according to its actual value (equal space at 
+\item{scale}{for "ConditionPlot" only, FALSE(default) means each conditional
+level is not scaled at x-axis according to its actual value (equal space at
 x-axis). TRUE means each conditional level is scaled at x-axis according to
 its actual value (unequal space at x-axis).}
 
 \item{single_protein}{data.table}
 
-\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and 
+\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and
 QC Plot, and "Condition" in Condition Plot. Default is 10.}
 
 \item{y.axis.size}{size of y-axis labels. Default is 10.}
 
-\item{text.size}{size of labels represented each condition at the top of 
+\item{text.size}{size of labels represented each condition at the top of
 graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
-of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
+of graph in Profile Plot and QC plot or x-axis labeling in Condition plot.
 Default is 0.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)

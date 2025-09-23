@@ -35,13 +35,13 @@ to an existing log file.}
 \item{verbose}{logical. If TRUE, information about data processing wil be printed
 to the console.}
 
-\item{log_file_path}{character. Path to a file to which information about 
-data processing will be saved. 
+\item{log_file_path}{character. Path to a file to which information about
+data processing will be saved.
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
 
-\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
-a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+\item{numberOfCores}{Number of cores for parallel processing. When > 1,
+a logfile named `MSstats_groupComparison_log_progress.log` is created to
 track progress. Only works for Linux & Mac OS. Default is 1.}
 }
 \value{
@@ -96,23 +96,25 @@ The underlying model fitting functions are lm and lmer for the fixed effects mod
 The input of this function is the quantitative data from function (dataProcess).
 }
 \examples{
-# Consider quantitative data (i.e. QuantData) from yeast study with ten time points of interests, 
-# three biological replicates, and no technical replicates. 
+# Consider quantitative data (i.e. QuantData) from yeast study with ten time points of interests,
+# three biological replicates, and no technical replicates.
 # It is a time-course experiment and we attempt to compare differential abundance
-# between time 1 and 7 in a set of targeted proteins. 
-# In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of 
-# Biological replication.  
+# between time 1 and 7 in a set of targeted proteins.
+# In this label-based SRM experiment, MSstats uses the fitted model with expanded scope of
+# Biological replication.
 QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
 levels(QuantData$ProteinLevelData$GROUP)
-comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
+comparison <- matrix(c(-1, 0, 0, 0, 0, 0, 1, 0, 0, 0), nrow = 1)
 row.names(comparison) <- "T7-T1"
-groups = levels(QuantData$ProteinLevelData$GROUP)
+groups <- levels(QuantData$ProteinLevelData$GROUP)
 colnames(comparison) <- groups[order(as.numeric(groups))]
 # Tests for differentially abundant proteins with models:
 # label-based SRM experiment with expanded scope of biological replication.
-testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData,
-                                           use_log_file = FALSE)
+testResultOneComparison <- groupComparison(
+  contrast.matrix = comparison, data = QuantData,
+  use_log_file = FALSE
+)
 # table for result
 testResultOneComparison$ComparisonResult
 

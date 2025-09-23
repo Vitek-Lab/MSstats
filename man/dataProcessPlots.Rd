@@ -33,43 +33,43 @@ dataProcessPlots(
 \arguments{
 \item{data}{name of the (output of dataProcess function) data set.}
 
-\item{type}{choice of visualization. "ProfilePlot" represents profile plot of 
-log intensities across MS runs. "QCPlot" represents quality control plot of 
-log intensities across MS runs. "ConditionPlot" represents mean plot of log 
+\item{type}{choice of visualization. "ProfilePlot" represents profile plot of
+log intensities across MS runs. "QCPlot" represents quality control plot of
+log intensities across MS runs. "ConditionPlot" represents mean plot of log
 ratios (Light/Heavy) across conditions.}
 
-\item{featureName}{for "ProfilePlot" only, "Transition" (default) means 
-printing feature legend in transition-level; "Peptide" means printing feature 
+\item{featureName}{for "ProfilePlot" only, "Transition" (default) means
+printing feature legend in transition-level; "Peptide" means printing feature
 legend in peptide-level; "NA" means no feature legend printing.}
 
-\item{ylimUp}{upper limit for y-axis in the log scale. FALSE(Default) for 
-Profile Plot and QC Plot use the upper limit as rounded off maximum of 
+\item{ylimUp}{upper limit for y-axis in the log scale. FALSE(Default) for
+Profile Plot and QC Plot use the upper limit as rounded off maximum of
 log2(intensities) after normalization + 3. FALSE(Default) for Condition Plot
 is maximum of log ratio + SD or CI.}
 
-\item{ylimDown}{lower limit for y-axis in the log scale. FALSE(Default) for 
+\item{ylimDown}{lower limit for y-axis in the log scale. FALSE(Default) for
 Profile Plot and QC Plot is 0. FALSE(Default) for Condition Plot is minumum
 of log ratio - SD or CI.}
 
-\item{scale}{for "ConditionPlot" only, FALSE(default) means each conditional 
-level is not scaled at x-axis according to its actual value (equal space at 
+\item{scale}{for "ConditionPlot" only, FALSE(default) means each conditional
+level is not scaled at x-axis according to its actual value (equal space at
 x-axis). TRUE means each conditional level is scaled at x-axis according to
 its actual value (unequal space at x-axis).}
 
-\item{interval}{for "ConditionPlot" only, "CI"(default) uses confidence 
-interval with 0.95 significant level for the width of error bar. 
+\item{interval}{for "ConditionPlot" only, "CI"(default) uses confidence
+interval with 0.95 significant level for the width of error bar.
 "SD" uses standard deviation for the width of error bar.}
 
-\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and 
+\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and
 QC Plot, and "Condition" in Condition Plot. Default is 10.}
 
 \item{y.axis.size}{size of y-axis labels. Default is 10.}
 
-\item{text.size}{size of labels represented each condition at the top of 
+\item{text.size}{size of labels represented each condition at the top of
 graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
-of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
+of graph in Profile Plot and QC plot or x-axis labeling in Condition plot.
 Default is 0.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
@@ -85,47 +85,47 @@ above graph in Profile Plot. Default is 7.}
 
 \item{which.Protein}{Protein list to draw plots. List can be names of Proteins
 or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).
-Default is "all", which generates all plots for each protein. 
+Default is "all", which generates all plots for each protein.
 For QC plot, "allonly" will generate one QC plot with all proteins.}
 
 \item{originalPlot}{TRUE(default) draws original profile plots.}
 
-\item{summaryPlot}{TRUE(default) draws profile plots with 
+\item{summaryPlot}{TRUE(default) draws profile plots with
 summarization for run levels.}
 
-\item{save_condition_plot_result}{TRUE saves the table with values 
+\item{save_condition_plot_result}{TRUE saves the table with values
 using condition plots. Default is FALSE.}
 
-\item{remove_uninformative_feature_outlier}{It only works after users used 
+\item{remove_uninformative_feature_outlier}{It only works after users used
 featureSubset="highQuality" in dataProcess. TRUE allows to remove
-1) the features are flagged in the column, feature_quality="Uninformative" 
-which are features with bad quality, 
-2) outliers that are flagged in the column, is_outlier=TRUE in Profile plots. 
+1) the features are flagged in the column, feature_quality="Uninformative"
+which are features with bad quality,
+2) outliers that are flagged in the column, is_outlier=TRUE in Profile plots.
 FALSE (default) shows all features and intensities in profile plots.}
 
 \item{address}{prefix for the filename that will store the results.}
 
-\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats
 will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
 as PDF files
-Default folder is the current working directory. 
+Default folder is the current working directory.
 The other assigned folder has to be existed under the current working directory.
- An output pdf file is automatically created with the default name of 
- "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv". 
- The command address can help to specify where to store the file as well as 
- how to modify the beginning of the file name. 
+ An output pdf file is automatically created with the default name of
+ "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv".
+ The command address can help to specify where to store the file as well as
+ how to modify the beginning of the file name.
  If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 \description{
-To illustrate the quantitative data after data-preprocessing and 
-quality control of MS runs, dataProcessPlots takes the quantitative data from 
-function (\code{\link{dataProcess}}) as input and automatically generate 
-three types of figures in pdf files as output : 
-(1) profile plot (specify "ProfilePlot" in option type), 
-to identify the potential sources of variation for each protein; 
-(2) quality control plot (specify "QCPlot" in option type), 
-to evaluate the systematic bias between MS runs; 
-(3) mean plot for conditions (specify "ConditionPlot" in option type), 
+To illustrate the quantitative data after data-preprocessing and
+quality control of MS runs, dataProcessPlots takes the quantitative data from
+function (\code{\link{dataProcess}}) as input and automatically generate
+three types of figures in pdf files as output :
+(1) profile plot (specify "ProfilePlot" in option type),
+to identify the potential sources of variation for each protein;
+(2) quality control plot (specify "QCPlot" in option type),
+to evaluate the systematic bias between MS runs;
+(3) mean plot for conditions (specify "ConditionPlot" in option type),
 to illustrate mean and variability of each condition per protein.
 }
 \details{
@@ -137,20 +137,20 @@ to illustrate mean and variability of each condition per protein.
 The input of this function is the quantitative data from function \code{\link{dataProcess}}.
 }
 \examples{
-# Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests, 
-# three biological replicates, and no technical replicates which is a time-course experiment. 
-# The goal is to provide pre-analysis visualization by automatically generate two types of figures 
-# in two separate pdf files. 
-# Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7, 
+# Consider quantitative data (i.e. QuantData) from a yeast study with ten time points of interests,
+# three biological replicates, and no technical replicates which is a time-course experiment.
+# The goal is to provide pre-analysis visualization by automatically generate two types of figures
+# in two separate pdf files.
+# Protein IDHC (gene name IDP2) is differentially expressed in time point 1 and time point 7,
 # whereas, Protein PMG2 (gene name GPM2) is not.
 
-QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
 # Profile plot
-dataProcessPlots(data=QuantData,type="ProfilePlot")
-# Quality control plot 
-dataProcessPlots(data=QuantData,type="QCPlot")	
+dataProcessPlots(data = QuantData, type = "ProfilePlot")
+# Quality control plot
+dataProcessPlots(data = QuantData, type = "QCPlot")
 # Quantification plot for conditions
-dataProcessPlots(data=QuantData,type="ConditionPlot")
+dataProcessPlots(data = QuantData, type = "ConditionPlot")
 
 }
