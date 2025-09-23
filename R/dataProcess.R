@@ -66,6 +66,7 @@
 #'   \item{FeatureLevelData}{A data frame with feature-level information after processing. Columns include:
 #'     \describe{
 #'       \item{PROTEIN}{Identifier for the protein associated with the feature.}
+#'       \item{PROTEIN}{Identifier for the protein associated with the feature.}
 #'       \item{PEPTIDE}{Identifier for the peptide sequence.}
 #'       \item{TRANSITION}{Identifier for the transition, typically representing a specific ion pair.}
 #'       \item{FEATURE}{Unique identifier for the feature, which could be a combination of peptide and transition.}
@@ -126,49 +127,49 @@ dataProcess = function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     numberOfCores = 1
 ) {
-    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
-                                        log_file_path,
-                                        base = "MSstats_dataProcess_log_")
-    getOption("MSstatsLog")("INFO", "MSstats - dataProcess function")
-    .checkDataProcessParams(
-        logTrans, normalization, nameStandards,
-        list(method = featureSubset, n_top = n_top_feature,
-             remove_uninformative = remove_uninformative_feature_outlier),
-        list(method = summaryMethod, equal_var = equalFeatureVar),
-        list(symbol = censoredInt, MB = MBimpute))
-    
-    peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
-    input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
-    input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
-    input = MSstatsMergeFractions(input)
-    input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
-                                 censoredInt, maxQuantileforCensored)
-    input = MSstatsSelectFeatures(input, featureSubset, n_top_feature,
-                                  min_feature_count)
-    .logDatasetInformation(input)
-    getOption("MSstatsLog")("INFO",
-                            "== Start the summarization per subplot...")
-    getOption("MSstatsMsg")("INFO",
-                            " == Start the summarization per subplot...")
-    
-    processed = getProcessed(input)
-    input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
-                                           remove_uninformative_feature_outlier)
-    summarized = tryCatch(MSstatsSummarizeWithMultipleCores(input, summaryMethod,
-                                           MBimpute, censoredInt, 
-                                           remove50missing, equalFeatureVar, 
-                                           numberOfCores),
-                          error = function(e) {
-                              print(e)
-                              NULL
-                          })
-    getOption("MSstatsLog")("INFO",
-                            "== Summarization is done.")
-    getOption("MSstatsMsg")("INFO",
-                            " == Summarization is done.")
-    output = MSstatsSummarizationOutput(input, summarized, processed,
-                                        summaryMethod, MBimpute, censoredInt)
-    output
+  MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
+                                      log_file_path,
+                                      base = "MSstats_dataProcess_log_")
+  getOption("MSstatsLog")("INFO", "MSstats - dataProcess function")
+  .checkDataProcessParams(
+    logTrans, normalization, nameStandards,
+    list(method = featureSubset, n_top = n_top_feature,
+         remove_uninformative = remove_uninformative_feature_outlier),
+    list(method = summaryMethod, equal_var = equalFeatureVar),
+    list(symbol = censoredInt, MB = MBimpute))
+  
+  peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
+  input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
+  input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
+  input = MSstatsMergeFractions(input)
+  input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
+                               censoredInt, maxQuantileforCensored)
+  input = MSstatsSelectFeatures(input, featureSubset, n_top_feature,
+                                min_feature_count)
+  .logDatasetInformation(input)
+  getOption("MSstatsLog")("INFO",
+                          "== Start the summarization per subplot...")
+  getOption("MSstatsMsg")("INFO",
+                          " == Start the summarization per subplot...")
+  
+  processed = getProcessed(input)
+  input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
+                                         remove_uninformative_feature_outlier)
+  summarized = tryCatch(MSstatsSummarizeWithMultipleCores(input, summaryMethod,
+                                                           MBimpute, censoredInt, 
+                                                           remove50missing, equalFeatureVar, 
+                                                           numberOfCores),
+                        error = function(e) {
+                          print(e)
+                          NULL
+                        })
+  getOption("MSstatsLog")("INFO",
+                          "== Summarization is done.")
+  getOption("MSstatsMsg")("INFO",
+                          " == Summarization is done.")
+  output = MSstatsSummarizationOutput(input, summarized, processed,
+                                      summaryMethod, MBimpute, censoredInt)
+  output
 }
 
 #' Feature-level data summarization with multiple cores
@@ -199,51 +200,80 @@ dataProcess = function(
 #' @importFrom parallel makeCluster parLapply stopCluster clusterExport  
 #' 
 #' @return list of length one with run-level data.
-#' 
-MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
-                              remove50missing, equal_variance, numberOfCores = 1) {
-    if (numberOfCores > 1) {
-        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
-        num_proteins = length(protein_indices)
-        function_environment = environment()
-        cl = parallel::makeCluster(numberOfCores)
-        getOption("MSstatsLog")("INFO",
-                                "Starting the cluster setup for summarization")
-        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
-                                      "MSstatsSummarizeSingleLinear",
-                                      "input", "impute", "censored_symbol",
-                                      "remove50missing", "protein_indices", 
-                                      "equal_variance"), 
-                                envir = function_environment)
-        cat(paste0("Number of proteins to process: ", num_proteins), 
-            sep = "\n", file = "MSstats_dataProcess_log_progress.log")
-        if (method == "TMP") {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
-                MSstatsSummarizeSingleTMP(
-                    single_protein, impute, censored_symbol, remove50missing)
-            })
-        } else {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
-                MSstatsSummarizeSingleLinear(single_protein, equal_variance)
-            })
-        }
-        parallel::stopCluster(cl)
-        return(summarized_results)
-    } else {
-        return(MSstatsSummarizeWithSingleCore(input, method, impute, censored_symbol, 
-                                remove50missing, equal_variance))
+#'
+MSstatsSummarizeWithMultipleCores <- function(input, method, impute, censored_symbol, remove50missing, equal_variance, numberOfCores = 1) {
+  if (numberOfCores <= 1) {
+    ret <- MSstatsSummarizeWithSingleCore(
+      input, method, impute, censored_symbol, remove50missing, equal_variance)
+    return(ret)
+  }
+  library(foreach)
+  library(doParallel)
+  # ---- group rows by PROTEIN (no list() wrapper needed) ----
+  f <- as.factor(input$PROTEIN)
+  protein_indices <- split(seq_len(nrow(input)), f, drop = TRUE)
+  num_proteins <- length(protein_indices)
+  
+  # cap cores to number of groups
+  ncores <- max(1L, min(numberOfCores, num_proteins))
+  
+  getOption("MSstatsLog")("INFO", "Starting the cluster setup for summarization")
+  cat(paste0("Number of proteins to process: ", num_proteins),
+      sep = "\n", file = "MSstats_dataProcess_log_progress.log")
+  
+  # ---- choose summarizer once, bind as a variable to export ----
+  summarizer_fun <- switch(
+    method,
+    "TMP"  = MSstatsSummarizeSingleTMP,
+    MSstatsSummarizeSingleLinear
+  )
+  
+  # ---- CHUNK the work: split protein groups into ~ncores chunks ----
+  # indices of groups: 1..num_proteins -> cut into ncores bins
+  group_ids <- seq_len(num_proteins)
+  bins <- cut(group_ids, breaks = ncores, labels = FALSE)
+  group_chunks <- split(group_ids, bins)
+  
+  # For each chunk, build the *actual data frames* to send to that worker.
+  # This avoids exporting the whole `input` to all workers; each worker
+  # receives only its own subset frames.
+  task_payloads <- lapply(group_chunks, function(gidx) {
+    lapply(gidx, function(k) input[protein_indices[[k]], , drop = FALSE])
+  })
+  
+  # ---- spin up the cluster ----
+  cl <- makeCluster(ncores)
+  doParallel::registerDoParallel(cl)
+  on.exit(parallel::stopCluster(cl), add = TRUE)
+  
+  # ---- process: one task per worker, each looping its own chunk ----
+  print(paste0("Starting parallel processing with ", length(task_payloads), "...")) 
+  summarized_results <- foreach::foreach(
+    payload = task_payloads,
+    .combine = "c",
+    .packages = NULL ,
+    .export = c("summarizer_fun", "impute", "censored_symbol", "remove50missing")
+  ) %dopar% {
+    out <- vector("list", length(payload))
+    for (i in seq_along(payload)) {
+      if (i %% 100 == 0) {
+        cat("Finished processing an additional 100 proteins",
+            sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
+      }
+      out[[i]] <- summarizer_fun(
+        payload[[i]],
+        impute, censored_symbol, remove50missing
+      )
     }
+    return(out)
+  }
+  
+  # flatten back to a simple list of per-protein results (original order across chunks preserved)
+  # summarized_results <- do.call(c, summarized_chunks)
+  
+  return(summarized_results)
 }
+
 
 #' Feature-level data summarization with 1 core
 #' 
@@ -274,33 +304,33 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' head(summarized[[1]][[1]]) # run-level summary
 #' 
 MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
-                            remove50missing, equal_variance) {
-    
-            
-    protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
-    num_proteins = length(protein_indices)
-    summarized_results = vector("list", num_proteins)
-    if (method == "TMP") {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in seq_len(num_proteins)) {
-            single_protein = input[protein_indices[[protein_id]],]
-            summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
-                single_protein, impute, censored_symbol, remove50missing)
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
-    } else {
-        pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
-        for (protein_id in seq_len(num_proteins)) {
-            single_protein = input[protein_indices[[protein_id]],]
-            summarized_result = MSstatsSummarizeSingleLinear(single_protein,
-                                                             equal_variance)
-            summarized_results[[protein_id]] = summarized_result
-            setTxtProgressBar(pb, protein_id)
-        }
-        close(pb)
+                                          remove50missing, equal_variance) {
+  
+  
+  protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+  num_proteins = length(protein_indices)
+  summarized_results = vector("list", num_proteins)
+  if (method == "TMP") {
+    pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+    for (protein_id in seq_len(num_proteins)) {
+      single_protein = input[protein_indices[[protein_id]],]
+      summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
+        single_protein, impute, censored_symbol, remove50missing)
+      setTxtProgressBar(pb, protein_id)
     }
-    summarized_results
+    close(pb)
+  } else {
+    pb = utils::txtProgressBar(min = 0, max = num_proteins, style = 3)
+    for (protein_id in seq_len(num_proteins)) {
+      single_protein = input[protein_indices[[protein_id]],]
+      summarized_result = MSstatsSummarizeSingleLinear(single_protein,
+                                                       equal_variance)
+      summarized_results[[protein_id]] = summarized_result
+      setTxtProgressBar(pb, protein_id)
+    }
+    close(pb)
+  }
+  summarized_results
 }
 
 #' Linear model-based summarization for a single protein
@@ -332,34 +362,34 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) {
-    ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
-    
-    label = data.table::uniqueN(single_protein$LABEL) > 1
-    single_protein = single_protein[!is.na(ABUNDANCE)]
-    single_protein[, RUN := factor(RUN)]
-    single_protein[, FEATURE := factor(FEATURE)]
-    
-    counts = xtabs(~ RUN + FEATURE, 
-                   data = unique(single_protein[, list(FEATURE, RUN)]))
-    counts = as.matrix(counts)
-    is_single_feature = .checkSingleFeature(single_protein)
-    
-    fit = try(.fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
-                              equal_variances), silent = TRUE)
-    
-    if (inherits(fit, "try-error")) {
-        msg = paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))
-        getOption("MSstatsLog")("WARN", msg)
-        getOption("MSstatsMsg")("WARN", msg)
-        result = NULL
-    } else {
-        cf = summary(fit)$coefficients[, 1]
-        result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
-        log_intensities = get_linear_summary(single_protein, cf,
-                                             counts, label)
-        result[, LogIntensities := log_intensities]
-    }
-    list(result)
+  ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
+  
+  label = data.table::uniqueN(single_protein$LABEL) > 1
+  single_protein = single_protein[!is.na(ABUNDANCE)]
+  single_protein[, RUN := factor(RUN)]
+  single_protein[, FEATURE := factor(FEATURE)]
+  
+  counts = xtabs(~ RUN + FEATURE, 
+                 data = unique(single_protein[, list(FEATURE, RUN)]))
+  counts = as.matrix(counts)
+  is_single_feature = .checkSingleFeature(single_protein)
+  
+  fit = try(.fitLinearModel(single_protein, is_single_feature, is_labeled = label, 
+                            equal_variances), silent = TRUE)
+  
+  if (inherits(fit, "try-error")) {
+    msg = paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))
+    getOption("MSstatsLog")("WARN", msg)
+    getOption("MSstatsMsg")("WARN", msg)
+    result = NULL
+  } else {
+    cf = summary(fit)$coefficients[, 1]
+    result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
+    log_intensities = get_linear_summary(single_protein, cf,
+                                         counts, label)
+    result[, LogIntensities := log_intensities]
+  }
+  list(result)
 }
 
 
@@ -395,39 +425,39 @@ MSstatsSummarizeSingleLinear = function(single_protein, equal_variances = TRUE) 
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
                                      remove50missing) {
-    newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
-    predicted = censored = NULL
-    cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
-                                                 "FEATURE", "ref"))
-    single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
-                                        (n_obs_run > 0 & !is.na(n_obs_run))]
-    if (nrow(single_protein) == 0) {
-        return(list(NULL, NULL))
-    }
-    single_protein[, RUN := factor(RUN)]
-    single_protein[, FEATURE := factor(FEATURE)]
-    if (impute & any(single_protein[["censored"]])) {
-        survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
-                                                   with = FALSE])
-        single_protein[, predicted := predict(survival_fit,
-                                              newdata = .SD)]
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                                predicted, newABUNDANCE)]
-        survival = single_protein[, c(cols, "predicted"), with = FALSE]
-    } else {
-        survival = single_protein[, cols, with = FALSE]
-        survival[, predicted := NA]
-    }
-    
-    single_protein = .isSummarizable(single_protein, remove50missing)
-    if (is.null(single_protein)) {
-        return(list(NULL, NULL))
-    } else {
-        single_protein = single_protein[!is.na(newABUNDANCE), ]
-        is_labeled = nlevels(single_protein$LABEL) > 1
-        result = .runTukey(single_protein, is_labeled, censored_symbol, 
-                           remove50missing)
-    }
-    list(result, survival)
+  newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
+  predicted = censored = NULL
+  cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
+                                               "FEATURE", "ref"))
+  single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
+                                    (n_obs_run > 0 & !is.na(n_obs_run))]
+  if (nrow(single_protein) == 0) {
+    return(list(NULL, NULL))
+  }
+  single_protein[, RUN := factor(RUN)]
+  single_protein[, FEATURE := factor(FEATURE)]
+  if (impute & any(single_protein[["censored"]])) {
+    survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
+                                               with = FALSE])
+    single_protein[, predicted := predict(survival_fit,
+                                          newdata = .SD)]
+    single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
+    single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
+                                            predicted, newABUNDANCE)]
+    survival = single_protein[, c(cols, "predicted"), with = FALSE]
+  } else {
+    survival = single_protein[, cols, with = FALSE]
+    survival[, predicted := NA]
+  }
+  
+  single_protein = .isSummarizable(single_protein, remove50missing)
+  if (is.null(single_protein)) {
+    return(list(NULL, NULL))
+  } else {
+    single_protein = single_protein[!is.na(newABUNDANCE), ]
+    is_labeled = nlevels(single_protein$LABEL) > 1
+    result = .runTukey(single_protein, is_labeled, censored_symbol, 
+                       remove50missing)
+  }
+  list(result, survival)
 }
