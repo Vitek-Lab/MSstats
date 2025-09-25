@@ -23,12 +23,12 @@ data.table
 Prepare data for processing by `dataProcess` function
 }
 \examples{
-raw = DDARawData 
-method = "TMP"
-cens = "NA"
-impute = TRUE
+raw <- DDARawData
+method <- "TMP"
+cens <- "NA"
+impute <- TRUE
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input <- MSstatsPrepareForDataProcess(raw, 2, NULL)
 head(input)
 
 }

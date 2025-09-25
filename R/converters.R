@@ -1,4 +1,4 @@
-# For backwards compatibility, MSstats will export some converters in the 
+# For backwards compatibility, MSstats will export some converters in the
 # MSstats namespace
 
 #' @export

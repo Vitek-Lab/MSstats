@@ -38,8 +38,8 @@ to an existing log file.}
 \item{verbose}{logical. If TRUE, information about data processing wil be printed
 to the console.}
 
-\item{log_file_path}{character. Path to a file to which information about 
-data processing will be saved. 
+\item{log_file_path}{character. Path to a file to which information about
+data processing will be saved.
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
 }
@@ -68,13 +68,13 @@ results (data.frame) in a long or matrix format.
 # Sample quantification shows model-based estimation of protein abundance in each biological
 # replicate within each time point.
 # Group quantification shows model-based estimation of protein abundance in each time point.
-QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 head(QuantData$FeatureLevelData)
 # Sample quantification
-sampleQuant<-quantification(QuantData, use_log_file = FALSE)
+sampleQuant <- quantification(QuantData, use_log_file = FALSE)
 head(sampleQuant)
 # Group quantification
-groupQuant<-quantification(QuantData, type="Group", use_log_file = FALSE)
+groupQuant <- quantification(QuantData, type = "Group", use_log_file = FALSE)
 head(groupQuant)
 
 }

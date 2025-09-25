@@ -4,8 +4,8 @@ BiocStyle::markdown()
 ```
 
 ```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=10, fig.height=7, warning=FALSE, message=FALSE)
-options(width=110)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 7, warning = FALSE, message = FALSE)
+options(width = 110)
 ```
 
 <!--
@@ -42,7 +42,7 @@ Preprocess MSstats input report from Skyline and convert into the required input
 ### Example
 ```{r, eval=FALSE}
 # 'MSstatsInput.csv' is the MSstats report from Skyline.
-input <- read.csv(file="MSstatsInput.csv")
+input <- read.csv(file = "MSstatsInput.csv")
 
 raw <- SkylinetoMSstatsFormat(input)
 ```
@@ -66,17 +66,19 @@ Convert MaxQuant output into the required input format for MSstats.
 ### Example
 ```{r, eval=FALSE}
 # Read in MaxQuant files
-proteinGroups <- read.table("proteinGroups.txt", sep="\t", header=TRUE)
+proteinGroups <- read.table("proteinGroups.txt", sep = "\t", header = TRUE)
 
-infile <- read.table("evidence.txt", sep="\t", header=TRUE)
+infile <- read.table("evidence.txt", sep = "\t", header = TRUE)
 
 # Read in annotation including condition and biological replicates per run.
 # Users should make this annotation file. It is not the output from MaxQuant.
-annot <- read.csv("annotation.csv", header=TRUE)
+annot <- read.csv("annotation.csv", header = TRUE)
 
-raw <- MaxQtoMSstatsFormat(evidence=infile, 
-                           annotation=annot, 
-                           proteinGroups=proteinGroups)
+raw <- MaxQtoMSstatsFormat(
+  evidence = infile,
+  annotation = annot,
+  proteinGroups = proteinGroups
+)
 ```
 
 ## ProgenesistoMSstatsFormat
@@ -94,13 +96,13 @@ Convert Progenesis output into the required input format for MSstats.
 
 ### Example
 ```{r, eval=FALSE}
-input <- read.csv("output_progenesis.csv", stringsAsFactors=FALSE) 
+input <- read.csv("output_progenesis.csv", stringsAsFactors = FALSE)
 
 # Read in annotation including condition and biological replicates per run.
 # Users should make this annotation file. It is not the output from Progenesis.
-annot <- read.csv('annotation.csv')
+annot <- read.csv("annotation.csv")
 
-raw <- ProgenesistoMSstatsFormat(input, annotation=annot)
+raw <- ProgenesistoMSstatsFormat(input, annotation = annot)
 ```
 
 ## SpectronauttoMSstatsFormat
@@ -114,7 +116,7 @@ Convert Spectronaut output into the required input format for MSstats.
 
 ### Example
 ```{r, eval=FALSE}
-input <- read.csv("output_spectronaut.csv", stringsAsFactors=FALSE) 
+input <- read.csv("output_spectronaut.csv", stringsAsFactors = FALSE)
 
 quant <- SpectronauttoMSstatsFormat(input)
 ```
@@ -204,13 +206,13 @@ Visualization for explanatory data analysis. To illustrate the quantitative data
 ### Example
 ```{r, eval=FALSE}
 # QuantData <- dataProcess(SRMRawData)
-# 
+#
 # # Profile plot
 # dataProcessPlots(data=QuantData, type="ProfilePlot")
-# 
-# # Quality control plot 
-# dataProcessPlots(data=QuantData, type="QCPlot")	
-# 
+#
+# # Quality control plot
+# dataProcessPlots(data=QuantData, type="QCPlot")
+#
 # # Quantification plot for conditions
 # dataProcessPlots(data=QuantData, type="ConditionPlot")
 ```
@@ -229,11 +231,11 @@ Tests for significant changes in protein abundance across conditions based on a 
 ### Example
 ```{r, eval=FALSE}
 # QuantData <- dataProcess(SRMRawData)
-# 
+#
 # levels(QuantData$ProcessedData$GROUP_ORIGINAL)
 # comparison <- matrix(c(-1,0,0,0,0,0,1,0,0,0), nrow=1)
 # row.names(comparison) <- "T7-T1"
-# 
+#
 # # Tests for differentially abundant proteins with models:
 # testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
 ```
@@ -274,22 +276,22 @@ Visualization for model-based analysis and summarizing differentially abundant p
 ### Example
 ```{r, eval=FALSE}
 # QuantData <- dataProcess(SRMRawData)
-# 
+#
 # # based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
 # comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
 # comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
 # comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
 # comparison<-rbind(comparison1,comparison2, comparison3)
 # row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
-# 
+#
 # testResultMultiComparisons <- groupComparison(contrast.matrix=comparison, data=QuantData)
-# 
-# # Volcano plot 
+#
+# # Volcano plot
 # groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="VolcanoPlot")
-# 
-# # Heatmap 
+#
+# # Heatmap
 # groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="Heatmap")
-# 
+#
 # # Comparison Plot
 # groupComparisonPlots(data=testResultMultiComparisons$ComparisonResult, type="ComparisonPlot")
 ```
@@ -320,10 +322,10 @@ To check the assumption of linear model for whole plot inference, `modelBasedQCP
 ### Example
 ```{r, eval=FALSE}
 # testResultOneComparison <- groupComparison(contrast.matrix=comparison, data=QuantData)
-# 
+#
 # # normal quantile-quantile plots
 # modelBasedQCPlots(data=testResultOneComparison, type="QQPlots")
-# 
+#
 # # residual plots
 # modelBasedQCPlots(data=testResultOneComparison, type="ResidualPlots")
 ```
@@ -350,20 +352,20 @@ Calculate sample size for future experiments of a Selected Reaction Monitoring (
 ```{r, eval=FALSE}
 # QuantData <- dataProcess(SRMRawData)
 # head(QuantData$ProcessedData)
-# 
+#
 # ## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
 # comparison1 <- matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
 # comparison2 <- matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
 # comparison3 <- matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
 # comparison <- rbind(comparison1,comparison2, comparison3)
 # row.names(comparison) <- c("T3-T1","T7-T1","T9-T1")
-# 
+#
 # testResultMultiComparisons <- groupComparison(contrast.matrix=comparison,data=QuantData)
-# 
+#
 # #(1) Minimal number of biological replicates per condition
 # designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
 #   desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
-# 
+#
 # #(2) Power calculation
 # designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
 #   desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
@@ -388,7 +390,7 @@ The input is the result from function `designSampleSize`.
 # result.sample <- designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=TRUE,
 #                                 desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
 # designSampleSizePlots(data=result.sample)
-# 
+#
 # # (2) Power
 # result.power <- designSampleSize(data=testResultMultiComparisons$fittedmodel, numSample=2,
 #                                desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
@@ -413,10 +415,10 @@ Model-based quantification for each condition or for each biological samples per
 ### Example
 ```{r, eval=FALSE}
 # QuantData <- dataProcess(SRMRawData)
-# 
+#
 # # Sample quantification
 # sampleQuant <- quantification(QuantData)
-# 
+#
 # # Group quantification
 # groupQuant <- quantification(QuantData, type="Group")
 ```

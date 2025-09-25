@@ -16,14 +16,14 @@ data.table
 Re-format the data before feature selection
 }
 \examples{
-raw = DDARawData 
-method = "TMP"
-cens = "NA"
-impute = TRUE
+raw <- DDARawData
+method <- "TMP"
+cens <- "NA"
+impute <- TRUE
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-input = MSstatsPrepareForDataProcess(raw, 2, NULL)
-input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
-input = MSstatsMergeFractions(input)
+input <- MSstatsPrepareForDataProcess(raw, 2, NULL)
+input <- MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input <- MSstatsMergeFractions(input)
 head(input)
 
 }

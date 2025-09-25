@@ -1,15 +1,15 @@
 # Test .setCensoredByThreshold
 dt_na <- data.table::data.table(
-    PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
-    FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", "F3", "F3", "F4", "F4", "F3", "F4", "F3", "F3", "F4", "F4", "F3", "F4"),
-    LABEL = c("L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H"),
-    RUN = c("R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4", "R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4"),
-    newABUNDANCE = c(1.5, NA, 2, 2.2, 1.4, 1.6, 1.5, 1.9, 2, 2.2, 1.4, 1.6, 0, 4, 2.5, NA, 3, 3.2, NA, 4, NA, NA, 3, 3.2),
-    censored = c(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE),
-    nonmissing = c(TRUE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE),
-    n_obs = c(3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 3, 4, 3, 3, 1, 1, 3, 1, 3, 3, 1, 1, 3, 1),
-    n_obs_run = c(2, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1),
-    total_features = c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
+  PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
+  FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", "F3", "F3", "F4", "F4", "F3", "F4", "F3", "F3", "F4", "F4", "F3", "F4"),
+  LABEL = c("L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H"),
+  RUN = c("R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4", "R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4"),
+  newABUNDANCE = c(1.5, NA, 2, 2.2, 1.4, 1.6, 1.5, 1.9, 2, 2.2, 1.4, 1.6, 0, 4, 2.5, NA, 3, 3.2, NA, 4, NA, NA, 3, 3.2),
+  censored = c(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE),
+  nonmissing = c(TRUE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE),
+  n_obs = c(3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 3, 4, 3, 3, 1, 1, 3, 1, 3, 3, 1, 1, 3, 1),
+  n_obs_run = c(2, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1),
+  total_features = c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
 )
 
 # === Run NA-based test ===
@@ -23,37 +23,57 @@ imputed_val_p1 <- dt_na[
 ]
 expect_equal(imputed_val_p1, expected_val_p1)
 non_imputed_val_p2 <- dt_na[
-    PROTEIN == "P2" & FEATURE == "F3" & LABEL == "L" & RUN == "R3",
-    newABUNDANCE
+  PROTEIN == "P2" & FEATURE == "F3" & LABEL == "L" & RUN == "R3",
+  newABUNDANCE
 ]
 expect_true(is.na(non_imputed_val_p2))
 non_imputed_val_p2_f4 <- dt_na[
-    PROTEIN == "P2" & FEATURE == "F4" & LABEL == "L" & RUN == "R2",
-    newABUNDANCE
+  PROTEIN == "P2" & FEATURE == "F4" & LABEL == "L" & RUN == "R2",
+  newABUNDANCE
 ]
 expect_true(is.na(non_imputed_val_p2_f4))
 
 dt_zero <- data.table::data.table(
-  PROTEIN = c("P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", 
-              "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"),
-  FEATURE = c("F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2", 
-              "F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2"),
-  LABEL = c("L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H", 
-            "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H"),
-  RUN = c("R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4", 
-          "R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4"),
-  newABUNDANCE = c(1.5, NA, 2.0, 2.2, 1.4, 1.6, 1.5, 1.9, 2.0, 2.2, 1.4, 1.6, 
-                   0.0, 4.0, 2.5, 2.7, 3.0, 3.2, 1.7, 4.0, 2.5, 2.7, 3.0, 3.2),
-  censored = c(FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 
-               TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE),
-  nonmissing = c(TRUE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, 
-                 FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE),
-  n_obs = c(3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 3, 4, 
-            3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 3, 4),
-  n_obs_run = c(2, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 
-                1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2),
-  total_features = c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-                     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
+  PROTEIN = c(
+    "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1", "P1",
+    "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2", "P2"
+  ),
+  FEATURE = c(
+    "F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2",
+    "F1", "F1", "F2", "F2", "F1", "F2", "F1", "F1", "F2", "F2", "F1", "F2"
+  ),
+  LABEL = c(
+    "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H",
+    "L", "L", "L", "L", "H", "H", "L", "L", "L", "L", "H", "H"
+  ),
+  RUN = c(
+    "R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4",
+    "R1", "R2", "R1", "R2", "R1", "R2", "R3", "R4", "R3", "R4", "R3", "R4"
+  ),
+  newABUNDANCE = c(
+    1.5, NA, 2.0, 2.2, 1.4, 1.6, 1.5, 1.9, 2.0, 2.2, 1.4, 1.6,
+    0.0, 4.0, 2.5, 2.7, 3.0, 3.2, 1.7, 4.0, 2.5, 2.7, 3.0, 3.2
+  ),
+  censored = c(
+    FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+    TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE
+  ),
+  nonmissing = c(
+    TRUE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
+    FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE
+  ),
+  n_obs = c(
+    3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 3, 4,
+    3, 3, 4, 4, 3, 4, 3, 3, 4, 4, 3, 4
+  ),
+  n_obs_run = c(
+    2, 1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2,
+    1, 2, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2
+  ),
+  total_features = c(
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
+  )
 )
 MSstats:::.setCensoredByThreshold(dt_zero, censored_symbol = "0", remove50missing = FALSE)
 
@@ -64,4 +84,3 @@ imputed_val_p2 <- dt_zero[
   newABUNDANCE
 ]
 expect_equal(imputed_val_p2, expected_val_p2)
-

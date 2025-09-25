@@ -14,11 +14,11 @@
 )
 }
 \arguments{
-\item{desiredFC}{the range of a desired fold change which includes the lower 
+\item{desiredFC}{the range of a desired fold change which includes the lower
 and upper values of the desired fold change.}
 
-\item{power}{a pre-specified statistical power which defined as the probability 
-of detecting a true fold change. TRUE represent you require to calculate the power 
+\item{power}{a pre-specified statistical power which defined as the probability
+of detecting a true fold change. TRUE represent you require to calculate the power
 for this category, else you should input the average of power you expect. Default is 0.9}
 
 \item{alpha}{significance level}

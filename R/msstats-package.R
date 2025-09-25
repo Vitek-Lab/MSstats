@@ -10,6 +10,6 @@ NULL
 #' @param ... ignored
 #' @return none, sets options called MSstatsLog and MSstatsMsg
 #' @keywords internal
-.onLoad = function(...) {
-    MSstatsConvert::MSstatsLogsSettings()
+.onLoad <- function(...) {
+  MSstatsConvert::MSstatsLogsSettings()
 }

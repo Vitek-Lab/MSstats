@@ -9,7 +9,7 @@ designSampleSizePlots(data, isPlotly = FALSE)
 \arguments{
 \item{data}{output from function designSampleSize.}
 
-\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats
 will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
 as PDF files}
 }
@@ -17,10 +17,10 @@ as PDF files}
 Plot for estimated sample size with assigned variable.
 }
 \description{
-To illustrate the relationship of desired fold change and the calculated 
-minimal number sample size which are (1) number of biological replicates per condition, 
-(2) number of peptides per protein, 
-(3) number of transitions per peptide, and 
+To illustrate the relationship of desired fold change and the calculated
+minimal number sample size which are (1) number of biological replicates per condition,
+(2) number of peptides per protein,
+(3) number of transitions per peptide, and
 (4) power. The input is the result from function (\code{\link{designSampleSize}}.
 }
 \details{
@@ -28,29 +28,33 @@ Data in the example is based on the results of sample size calculation from func
 }
 \examples{
 # Based on the results of sample size calculation from function designSampleSize,
-# we generate a series of sample size plots for number of biological replicates, or peptides, 
+# we generate a series of sample size plots for number of biological replicates, or peptides,
 # or transitions or power plot.
-QuantData<-dataProcess(SRMRawData)
+QuantData <- dataProcess(SRMRawData)
 head(QuantData$ProcessedData)
 ## based on multiple comparisons  (T1 vs T3; T1 vs T7; T1 vs T9)
-comparison1<-matrix(c(-1,0,1,0,0,0,0,0,0,0),nrow=1)
-comparison2<-matrix(c(-1,0,0,0,0,0,1,0,0,0),nrow=1)
-comparison3<-matrix(c(-1,0,0,0,0,0,0,0,1,0),nrow=1)
-comparison<-rbind(comparison1,comparison2, comparison3)
-row.names(comparison)<-c("T3-T1","T7-T1","T9-T1")
-colnames(comparison)<-unique(QuantData$ProteinLevelData$GROUP)
+comparison1 <- matrix(c(-1, 0, 1, 0, 0, 0, 0, 0, 0, 0), nrow = 1)
+comparison2 <- matrix(c(-1, 0, 0, 0, 0, 0, 1, 0, 0, 0), nrow = 1)
+comparison3 <- matrix(c(-1, 0, 0, 0, 0, 0, 0, 0, 1, 0), nrow = 1)
+comparison <- rbind(comparison1, comparison2, comparison3)
+row.names(comparison) <- c("T3-T1", "T7-T1", "T9-T1")
+colnames(comparison) <- unique(QuantData$ProteinLevelData$GROUP)
 
-testResultMultiComparisons<-groupComparison(contrast.matrix=comparison, data=QuantData)
+testResultMultiComparisons <- groupComparison(contrast.matrix = comparison, data = QuantData)
 
 # plot the calculated sample sizes for future experiments:
 # (1) Minimal number of biological replicates per condition
-result.sample<-designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=TRUE,
-                                desiredFC=c(1.25,1.75), FDR=0.05, power=0.8)
-designSampleSizePlots(data=result.sample)
+result.sample <- designSampleSize(
+  data = testResultMultiComparisons$FittedModel, numSample = TRUE,
+  desiredFC = c(1.25, 1.75), FDR = 0.05, power = 0.8
+)
+designSampleSizePlots(data = result.sample)
 # (2) Power
-result.power<-designSampleSize(data=testResultMultiComparisons$FittedModel, numSample=2,
-                               desiredFC=c(1.25,1.75), FDR=0.05, power=TRUE)
-designSampleSizePlots(data=result.power)
+result.power <- designSampleSize(
+  data = testResultMultiComparisons$FittedModel, numSample = 2,
+  desiredFC = c(1.25, 1.75), FDR = 0.05, power = TRUE
+)
+designSampleSizePlots(data = result.power)
 
 }
 \author{

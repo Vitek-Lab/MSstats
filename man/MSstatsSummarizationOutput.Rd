@@ -26,13 +26,13 @@ MSstatsSummarizationOutput(
 \item{impute}{if TRUE, censored missing values were imputed
 (`MBimpute` parameter to `dataProcess`)}
 
-\item{censored_symbol}{censored missing value indicator 
+\item{censored_symbol}{censored missing value indicator
 (`censoredInt` parameter to `dataProcess`)}
 }
 \value{
 list that consists of the following elements:
 \itemize{
-\item{FeatureLevelData}{ - feature-level data after processing} 
+\item{FeatureLevelData}{ - feature-level data after processing}
 \item{ProteinLevelData}{ - protein-level (summarized) data}
 \item{SummaryMethod}{ (string) - name of summarization method that was used}
 }
@@ -41,20 +41,22 @@ list that consists of the following elements:
 Post-processing output from MSstats summarization
 }
 \examples{
-raw = DDARawData 
-method = "TMP"
-cens = "NA"
-impute = TRUE
+raw <- DDARawData
+method <- "TMP"
+cens <- "NA"
+impute <- TRUE
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-input = MSstatsPrepareForDataProcess(raw, 2, NULL)
-input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
-input = MSstatsMergeFractions(input)
-input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
-input = MSstatsSelectFeatures(input, "all")
-processed = getProcessed(input)
-input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
-output = output = MSstatsSummarizationOutput(input, summarized, processed,
-method, impute, cens)
+input <- MSstatsPrepareForDataProcess(raw, 2, NULL)
+input <- MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input <- MSstatsMergeFractions(input)
+input <- MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+input <- MSstatsSelectFeatures(input, "all")
+processed <- getProcessed(input)
+input <- MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
+summarized <- MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE)
+output <- output <- MSstatsSummarizationOutput(
+  input, summarized, processed,
+  method, impute, cens
+)
 
 }

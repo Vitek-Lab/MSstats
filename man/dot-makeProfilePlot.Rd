@@ -30,20 +30,20 @@
 
 \item{is_censored}{TRUE if censored values were imputed}
 
-\item{featureName}{for "ProfilePlot" only, "Transition" (default) means 
-printing feature legend in transition-level; "Peptide" means printing feature 
+\item{featureName}{for "ProfilePlot" only, "Transition" (default) means
+printing feature legend in transition-level; "Peptide" means printing feature
 legend in peptide-level; "NA" means no feature legend printing.}
 
-\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and 
+\item{x.axis.size}{size of x-axis labeling for "Run" in Profile Plot and
 QC Plot, and "Condition" in Condition Plot. Default is 10.}
 
 \item{y.axis.size}{size of y-axis labels. Default is 10.}
 
-\item{text.size}{size of labels represented each condition at the top of 
+\item{text.size}{size of labels represented each condition at the top of
 graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
-of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
+of graph in Profile Plot and QC plot or x-axis labeling in Condition plot.
 Default is 0.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)

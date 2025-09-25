@@ -20,11 +20,11 @@ MSstatsPrepareForSummarization(
 \item{impute}{if TRUE, censored missing values will be imputed - `MBimpute`
 parameter of the dataProcess function}
 
-\item{censored_symbol}{censored missing value indicator - `censoredInt` 
+\item{censored_symbol}{censored missing value indicator - `censoredInt`
 parameter of the dataProcess function}
 
-\item{remove_uninformative_feature_outlier}{if TRUE, features labeled as 
-outlier of uninformative by the MSstatsSelectFeatures function will not be 
+\item{remove_uninformative_feature_outlier}{if TRUE, features labeled as
+outlier of uninformative by the MSstatsSelectFeatures function will not be
 used in summarization}
 }
 \value{
@@ -34,12 +34,12 @@ data.table
 Prepare feature-level data for protein-level summarization
 }
 \examples{
-raw = DDARawData 
-method = "TMP"
-cens = "NA"
-impute = TRUE
+raw <- DDARawData
+method <- "TMP"
+cens <- "NA"
+impute <- TRUE
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-input = MSstatsPrepareForDataProcess(raw, 2, NULL)
+input <- MSstatsPrepareForDataProcess(raw, 2, NULL)
 head(input)
 
 }

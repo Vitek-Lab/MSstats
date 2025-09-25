@@ -19,29 +19,29 @@ MSstatsSummarizeWithMultipleCores(
 
 \item{method}{summarization method: "linear" or "TMP"}
 
-\item{impute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
+\item{impute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'.
+TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model.
 FALSE uses the values assigned by cutoffCensored}
 
-\item{censored_symbol}{Missing values are censored or at random. 
-'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-'0' uses zero intensities as censored intensity. 
-In this case, NA intensities are missing at random. 
-The output from Skyline should use '0'. 
+\item{censored_symbol}{Missing values are censored or at random.
+'NA' (default) assumes that all 'NA's in 'Intensity' column are censored.
+'0' uses zero intensities as censored intensity.
+In this case, NA intensities are missing at random.
+The output from Skyline should use '0'.
 Null assumes that all NA intensites are randomly missing.}
 
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
+\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins
 where every run has at least 50\% missing values for each peptide. FALSE is default.}
 
-\item{equal_variance}{only for summaryMethod = "linear". Default is TRUE. 
-Logical variable for whether the model should account for heterogeneous variation 
+\item{equal_variance}{only for summaryMethod = "linear". Default is TRUE.
+Logical variable for whether the model should account for heterogeneous variation
 among intensities from different features. Default is TRUE, which assume equal
-variance among intensities from features. FALSE means that we cannot assume 
+variance among intensities from features. FALSE means that we cannot assume
 equal variance among intensities from features, then we will account for
 heterogeneous variation from different features.}
 
-\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
-a logfile named `MSstats_dataProcess_log_progress.log` is created to 
+\item{numberOfCores}{Number of cores for parallel processing. When > 1,
+a logfile named `MSstats_dataProcess_log_progress.log` is created to
 track progress. Only works for Linux & Mac OS. Default is 1.}
 }
 \value{

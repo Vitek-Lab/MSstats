@@ -17,7 +17,7 @@ MSstatsHandleMissing(
 
 \item{summary_method}{summarization method (`summaryMethod` parameter to `dataProcess`)}
 
-\item{impute}{if TRUE, missing values are supposed to be imputed 
+\item{impute}{if TRUE, missing values are supposed to be imputed
 (`MBimpute` parameter to `dataProcess`)}
 
 \item{missing_symbol}{`censoredInt` parameter to `dataProcess`}
@@ -31,15 +31,15 @@ data.table
 Handle censored missing values
 }
 \examples{
-raw = DDARawData 
-method = "TMP"
-cens = "NA"
-impute = TRUE
+raw <- DDARawData
+method <- "TMP"
+cens <- "NA"
+impute <- TRUE
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-input = MSstatsPrepareForDataProcess(raw, 2, NULL)
-input = MSstatsNormalize(input, "EQUALIZEMEDIANS")
-input = MSstatsMergeFractions(input)
-input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
+input <- MSstatsPrepareForDataProcess(raw, 2, NULL)
+input <- MSstatsNormalize(input, "EQUALIZEMEDIANS")
+input <- MSstatsMergeFractions(input)
+input <- MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 head(input)
- 
+
 }

@@ -40,78 +40,88 @@
 #' # Sample quantification shows model-based estimation of protein abundance in each biological
 #' # replicate within each time point.
 #' # Group quantification shows model-based estimation of protein abundance in each time point.
-#' QuantData<-dataProcess(SRMRawData, use_log_file = FALSE)
+#' QuantData <- dataProcess(SRMRawData, use_log_file = FALSE)
 #' head(QuantData$FeatureLevelData)
 #' # Sample quantification
-#' sampleQuant<-quantification(QuantData, use_log_file = FALSE)
+#' sampleQuant <- quantification(QuantData, use_log_file = FALSE)
 #' head(sampleQuant)
 #' # Group quantification
-#' groupQuant<-quantification(QuantData, type="Group", use_log_file = FALSE)
+#' groupQuant <- quantification(QuantData, type = "Group", use_log_file = FALSE)
 #' head(groupQuant)
 #'
-quantification = function(
-    data, type = "Sample", format="matrix", use_log_file = TRUE, append = FALSE,
-    verbose = TRUE, log_file_path = NULL
-) {
-    LogIntensities = NULL
-    
-    MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
-                                        log_file_path, base = "MSstats_quant_log_")
-    getOption("MSstatsLog")("INFO", "MSstats - quantification function")
-    checkmate::assertChoice(toupper(type), c("SAMPLE", "GROUP"),
-                            .var.name = "type")
-    checkmate::assertChoice(toupper(format), c("MATRIX", "LONG"),
-                            .var.name = "format")
-    getOption("MSstatsLog")("INFO", paste0("type of quantification = ", type))
-    getOption("MSstatsLog")("INFO", paste0("format of output = ", format))
+quantification <- function(
+    data, type = "Sample", format = "matrix", use_log_file = TRUE, append = FALSE,
+    verbose = TRUE, log_file_path = NULL) {
+  LogIntensities <- NULL
 
-    if (toupper(type) == "SAMPLE") {
-        datarun = data.table::as.data.table(data$ProteinLevelData)
-        datarun$Protein = factor(datarun$Protein)
-        datarun = datarun[!is.na(LogIntensities), ]
-        datam = data.table::dcast(Protein ~ GROUP + SUBJECT, 
-                                  data = datarun,
-                                  value.var = 'LogIntensities',
-                                  fun.aggregate = median)
-        if (format == "long") {
-            data_l = melt(datam, id.vars=c('Protein'))
-            colnames(data_l)[colnames(data_l) %in% c("variable", "value")] = c('Group_Subject', 'LogIntensity')
-        }
-        getOption("MSstatsLog")("INFO", "Finish sample quantificiation - okay.")
-        if (format == "long") {
-            return(data_l)
-        }
-        if (format == "matrix") {
-            return(datam)
-        }
-    }
+  MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
+    log_file_path,
+    base = "MSstats_quant_log_"
+  )
+  getOption("MSstatsLog")("INFO", "MSstats - quantification function")
+  checkmate::assertChoice(toupper(type), c("SAMPLE", "GROUP"),
+    .var.name = "type"
+  )
+  checkmate::assertChoice(toupper(format), c("MATRIX", "LONG"),
+    .var.name = "format"
+  )
+  getOption("MSstatsLog")("INFO", paste0("type of quantification = ", type))
+  getOption("MSstatsLog")("INFO", paste0("format of output = ", format))
 
-    if (toupper(type) == "GROUP") {
-        datarun = data.table::as.data.table(data$ProteinLevelData)
-        datarun$Protein = factor(datarun$Protein)
-        datarun = datarun[!is.na(LogIntensities), ]
-        datam = data.table::dcast(Protein + GROUP ~ SUBJECT,
-                      data = datarun,
-                      value.var = 'LogIntensities',
-                      fun.aggregate = median)
-        datam2 = data.table::melt(datam, id.vars = c('Protein', "GROUP"))
-        data.table::setnames(datam2, c("variable", "value"),
-                             c("Subject", "LogIntensity"))
-        datam3 = data.table::dcast(Protein ~ GROUP,
-                       data = datam2,
-                       value.var = 'LogIntensity',
-                       fun.aggregate = function(x) median(x, na.rm=TRUE))
-        if (format == "long") {
-            data_l = melt(datam3, id.vars=c('Protein'))
-            data.table::setnames(data_l, c("variable", "value"),
-                                 c("Group", "LogIntensity"))
-        }
-        getOption("MSstatsLog")("INFO", "Finish group quantificiation - okay.")
-        if (format == "long") {
-            return(data_l)
-        }
-        if (format == "matrix") {
-            return(datam3)
-        }
+  if (toupper(type) == "SAMPLE") {
+    datarun <- data.table::as.data.table(data$ProteinLevelData)
+    datarun$Protein <- factor(datarun$Protein)
+    datarun <- datarun[!is.na(LogIntensities), ]
+    datam <- data.table::dcast(Protein ~ GROUP + SUBJECT,
+      data = datarun,
+      value.var = "LogIntensities",
+      fun.aggregate = median
+    )
+    if (format == "long") {
+      data_l <- melt(datam, id.vars = c("Protein"))
+      colnames(data_l)[colnames(data_l) %in% c("variable", "value")] <- c("Group_Subject", "LogIntensity")
     }
+    getOption("MSstatsLog")("INFO", "Finish sample quantificiation - okay.")
+    if (format == "long") {
+      return(data_l)
+    }
+    if (format == "matrix") {
+      return(datam)
+    }
+  }
+
+  if (toupper(type) == "GROUP") {
+    datarun <- data.table::as.data.table(data$ProteinLevelData)
+    datarun$Protein <- factor(datarun$Protein)
+    datarun <- datarun[!is.na(LogIntensities), ]
+    datam <- data.table::dcast(Protein + GROUP ~ SUBJECT,
+      data = datarun,
+      value.var = "LogIntensities",
+      fun.aggregate = median
+    )
+    datam2 <- data.table::melt(datam, id.vars = c("Protein", "GROUP"))
+    data.table::setnames(
+      datam2, c("variable", "value"),
+      c("Subject", "LogIntensity")
+    )
+    datam3 <- data.table::dcast(Protein ~ GROUP,
+      data = datam2,
+      value.var = "LogIntensity",
+      fun.aggregate = function(x) median(x, na.rm = TRUE)
+    )
+    if (format == "long") {
+      data_l <- melt(datam3, id.vars = c("Protein"))
+      data.table::setnames(
+        data_l, c("variable", "value"),
+        c("Group", "LogIntensity")
+      )
+    }
+    getOption("MSstatsLog")("INFO", "Finish group quantificiation - okay.")
+    if (format == "long") {
+      return(data_l)
+    }
+    if (format == "matrix") {
+      return(datam3)
+    }
+  }
 }
