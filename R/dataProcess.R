@@ -127,8 +127,8 @@ dataProcess <- function(
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
     numberOfCores = 1) {
   MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose,
-    log_file_path,
-    base = "MSstats_dataProcess_log_"
+                                      log_file_path,
+                                      base = "MSstats_dataProcess_log_"
   )
   getOption("MSstatsLog")("INFO", "MSstats - dataProcess function")
   .checkDataProcessParams(
@@ -140,7 +140,7 @@ dataProcess <- function(
     list(method = summaryMethod, equal_var = equalFeatureVar),
     list(symbol = censoredInt, MB = MBimpute)
   )
-
+  
   peptides_dict <- makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
   input <- MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
   input <- MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
@@ -153,12 +153,12 @@ dataProcess <- function(
     input, featureSubset, n_top_feature,
     min_feature_count
   )
-  .logDatasetInformation(input)
+  #.logDatasetInformation(input)
   getOption("MSstatsLog")("INFO",
-    "== Start the summarization per subplot...")
+                          "== Start the summarization per subplot...")
   getOption("MSstatsMsg")("INFO",
-    " == Start the summarization per subplot...")
-
+                          " == Start the summarization per subplot...")
+  
   processed <- getProcessed(input)
   input <- MSstatsPrepareForSummarization(
     input, summaryMethod, MBimpute, censoredInt,
@@ -177,9 +177,9 @@ dataProcess <- function(
     }
   )
   getOption("MSstatsLog")("INFO",
-    "== Summarization is done.")
+                          "== Summarization is done.")
   getOption("MSstatsMsg")("INFO",
-    " == Summarization is done.")
+                          " == Summarization is done.")
   output <- MSstatsSummarizationOutput(
     input, summarized, processed,
     summaryMethod, MBimpute, censoredInt
@@ -223,71 +223,39 @@ MSstatsSummarizeWithMultipleCores <- function(input, method, impute, censored_sy
     )
     return(ret)
   }
-  library(foreach)
-  library(doParallel)
-  # ---- group rows by PROTEIN (no list() wrapper needed) ----
-  f <- as.factor(input$PROTEIN)
-  protein_indices <- split(seq_len(nrow(input)), f, drop = TRUE)
-  num_proteins <- length(protein_indices)
-
-  # cap cores to number of groups
-  ncores <- max(1L, min(numberOfCores, num_proteins))
+  num_proteins <- length(unique(input$PROTEIN))
 
   getOption("MSstatsLog")("INFO", "Starting the cluster setup for summarization")
   cat(paste0("Number of proteins to process: ", num_proteins),
-    sep = "\n", file = "MSstats_dataProcess_log_progress.log"
+      sep = "\n", file = "MSstats_dataProcess_log_progress.log"
   )
-
+  # cap cores to number of groups
+  ncores <- max(1L, min(numberOfCores, num_proteins))
+  
   # ---- choose summarizer once, bind as a variable to export ----
   summarizer_fun <- switch(method,
-    "TMP" = MSstatsSummarizeSingleTMP,
-    MSstatsSummarizeSingleLinear
+                           "TMP" = MSstatsSummarizeSingleTMP,
+                           MSstatsSummarizeSingleLinear
   )
-
-  # ---- CHUNK the work: split protein groups into ~ncores chunks ----
-  # indices of groups: 1..num_proteins -> cut into ncores bins
-  group_ids <- seq_len(num_proteins)
-  bins <- cut(group_ids, breaks = ncores, labels = FALSE)
-  group_chunks <- split(group_ids, bins)
-
-  # For each chunk, build the *actual data frames* to send to that worker.
-  # This avoids exporting the whole `input` to all workers; each worker
-  # receives only its own subset frames.
-  task_payloads <- lapply(group_chunks, function(gidx) {
-    lapply(gidx, function(k) input[protein_indices[[k]], , drop = FALSE])
+  
+  # ---- set threads for data.table (not sure if this changes anything) ----
+  data.table::setDTthreads(threads = ncores)
+  
+  # process rows using data.table by PROTEIN. this will take care of parallel processing
+  summarized_results <- input[, .(out = summarizer_fun(.SD, impute, censored_symbol, remove50missing)), by = PROTEIN]
+  # because data.table performs row binds, we need to reshape the results.
+  summarized_results <- summarized_results[, .(out = list(out)), by = PROTEIN]
+  summarized_results <- lapply(seq_len(nrow(summarized_results)), function(i) {
+    prot <- summarized_results$PROTEIN[i]
+    out  <- summarized_results$out[[i]]
+    names(out) <- NULL
+    # first element must be a data.table; add 'Protein' column
+    dt1 <- as.data.table(out[[1]])
+    dt1[, Protein := prot]
+    # second element left as-is
+    list(dt1, out[[2]])
   })
-
-  # ---- spin up the cluster ----
-  cl <- makeCluster(ncores)
-  doParallel::registerDoParallel(cl)
-  on.exit(parallel::stopCluster(cl), add = TRUE)
-
-  # ---- process: one task per worker, each looping its own chunk ----
-  print(paste0("Starting parallel processing with ", length(task_payloads), "..."))
-  summarized_results <- foreach::foreach(
-    payload = task_payloads,
-    .combine = "c",
-    .packages = NULL,
-    .export = c("summarizer_fun", "impute", "censored_symbol", "remove50missing")
-  ) %dopar% {
-    out <- vector("list", length(payload))
-    for (i in seq_along(payload)) {
-      if (i %% 100 == 0) {
-        cat("Finished processing an additional 100 proteins",
-          sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE
-        )
-      }
-      out[[i]] <- summarizer_fun(
-        payload[[i]],
-        impute, censored_symbol, remove50missing
-      )
-    }
-    return(out)
-  }
-
-  # flatten back to a simple list of per-protein results (original order across chunks preserved)
-  # summarized_results <- do.call(c, summarized_chunks)
-
+  
   return(summarized_results)
 }
 
@@ -381,23 +349,23 @@ MSstatsSummarizeWithSingleCore <- function(input, method, impute, censored_symbo
 #'
 MSstatsSummarizeSingleLinear <- function(single_protein, equal_variances = TRUE) {
   ABUNDANCE <- RUN <- FEATURE <- PROTEIN <- LogIntensities <- NULL
-
+  
   label <- data.table::uniqueN(single_protein$LABEL) > 1
   single_protein <- single_protein[!is.na(ABUNDANCE)]
   single_protein[, RUN := factor(RUN)]
   single_protein[, FEATURE := factor(FEATURE)]
-
+  
   counts <- xtabs(~ RUN + FEATURE,
-    data = unique(single_protein[, list(FEATURE, RUN)])
+                  data = unique(single_protein[, list(FEATURE, RUN)])
   )
   counts <- as.matrix(counts)
   is_single_feature <- .checkSingleFeature(single_protein)
-
+  
   fit <- try(.fitLinearModel(single_protein, is_single_feature,
-    is_labeled = label,
-    equal_variances
+                             is_labeled = label,
+                             equal_variances
   ), silent = TRUE)
-
+  
   if (inherits(fit, "try-error")) {
     msg <- paste("*** error : can't fit the model for ", unique(single_protein$PROTEIN))
     getOption("MSstatsLog")("WARN", msg)
@@ -457,7 +425,7 @@ MSstatsSummarizeSingleTMP <- function(single_protein, impute, censored_symbol,
     "FEATURE", "ref"
   ))
   single_protein <- single_protein[(n_obs > 1 & !is.na(n_obs)) &
-    (n_obs_run > 0 & !is.na(n_obs_run))]
+                                     (n_obs_run > 0 & !is.na(n_obs_run))]
   if (nrow(single_protein) == 0) {
     return(list(NULL, NULL))
   }
@@ -465,21 +433,21 @@ MSstatsSummarizeSingleTMP <- function(single_protein, impute, censored_symbol,
   single_protein[, FEATURE := factor(FEATURE)]
   if (impute & any(single_protein[["censored"]])) {
     survival_fit <- .fitSurvival(single_protein[LABEL == "L", cols,
-      with = FALSE
+                                                with = FALSE
     ])
     single_protein[, predicted := predict(survival_fit,
-      newdata = .SD
+                                          newdata = .SD
     )]
     single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
     single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-      predicted, newABUNDANCE
+                                            predicted, newABUNDANCE
     )]
     survival <- single_protein[, c(cols, "predicted"), with = FALSE]
   } else {
     survival <- single_protein[, cols, with = FALSE]
     survival[, predicted := NA]
   }
-
+  
   single_protein <- .isSummarizable(single_protein, remove50missing)
   if (is.null(single_protein)) {
     return(list(NULL, NULL))
