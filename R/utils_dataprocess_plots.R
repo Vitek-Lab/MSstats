@@ -56,7 +56,7 @@
         type_color = "PEPTIDE"
     }
     
-    profile_plot = ggplot(input, aes(x = .data$RUN, y = .data$newABUNDANCE,
+    profile_plot = ggplot(data = input, aes(x = .data$RUN, y = .data$newABUNDANCE,
                                             color = .data[[type_color]], linetype = .data$FEATURE)) +
         facet_grid(~LABEL) +
         geom_line(linewidth = 0.5)

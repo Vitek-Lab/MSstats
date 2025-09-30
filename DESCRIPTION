@@ -37,7 +37,8 @@ Imports:
     graphics,
     methods,
     statmod,
-    parallel
+    parallel,
+    rlang
 Suggests: 
     BiocStyle,
     knitr,
@@ -53,7 +54,7 @@ biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
