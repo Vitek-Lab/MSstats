@@ -121,7 +121,7 @@ modelBasedQCPlots = function(
         slope = diff(y) / diff(x)
         int = y[1L] - slope * x[1L]
         
-        plot = ggplot(sub.residuals.table, aes(sample = residual)) +
+        plot = ggplot(sub.residuals.table, aes(sample = .data$residual)) +
             geom_point(stat = "qq", alpha = 0.8, 
                        shape = 20, size = dot.size) +
             scale_shape(solid=FALSE) + 
@@ -172,7 +172,7 @@ modelBasedQCPlots = function(
         sub.residuals.table = data.frame("residual" = sub.residuals, 
                                          "fitted" = sub.fitted)
         
-        plot = ggplot(aes_string(x = "fitted", y = "residual"), 
+        plot = ggplot(aes(x = .data$fitted, y = .data$residual), 
                        data = sub.residuals.table) +
             geom_point(size = dot.size, 
                        alpha = 0.5) +
