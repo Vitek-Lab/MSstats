@@ -297,6 +297,12 @@ will be included called `Variance` indicating the variance of the underlying
 protein abundance estimate. This variance is used in the next step of the
 workflow.
 
+Meanwhile, one can generate a profile plot to visualize the variance of the underlying protein abundance estimates in the form of 95% confidence intervals. For example, with Q9UFW8, one may observe that confidence intervals are wider for runs with more imputed values.
+
+```{r}
+dataProcessPlots(summarized, "ProfilePlot", which.Protein = "Q9UFW8", address = FALSE)
+```
+
 ## Differential analysis
 
 The final step of the `MSstats+` workflow is to perform differential analysis. 
