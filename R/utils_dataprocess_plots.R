@@ -172,6 +172,14 @@
                        aes(x = .data$RUN, y = .data$newABUNDANCE, 
                                   color = .data$analysis, size = .data$analysis, 
                                   shape = .data$censored)) +
+            geom_errorbar(data = input[input$PEPTIDE == "Run summary"],
+                          aes(x = .data$RUN, 
+                              ymin = .data$LOWERBOUND, 
+                              ymax = .data$UPPERBOUND,
+                              color = .data$analysis),
+                          width = 0.3, # Probably needs to be adjustable for user
+                          linewidth = 0.5,
+                          linetype = "solid") + 
             scale_shape_manual(values = c(16, 1), 
                                labels = c("Detected data",
                                           "Censored missing data"))

@@ -385,7 +385,10 @@ dataProcessPlots = function(
         list(PROTEIN = unique(Protein), PEPTIDE = "Run summary",
              TRANSITION = "Run summary", FEATURE = "Run summary",
              LABEL = "Endogenous", RUN = RUN,
-             ABUNDANCE = LogIntensities, FRACTION = 1)
+             ABUNDANCE = LogIntensities, FRACTION = 1, 
+             UPPERBOUND = if("Variance" %in% names(.SD)) LogIntensities + 1.96 * sqrt(Variance) else NA_real_,
+             LOWERBOUND = if("Variance" %in% names(.SD)) LogIntensities - 1.96 * sqrt(Variance) else NA_real_
+             )
         ]
       if (is_censored) {
         quant$censored = FALSE
