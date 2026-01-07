@@ -177,7 +177,7 @@
                               ymin = .data$LOWERBOUND, 
                               ymax = .data$UPPERBOUND,
                               color = .data$analysis),
-                          width = 0.3, # Probably needs to be adjustable for user
+                          width = 0.3,
                           linewidth = 0.5,
                           linetype = "solid") + 
             scale_shape_manual(values = c(16, 1), 
