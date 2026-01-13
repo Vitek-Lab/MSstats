@@ -199,7 +199,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
         peptide_name = unlist(peptides_dict[PeptideSequence == standards[standard_id],
                                             as.character(PEPTIDE)], FALSE, FALSE)
         if (length(peptide_name) > 0) {
-            standard = input[PEPTIDE == peptide_name, ]
+            standard = input[PEPTIDE %in% peptide_name, ]
         } else {
             if (standards[standard_id] %in% proteins) {
                 standard = input[PROTEIN == standards[standard_id], ]
