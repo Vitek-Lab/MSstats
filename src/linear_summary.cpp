@@ -48,7 +48,7 @@ NumericVector get_run(CharacterVector coef_names,
     if (just_runs.length() != 0) {
         CharacterVector temp_run = coef_names[just_runs];
         if (label) {
-            run = rep(1 / n_runs, temp_run.length());
+            run = rep(1.0 / n_runs, temp_run.length());
         } else {
             run = contrast_matrix[seq(1, contrast_matrix.length() - 1)];
         }
@@ -87,7 +87,7 @@ NumericVector get_feature_run(NumericVector find_runs, NumericVector find_featur
     NumericVector rf(0);
     if ((find_run_feature.length() != 0) && !(find_run_feature[0] == -1)) {
         CharacterVector temp_rf = coef_names[find_run_feature];
-        rf = rep(1 / n_rows, temp_rf.length());
+        rf = rep(1.0 / n_rows, temp_rf.length());
         rf.attr("names") = temp_rf;
     }
     return(rf);
