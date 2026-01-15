@@ -287,6 +287,10 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
         skip_absent = TRUE)
     
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
+    if (any(grepl(":", input$FEATURE, fixed = TRUE))) {
+        input[, FEATURE := gsub(":", "", FEATURE, fixed = TRUE)]
+        getOption("MSstatsLog")("INFO", "Removed ':' from FEATURE names.")
+    }
     input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, "0")]
     input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, "0")]
 
