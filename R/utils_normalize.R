@@ -192,32 +192,31 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 .normalizeGlobalStandards = function(input, peptides_dict, standards) {
     PeptideSequence = PEPTIDE = PROTEIN = median_by_fraction = NULL
     Standard = FRACTION = LABEL = ABUNDANCE = RUN = GROUP = NULL
-    
-    proteins = as.character(unique(input$PROTEIN))
-    means_by_standard = unique(input[, list(RUN)])
-    for (standard_id in seq_along(standards)) {
-        peptide_name = unlist(peptides_dict[PeptideSequence == standards[standard_id],
-                                            as.character(PEPTIDE)], FALSE, FALSE)
-        if (length(peptide_name) > 0) {
-            standard = input[PEPTIDE == peptide_name, ]
-        } else {
-            if (standards[standard_id] %in% proteins) {
-                standard = input[PROTEIN == standards[standard_id], ]
-            } else {
-                msg = paste("global standard peptides or proteins, ",
-                            standards[standard_id],", is not in dataset.",
-                            "Please check whether 'nameStandards' input is correct or not.")
-                getOption("MSstatsLog")("ERROR", msg)
-                stop(msg)
-            }
-        }
-        mean_by_run = standard[GROUP != "0" & !is.na(ABUNDANCE),
-                               list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)),
-                               by = "RUN"]
-        colnames(mean_by_run)[2] = paste0("meanStandard", standard_id)
-        means_by_standard = merge(means_by_standard, mean_by_run,
-                                  by = "RUN", all.x = TRUE)
+
+    input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
+    standards_data <- input_with_peptides[
+        (PeptideSequence %in% standards | PROTEIN %in% standards) & 
+            GROUP != "0" & 
+            !is.na(ABUNDANCE)
+    ]
+    missing_standards <- standards[!standards %in% c(standards_data$PeptideSequence, standards_data$PROTEIN)]
+    if (length(missing_standards) > 0) {
+        msg <- paste("Global standard peptides or proteins,",
+                     paste(missing_standards, collapse = ", "),
+                     "are not in dataset. Please check whether 'nameStandards' input is correct.")
+        getOption("MSstatsLog")("ERROR", msg)
+        stop(msg)
     }
+    standards_data[, standard := ifelse(!is.na(PeptideSequence) & PeptideSequence %in% standards,
+                                        PeptideSequence,
+                                        PROTEIN)]
+    means_by_standard <- standards_data[, 
+                                        list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)),
+                                        by = .(RUN, standard)
+    ]
+    means_by_standard <- dcast(means_by_standard, 
+                               RUN ~ standard, 
+                               value.var = "mean_abundance")
     means_by_standard = data.table::melt(means_by_standard, id.vars = "RUN",
                                          variable.name = "Standard", value.name = "ABUNDANCE")
     means_by_standard[, mean_by_run := mean(ABUNDANCE, na.rm = TRUE), by = "RUN"]
