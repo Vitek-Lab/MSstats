@@ -4,9 +4,9 @@
 
 create_peptide_dictionary <- function() {
     data.table::data.table(
-        PeptideSequence = c("AAAAAAAAAAAAAAGAGAGAK", "AAAAAAAAAAAAVSR", "AAAAAAAAAAAAVSRD"),
+        PeptideSequence = c("AAAAAAAAAAAAAAGAGAGAK", "AAAAAAAAAAAAAAGAGAGAK", "AAAAAAAAAAAAVSRD"),
         PrecursorCharge = c(3, 2, 3),
-        PEPTIDE = c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAVSR_2", "AAAAAAAAAAAAVSRD_3")
+        PEPTIDE = c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAAAGAGAGAK_2", "AAAAAAAAAAAAVSRD_3")
     )
 }
 
@@ -19,12 +19,12 @@ create_test_input <- function(standard_intensities, peptide2_intensities, peptid
     
     # Create base structure
     input <- data.table::data.table(
-        PROTEIN = rep(c("P1", "P2", "P3"), each = n_runs),
-        PEPTIDE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAVSR_2", "AAAAAAAAAAAAVSRD_3"), 
+        PROTEIN = rep(c("P1", "P1", "P3"), each = n_runs),
+        PEPTIDE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAAAGAGAGAK_2", "AAAAAAAAAAAAVSRD_3"), 
                       each = n_runs),
         TRANSITION = rep("NA_NA", n_proteins * n_runs),
         FEATURE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3_NA_NA", 
-                        "AAAAAAAAAAAAVSR_2_NA_NA", 
+                        "AAAAAAAAAAAAAAGAGAGAK_2_NA_NA", 
                         "AAAAAAAAAAAAVSRD_3_NA_NA"), 
                       each = n_runs),
         LABEL = rep("L", n_proteins * n_runs),
@@ -57,10 +57,9 @@ test_different_group_intensities <- function() {
     )
     
     # Non-standard peptides: all 262144
-    peptide2_intensities <- rep(262144, 48)
     peptide3_intensities <- rep(262144, 48)
     
-    input <- create_test_input(standard_intensities, peptide2_intensities, peptide3_intensities)
+    input <- create_test_input(standard_intensities, standard_intensities, peptide3_intensities)
     output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, standards)
     
     # Verify normalization: Control runs should be shifted up, Treatment runs shifted down
@@ -91,10 +90,9 @@ test_alternating_intensities_within_fractions <- function() {
     standard_intensities <- rep(c(262144, 524288), 24)
     
     # Non-standard peptides: all 262144
-    peptide2_intensities <- rep(262144, 48)
     peptide3_intensities <- rep(262144, 48)
     
-    input <- create_test_input(standard_intensities, peptide2_intensities, peptide3_intensities)
+    input <- create_test_input(standard_intensities, standard_intensities, peptide3_intensities)
     output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, standards)
     
     # When standards vary within fractions but average to same level,
