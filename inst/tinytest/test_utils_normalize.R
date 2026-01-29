@@ -1,68 +1,113 @@
-library(data.table)
+# Test for .normalizeGlobalStandards function ----------------------------------
 
-# Peptide dictionary
-peptide_dict <- data.table(
-  PeptideSequence = c("AAAAAAAAAAAAAAGAGAGAK", "AAAAAAAAAAAAVSR", "AAAAAAAAAAAAVSRD"),
-  PrecursorCharge = c(3, 2, 3),
-  PEPTIDE = c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAVSR_2", "AAAAAAAAAAAAVSRD_3")
-)
+# Setup test data ---------------------------------------------------------------
 
-# Standards (matching peptide sequences)
-standards = c("AAAAAAAAAAAAAAGAGAGAK", "AAAAAAAAAAAAVSR", "AAAAAAAAAAAAVSRD")
+create_peptide_dictionary <- function() {
+    data.table::data.table(
+        PeptideSequence = c("AAAAAAAAAAAAAAGAGAGAK", "AAAAAAAAAAAAVSR", "AAAAAAAAAAAAVSRD"),
+        PrecursorCharge = c(3, 2, 3),
+        PEPTIDE = c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAVSR_2", "AAAAAAAAAAAAVSRD_3")
+    )
+}
 
-# Create input data with 4 runs, varying fractions (1-3), 2 groups
-set.seed(123)
-input <- data.table(
-  PROTEIN = rep(c("P1", "P2", "P3"), each = 48),  # 3 proteins
-  PEPTIDE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAVSR_2", "AAAAAAAAAAAAVSRD_3"), each = 48),
-  TRANSITION = rep("NA_NA", 144),
-  FEATURE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3_NA_NA", "AAAAAAAAAAAAVSR_2_NA_NA", "AAAAAAAAAAAAVSRD_3_NA_NA"), each = 48),
-  LABEL = rep("L", 144),
-  GROUP_ORIGINAL = rep(rep(c("Control", "Treatment"), each = 24), 3),
-  SUBJECT_ORIGINAL = rep(rep(c("Control", "Treatment"), each = 24), 3),
-  RUN = rep(rep(1:4, each = 6), 6),  # 4 runs
-  GROUP = rep(rep(c("Control", "Treatment"), each = 24), 3),
-  SUBJECT = rep(rep(c("Control", "Treatment"), each = 24), 3),
-  FRACTION = rep(rep(c(1, 1, 2, 2, 3, 3), 4), 6),  # Fractions 1-3
-  INTENSITY = c(
-    # Standard 1 (AAAAAAAAAAAAAAGAGAGAK_3)
-    150000, 148000, 152000, 149000, 151000, 147000,  # Run 1
-    145000, 143000, 147000, 144000, 146000, 142000,  # Run 2
-    200000, 198000, 202000, 199000, 201000, 197000,  # Run 3
-    195000, 193000, 197000, 194000, 196000, 192000,  # Run 4
-    160000, 158000, 162000, 159000, 161000, 157000,  # Run 1 treatment
-    155000, 153000, 157000, 154000, 156000, 152000,  # Run 2 treatment
-    210000, 208000, 212000, 209000, 211000, 207000,  # Run 3 treatment
-    205000, 203000, 207000, 204000, 206000, 202000,  # Run 4 treatment
-    # Standard 2 (AAAAAAAAAAAAVSR_2)
-    500000, 498000, 502000, 499000, 501000, 497000,
-    495000, 493000, 497000, 494000, 496000, 492000,
-    550000, 548000, 552000, 549000, 551000, 547000,
-    545000, 543000, 547000, 544000, 546000, 542000,
-    510000, 508000, 512000, 509000, 511000, 507000,
-    505000, 503000, 507000, 504000, 506000, 502000,
-    560000, 558000, 562000, 559000, 561000, 557000,
-    555000, 553000, 557000, 554000, 556000, 552000,
-    # Standard 3 (AAAAAAAAAAAAVSRD_3)
-    250000, 248000, 252000, 249000, 251000, 247000,
-    245000, 243000, 247000, 244000, 246000, 242000,
-    300000, 298000, 302000, 299000, 301000, 297000,
-    295000, 293000, 297000, 294000, 296000, 292000,
-    260000, 258000, 262000, 259000, 261000, 257000,
-    255000, 253000, 257000, 254000, 256000, 252000,
-    310000, 308000, 312000, 309000, 311000, 307000,
-    305000, 303000, 307000, 304000, 306000, 302000
-  ),
-  ANOMALYSCORES = rep(NA, 144),
-  originalRUN = rep(paste0("Run", rep(1:4, each = 6)), 6)
-)
+create_test_input <- function(standard_intensities, peptide2_intensities, peptide3_intensities) {
+    # Constants
+    n_proteins <- 3
+    n_runs <- 48
+    n_subjects <- 4
+    n_fractions <- 6
+    
+    # Create base structure
+    input <- data.table::data.table(
+        PROTEIN = rep(c("P1", "P2", "P3"), each = n_runs),
+        PEPTIDE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3", "AAAAAAAAAAAAVSR_2", "AAAAAAAAAAAAVSRD_3"), 
+                      each = n_runs),
+        TRANSITION = rep("NA_NA", n_proteins * n_runs),
+        FEATURE = rep(c("AAAAAAAAAAAAAAGAGAGAK_3_NA_NA", 
+                        "AAAAAAAAAAAAVSR_2_NA_NA", 
+                        "AAAAAAAAAAAAVSRD_3_NA_NA"), 
+                      each = n_runs),
+        LABEL = rep("L", n_proteins * n_runs),
+        GROUP_ORIGINAL = rep(rep(c("Control", "Treatment"), each = n_runs/2), n_proteins),
+        SUBJECT_ORIGINAL = rep(paste0("Subject", rep(1:n_subjects, each = n_fractions)), 
+                               n_proteins * 2),
+        RUN = rep(1:n_runs, n_proteins),
+        GROUP = rep(rep(c("Control", "Treatment"), each = n_runs/2), n_proteins),
+        SUBJECT = rep(paste0("Subject", rep(1:n_subjects, each = n_fractions)), 
+                      n_proteins * 2),
+        FRACTION = rep(rep(1:n_fractions, n_subjects), n_proteins * 2),
+        INTENSITY = c(standard_intensities, peptide2_intensities, peptide3_intensities),
+        ANOMALYSCORES = rep(NA, n_proteins * n_runs),
+        originalRUN = rep(paste0("Run", 1:n_runs), n_proteins)
+    )
+    
+    input[, ABUNDANCE := log2(INTENSITY)]
+    return(input)
+}
 
-# Calculate ABUNDANCE as log2(INTENSITY)
-input[, ABUNDANCE := log2(INTENSITY)]
+# Test 1: Standards with different intensities between groups -------------------
+test_different_group_intensities <- function() {
+    peptide_dict <- create_peptide_dictionary()
+    standards <- c("AAAAAAAAAAAAAAGAGAGAK")
+    
+    # Control group: 262144, Treatment group: 524288
+    standard_intensities <- c(
+        rep(262144, 24),  # Control (runs 1-24)
+        rep(524288, 24)   # Treatment (runs 25-48)
+    )
+    
+    # Non-standard peptides: all 262144
+    peptide2_intensities <- rep(262144, 48)
+    peptide3_intensities <- rep(262144, 48)
+    
+    input <- create_test_input(standard_intensities, peptide2_intensities, peptide3_intensities)
+    output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, standards)
+    
+    # Verify normalization: Control runs should be shifted up, Treatment runs shifted down
+    control_runs <- 1:24
+    treatment_runs <- 25:48
+    
+    # Check Control group (shifted up to match treatment standard)
+    control_abundance <- output[RUN %in% control_runs & 
+                                    !is.na(ABUNDANCE) & 
+                                    !grepl(standards, PEPTIDE)]$ABUNDANCE
+    expect_true(all(abs(control_abundance - 18.5) < 1e-10),
+                info = "Control group non-standard peptides should be normalized to 18.5")
+    
+    # Check Treatment group (shifted down to match control standard)
+    treatment_abundance <- output[RUN %in% treatment_runs & 
+                                      !is.na(ABUNDANCE) & 
+                                      !grepl(standards, PEPTIDE)]$ABUNDANCE
+    expect_true(all(abs(treatment_abundance - 17.5) < 1e-10),
+                info = "Treatment group non-standard peptides should be normalized to 17.5")
+}
 
-# Add some missing values for realism
-input[c(5, 12, 23, 34, 45, 67, 89, 111), ABUNDANCE := NA]
-input[c(5, 12, 23, 34, 45, 67, 89, 111), INTENSITY := NA]
+# Test 2: Standards with alternating intensities within fractions ---------------
+test_alternating_intensities_within_fractions <- function() {
+    peptide_dict <- create_peptide_dictionary()
+    standards <- c("AAAAAAAAAAAAAAGAGAGAK")
+    
+    # Standard alternates between 262144 and 524288 within each fraction
+    standard_intensities <- rep(c(262144, 524288), 24)
+    
+    # Non-standard peptides: all 262144
+    peptide2_intensities <- rep(262144, 48)
+    peptide3_intensities <- rep(262144, 48)
+    
+    input <- create_test_input(standard_intensities, peptide2_intensities, peptide3_intensities)
+    output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, standards)
+    
+    # When standards vary within fractions but average to same level,
+    # no net normalization should occur
+    all_runs <- 1:48
+    normalized_abundance <- output[RUN %in% all_runs & 
+                                       !is.na(ABUNDANCE) & 
+                                       !grepl(standards, PEPTIDE)]$ABUNDANCE
+    
+    expect_true(all(abs(normalized_abundance - 18) < 1e-10),
+                info = "No normalization should occur when standard averages are equal across fractions")
+}
 
-# Test the function
-output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, standards)
+# Run tests ---------------------------------------------------------------------
+test_different_group_intensities()
+test_alternating_intensities_within_fractions()
