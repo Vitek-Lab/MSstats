@@ -194,7 +194,6 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     Standard = FRACTION = LABEL = ABUNDANCE = RUN = GROUP = NULL
     
     proteins = as.character(unique(input$PROTEIN))
-    means_by_standard = unique(input[, list(RUN)])
     input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
     standards_data <- input_with_peptides[
         (PeptideSequence %in% standards | PROTEIN %in% standards) & 
