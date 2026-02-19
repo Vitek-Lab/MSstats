@@ -141,6 +141,7 @@ getSamplesInfo = function(summarization_output) {
     
     if ("Variance" %in% colnames(input) & !all(is.na(input$Variance))){
         weight_input = 1/input$Variance
+        weight_input = weight_input / mean(weight_input) # normalize weights
     } else {
         weight_input = NULL
     }
