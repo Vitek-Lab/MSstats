@@ -355,6 +355,7 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]], impute, cens, TRUE, 100)
 #' head(single_protein_summary[[1]])
 #' 
+#' 
 MSstatsSummarizeSingleLinear = function(single_protein, 
                                         impute,
                                         censored_symbol, 
@@ -392,7 +393,11 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     }
     
     if (all(!is.na(single_protein$ANOMALYSCORES))){
-        single_protein$weights = 1 / single_protein$ANOMALYSCORES
+        # single_protein$weights = 1 / single_protein$ANOMALYSCORES
+        # s: anomaly scores for a given precursor across runs
+        single_protein[, weights :=
+             anomaly_weights_z_vec(ANOMALYSCORES),
+           by = .(PROTEIN, PEPTIDE)]
     } else {
         single_protein$weights = NA
     }

@@ -1,47 +1,33 @@
-
-.normalize_anomalies = function(data){
-    # Step 1: Find the global minimum anomaly score
-    global_min = min(data$ANOMALYSCORES)
-    
-    # Step 2: Compute the local minimum for each PSM and adjust scores
-    data[, local_min := min(ANOMALYSCORES), by = PEPTIDE]
-    data[, normalized_score := ANOMALYSCORES - local_min + global_min]
-    
-    return(data)
-}
-
-.calculate_weights = function(data){
-    
-    data = .normalize_anomalies(data)
-
-    # w_stats = data[, .(
-    #     shapiro_W = tryCatch(
-    #         shapiro.test(unlist(normalized_score))$statistic,
-    #         error = function(e) NA_real_
-    #     )
-    # ), by = PEPTIDE]
-    
-    # Join the W stats back into the original data.table
-    data = merge(data, w_stats, by = "PEPTIDE", all.x = TRUE)
-    
-    anomaly_scores = data$normalized_score
-    imputation_var = ifelse(data$censored, data$imputation_var, NA)
-    
-    if (sum(is.na(imputation_var)) == length(imputation_var)){
-        weights = anomaly_scores
-    } else {
-        resPPCA = pca(matrix(
-            c(anomaly_scores, imputation_var), ncol=2), 
-            method="ppca", center=TRUE, nPcs=1,
-            seed=1, maxIterations = 10000)
-        weights = (abs(resPPCA@loadings[[1]]) * anomaly_scores
-                   ) + ifelse(
-                       is.na(imputation_var), 0, 
-                       abs(resPPCA@loadings[[2]]) * imputation_var)
-    }
-    
-    data$raw_weights = weights
-    data$weights = 1 / weights
-    
-    return(data)
+#' @keywords internal
+anomaly_weights_z_vec <- function(s, p = 2, eps = 1e-8,
+                                  s_floor = 0.1,
+                                  w_min = 0.05, w_max = 5,
+                                  normalize_sum_to_n = TRUE) {
+  ok <- !is.na(s)
+  w  <- rep(NA_real_, length(s))
+  
+  if (sum(ok) < 3L) {
+    w[ok] <- 1
+    return(w)
+  }
+  
+  med <- stats::median(s[ok])
+  mad <- stats::mad(s[ok], center = med, constant = 1.4826)
+  
+  scale <- max(mad, s_floor)
+  
+  z <- (s - med) / (scale + eps)
+  z_pos <- pmax(0, z)
+  
+  w_star <- 1 / (1 + (z_pos^p))
+  
+  w_star <- pmax(w_star, w_min)
+  w_star <- pmin(w_star, w_max)
+  
+  if (normalize_sum_to_n) {
+    w_star[ok] <- w_star[ok] * sum(ok) / sum(w_star[ok])
+  }
+  
+  w[ok] <- w_star[ok]
+  w
 }
