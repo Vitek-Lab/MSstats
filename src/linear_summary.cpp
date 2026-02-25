@@ -27,10 +27,9 @@ NumericVector get_intercept(CharacterVector coef_names) {
 } 
 
 NumericVector get_features(CharacterVector coef_names, NumericVector find_features,
-                           NumericVector find_colon, NumericVector contrast_matrix,
+                           NumericVector contrast_matrix,
                            NumericMatrix counts, DataFrame input) {
-    NumericVector just_features = setdiff(find_features, find_colon);
-    CharacterVector temp_feature = coef_names[just_features];
+    CharacterVector temp_feature = coef_names[find_features];
     
     NumericVector feature(0);
     if (temp_feature.length() != 0) {
@@ -41,12 +40,11 @@ NumericVector get_features(CharacterVector coef_names, NumericVector find_featur
 } 
 
 NumericVector get_run(CharacterVector coef_names,
-                      NumericVector find_runs, NumericVector find_colon,
+                      NumericVector find_runs,
                       NumericVector contrast_matrix, bool label, int n_runs) {
-    NumericVector just_runs = setdiff(find_runs, find_colon);
     NumericVector run(0);
-    if (just_runs.length() != 0) {
-        CharacterVector temp_run = coef_names[just_runs];
+    if (find_runs.length() != 0) {
+        CharacterVector temp_run = coef_names[find_runs];
         if (label) {
             run = rep(1 / n_runs, temp_run.length());
         } else {
@@ -138,14 +136,13 @@ NumericVector make_contrast_run_quant(DataFrame input,
     
     CharacterVector coef_names = coefs.attr("names");
     NumericVector find_features = grep("FEATURE", coef_names);
-    NumericVector find_colon = grep(":", coef_names);
     NumericVector find_runs = grep("RUN", coef_names);
     NumericVector find_ref = grep("ref", coef_names);
 
     NumericVector intercept = get_intercept(coef_names);
-    NumericVector features = get_features(coef_names, find_features, find_colon,
+    NumericVector features = get_features(coef_names, find_features,
                                           contrast_matrix, counts, input);
-    NumericVector runs = get_run(coef_names, find_runs, find_colon, 
+    NumericVector runs = get_run(coef_names, find_runs,
                                  contrast_matrix, is_labeled, n_runs);
     NumericVector refs = get_ref(coef_names, find_ref, contrast_matrix, input,
                                  is_reference);
