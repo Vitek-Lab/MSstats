@@ -220,7 +220,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                                       "MSstatsSummarizeSingleLinear",
                                       "input", "impute", "censored_symbol",
                                       "remove50missing", "protein_indices", 
-                                      "equal_variance"), 
+                                      "equal_variance", "aft_iterations"), 
                                 envir = function_environment)
         cat(paste0("Number of proteins to process: ", num_proteins), 
             sep = "\n", file = "MSstats_dataProcess_log_progress.log")
