@@ -364,75 +364,116 @@ MSstatsSummarizeSingleLinear = function(single_protein,
                                         equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
     
-    cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
-                                                 "FEATURE", "ref"))
-    single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
-                                        (n_obs_run > 0 & !is.na(n_obs_run))]
+    cols = intersect(
+      colnames(single_protein),
+      c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref")
+    )
+    
+    single_protein = single_protein[
+      (n_obs > 1 & !is.na(n_obs)) &
+        (n_obs_run > 0 & !is.na(n_obs_run))
+    ]
+    
     if (nrow(single_protein) == 0) {
         return(list(NULL, NULL))
     }
+    
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
+    
     if (impute & any(single_protein[["censored"]])) {
-        survival_fit = .fitSurvival(single_protein[LABEL == "L", cols,
-                                                   with = FALSE],
-                                    aft_iterations)
+        survival_fit = .fitSurvival(
+          single_protein[LABEL == "L", cols, with = FALSE],
+          aft_iterations
+        )
         sigma2 = survival_fit$scale^2
+        
         single_protein[, c("predicted", "imputation_var") := {
             pred = predict(survival_fit, newdata = .SD, se.fit = TRUE)
             list(pred$fit, pred$se.fit^2 + sigma2)
         }]
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), 
-                                             predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                                predicted, newABUNDANCE)]
+        
+        single_protein[, predicted := ifelse(
+          censored & (LABEL == "L"),
+          predicted,
+          NA
+        )]
+        single_protein[, newABUNDANCE := ifelse(
+          censored & LABEL == "L",
+          predicted,
+          newABUNDANCE
+        )]
+        
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
     } else {
         survival = single_protein[, cols, with = FALSE]
         survival[, predicted := NA]
     }
     
-    if (all(!is.na(single_protein$ANOMALYSCORES))){
-        # single_protein$weights = 1 / single_protein$ANOMALYSCORES
-        # s: anomaly scores for a given precursor across runs
+    if (all(!is.na(single_protein$ANOMALYSCORES))) {
         single_protein[, weights :=
-             anomaly_weights_z_vec(ANOMALYSCORES),
-           by = .(PROTEIN, PEPTIDE)]
+            anomaly_weights_z_vec(ANOMALYSCORES),
+          by = .(PROTEIN, PEPTIDE)]
     } else {
-        single_protein$weights = NA
+        single_protein[, weights := NA_real_]
     }
     
     label = data.table::uniqueN(single_protein$LABEL) > 1
+    
     single_protein = single_protein[!is.na(newABUNDANCE)]
+    
+    if (nrow(single_protein) == 0) {
+        return(list(NULL, survival))
+    }
+    
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
     
-    counts = xtabs(~ RUN + FEATURE, 
-                   data = unique(single_protein[, list(FEATURE, RUN)]))
-    counts = as.matrix(counts)
     is_single_feature = .checkSingleFeature(single_protein)
     
-    fit = try(.fitLinearModel(single_protein, is_single_feature, 
-                          is_labeled = label, equal_variances), silent = TRUE)
-    
-    if (inherits(fit, "try-error")) {
-        msg = paste("*** error : can't fit the model for ", 
-                    unique(single_protein$PROTEIN))
-        getOption("MSstatsLog")("WARN", msg)
-        getOption("MSstatsMsg")("WARN", msg)
-        result = NULL
+    if (is_single_feature) {
+        result = single_protein[LABEL == "L",
+                                .(LogIntensities = mean(newABUNDANCE)),
+                                by = RUN]
+        result[, Protein := unique(single_protein$PROTEIN)]
+        result[, Variance := NA_real_]
+        setcolorder(result, c("Protein", "RUN", "LogIntensities",
+                              "Variance"))
+        
+        return(list(result, survival))
     } else {
-        cf = summary(fit)$coefficients[, 1]
-        cov_mat = vcov(fit)
+        counts = xtabs(
+          ~ RUN + FEATURE,
+          data = unique(single_protein[, .(FEATURE, RUN)])
+        )
+        counts = as.matrix(counts)
         
-        result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
-        extracted_values = get_linear_summary(single_protein, cf,
-                                             counts, label, cov_mat)
-        # extracted_values = get_run_estimates_simple(fit, single_protein, counts)
+        fit = try(
+          .fitLinearModel(single_protein, is_single_feature,
+                          is_labeled = label,
+                          equal_variances),
+          silent = TRUE
+        )
         
-        result = cbind(result, extracted_values)
+        if (inherits(fit, "try-error")) {
+            msg = paste("*** error : can't fit the model for",
+                        unique(single_protein$PROTEIN))
+            getOption("MSstatsLog")("WARN", msg)
+            getOption("MSstatsMsg")("WARN", msg)
+            result = NULL
+        } else {
+            cf = summary(fit)$coefficients[, 1]
+            cov_mat = vcov(fit)
+            
+            result = unique(single_protein[, .(Protein = PROTEIN,
+                                               RUN = RUN)])
+            extracted_values = get_linear_summary(single_protein, cf,
+                                                  counts, label, cov_mat)
+            result = cbind(result, extracted_values)
+        }
+        
+        return(list(result, survival))
     }
-    list(result, survival)
 }
 
 
