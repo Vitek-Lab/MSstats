@@ -140,7 +140,7 @@ getSamplesInfo = function(summarization_output) {
                                        is_single_subject, has_tech_replicates) {
     
     if ("Variance" %in% colnames(input) & !all(is.na(input$Variance))){
-        weight_input = 1 / pmax(Variance, 0.01)
+        weight_input = 1 / pmax(input$Variance, 0.001)
     } else {
         weight_input = NULL
     }
