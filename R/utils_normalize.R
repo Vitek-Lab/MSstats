@@ -36,7 +36,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
         input = .normalizeQuantile(input)
     } else if (normalization_method == "GLOBALSTANDARDS") {
          if (length(standards) == 1 && standards == "unlabeled") {
-            standards = unique(input[is.na(input$LABEL), "PEPTIDE", drop = TRUE])
+            standards = unique(input[is.na(input$LABEL), "PeptideSequence", drop = TRUE])
             if (length(standards) == 0) {
                 msg = "nameStandards = 'unlabeled' but no unlabeled peptides found in data."
                 getOption("MSstatsLog")("ERROR", msg)
@@ -205,12 +205,11 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 
     input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
     standards_data <- input_with_peptides[
-        (PeptideSequence %in% standards | PROTEIN %in% standards | PEPTIDE %in% standards) &
+        (PeptideSequence %in% standards | PROTEIN %in% standards) &
             !is.na(ABUNDANCE)
     ]
     missing_standards <- standards[
-        !standards %in% c(standards_data$PeptideSequence, standards_data$PROTEIN,
-                          standards_data$PEPTIDE)
+        !standards %in% c(standards_data$PeptideSequence, standards_data$PROTEIN)
     ]
     if (length(missing_standards) > 0) {
         msg <- paste("Global standard peptides or proteins,",
