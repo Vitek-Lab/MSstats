@@ -261,15 +261,15 @@ dataProcessPlots = function(
                             labels = seq(1, length(unique(RUN))))]
   summarized[, RUN := as.numeric(RUN)]
   
-  ## Meena :due to GROUP=0 for labeled.. extra care required.
+  has_heavy_prof = any(processed$LABEL == "H")
+  heavy_has_real_group_prof = has_heavy_prof && !all(processed[LABEL == "H", GROUP] %in% c("0", NA))
   tempGroupName = unique(processed[, c("GROUP", "RUN")])
-  if (length(unique(processed$LABEL)) == 2) {
+  if (length(unique(processed$LABEL)) == 2 && !heavy_has_real_group_prof) {
     tempGroupName = tempGroupName[GROUP != '0']
-  } 
-  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  }
+  tempGroupName = tempGroupName[order(RUN), ]
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  tempGroupName$GROUP = factor(tempGroupName$GROUP, levels = level.group)
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
@@ -292,7 +292,11 @@ dataProcessPlots = function(
 
   
   if (length(unique(processed$LABEL)) == 2) {
-    processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
+    if (heavy_has_real_group_prof) {
+      processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+    } else {
+      processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
+    }
   } else {
     if (unique(processed$LABEL) == "L") {
       processed[, LABEL := factor(LABEL, labels = c("Endogenous"))]
@@ -442,8 +446,14 @@ dataProcessPlots = function(
   processed[, RUN := factor(RUN, levels = unique(processed$RUN),
                             labels = seq(1, data.table::uniqueN(processed$RUN)))]
   
+  has_heavy = any(processed$LABEL == "H")
+  heavy_has_real_group = has_heavy && !all(processed[LABEL == "H", GROUP] %in% c("0", NA))
   if (length(unique(processed$LABEL)) == 2) {
-    processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
+    if (heavy_has_real_group) {
+      processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+    } else {
+      processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
+    }
     label.color = c("darkseagreen1", "lightblue")
   } else {
     if (unique(processed$LABEL) == "L") {
@@ -454,14 +464,13 @@ dataProcessPlots = function(
       label.color = c("darkseagreen1")
     }
   }
-  
+
   processed = processed[order(LABEL, GROUP, SUBJECT)]
-  
-  ## Meena :due to GROUP=0 for labeled.. extra care required.
+
   tempGroupName = unique(processed[, list(GROUP, RUN)])
-  if (length(unique(processed$LABEL)) == 2) {
+  if (length(unique(processed$LABEL)) == 2 && !heavy_has_real_group) {
     tempGroupName = tempGroupName[GROUP != '0']
-  } 
+  }
   tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
   level.group = as.character(unique(tempGroupName$GROUP))
   tempGroupName$GROUP = factor(tempGroupName$GROUP,

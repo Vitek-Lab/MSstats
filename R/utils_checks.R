@@ -287,8 +287,8 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
         skip_absent = TRUE)
     
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
-    input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, "0")]
-    input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, "0")]
+    input[, GROUP := GROUP_ORIGINAL]
+    input[, SUBJECT := SUBJECT_ORIGINAL]
 
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
              "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP",  

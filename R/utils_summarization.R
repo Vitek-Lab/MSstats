@@ -71,12 +71,11 @@
     
     if (nlevels(input$FEATURE) > 1) {
         tmp_result = .fitTukey(input)
-    } else { 
+    } else {
         if (is_labeled) {
             tmp_result = .adjustLRuns(input, TRUE)
         } else {
-            tmp_result = input[input$LABEL == "L", 
-                               list(RUN, LogIntensities = newABUNDANCE)]
+            tmp_result = input[, list(RUN, LogIntensities = newABUNDANCE)]
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
@@ -133,13 +132,9 @@
 #' @keywords internal
 .getNonMissingFilterStats = function(input, censored_symbol) {
     if (!is.null(censored_symbol)) {
-        if (censored_symbol == "NA") {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored
-        } else {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored 
-        }
+        nonmissing_filter = !is.na(input$newABUNDANCE) & !input$censored
     } else {
-        nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+        nonmissing_filter = !is.na(input$INTENSITY)
     }
     nonmissing_filter = nonmissing_filter & input$n_obs_run > 0 & input$n_obs > 1
     nonmissing_filter
