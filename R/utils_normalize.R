@@ -38,14 +38,6 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     } else if (normalization_method == "QUANTILE") {
         input = .normalizeQuantile(input)
     } else if (normalization_method == "GLOBALSTANDARDS") {
-         if (length(standards) == 1 && standards == "unlabeled") {
-            standards = unique(input[is.na(input$LABEL), "PeptideSequence", drop = TRUE])
-            if (length(standards) == 0) {
-                msg = "nameStandards = 'unlabeled' but no unlabeled peptides found in data."
-                getOption("MSstatsLog")("ERROR", msg)
-                stop(msg)
-            }
-        }
         input = .normalizeGlobalStandards(input, peptides_dict, standards)
     }
     input
@@ -207,6 +199,14 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     Standard = FRACTION = LABEL = ABUNDANCE = RUN = mean_by_run = NULL
 
     input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
+    if (length(standards) == 1 && standards == "unlabeled") {
+        standards = unique(input_with_peptides[is.na(input_with_peptides$LABEL), "PeptideSequence", drop = TRUE])
+        if (length(standards) == 0) {
+            msg = "nameStandards = 'unlabeled' but no unlabeled peptides found in data."
+            getOption("MSstatsLog")("ERROR", msg)
+            stop(msg)
+        }
+    }
     standards_data <- input_with_peptides[
         (PeptideSequence %in% standards | PROTEIN %in% standards) &
             !is.na(ABUNDANCE)
