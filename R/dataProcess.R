@@ -145,10 +145,6 @@ dataProcess = function(
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
-    if (toupper(as.character(normalization)) == "EQUALIZEMEDIANS" && "H" %in% input$LABEL) {
-        input = input[LABEL == "L"]
-        input[, LABEL := droplevels(LABEL)]
-    }
     input = MSstatsMergeFractions(input)
     input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
                                  censoredInt, maxQuantileforCensored)
@@ -159,7 +155,7 @@ dataProcess = function(
                             "== Start the summarization per subplot...")
     getOption("MSstatsMsg")("INFO",
                             " == Start the summarization per subplot...")
-    
+
     processed = getProcessed(input)
     input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
                                            remove_uninformative_feature_outlier)

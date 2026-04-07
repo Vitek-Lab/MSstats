@@ -32,6 +32,9 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 
     if (normalization_method == "EQUALIZEMEDIANS") {
         input = .normalizeMedian(input)
+        if ("H" %in% input$LABEL) {
+            input[LABEL == "H", remove := TRUE]
+        }
     } else if (normalization_method == "QUANTILE") {
         input = .normalizeQuantile(input)
     } else if (normalization_method == "GLOBALSTANDARDS") {
