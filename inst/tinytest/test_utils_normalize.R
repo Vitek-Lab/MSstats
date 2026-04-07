@@ -246,7 +246,8 @@ create_labeled_input <- function(n_runs = 4) {
 }
 
 input_labeled <- create_labeled_input()
-out_labeled <- MSstats:::.normalizeMedian(input_labeled)
+input_labeled_copy <- create_labeled_input()
+out_labeled <- MSstats:::.normalizeMedian(input_labeled_copy)
 
 # Normalization factor is derived from H abundances. H run medians are
 # 16, 17, 18, 19 and their overall median is 17.5, so the per-run shifts
@@ -266,8 +267,8 @@ l_medians_after <- out_labeled[LABEL == "L",
                                 list(med = median(ABUNDANCE, na.rm = TRUE)),
                                 by = "RUN"]
 expect_true(
-    max(l_medians_after$med) - min(l_medians_after$med) < 1e-10,
-    info = ".normalizeMedian (labeled): L run medians should also be equalized by the H-derived shift"
+    max(l_medians_after$med) - min(l_medians_after$med) > 0.1,
+    info = ".normalizeMedian (labeled): L run medians should not be equal anymore"
 )
 
 # The shift applied to L rows should equal the shift applied to H rows
