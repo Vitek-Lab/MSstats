@@ -31,9 +31,10 @@ MSstatsHandleMissing = function(input, summary_method, impute,
     
     if (impute & !is.null(missing_symbol)) {
         input$censored = FALSE
+        use_for_analysis = if ("remove" %in% colnames(input)) !input$remove else rep(TRUE, nrow(input))
         ## if intensity = 1, but abundance > cutoff after normalization, it also should be censored.
         if (!is.null(censored_cutoff)) {
-            quantiles = input[!is.na(INTENSITY) & INTENSITY > 1,
+            quantiles = input[use_for_analysis & !is.na(INTENSITY) & INTENSITY > 1,
                               quantile(ABUNDANCE,
                                        prob = c(0.01, 0.25, 0.5, 0.75,
                                                 censored_cutoff),
@@ -41,14 +42,14 @@ MSstatsHandleMissing = function(input, summary_method, impute,
             iqr = quantiles[4] - quantiles[2]
             multiplier = (quantiles[5] - quantiles[4]) / iqr
             cutoff_lower = (quantiles[2] - multiplier * iqr)
-            input$censored = !is.na(input$INTENSITY) &
+            input$censored = use_for_analysis & !is.na(input$INTENSITY) &
                 input$ABUNDANCE < cutoff_lower
             if (cutoff_lower <= 0 & !is.null(missing_symbol) & missing_symbol == "0") {
-                zero_one_filter = !is.na(input$ABUNDANCE) & input$ABUNDANCE <= 0
+                zero_one_filter = use_for_analysis & !is.na(input$ABUNDANCE) & input$ABUNDANCE <= 0
                 input$censored = ifelse(zero_one_filter, TRUE, input$censored)
             }
             if (!is.null(missing_symbol) & missing_symbol == "NA") {
-                input$censored = ifelse(is.na(input$INTENSITY), TRUE,
+                input$censored = ifelse(use_for_analysis & is.na(input$INTENSITY), TRUE,
                                         input$censored)
             }
 

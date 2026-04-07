@@ -58,13 +58,14 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @keywords internal
 .selectTopFeatures = function(input, top_n) {
     ABUNDANCE = MeanAbundance = remove = FEATURE = feature_rank = NULL
-    
-    mean_by_feature = input[ABUNDANCE > 0, 
+
+    use_for_analysis = if ("remove" %in% colnames(input)) !input$remove else rep(TRUE, nrow(input))
+    mean_by_feature = input[use_for_analysis & ABUNDANCE > 0,
                             list(MeanAbundance = mean(ABUNDANCE, na.rm = TRUE)),
                             by = c("PROTEIN", "FEATURE")]
     mean_by_feature[, feature_rank := rank(-MeanAbundance), by = "PROTEIN"]
     mean_by_feature = mean_by_feature[feature_rank <= top_n, ]
-    input[, remove := !(FEATURE %in% mean_by_feature$FEATURE)]
+    input[use_for_analysis, remove := !(FEATURE %in% mean_by_feature$FEATURE)]
     input
 }
 
