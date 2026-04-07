@@ -200,7 +200,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 
     input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
     if (length(standards) == 1 && standards == "unlabeled") {
-        standards = unique(input_with_peptides[is.na(input_with_peptides$LABEL), "PeptideSequence", drop = TRUE])
+        standards = unique(input_with_peptides[is.na(input_with_peptides$LABEL), ]$PeptideSequence)
         if (length(standards) == 0) {
             msg = "nameStandards = 'unlabeled' but no unlabeled peptides found in data."
             getOption("MSstatsLog")("ERROR", msg)
