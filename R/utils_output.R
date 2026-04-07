@@ -127,7 +127,7 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     if (impute) {
         cols = intersect(colnames(input), c("newABUNDANCE",
                                             "cen", "RUN",
-                                            "FEATURE", "ref_covariate"))
+                                            "FEATURE", "ref_covariate", "LABEL"))
         input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
                       predicted_survival,
                       by = setdiff(cols, "newABUNDANCE"),

@@ -406,12 +406,12 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         single_protein[, predicted := ifelse(censored, predicted, NA)]
         single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
 
-        survival = single_protein[, c(cols, "predicted"), with = FALSE]
+        survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
-        survival = single_protein[, cols, with = FALSE]
+        survival = single_protein[, intersect(c(cols, "LABEL"), colnames(single_protein)), with = FALSE]
         survival[, predicted := NA]
     }
-    
+
     if (all(!is.na(single_protein$ANOMALYSCORES))) {
         single_protein[, weights :=
             anomaly_weights_z_vec(ANOMALYSCORES),
@@ -544,12 +544,12 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
 
         single_protein[, predicted := ifelse(censored, predicted, NA)]
         single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
-        survival = single_protein[, c(cols, "predicted"), with = FALSE]
+        survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
-        survival = single_protein[, cols, with = FALSE]
+        survival = single_protein[, intersect(c(cols, "LABEL"), colnames(single_protein)), with = FALSE]
         survival[, predicted := NA]
     }
-    
+
     single_protein = .isSummarizable(single_protein, remove50missing)
     if (is.null(single_protein)) {
         return(list(NULL, NULL))
