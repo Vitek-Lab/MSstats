@@ -140,16 +140,16 @@ create_normalize_input <- function(n_runs = 4) {
 
 # Test: NONE / FALSE returns input unchanged
 input_raw <- create_normalize_input()
-out_none <- MSstatsNormalize(input_raw, "NONE")
+out_none <- MSstatsNormalize(data.table::copy(input_raw), "NONE")
 expect_identical(out_none, input_raw,
                  info = "NONE normalization should return input unchanged")
 
-out_false <- MSstatsNormalize(input_raw, "FALSE")
+out_false <- MSstatsNormalize(data.table::copy(input_raw), "FALSE")
 expect_identical(out_false, input_raw,
                  info = "FALSE normalization should return input unchanged")
 
 # Test: EQUALIZEMEDIANS shifts all runs to the same median
-out_median <- MSstatsNormalize(input_raw, "EQUALIZEMEDIANS")
+out_median <- MSstatsNormalize(data.table::copy(input_raw), "EQUALIZEMEDIANS")
 
 # After median normalization, median ABUNDANCE per run should be equal
 run_medians <- out_median[, list(med = median(ABUNDANCE, na.rm = TRUE)), by = "RUN"]
