@@ -4,12 +4,16 @@
 \alias{.runTukey}
 \title{Fit Tukey median polish}
 \usage{
-.runTukey(input, is_labeled, censored_symbol, remove50missing)
+.runTukey(input, is_labeled_reference, censored_symbol, remove50missing)
 }
 \arguments{
 \item{input}{data.table with data for a single protein}
 
-\item{is_labeled}{logical, if TRUE, data is coming from an SRM experiment}
+\item{is_labeled_reference}{logical, if TRUE, H channel is used as a
+normalization reference (SRM experiment): L abundances are adjusted by
+subtracting the H value and adding back the H median, and only L results
+are returned. If FALSE (e.g. protein turnover), each label is summarized
+independently and results for all labels are returned.}
 
 \item{censored_symbol}{Missing values are censored or at random. 
 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 

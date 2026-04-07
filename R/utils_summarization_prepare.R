@@ -88,10 +88,10 @@ getProcessed = function(input) {
     remove = NULL
     
     if (is.element("remove", colnames(input))) {
-        if (all(!(input$remove))) {
+        if (!any(input$remove, na.rm = TRUE)) {
             NULL
         } else {
-            input[(remove)]
+            input[remove == TRUE]
         }
     } else {
         NULL
