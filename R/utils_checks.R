@@ -231,12 +231,17 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     }
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
-    input$ISOTOPELABELTYPE = factor(input$ISOTOPELABELTYPE)
-    if (data.table::uniqueN(input$ISOTOPELABELTYPE) == 2) {
-        levels(input$ISOTOPELABELTYPE) = c("H", "L")
-    } else {
-        levels(input$ISOTOPELABELTYPE) = "L"
-    }
+    label_map <- c(
+        "H"     = "H",
+        "L"     = "L",
+        "heavy" = "H",
+        "light" = "L",
+        "NA"    = "NA"
+    )
+    input$ISOTOPELABELTYPE <- factor(
+        label_map[as.character(input$ISOTOPELABELTYPE)],
+        levels = c("H", "L", "NA")
+    )
     input
 }
 
