@@ -49,4 +49,5 @@ input_split = split(input, input$PROTEIN)
 single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]], impute, cens, TRUE, 100)
 head(single_protein_summary[[1]])
 
+
 }
