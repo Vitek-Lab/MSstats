@@ -80,8 +80,8 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     output_cols = intersect(c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
                               "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
                               "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
-                              "newABUNDANCE", "predicted", "feature_quality", 
-                              "is_outlier", "remove"), colnames(input))
+                              "newABUNDANCE", "predicted", "feature_quality",
+                              "is_outlier", "remove", "ref"), colnames(input))
     input = input[, output_cols, with = FALSE]
     
     if (is.element("remove", colnames(processed))) {
@@ -125,9 +125,9 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     survival_predictions = lapply(summarized, function(x) x[[2]])
     predicted_survival = data.table::rbindlist(survival_predictions, fill = TRUE)
     if (impute) {
-        cols = intersect(colnames(input), c("newABUNDANCE", 
+        cols = intersect(colnames(input), c("newABUNDANCE",
                                             "cen", "RUN",
-                                            "FEATURE", "ref"))
+                                            "FEATURE", "ref_covariate"))
         input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
                       predicted_survival,
                       by = setdiff(cols, "newABUNDANCE"),

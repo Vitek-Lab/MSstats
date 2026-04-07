@@ -17,16 +17,16 @@
         if (length(unique(input$FEATURE)) == 1) {
             # with single feature, not converge, wrong intercept
             # need to check
-            fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
+            fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref_covariate,
                                     data = input, dist = "gaussian",
                           control = list(maxiter=aft_iterations))
         } else {
             if (countdf) {
-                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
+                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref_covariate,
                                         data = input, dist = "gaussian",
                               control = list(maxiter=aft_iterations))
             } else {
-                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref,
+                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref_covariate,
                                         data = input, dist = "gaussian",
                               control = list(maxiter=aft_iterations))
             }

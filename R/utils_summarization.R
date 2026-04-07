@@ -62,20 +62,24 @@
 
 #' Fit Tukey median polish
 #' @param input data.table with data for a single protein
-#' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
+#' @param is_labeled_reference logical, if TRUE, H channel is used as a
+#'   normalization reference (SRM experiment): L abundances are adjusted by
+#'   subtracting the H value and adding back the H median, and only L results
+#'   are returned. If FALSE (e.g. protein turnover), each label is summarized
+#'   independently and results for all labels are returned.
 #' @inheritParams MSstatsSummarizeWithSingleCore
 #' @return data.table
 #' @keywords internal
-.runTukey = function(input, is_labeled, censored_symbol, remove50missing) {
+.runTukey = function(input, is_labeled_reference, censored_symbol, remove50missing) {
     Protein = RUN = newABUNDANCE = NULL
-    
+
     if (nlevels(input$FEATURE) > 1) {
-        tmp_result = .fitTukey(input)
+        tmp_result = .fitTukey(input, is_labeled_reference)
     } else {
-        if (is_labeled) {
+        if (is_labeled_reference) {
             tmp_result = .adjustLRuns(input, TRUE)
         } else {
-            tmp_result = input[, list(RUN, LogIntensities = newABUNDANCE)]
+            tmp_result = input[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
@@ -87,20 +91,22 @@
 #' @inheritParams .runTukey
 #' @return data.table
 #' @keywords internal
-.fitTukey = function(input) {
+.fitTukey = function(input, is_labeled_reference) {
     LABEL = RUN = newABUNDANCE = NULL
-    
+
     features = as.character(unique(input$FEATURE))
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
                              value.var = "newABUNDANCE", keep = TRUE)
     tmp_fitted = median_polish_summary(as.matrix(wide[, features, with = FALSE]))
     wide[, newABUNDANCE := tmp_fitted]
     tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
-    
-    if (data.table::uniqueN(input$LABEL) == 2) {
+
+    if (is_labeled_reference) {
         tmp_result = .adjustLRuns(tmp_result)
+        tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
+    } else {
+        tmp_result[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
     }
-    tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
 }
 
 
@@ -167,9 +173,9 @@
         }
     } else {
         if (is_single_feature) {
-            linear_model = lm(ABUNDANCE ~ RUN + ref , data = input)
+            linear_model = lm(ABUNDANCE ~ RUN + ref_covariate, data = input)
         } else {
-            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref, data = input)
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref_covariate, data = input)
         }
     }
     if (!equal_variances) {

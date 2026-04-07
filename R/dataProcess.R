@@ -210,7 +210,12 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                               remove50missing, equal_variance, numberOfCores = 1,
                               aft_iterations = 90) {
     if (numberOfCores > 1) {
-        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+        is_labeled_reference = "ref" %in% colnames(input) && any(input$ref, na.rm = TRUE)
+        if (is_labeled_reference) {
+            protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+        } else {
+            protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+        }
         num_proteins = length(protein_indices)
         function_environment = environment()
         cl = parallel::makeCluster(numberOfCores)
@@ -294,7 +299,12 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
                             remove50missing, equal_variance, aft_iterations = 90) {
     
             
-    protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+    is_labeled_reference = "ref" %in% colnames(input) && any(input$ref, na.rm = TRUE)
+    if (is_labeled_reference) {
+        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+    } else {
+        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+    }
     num_proteins = length(protein_indices)
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
@@ -366,7 +376,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     
     cols = intersect(
       colnames(single_protein),
-      c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref")
+      c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref_covariate")
     )
     
     single_protein = single_protein[
@@ -503,7 +513,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
-                                                 "FEATURE", "ref"))
+                                                 "FEATURE", "ref_covariate"))
     single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
                                         (n_obs_run > 0 & !is.na(n_obs_run))]
     if (nrow(single_protein) == 0) {
@@ -545,11 +555,12 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         return(list(NULL, NULL))
     } else {
         single_protein = single_protein[!is.na(newABUNDANCE), ]
-        is_labeled = nlevels(single_protein$LABEL) > 1
-        result = .runTukey(single_protein, is_labeled, censored_symbol,
+        is_labeled_reference = "ref" %in% colnames(single_protein) &&
+            any(single_protein$ref, na.rm = TRUE)
+        result = .runTukey(single_protein, is_labeled_reference, censored_symbol,
                            remove50missing)
-        if (!is.null(result)) {
-            result[, LABEL := unique(single_protein$LABEL)]
+        if (!is.null(result) && !is.element("LABEL", colnames(result))) {
+            result[, LABEL := "L"]
         }
     }
     list(result, survival)

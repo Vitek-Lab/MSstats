@@ -33,8 +33,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     if (normalization_method == "EQUALIZEMEDIANS") {
         input = .normalizeMedian(input)
         if ("H" %in% input$LABEL) {
-            input[, remove := FALSE]
-            input[LABEL == "H", remove := TRUE]
+            input[, ref := LABEL == "H"]
         }
     } else if (normalization_method == "QUANTILE") {
         input = .normalizeQuantile(input)
