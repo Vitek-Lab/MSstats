@@ -15,6 +15,13 @@ expect_equal(nrow(QuantDataDefault$FeatureLevelData),
 expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
              nrow(QuantDataParallelLinear$FeatureLevelData))
 
+# SRMRawData is a label-based experiment: heavy ("H") rows must be preserved
+# in FeatureLevelData after dataProcess
+expect_true(
+    "H" %in% QuantDataDefault$FeatureLevelData$LABEL,
+    info = "FeatureLevelData should contain heavy-label (H) rows for label-based SRM data"
+)
+
 
 # Test dataProcess with technical replicates & fractions ------------------
 msstats_input_fractions_techreps = data.table::fread(

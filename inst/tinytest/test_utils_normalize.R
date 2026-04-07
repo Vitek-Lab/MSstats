@@ -109,3 +109,193 @@ test_alternating_intensities_within_fractions <- function() {
 # Run tests ---------------------------------------------------------------------
 test_different_group_intensities()
 test_alternating_intensities_within_fractions()
+
+
+# Tests for MSstatsNormalize ---------------------------------------------------
+
+create_normalize_input <- function(n_runs = 4) {
+    # Two features across n_runs runs, single fraction
+    # Feature A: intensities 100, 200, 400, 800
+    # Feature B: intensities 50, 100, 200, 400
+    intensities <- c(100, 200, 400, 800, 50, 100, 200, 400)
+    n_features <- 2
+    data.table::data.table(
+        PROTEIN = rep("P1", n_features * n_runs),
+        PEPTIDE = rep(c("PEP_A", "PEP_B"), each = n_runs),
+        TRANSITION = rep("NA_NA", n_features * n_runs),
+        FEATURE = rep(c("PEP_A_NA_NA", "PEP_B_NA_NA"), each = n_runs),
+        LABEL = rep("L", n_features * n_runs),
+        GROUP_ORIGINAL = rep(c("G1", "G1", "G2", "G2"), n_features),
+        SUBJECT_ORIGINAL = rep(c("S1", "S2", "S3", "S4"), n_features),
+        RUN = rep(1:n_runs, n_features),
+        GROUP = rep(c("G1", "G1", "G2", "G2"), n_features),
+        SUBJECT = rep(c("S1", "S2", "S3", "S4"), n_features),
+        FRACTION = rep(1L, n_features * n_runs),
+        INTENSITY = intensities,
+        ANOMALYSCORES = rep(NA_real_, n_features * n_runs),
+        originalRUN = rep(paste0("Run", 1:n_runs), n_features),
+        ABUNDANCE = log2(intensities)
+    )
+}
+
+# Test: NONE / FALSE returns input unchanged
+input_raw <- create_normalize_input()
+out_none <- MSstatsNormalize(input_raw, "NONE")
+expect_identical(out_none, input_raw,
+                 info = "NONE normalization should return input unchanged")
+
+out_false <- MSstatsNormalize(input_raw, "FALSE")
+expect_identical(out_false, input_raw,
+                 info = "FALSE normalization should return input unchanged")
+
+# Test: EQUALIZEMEDIANS shifts all runs to the same median
+out_median <- MSstatsNormalize(input_raw, "EQUALIZEMEDIANS")
+
+# After median normalization, median ABUNDANCE per run should be equal
+run_medians <- out_median[, list(med = median(ABUNDANCE, na.rm = TRUE)), by = "RUN"]
+expect_true(
+    max(run_medians$med) - min(run_medians$med) < 1e-10,
+    info = "EQUALIZEMEDIANS: all run medians should be equal after normalization"
+)
+
+# Overall number of rows should be unchanged
+expect_equal(nrow(out_median), nrow(input_raw),
+             info = "EQUALIZEMEDIANS: row count should be unchanged")
+
+# Relative differences within each run should be preserved
+# Feature A - Feature B difference should stay the same within each run before vs after
+for (run_id in 1:4) {
+    diff_before <- input_raw[RUN == run_id & FEATURE == "PEP_A_NA_NA", ABUNDANCE] -
+                   input_raw[RUN == run_id & FEATURE == "PEP_B_NA_NA", ABUNDANCE]
+    diff_after  <- out_median[RUN == run_id & FEATURE == "PEP_A_NA_NA", ABUNDANCE] -
+                   out_median[RUN == run_id & FEATURE == "PEP_B_NA_NA", ABUNDANCE]
+    expect_true(abs(diff_before - diff_after) < 1e-10,
+                info = paste("EQUALIZEMEDIANS: within-run relative differences preserved for run", run_id))
+}
+
+
+# Tests for .normalizeMedian ---------------------------------------------------
+
+# Test: single-fraction, single-label data
+input_median <- create_normalize_input()
+
+# Run medians before normalization differ (runs have different scales)
+before_medians <- input_median[, list(med = median(ABUNDANCE, na.rm = TRUE)), by = "RUN"]
+expect_true(
+    max(before_medians$med) - min(before_medians$med) > 0.1,
+    info = ".normalizeMedian: run medians should differ before normalization"
+)
+
+out <- MSstats:::.normalizeMedian(input_median)
+
+# All run medians should converge to the same value
+after_medians <- out[, list(med = median(ABUNDANCE, na.rm = TRUE)), by = "RUN"]
+expect_true(
+    max(after_medians$med) - min(after_medians$med) < 1e-10,
+    info = ".normalizeMedian: run medians should be equal after normalization"
+)
+
+# Temporary columns should be cleaned up
+expect_false("ABUNDANCE_RUN" %in% colnames(out),
+             info = ".normalizeMedian: ABUNDANCE_RUN column should be removed")
+expect_false("ABUNDANCE_FRACTION" %in% colnames(out),
+             info = ".normalizeMedian: ABUNDANCE_FRACTION column should be removed")
+
+# Test: all-missing run is not affected and does not corrupt other runs
+input_with_na <- data.table::copy(input_median)
+input_with_na[RUN == 1, ABUNDANCE := NA_real_]
+out_na <- MSstats:::.normalizeMedian(input_with_na)
+non_na_medians <- out_na[RUN != 1, list(med = median(ABUNDANCE, na.rm = TRUE)), by = "RUN"]
+expect_true(
+    max(non_na_medians$med) - min(non_na_medians$med) < 1e-10,
+    info = ".normalizeMedian: all-NA run should not corrupt normalization of other runs"
+)
+
+
+# Tests for .normalizeMedian with heavy labels ---------------------------------
+
+create_labeled_input <- function(n_runs = 4) {
+    # Both L and H rows per run. H abundances vary across runs (the reference
+    # used for normalization). L abundances are constant so any shift applied
+    # to them comes entirely from the H-derived normalization factor.
+    #
+    # H abundances per run: 16, 17, 18, 19  (log2 scale)
+    # L abundances per run: all 16
+    n_features <- 2
+    runs <- rep(1:n_runs, n_features * 2)
+    data.table::data.table(
+        PROTEIN   = rep("P1", n_features * n_runs * 2),
+        PEPTIDE   = rep(rep(c("PEP_A", "PEP_B"), each = n_runs), 2),
+        TRANSITION = rep("NA_NA", n_features * n_runs * 2),
+        FEATURE   = rep(rep(c("PEP_A_NA_NA", "PEP_B_NA_NA"), each = n_runs), 2),
+        LABEL     = rep(c("L", "H"), each = n_features * n_runs),
+        GROUP_ORIGINAL = rep(c("G1", "G1", "G2", "G2"), n_features * 2),
+        SUBJECT_ORIGINAL = rep(c("S1", "S2", "S3", "S4"), n_features * 2),
+        RUN       = runs,
+        GROUP     = rep(c("G1", "G1", "G2", "G2"), n_features * 2),
+        SUBJECT   = rep(c("S1", "S2", "S3", "S4"), n_features * 2),
+        FRACTION  = rep(1L, n_features * n_runs * 2),
+        INTENSITY = rep(1L, n_features * n_runs * 2),  # placeholder
+        ANOMALYSCORES = rep(NA_real_, n_features * n_runs * 2),
+        originalRUN = rep(paste0("Run", 1:n_runs), n_features * 2),
+        ABUNDANCE = c(
+            rep(16, n_features * n_runs),          # L: constant across all runs
+            rep(c(16, 17, 18, 19), n_features)     # H: increasing across runs
+        )
+    )
+}
+
+input_labeled <- create_labeled_input()
+out_labeled <- MSstats:::.normalizeMedian(input_labeled)
+
+# Normalization factor is derived from H abundances. H run medians are
+# 16, 17, 18, 19 and their overall median is 17.5, so the per-run shifts
+# are +1.5, +0.5, -0.5, -1.5.
+
+# After normalization, H run medians should be equalized
+h_medians_after <- out_labeled[LABEL == "H",
+                                list(med = median(ABUNDANCE, na.rm = TRUE)),
+                                by = "RUN"]
+expect_true(
+    max(h_medians_after$med) - min(h_medians_after$med) < 1e-10,
+    info = ".normalizeMedian (labeled): H run medians should be equal after normalization"
+)
+
+# The same shift must also be applied to L rows (not just H rows)
+l_medians_after <- out_labeled[LABEL == "L",
+                                list(med = median(ABUNDANCE, na.rm = TRUE)),
+                                by = "RUN"]
+expect_true(
+    max(l_medians_after$med) - min(l_medians_after$med) < 1e-10,
+    info = ".normalizeMedian (labeled): L run medians should also be equalized by the H-derived shift"
+)
+
+# The shift applied to L rows should equal the shift applied to H rows
+# for the same run (both rows move by the same delta)
+for (run_id in 1:4) {
+    h_shift <- out_labeled[LABEL == "H" & RUN == run_id, ABUNDANCE[1]] -
+               input_labeled[LABEL == "H" & RUN == run_id, ABUNDANCE[1]]
+    l_shift <- out_labeled[LABEL == "L" & RUN == run_id, ABUNDANCE[1]] -
+               input_labeled[LABEL == "L" & RUN == run_id, ABUNDANCE[1]]
+    expect_true(
+        abs(h_shift - l_shift) < 1e-10,
+        info = paste(".normalizeMedian (labeled): L and H rows in run", run_id,
+                     "should receive the same abundance shift")
+    )
+}
+
+# L run medians before normalization are all equal (constant input),
+# confirming that any equalization of L medians is driven by H, not L
+l_medians_before <- input_labeled[LABEL == "L",
+                                   list(med = median(ABUNDANCE, na.rm = TRUE)),
+                                   by = "RUN"]
+expect_true(
+    max(l_medians_before$med) - min(l_medians_before$med) < 1e-10,
+    info = ".normalizeMedian (labeled): L medians are already equal before normalization (sanity check)"
+)
+
+# Temporary columns should be cleaned up in the labeled case too
+expect_false("ABUNDANCE_RUN" %in% colnames(out_labeled),
+             info = ".normalizeMedian (labeled): ABUNDANCE_RUN column should be removed")
+expect_false("ABUNDANCE_FRACTION" %in% colnames(out_labeled),
+             info = ".normalizeMedian (labeled): ABUNDANCE_FRACTION column should be removed")
