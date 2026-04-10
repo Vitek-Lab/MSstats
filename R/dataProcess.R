@@ -202,55 +202,39 @@ dataProcess = function(
 #' track progress. Only works for Linux & Mac OS. Default is 1.
 #' @param aft_iterations Number of iterations for AFT model fitting. Default is 90.
 #' 
-#' @importFrom parallel makeCluster parLapply stopCluster clusterExport
-#' 
+#' @importFrom BiocParallel bplapply MulticoreParam
+#'
 #' @return list of length one with run-level data.
-#' 
+#'
 MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
                               remove50missing, equal_variance, numberOfCores = 1,
                               aft_iterations = 90) {
     if (numberOfCores > 1) {
-        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+        protein_indices = split(seq_len(nrow(input)), input$PROTEIN)
         num_proteins = length(protein_indices)
-        function_environment = environment()
-        cl = parallel::makeCluster(numberOfCores)
         getOption("MSstatsLog")("INFO",
                                 "Starting the cluster setup for summarization")
-        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
-                                      "MSstatsSummarizeSingleLinear",
-                                      "input", "impute", "censored_symbol",
-                                      "remove50missing", "protein_indices", 
-                                      "equal_variance", "aft_iterations"), 
-                                envir = function_environment)
-        cat(paste0("Number of proteins to process: ", num_proteins), 
+        cat(paste0("Number of proteins to process: ", num_proteins),
             sep = "\n", file = "MSstats_dataProcess_log_progress.log")
+        BPPARAM = BiocParallel::MulticoreParam(workers = numberOfCores, force.GC = TRUE)
         if (method == "TMP") {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
-                MSstatsSummarizeSingleTMP(
-                    single_protein, impute, censored_symbol, remove50missing,
-                    aft_iterations)
-            })
+            summarized_results = BiocParallel::bplapply(
+                protein_indices,
+                function(idx) MSstatsSummarizeSingleTMP(
+                    input[idx, ], impute, censored_symbol, remove50missing, aft_iterations
+                ),
+                BPPARAM = BPPARAM
+            )
         } else {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
-                MSstatsSummarizeSingleLinear(
-                    single_protein,
-                    impute, 
-                    censored_symbol, 
-                    remove50missing,
-                    aft_iterations)
-            })
+            summarized_results = BiocParallel::bplapply(
+                protein_indices,
+                function(idx) MSstatsSummarizeSingleLinear(
+                    input[idx, ], impute, censored_symbol, remove50missing,
+                    aft_iterations, equal_variance
+                ),
+                BPPARAM = BPPARAM
+            )
         }
-        parallel::stopCluster(cl)
         return(summarized_results)
     } else {
         return(MSstatsSummarizeWithSingleCore(input, method, impute, 
