@@ -56,8 +56,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     input[, ABUNDANCE_FRACTION := median(ABUNDANCE_RUN, na.rm = TRUE),
           by = "FRACTION"]
     input[, ABUNDANCE := ABUNDANCE - ABUNDANCE_RUN + ABUNDANCE_FRACTION]
-    input = input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
-                  with = FALSE]
+    data.table::set(input, j = "ABUNDANCE_RUN", value = NULL)
+    data.table::set(input, j = "ABUNDANCE_FRACTION", value = NULL)
     getOption("MSstatsLog")("Normalization based on median: OK")
     input
 }
@@ -238,7 +238,9 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
         msg = "Normalization : normalization with global standards protein - okay"
     }
     getOption("MSstatsLog")("INFO", msg)
-    input[ , !(colnames(input) %in% c("mean_by_run", "median_by_fraction")), with = FALSE]
+    data.table::set(input, j = "mean_by_run", value = NULL)
+    data.table::set(input, j = "median_by_fraction", value = NULL)
+    input
 }
 
 
@@ -305,7 +307,8 @@ MSstatsMergeFractions = function(input) {
                 input$originalRUN = input$newRun
                 input$RUN = input$originalRUN
                 input$RUN = factor(input$RUN, levels=unique(input$RUN), labels=seq(1, length(unique(input$RUN))))
-                input = input[, !(colnames(input) %in% c('tmp','newRun')), with = FALSE]
+                data.table::set(input, j = "tmp", value = NULL)
+                data.table::set(input, j = "newRun", value = NULL)
             }
         } else {
             run_info = unique(input[, 
@@ -342,8 +345,8 @@ MSstatsMergeFractions = function(input) {
                 input$RUN = input$originalRUN
                 input$RUN = factor(input$RUN, levels = unique(input$RUN), 
                                    labels = seq_along(unique(input$RUN)))
-                input = input[, !(colnames(input) %in% c('tmp','newRun')), 
-                              with = FALSE]
+                data.table::set(input, j = "tmp", value = NULL)
+                data.table::set(input, j = "newRun", value = NULL)
             }
         }
     }
