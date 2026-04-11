@@ -128,13 +128,15 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     survival_predictions = lapply(summarized, function(x) x[[2]])
     predicted_survival = data.table::rbindlist(survival_predictions)
     if (impute) {
-        cols = intersect(colnames(input), c("newABUNDANCE", 
+        cols = intersect(colnames(input), c("newABUNDANCE",
                                             "cen", "RUN",
                                             "FEATURE", "ref"))
-        input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
-                      predicted_survival,
-                      by = setdiff(cols, "newABUNDANCE"),
-                      all.x = TRUE)
+        join_cols = setdiff(cols, "newABUNDANCE")
+        data.table::set(input, j = "newABUNDANCE", value = NULL)
+        input[, c("newABUNDANCE", "predicted") := .(NA_real_, NA_real_)]
+        input[predicted_survival,
+              c("newABUNDANCE", "predicted") := .(i.newABUNDANCE, i.predicted),
+              on = join_cols]
     }
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 
