@@ -126,14 +126,14 @@ getProcessed = function(input) {
     
     input[, newABUNDANCE := ABUNDANCE]
     input[, nonmissing := .getNonMissingFilter(.SD, impute, censored_symbol)]
-    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
+    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE", "LABEL")]
     # remove feature with 1 measurement
-    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)] 
-    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
-    
-    input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
+    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)]
+    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN", "LABEL")]
+
+    input[, total_features := uniqueN(FEATURE), by = c("PROTEIN", "LABEL")]
     input[, prop_features := sum(nonmissing) / total_features,
-          by = c("PROTEIN", "RUN")] 
+          by = c("PROTEIN", "RUN", "LABEL")]
     input
 }
 
@@ -163,14 +163,14 @@ getProcessed = function(input) {
     }
     
     input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
-    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
-    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)] 
-    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
-    
-    input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
+    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE", "LABEL")]
+    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)]
+    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN", "LABEL")]
+
+    input[, total_features := uniqueN(FEATURE), by = c("PROTEIN", "LABEL")]
     input[, prop_features := sum(nonmissing) / total_features,
-          by = c("PROTEIN", "RUN")] 
-    
+          by = c("PROTEIN", "RUN", "LABEL")]
+
     if (is.element("cen", colnames(input))) {
         if (any(input[["cen"]] == 0)) {
             .setCensoredByThreshold(input, censored_symbol, remove50missing)

@@ -88,12 +88,7 @@
 
 
 #' Fit tukey median polish for a data matrix
-#' @param input data.table with data for a single protein
-#' @param is_labeled_reference logical, if TRUE, H channel is used as a
-#'   normalization reference (SRM experiment): L abundances are adjusted by
-#'   subtracting the H value and adding back the H median, and only L results
-#'   are returned. If FALSE (e.g. protein turnover), each label is summarized
-#'   independently and results for all labels are returned.
+#' @inheritParams .runTukey
 #' @return data.table
 #' @keywords internal
 .fitTukey = function(input, is_labeled_reference) {
