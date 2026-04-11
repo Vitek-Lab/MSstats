@@ -62,21 +62,24 @@
 
 #' Fit Tukey median polish
 #' @param input data.table with data for a single protein
-#' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
+#' @param is_labeled_reference logical, if TRUE, H channel is used as a
+#'   normalization reference (SRM experiment): L abundances are adjusted by
+#'   subtracting the H value and adding back the H median, and only L results
+#'   are returned. If FALSE (e.g. protein turnover), each label is summarized
+#'   independently and results for all labels are returned.
 #' @inheritParams MSstatsSummarizeWithSingleCore
 #' @return data.table
 #' @keywords internal
-.runTukey = function(input, is_labeled, censored_symbol, remove50missing) {
+.runTukey = function(input, is_labeled_reference, censored_symbol, remove50missing) {
     Protein = RUN = newABUNDANCE = NULL
-    
+
     if (nlevels(input$FEATURE) > 1) {
-        tmp_result = .fitTukey(input)
-    } else { 
-        if (is_labeled) {
+        tmp_result = .fitTukey(input, is_labeled_reference)
+    } else {
+        if (is_labeled_reference) {
             tmp_result = .adjustLRuns(input, TRUE)
         } else {
-            tmp_result = input[input$LABEL == "L", 
-                               list(RUN, LogIntensities = newABUNDANCE)]
+            tmp_result = input[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
@@ -85,23 +88,30 @@
 
 
 #' Fit tukey median polish for a data matrix
-#' @inheritParams .runTukey
+#' @param input data.table with data for a single protein
+#' @param is_labeled_reference logical, if TRUE, H channel is used as a
+#'   normalization reference (SRM experiment): L abundances are adjusted by
+#'   subtracting the H value and adding back the H median, and only L results
+#'   are returned. If FALSE (e.g. protein turnover), each label is summarized
+#'   independently and results for all labels are returned.
 #' @return data.table
 #' @keywords internal
-.fitTukey = function(input) {
+.fitTukey = function(input, is_labeled_reference) {
     LABEL = RUN = newABUNDANCE = NULL
-    
+
     features = as.character(unique(input$FEATURE))
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
                              value.var = "newABUNDANCE", keep = TRUE)
     tmp_fitted = median_polish_summary(as.matrix(wide[, features, with = FALSE]))
     wide[, newABUNDANCE := tmp_fitted]
     tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
-    
-    if (data.table::uniqueN(input$LABEL) == 2) {
+
+    if (is_labeled_reference) {
         tmp_result = .adjustLRuns(tmp_result)
+        tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
+    } else {
+        tmp_result[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
     }
-    tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
 }
 
 
@@ -133,13 +143,9 @@
 #' @keywords internal
 .getNonMissingFilterStats = function(input, censored_symbol) {
     if (!is.null(censored_symbol)) {
-        if (censored_symbol == "NA") {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored
-        } else {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored 
-        }
+        nonmissing_filter = !is.na(input$newABUNDANCE) & !input$censored
     } else {
-        nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+        nonmissing_filter = !is.na(input$INTENSITY)
     }
     nonmissing_filter = nonmissing_filter & input$n_obs_run > 0 & input$n_obs > 1
     nonmissing_filter
