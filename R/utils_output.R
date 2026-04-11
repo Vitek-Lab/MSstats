@@ -34,13 +34,17 @@
 #' output = output = MSstatsSummarizationOutput(input, summarized, processed,
 #' method, impute, cens)
 #' 
-MSstatsSummarizationOutput = function(input, summarized, processed, 
+MSstatsSummarizationOutput = function(input, summarized, processed,
                                       method, impute, censored_symbol) {
     LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL
-    
-    input = .finalizeInput(input, summarized, method, impute, censored_symbol)
-    summarized = lapply(summarized, function(x) x[[1]])
-    summarized = data.table::rbindlist(summarized)
+
+    predicted_survival = data.table::rbindlist(lapply(summarized, function(x) x[[2]]))
+    protein_summaries = lapply(summarized, function(x) x[[1]])
+    rm(summarized)
+    input = .finalizeInput(input, predicted_survival, method, impute, censored_symbol)
+    rm(predicted_survival)
+    summarized = data.table::rbindlist(protein_summaries)
+    rm(protein_summaries)
     if (inherits(summarized, "try-error")) {
         msg = paste("*** error : can't summarize per subplot with ", 
                     method, ".")
@@ -107,9 +111,9 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' @param impute if TRUE, censored missing values were imputed
 #' @param censored_symbol censored missing value indicator
 #' @keywords internal
-.finalizeInput = function(input, summarized, method, impute, censored_symbol) {
+.finalizeInput = function(input, predicted_survival, method, impute, censored_symbol) {
     # if (method == "TMP") {
-    input = .finalizeTMP(input, censored_symbol, impute, summarized)
+    input = .finalizeTMP(input, censored_symbol, impute, predicted_survival)
     # } else {
     #     input = .finalizeLinear(input, censored_symbol)
     # }
@@ -120,13 +124,11 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' Summary statistics for output of TMP-based summarization
 #' @inheritParams .finalizeInput
 #' @keywords internal
-.finalizeTMP = function(input, censored_symbol, impute, summarized) {
+.finalizeTMP = function(input, censored_symbol, impute, predicted_survival) {
     NonMissingStats = NumMeasuredFeature = MissingPercentage = LABEL = NULL
     total_features = more50missing = nonmissing_orig = censored = NULL
     INTENSITY = newABUNDANCE = NumImputedFeature = NULL
-    
-    survival_predictions = lapply(summarized, function(x) x[[2]])
-    predicted_survival = data.table::rbindlist(survival_predictions)
+
     if (impute) {
         cols = intersect(colnames(input), c("newABUNDANCE",
                                             "cen", "RUN",
