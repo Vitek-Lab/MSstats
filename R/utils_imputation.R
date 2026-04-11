@@ -48,6 +48,8 @@
             }
         }  
     }
+    fit$y = NULL
+    fit$linear.predictors = NULL
     fit
 }
 

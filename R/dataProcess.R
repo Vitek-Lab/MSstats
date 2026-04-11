@@ -381,7 +381,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
             pred = predict(survival_fit, newdata = .SD, se.fit = TRUE)
             list(pred$fit, pred$se.fit^2 + sigma2)
         }]
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), 
+        rm(survival_fit)
+        single_protein[, predicted := ifelse(censored & (LABEL == "L"),
                                              predicted, NA)]
         single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
                                                 predicted, newABUNDANCE)]
@@ -420,7 +421,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     } else {
         cf = summary(fit)$coefficients[, 1]
         cov_mat = vcov(fit)
-        
+        rm(fit)
+
         result = unique(single_protein[, list(Protein = PROTEIN, RUN = RUN)])
         extracted_values = get_linear_summary(single_protein, cf,
                                              counts, label, cov_mat)
@@ -497,7 +499,8 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         } else {
             single_protein[, predicted := NA_real_]
         }
-        
+        rm(survival_fit)
+
         single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
         single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
                                                 predicted, newABUNDANCE)]

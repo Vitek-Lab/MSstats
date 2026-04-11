@@ -178,10 +178,11 @@
         }
     }
     if (!equal_variances) {
-        linear_model = .updateUnequalVariances(input = input, 
+        linear_model = .updateUnequalVariances(input = input,
                                                fit = linear_model,
                                                num_iter = 1)
     }
+    linear_model$model = NULL
     linear_model
 }
 
