@@ -97,8 +97,10 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                                         colnames(processed)), with = FALSE]
         input = rbind(input, processed, fill = TRUE)
     }
-    list(FeatureLevelData = as.data.frame(input), 
-         ProteinLevelData = as.data.frame(rqall), 
+    data.table::setDF(input)
+    data.table::setDF(rqall)
+    list(FeatureLevelData = input,
+         ProteinLevelData = rqall,
          SummaryMethod = method)
     
 }
