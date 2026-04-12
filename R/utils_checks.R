@@ -239,7 +239,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     )
     input$ISOTOPELABELTYPE <- factor(
         label_map[as.character(input$ISOTOPELABELTYPE)],
-        levels = c("H", "L", "NA")
+        levels = c("H", "L")
     )
     input
 }
