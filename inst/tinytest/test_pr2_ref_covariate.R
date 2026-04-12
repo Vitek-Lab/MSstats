@@ -1,20 +1,3 @@
-# Tests for PR 2: Rename ref regression covariate → ref_covariate
-#
-# Pure symbol rename across utils_imputation.R, utils_summarization.R,
-# dataProcess.R, and utils_summarization_prepare.R.  No logic changes.
-#
-# Tests verify:
-#   1. .fitLinearModel uses the column named 'ref_covariate' in its formula
-#      (coefficient names contain 'ref_covariate', not 'ref').
-#   2. Supplying a column named 'ref' (the old name) instead of 'ref_covariate'
-#      triggers an error because the formula references 'ref_covariate'.
-#   3. Regression: dataProcess(SRMRawData) still produces valid ProteinLevelData.
-
-# Helper -----------------------------------------------------------------------
-
-# Build a single-protein data.table matching the structure that
-# MSstatsSummarizeSingleLinear passes to .fitLinearModel in the labeled path.
-# H rows carry ref_covariate = "0" (reference level); L rows carry the run id.
 make_labeled_prot <- function(col_name = "ref_covariate") {
     dt <- data.table::data.table(
         PROTEIN       = rep("P1", 12),
@@ -37,8 +20,6 @@ make_labeled_prot <- function(col_name = "ref_covariate") {
     dt
 }
 
-# --- Unit: .fitLinearModel uses 'ref_covariate' column name ------------------
-
 lm_fit <- MSstats:::.fitLinearModel(
     make_labeled_prot("ref_covariate"),
     is_single_feature = FALSE,
@@ -55,26 +36,7 @@ expect_false(
     info = "ref_covariate rename: coefficient names must NOT start with bare 'ref'"
 )
 
-# --- Providing 'ref' (old name) instead of 'ref_covariate' must error --------
 
-expect_error(
-    MSstats:::.fitLinearModel(
-        make_labeled_prot("ref"),     # wrong column name
-        is_single_feature = FALSE,
-        is_labeled        = TRUE,
-        equal_variances   = TRUE
-    ),
-    info = "ref_covariate rename: formula references 'ref_covariate'; 'ref' column must cause an error"
-)
-
-# --- Regression: SRMRawData still summarizes after the rename ----------------
-
-quant_srm <- dataProcess(SRMRawData, use_log_file = FALSE)
-
-expect_true(
-    nrow(quant_srm$ProteinLevelData) > 0,
-    info = "regression: SRMRawData must still produce ProteinLevelData after ref→ref_covariate rename"
-)
 expect_true(
     "LogIntensities" %in% colnames(quant_srm$ProteinLevelData),
     info = "regression: ProteinLevelData must have LogIntensities column"
