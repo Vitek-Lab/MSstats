@@ -146,14 +146,16 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 #' @param x character or factor vector of IsotopeLabelType values
 #' @return factor with levels from \code{c("H","L")} restricted to those present
 #' @keywords internal
+#' @noRd
 .mapIsotopeLabelType = function(x) {
     label_map <- c(
-        "H"     = "H",
-        "L"     = "L",
+        "h"     = "H",
+        "l"     = "L",
         "heavy" = "H",
         "light" = "L"
     )
-    mapped <- label_map[as.character(x)]
+    key <- tolower(trimws(as.character(x)))
+    mapped <- unname(label_map[key])
     factor(mapped, levels = intersect(c("H", "L"), mapped))
 }
 
