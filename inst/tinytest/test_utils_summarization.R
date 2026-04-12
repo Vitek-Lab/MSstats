@@ -44,3 +44,35 @@ feature_coefficient_no_weights =
     summarized_no_weights$coefficients[['FEATUREASGLLLER_2_y3_1']]
 expect_false(feature_coefficient_with_weights == feature_coefficient_no_weights,
              info = "Feature coefficients should differ when weights are used")
+
+
+make_srm_input <- function() {
+    dt <- data.table::data.table(
+        PROTEIN       = rep("P1", 12),
+        FEATURE       = factor(rep(c("F1", "F2", "F3"), each = 4)),
+        RUN           = factor(rep(c("R1","R2","R3","R4"), 3)),
+        LABEL         = rep(c("H","H","L","L"), 3),
+        ABUNDANCE     = c(10, 11, 14, 15,
+                          10.2, 11.2, 14.2, 15.2,
+                          9.8, 10.8, 13.8, 14.8),
+        newABUNDANCE  = c(10, 11, 14, 15,
+                          10.2, 11.2, 14.2, 15.2,
+                          9.8, 10.8, 13.8, 14.8),
+        weights       = rep(NA_real_, 12)
+    )
+    dt[["ref_covariate"]] <- factor(
+        rep(c("0","0","R3","R4"), 3),
+        levels = c("0","R3","R4")
+    )
+    dt
+}
+lm_fit <- MSstats:::.fitLinearModel(
+    make_srm_input(),
+    is_single_feature = FALSE,
+    is_labeled        = TRUE,
+    equal_variances   = TRUE
+)
+expect_true(
+    any(grepl("ref_covariate", names(coef(lm_fit)))),
+    info = "ref_covariate: model coefficients must include 'ref_covariate' terms"
+)
