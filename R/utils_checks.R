@@ -142,6 +142,24 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 }
 
 
+#' Map IsotopeLabelType values to canonical "H"/"L" levels
+#' @param x character or factor vector of IsotopeLabelType values
+#' @return factor with levels from \code{c("H","L")} restricted to those present
+#' @keywords internal
+#' @noRd
+.mapIsotopeLabelType = function(x) {
+    label_map <- c(
+        "h"     = "H",
+        "l"     = "L",
+        "heavy" = "H",
+        "light" = "L"
+    )
+    key <- tolower(trimws(as.character(x)))
+    mapped <- unname(label_map[key])
+    factor(mapped, levels = intersect(c("H", "L"), mapped))
+}
+
+
 #' Check validity of data that were not processed by MSstats converter
 #' @param input data.table
 #' @inheritParams MSstatsPrepareForDataProcess
@@ -208,12 +226,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
         stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
     }
     
-    input$ISOTOPELABELTYPE = factor(input$ISOTOPELABELTYPE)
-    if (data.table::uniqueN(input$ISOTOPELABELTYPE) == 2) {
-        levels(input$ISOTOPELABELTYPE) = c("H", "L")
-    } else {
-        levels(input$ISOTOPELABELTYPE) = "L"
-    }
+    input$ISOTOPELABELTYPE <- .mapIsotopeLabelType(input$ISOTOPELABELTYPE)
     input
 }
 
@@ -231,12 +244,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     }
     input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
-    input$ISOTOPELABELTYPE = factor(input$ISOTOPELABELTYPE)
-    if (data.table::uniqueN(input$ISOTOPELABELTYPE) == 2) {
-        levels(input$ISOTOPELABELTYPE) = c("H", "L")
-    } else {
-        levels(input$ISOTOPELABELTYPE) = "L"
-    }
+    input$ISOTOPELABELTYPE <- .mapIsotopeLabelType(input$ISOTOPELABELTYPE)
     input
 }
 
