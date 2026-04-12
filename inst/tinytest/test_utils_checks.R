@@ -49,7 +49,7 @@ expect_equal(
     info = "label_map: all 'light' input must produce all 'L' output"
 )
 expect_equal(
-    levels(result_hl$ISOTOPELABELTYPE), c("L"),
+    levels(result_light$ISOTOPELABELTYPE), c("L"),
     info = "label_map: factor levels for H/L input must still be c('L')"
 )
 
@@ -79,4 +79,14 @@ result_na <- MSstats:::.prepareForDataProcess(make_input(rep(NA, 5)))
 expect_true(
     all(is.na(result_na$ISOTOPELABELTYPE)),
     info = "NA IsotopeLabelType maps to NA"
+)
+
+result_na_l_h <- MSstats:::.prepareForDataProcess(make_input(c(NA, "L", "H")))
+expect_true(
+    any(is.na(result_na_l_h$ISOTOPELABELTYPE)),
+    info = "NA IsotopeLabelType maps to NA"
+)
+expect_equal(
+    levels(result_na_l_h$ISOTOPELABELTYPE), c("H", "L"),
+    info = "label_map: factor levels for H/L input must still be c('H', 'L')"
 )
