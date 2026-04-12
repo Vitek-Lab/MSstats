@@ -29,6 +29,14 @@ expect_true(
     nrow(QuantDataDefault$ProteinLevelData) > 0,
     info = "SRMRawData must produce non-empty ProteinLevelData"
 )
+expect_true(
+    "LogIntensities" %in% colnames(QuantDataDefault$ProteinLevelData),
+    info = "regression: ProteinLevelData must have LogIntensities column"
+)
+expect_true(
+    "GROUP" %in% colnames(QuantDataDefault$ProteinLevelData),
+    info = "regression: ProteinLevelData must have GROUP column"
+)
 
 
 # Test dataProcess with technical replicates & fractions ------------------

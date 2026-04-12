@@ -172,9 +172,9 @@
         }
     } else {
         if (is_single_feature) {
-            linear_model = lm(ABUNDANCE ~ RUN + ref , data = input)
+            linear_model = lm(ABUNDANCE ~ RUN + ref_covariate, data = input)
         } else {
-            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref, data = input)
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref_covariate, data = input)
         }
     }
     if (!equal_variances) {
