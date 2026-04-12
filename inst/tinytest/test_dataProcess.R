@@ -21,6 +21,14 @@ expect_true(
     "H" %in% QuantDataDefault$FeatureLevelData$LABEL,
     info = "FeatureLevelData should contain heavy-label (H) rows for label-based SRM data"
 )
+expect_true(
+    "L" %in% QuantDataDefault$FeatureLevelData$LABEL,
+    info = "SRMRawData FeatureLevelData must contain L rows"
+)
+expect_true(
+    nrow(QuantDataDefault$ProteinLevelData) > 0,
+    info = "SRMRawData must produce non-empty ProteinLevelData"
+)
 
 
 # Test dataProcess with technical replicates & fractions ------------------
