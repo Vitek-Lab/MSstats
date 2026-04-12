@@ -366,7 +366,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     
     cols = intersect(
       colnames(single_protein),
-      c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref")
+      c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref_covariate")
     )
     
     single_protein = single_protein[
@@ -513,7 +513,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
-                                                 "FEATURE", "ref"))
+                                                 "FEATURE", "ref_covariate"))
     single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
                                         (n_obs_run > 0 & !is.na(n_obs_run))]
     if (nrow(single_protein) == 0) {
