@@ -210,42 +210,45 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                               remove50missing, equal_variance, numberOfCores = 1,
                               aft_iterations = 90) {
     if (numberOfCores > 1) {
-        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
-        num_proteins = length(protein_indices)
-        function_environment = environment()
+        # Pre-split input into per-protein data.tables. Previously,
+        # clusterExport sent the entire 'input' (~300 MB+) to every worker,
+        # even though each worker only subsets one protein at a time.
+        # With 4 cores that meant 4 full copies (~1.2 GB of waste).
+        # By splitting upfront, parLapply sends each worker only its
+        # assigned chunk of proteins — no worker ever holds the full dataset.
+        protein_data = split(input, input$PROTEIN)
+        num_proteins = length(protein_data)
+
         cl = parallel::makeCluster(numberOfCores)
         getOption("MSstatsLog")("INFO",
                                 "Starting the cluster setup for summarization")
-        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
+        # Only export functions and scalar parameters — not the data.
+        # parLapply distributes the per-protein data.tables directly.
+        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP",
                                       "MSstatsSummarizeSingleLinear",
-                                      "input", "impute", "censored_symbol",
-                                      "remove50missing", "protein_indices", 
-                                      "equal_variance"), 
-                                envir = function_environment)
-        cat(paste0("Number of proteins to process: ", num_proteins), 
+                                      "impute", "censored_symbol",
+                                      "remove50missing", "equal_variance"),
+                                envir = environment())
+        cat(paste0("Number of proteins to process: ", num_proteins),
             sep = "\n", file = "MSstats_dataProcess_log_progress.log")
+        # parLapply(cl, protein_data, fun) splits protein_data (a list of
+        # per-protein data.tables) into chunks — one chunk per worker — and
+        # serializes only that chunk to each worker. E.g. with 4 workers and
+        # 5000 proteins, worker 1 receives proteins 1-1250, worker 2 gets
+        # 1251-2500, etc. Each worker applies fun to each element in its chunk
+        # sequentially, collects all results, then sends them back.
         if (method == "TMP") {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
+            summarized_results = parallel::parLapply(cl, protein_data, function(single_protein) {
                 MSstatsSummarizeSingleTMP(
                     single_protein, impute, censored_symbol, remove50missing,
                     aft_iterations)
             })
         } else {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
+            summarized_results = parallel::parLapply(cl, protein_data, function(single_protein) {
                 MSstatsSummarizeSingleLinear(
                     single_protein,
-                    impute, 
-                    censored_symbol, 
+                    impute,
+                    censored_symbol,
                     remove50missing,
                     aft_iterations)
             })
