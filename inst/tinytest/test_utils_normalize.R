@@ -27,7 +27,7 @@ create_test_input <- function(standard_intensities, peptide2_intensities, peptid
                         "AAAAAAAAAAAAAAGAGAGAK_2_NA_NA", 
                         "AAAAAAAAAAAAVSRD_3_NA_NA"), 
                       each = n_runs),
-        LABEL = rep("L", n_proteins * n_runs),
+        LABEL = rep(c("L", "L", NA), each = n_runs),
         GROUP_ORIGINAL = rep(rep(c("Control", "Treatment"), each = n_runs/2), n_proteins),
         SUBJECT_ORIGINAL = rep(paste0("Subject", rep(1:n_subjects, each = n_fractions)), 
                                n_proteins * 2),
@@ -106,9 +106,95 @@ test_alternating_intensities_within_fractions <- function() {
                 info = "No normalization should occur when standard averages are equal across fractions")
 }
 
+standard_intensities_equal    <- rep(262144, 48)  # flat across all runs
+peptide3_intensities_baseline <- rep(262144, 48)  # non-standard reference
+test_unlabeled_standard_detected <- function() {
+  peptide_dict <- create_peptide_dictionary()
+  input <- create_test_input(standard_intensities_equal,
+                             standard_intensities_equal,
+                             peptide3_intensities_baseline)
+  
+  output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, "unlabeled")
+  
+  # Uniform standard => median_by_fraction == mean_by_run for every run,
+  # so ABUNDANCE is unchanged for all peptides.
+  expect_equal(
+    output$ABUNDANCE, input$ABUNDANCE,
+    info = "unlabeled path: uniform standard intensities should produce no shift in ABUNDANCE"
+  )
+}
+
+test_labeled_peptides_excluded_from_unlabeled_pool <- function() {
+  peptide_dict <- create_peptide_dictionary()
+  
+  # AAAAAAAAAAAAVSRD (the unlabeled standard) doubles in intensity for
+  # Treatment runs — this is the signal that should shift other peptides.
+  unlabeled_standard_intensities <- c(rep(262144, 24), rep(524288, 24))
+  input <- create_test_input(standard_intensities_equal,
+                             standard_intensities_equal,
+                             unlabeled_standard_intensities)
+  
+  output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, "unlabeled")
+  
+  # AAAAAAAAAAAAAAGAGAGAK is labeled, so it must NOT contribute to the
+  # normalization reference; its post-normalization values must differ from
+  # its pre-normalization values (it gets corrected by the unlabeled standard).
+  labeled_pre  <- input[grepl("AAAAAAAAAAAAAAGAGAGAK", PEPTIDE)]$ABUNDANCE
+  labeled_post <- output[grepl("AAAAAAAAAAAAAAGAGAGAK", PEPTIDE)]$ABUNDANCE
+  expect_false(
+    isTRUE(all.equal(labeled_pre, labeled_post)),
+    info = "unlabeled path: labeled peptide AAAAAAAAAAAAAAGAGAGAK must be adjusted, not used as standard"
+  )
+}
+
+test_unlabeled_normalization_shift <- function() {
+  peptide_dict <- create_peptide_dictionary()
+  
+  unlabeled_standard_intensities <- c(rep(262144, 24), rep(524288, 24))
+  input <- create_test_input(standard_intensities_equal,
+                             standard_intensities_equal,
+                             unlabeled_standard_intensities)
+  
+  output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, "unlabeled")
+  
+  control_abundance <- output[RUN %in% 1:24 &
+                                grepl("AAAAAAAAAAAAAAGAGAGAK_3", PEPTIDE) &
+                                !is.na(ABUNDANCE)]$ABUNDANCE
+  treatment_abundance <- output[RUN %in% 25:48 &
+                                  grepl("AAAAAAAAAAAAAAGAGAGAK_3", PEPTIDE) &
+                                  !is.na(ABUNDANCE)]$ABUNDANCE
+  
+  expect_true(
+    all(abs(control_abundance - 18.5) < 1e-10),
+    info = "unlabeled path: control runs shifted up by +0.5 to reach fraction median"
+  )
+  expect_true(
+    all(abs(treatment_abundance - 17.5) < 1e-10),
+    info = "unlabeled path: treatment runs shifted down by -0.5 to reach fraction median"
+  )
+}
+
+test_unlabeled_error_when_none_found <- function() {
+  peptide_dict <- create_peptide_dictionary()  # reused: no NA LABEL rows
+  input <- create_test_input(standard_intensities_equal,
+                             standard_intensities_equal,
+                             peptide3_intensities_baseline)
+  input$LABEL = "L"
+  
+  expect_error(
+    MSstats:::.normalizeGlobalStandards(input, peptide_dict, "unlabeled"),
+    pattern = "no unlabeled peptides found",
+    info = "unlabeled path: must error when peptide dictionary contains no NA-LABEL rows"
+  )
+}
+
 # Run tests ---------------------------------------------------------------------
 test_different_group_intensities()
 test_alternating_intensities_within_fractions()
+test_unlabeled_standard_detected()
+test_labeled_peptides_excluded_from_unlabeled_pool()
+test_unlabeled_normalization_shift()
+test_unlabeled_error_when_none_found()
 
 
 # Tests for MSstatsNormalize ---------------------------------------------------
