@@ -72,3 +72,49 @@ expect_false(
     info = "ref_covariate: must NOT be created for label-free (single LABEL) data"
 )
 
+# --- .prepareLinear: n_obs computed per PROTEIN+FEATURE+LABEL ----------------
+
+make_two_label_input <- function() {
+    data.table::data.table(
+        PROTEIN  = rep("P1", 8),
+        FEATURE  = factor(rep(c("F1", "F2"), each = 4)),
+        LABEL    = rep(c("L","L","H","H"), 2),
+        RUN      = factor(rep(c("R1","R2","R1","R2"), 2)),
+        ABUNDANCE = c(10, 11, 8, 9,   10.5, 11.5, 8.5, 9.5),
+        INTENSITY = rep(100L, 8),
+        ANOMALYSCORES = rep(NA_real_, 8)
+    )
+}
+
+prep_input <- make_two_label_input()
+result_prep <- MSstats:::.prepareLinear(prep_input, impute = FALSE, censored_symbol = NULL)
+
+# Each FEATURE+LABEL combination has 2 runs → n_obs should be 2
+expect_equal(
+    unique(result_prep[LABEL == "L" & FEATURE == "F1", n_obs]),
+    2L,
+    info = ".prepareLinear: n_obs must be 2 for L rows of F1 (2 L runs)"
+)
+expect_equal(
+    unique(result_prep[LABEL == "H" & FEATURE == "F1", n_obs]),
+    2L,
+    info = ".prepareLinear: n_obs must be 2 for H rows of F1 (2 H runs)"
+)
+# Without LABEL grouping the old code would have returned 4 (all runs pooled)
+expect_false(
+    any(result_prep$n_obs == 4L),
+    info = ".prepareLinear: n_obs must not be 4 (old un-grouped value)"
+)
+
+# total_features per PROTEIN+LABEL: 2 features per label
+expect_equal(
+    unique(result_prep[LABEL == "L", total_features]),
+    2L,
+    info = ".prepareLinear: total_features for L must be 2"
+)
+expect_equal(
+    unique(result_prep[LABEL == "H", total_features]),
+    2L,
+    info = ".prepareLinear: total_features for H must be 2"
+)
+
