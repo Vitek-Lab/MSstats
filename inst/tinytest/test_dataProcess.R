@@ -17,6 +17,14 @@ expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
 
 # SRMRawData is a label-based experiment: heavy ("H") rows must be preserved
 # in FeatureLevelData after dataProcess
+quant_data_srm = readRDS(
+    system.file("tinytest/processed_data/quant_data_srm.rds", 
+                package = "MSstats")
+)
+expect_true(
+    identical(QuantDataDefault, quant_data_srm),
+    info = "dataProcess output for SRMRawData should be identical to previously saved output"
+)
 expect_true(
     "H" %in% QuantDataDefault$FeatureLevelData$LABEL,
     info = "FeatureLevelData should contain heavy-label (H) rows for label-based SRM data"
