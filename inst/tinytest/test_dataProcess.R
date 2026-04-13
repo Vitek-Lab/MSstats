@@ -239,3 +239,42 @@ for (i in 1:nrow(protein_runs_4_5)) {
                            "than to AFPLAEWQPSDVDQR", afpla_abundance,
                            "(dist =", round(dist_to_afpla, 4), ")"))
 }
+
+
+# MSstatsSummarizeSingleTMP tests ------------------------------------------
+
+MSstatsConvert::MSstatsLogsSettings(FALSE)
+
+single_protein_labeled <- data.table::data.table(
+    PROTEIN       = rep("P1", 4),
+    FEATURE       = rep("F1", 4),
+    LABEL         = c("H",   "L",   "H",   "L"),
+    RUN           = c("R1",  "R1",  "R2",  "R2"),
+    newABUNDANCE  = c(10.0,  14.0,  12.0,  16.0),
+    is_labeled_ref = c(TRUE,  FALSE, TRUE,  FALSE),
+    censored      = rep(FALSE, 4),
+    n_obs         = rep(2L,  4),
+    n_obs_run     = rep(1L,  4),
+    prop_features = rep(1.0, 4)
+)
+
+result_labeled <- MSstatsSummarizeSingleTMP(
+    single_protein_labeled,
+    impute          = FALSE,
+    censored_symbol = NULL,
+    remove50missing = FALSE,
+    aft_iterations  = 90
+)
+
+protein_level_labeled <- result_labeled[[1]]
+
+expect_equal(
+    sort(as.numeric(protein_level_labeled$LogIntensities)),
+    c(15, 15),
+    info = paste(
+        "MSstatsSummarizeSingleTMP: 'is_labeled_ref' column present with TRUE values must set",
+        "is_labeled_reference=TRUE, causing .runTukey to call .adjustLRuns;",
+        "both runs should converge to H-adjusted LogIntensities of 15,",
+        "not the raw L values (14, 16) that the unlabeled path would return"
+    )
+)

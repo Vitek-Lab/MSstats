@@ -65,3 +65,111 @@ imputed_val_p2 <- dt_zero[
 ]
 expect_equal(imputed_val_p2, expected_val_p2)
 
+
+# Test MSstatsHandleMissing
+make_cens_input <- function() {
+  data.table::data.table(
+    PROTEIN   = rep("P1", 8),
+    FEATURE   = rep("F1", 8),
+    LABEL     = c("L","L","L","L","H","H","H","H"),
+    RUN       = rep(c("R1","R2","R3","R4"), 2),
+    GROUP     = rep(c("G1","G1","G2","G2"), 2),
+    FRACTION  = rep(1L, 8),
+    INTENSITY = c(1L, 1L, 100L, 200L,   # L: first two will be censored
+                  1L, 1L, 100L, 200L),  # H: same intensities but must NOT be censored
+    ABUNDANCE = c(0, 0, log2(100), log2(200),
+                  0, 0, log2(100), log2(200)),
+    is_labeled_ref = c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)
+  )
+}
+
+cens_in <- make_cens_input()
+out_cens <- MSstatsHandleMissing(
+  cens_in,
+  summary_method  = "TMP",
+  impute          = TRUE,
+  missing_symbol  = "0",
+  censored_cutoff = NULL
+)
+
+# H rows must never be flagged as censored regardless of intensity
+expect_false(
+  any(out_cens[LABEL == "H", censored]),
+  info = "H rows (is_labeled_ref=TRUE) must never be flagged censored (use_for_analysis=FALSE)"
+)
+
+# L rows with intensity==1 must be flagged censored
+expect_true(
+  any(out_cens[LABEL == "L" & INTENSITY == 1L, censored]),
+  info = "L rows with intensity=1 (use_for_analysis=TRUE) must be flagged censored"
+)
+
+# L rows with intensity>1 must NOT be flagged censored
+expect_false(
+  any(out_cens[LABEL == "L" & INTENSITY > 1L, censored]),
+  info = "L rows with high intensity must not be flagged censored"
+)
+
+
+# Tests for .getNonMissingFilter -----------------------------------------------
+
+dt_nmf_no_ref <- data.table::data.table(
+    newABUNDANCE = c(1.5, 0.0, NA_real_, 2.0)
+)
+result_no_ref <- MSstats:::.getNonMissingFilter(dt_nmf_no_ref, impute = FALSE, censored_symbol = "0")
+expect_equal(
+    result_no_ref, c(TRUE, FALSE, FALSE, TRUE),
+    info = ".getNonMissingFilter: without 'is_labeled_ref' column all rows have use_for_analysis=TRUE; zero and NA excluded"
+)
+
+dt_nmf_with_ref <- data.table::data.table(
+    newABUNDANCE   = c(1.5, 2.0, 3.0, 1.0),
+    is_labeled_ref = c(TRUE, FALSE, FALSE, TRUE)
+)
+result_with_ref <- MSstats:::.getNonMissingFilter(dt_nmf_with_ref, impute = FALSE, censored_symbol = "0")
+expect_equal(
+    result_with_ref, c(FALSE, TRUE, TRUE, FALSE),
+    info = ".getNonMissingFilter: is_labeled_ref=TRUE rows must be excluded (use_for_analysis=FALSE) regardless of abundance"
+)
+
+dt_nmf_ref_valid <- data.table::data.table(
+    newABUNDANCE   = c(5.0, 3.0),
+    is_labeled_ref = c(TRUE, FALSE)
+)
+result_ref_valid <- MSstats:::.getNonMissingFilter(dt_nmf_ref_valid, impute = FALSE, censored_symbol = "0")
+expect_false(
+    result_ref_valid[1],
+    info = ".getNonMissingFilter: is_labeled_ref=TRUE row with valid abundance must still yield FALSE"
+)
+expect_true(
+    result_ref_valid[2],
+    info = ".getNonMissingFilter: is_labeled_ref=FALSE row with valid abundance must yield TRUE"
+)
+
+dt_nmf_impute_na <- data.table::data.table(
+    newABUNDANCE = c(1.5, 0.0, NA_real_, 2.0)
+)
+result_impute_na <- MSstats:::.getNonMissingFilter(dt_nmf_impute_na, impute = TRUE, censored_symbol = "NA")
+expect_equal(
+    result_impute_na, c(TRUE, TRUE, FALSE, TRUE),
+    info = ".getNonMissingFilter: impute=TRUE, censored_symbol='NA' treats zero as non-missing"
+)
+
+dt_nmf_impute_zero <- data.table::data.table(
+    newABUNDANCE = c(1.5, 0.0, NA_real_, 2.0)
+)
+result_impute_zero <- MSstats:::.getNonMissingFilter(dt_nmf_impute_zero, impute = TRUE, censored_symbol = "0")
+expect_equal(
+    result_impute_zero, c(TRUE, FALSE, FALSE, TRUE),
+    info = ".getNonMissingFilter: impute=TRUE, censored_symbol='0' treats zero as missing"
+)
+
+dt_nmf_ref_impute_na <- data.table::data.table(
+    newABUNDANCE   = c(1.5, 2.0, 0.0, 3.0),
+    is_labeled_ref = c(TRUE, FALSE, FALSE, TRUE)
+)
+result_ref_impute_na <- MSstats:::.getNonMissingFilter(dt_nmf_ref_impute_na, impute = TRUE, censored_symbol = "NA")
+expect_equal(
+    result_ref_impute_na, c(FALSE, TRUE, TRUE, FALSE),
+    info = ".getNonMissingFilter: is_labeled_ref=TRUE rows excluded even when impute=TRUE, censored_symbol='NA'"
+)

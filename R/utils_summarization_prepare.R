@@ -31,9 +31,9 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
         input[, ANOMALYSCORES := NA]
     }
     
-    label = data.table::uniqueN(input$LABEL) == 2
-    if (label) {
-        input[, ref_covariate := factor(ifelse(LABEL == "L", RUN, 0))]
+    add_ref_covariate = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
+    if (add_ref_covariate) {
+      input[, ref_covariate := factor(ifelse(LABEL == "L", RUN, 0))]
     }
     
     if (is.element("remove", colnames(input))) {
