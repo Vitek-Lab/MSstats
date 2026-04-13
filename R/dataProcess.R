@@ -557,8 +557,8 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         return(list(NULL, NULL))
     } else {
         single_protein = single_protein[!is.na(newABUNDANCE), ]
-        is_labeled_reference = "ref" %in% colnames(single_protein) &&
-            any(single_protein$ref, na.rm = TRUE)
+        is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
+            any(single_protein$is_labeled_ref, na.rm = TRUE)
         result = .runTukey(single_protein, is_labeled_reference, censored_symbol,
                            remove50missing)
     }

@@ -79,7 +79,7 @@ make_cens_input <- function() {
                   1L, 1L, 100L, 200L),  # H: same intensities but must NOT be censored
     ABUNDANCE = c(0, 0, log2(100), log2(200),
                   0, 0, log2(100), log2(200)),
-    ref       = c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)
+    is_labeled_ref = c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)
   )
 }
 
@@ -95,7 +95,7 @@ out_cens <- MSstatsHandleMissing(
 # H rows must never be flagged as censored regardless of intensity
 expect_false(
   any(out_cens[LABEL == "H", censored]),
-  info = "H rows (ref=TRUE) must never be flagged censored (use_for_analysis=FALSE)"
+  info = "H rows (is_labeled_ref=TRUE) must never be flagged censored (use_for_analysis=FALSE)"
 )
 
 # L rows with intensity==1 must be flagged censored
@@ -119,31 +119,31 @@ dt_nmf_no_ref <- data.table::data.table(
 result_no_ref <- MSstats:::.getNonMissingFilter(dt_nmf_no_ref, impute = FALSE, censored_symbol = "0")
 expect_equal(
     result_no_ref, c(TRUE, FALSE, FALSE, TRUE),
-    info = ".getNonMissingFilter: without 'ref' column all rows have use_for_analysis=TRUE; zero and NA excluded"
+    info = ".getNonMissingFilter: without 'is_labeled_ref' column all rows have use_for_analysis=TRUE; zero and NA excluded"
 )
 
 dt_nmf_with_ref <- data.table::data.table(
-    newABUNDANCE = c(1.5, 2.0, 3.0, 1.0),
-    ref          = c(TRUE, FALSE, FALSE, TRUE)
+    newABUNDANCE   = c(1.5, 2.0, 3.0, 1.0),
+    is_labeled_ref = c(TRUE, FALSE, FALSE, TRUE)
 )
 result_with_ref <- MSstats:::.getNonMissingFilter(dt_nmf_with_ref, impute = FALSE, censored_symbol = "0")
 expect_equal(
     result_with_ref, c(FALSE, TRUE, TRUE, FALSE),
-    info = ".getNonMissingFilter: ref=TRUE rows must be excluded (use_for_analysis=FALSE) regardless of abundance"
+    info = ".getNonMissingFilter: is_labeled_ref=TRUE rows must be excluded (use_for_analysis=FALSE) regardless of abundance"
 )
 
 dt_nmf_ref_valid <- data.table::data.table(
-    newABUNDANCE = c(5.0, 3.0),
-    ref          = c(TRUE, FALSE)
+    newABUNDANCE   = c(5.0, 3.0),
+    is_labeled_ref = c(TRUE, FALSE)
 )
 result_ref_valid <- MSstats:::.getNonMissingFilter(dt_nmf_ref_valid, impute = FALSE, censored_symbol = "0")
 expect_false(
     result_ref_valid[1],
-    info = ".getNonMissingFilter: ref=TRUE row with valid abundance must still yield FALSE"
+    info = ".getNonMissingFilter: is_labeled_ref=TRUE row with valid abundance must still yield FALSE"
 )
 expect_true(
     result_ref_valid[2],
-    info = ".getNonMissingFilter: ref=FALSE row with valid abundance must yield TRUE"
+    info = ".getNonMissingFilter: is_labeled_ref=FALSE row with valid abundance must yield TRUE"
 )
 
 dt_nmf_impute_na <- data.table::data.table(
@@ -165,11 +165,11 @@ expect_equal(
 )
 
 dt_nmf_ref_impute_na <- data.table::data.table(
-    newABUNDANCE = c(1.5, 2.0, 0.0, 3.0),
-    ref          = c(TRUE, FALSE, FALSE, TRUE)
+    newABUNDANCE   = c(1.5, 2.0, 0.0, 3.0),
+    is_labeled_ref = c(TRUE, FALSE, FALSE, TRUE)
 )
 result_ref_impute_na <- MSstats:::.getNonMissingFilter(dt_nmf_ref_impute_na, impute = TRUE, censored_symbol = "NA")
 expect_equal(
     result_ref_impute_na, c(FALSE, TRUE, TRUE, FALSE),
-    info = ".getNonMissingFilter: ref=TRUE rows excluded even when impute=TRUE, censored_symbol='NA'"
+    info = ".getNonMissingFilter: is_labeled_ref=TRUE rows excluded even when impute=TRUE, censored_symbol='NA'"
 )

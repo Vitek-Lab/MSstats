@@ -251,7 +251,7 @@ single_protein_labeled <- data.table::data.table(
     LABEL         = c("H",   "L",   "H",   "L"),
     RUN           = c("R1",  "R1",  "R2",  "R2"),
     newABUNDANCE  = c(10.0,  14.0,  12.0,  16.0),
-    ref           = c(TRUE,  FALSE, TRUE,  FALSE),
+    is_labeled_ref = c(TRUE,  FALSE, TRUE,  FALSE),
     censored      = rep(FALSE, 4),
     n_obs         = rep(2L,  4),
     n_obs_run     = rep(1L,  4),
@@ -272,7 +272,7 @@ expect_equal(
     sort(as.numeric(protein_level_labeled$LogIntensities)),
     c(15, 15),
     info = paste(
-        "MSstatsSummarizeSingleTMP: 'ref' column present with TRUE values must set",
+        "MSstatsSummarizeSingleTMP: 'is_labeled_ref' column present with TRUE values must set",
         "is_labeled_reference=TRUE, causing .runTukey to call .adjustLRuns;",
         "both runs should converge to H-adjusted LogIntensities of 15,",
         "not the raw L values (14, 16) that the unlabeled path would return"

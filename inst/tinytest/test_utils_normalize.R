@@ -391,31 +391,31 @@ labeled_in <- create_labeled_input()
 out_eq <- MSstatsNormalize(data.table::copy(labeled_in), "EQUALIZEMEDIANS")
 
 expect_true(
-  "ref" %in% colnames(out_eq),
-  info = "EQUALIZEMEDIANS on labeled data must add 'ref' boolean column"
+  "is_labeled_ref" %in% colnames(out_eq),
+  info = "EQUALIZEMEDIANS on labeled data must add 'is_labeled_ref' boolean column"
 )
 expect_true(
-  all(out_eq[LABEL == "H", ref]),
-  info = "'ref' must be TRUE for every H row"
+  all(out_eq[LABEL == "H", is_labeled_ref]),
+  info = "'is_labeled_ref' must be TRUE for every H row"
 )
 expect_false(
-  any(out_eq[LABEL == "L", ref]),
-  info = "'ref' must be FALSE for every L row"
+  any(out_eq[LABEL == "L", is_labeled_ref]),
+  info = "'is_labeled_ref' must be FALSE for every L row"
 )
 expect_true(
-  is.logical(out_eq$ref),
-  info = "'ref' column must be of logical type"
+  is.logical(out_eq$is_labeled_ref),
+  info = "'is_labeled_ref' column must be of logical type"
 )
 
 lf_input <- data.table::copy(labeled_in)[LABEL == "L"]
 out_lf <- MSstatsNormalize(lf_input, "EQUALIZEMEDIANS")
 expect_false(
-  "ref" %in% colnames(out_lf),
-  info = "label-free EQUALIZEMEDIANS must not add a 'ref' column"
+  "is_labeled_ref" %in% colnames(out_lf),
+  info = "label-free EQUALIZEMEDIANS must not add an 'is_labeled_ref' column"
 )
 labeled_in$RUN = as.factor(labeled_in$RUN)
 out_quant <- MSstatsNormalize(data.table::copy(labeled_in), "QUANTILE")
 expect_false(
-  "ref" %in% colnames(out_quant),
-  info = "QUANTILE normalization must not add a 'ref' column"
+  "is_labeled_ref" %in% colnames(out_quant),
+  info = "QUANTILE normalization must not add an 'is_labeled_ref' column"
 )

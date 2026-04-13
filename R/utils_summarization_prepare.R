@@ -31,7 +31,7 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
         input[, ANOMALYSCORES := NA]
     }
     
-    add_ref_covariate = "ref" %in% colnames(input) && any(input$ref, na.rm = TRUE)
+    add_ref_covariate = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
     if (add_ref_covariate) {
       input[, ref_covariate := factor(ifelse(LABEL == "L", RUN, 0))]
     }

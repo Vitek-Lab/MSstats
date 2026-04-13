@@ -5,7 +5,7 @@ make_srm_prep_input <- function() {
         RUN       = c("R1","R1","R2","R2","R1","R1","R2","R2"),
         LABEL     = c("H","L","H","L","H","L","H","L"),
         ABUNDANCE = c(10, 14, 11, 15, 10.2, 14.2, 11.2, 15.2),
-        ref = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE)
+        is_labeled_ref = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE)
     )
 }
 
