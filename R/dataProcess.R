@@ -366,36 +366,41 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' head(single_protein_summary[[1]])
 #' 
 #' 
-MSstatsSummarizeSingleLinear = function(single_protein, 
+MSstatsSummarizeSingleLinear = function(single_protein,
                                         impute,
-                                        censored_symbol, 
-                                        remove50missing, 
+                                        censored_symbol,
+                                        remove50missing,
                                         aft_iterations = 90,
                                         equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
-    
+
     cols = intersect(
       colnames(single_protein),
       c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref_covariate")
     )
-    
+
+    is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
+        any(single_protein$is_labeled_ref, na.rm = TRUE)
+
     single_protein = single_protein[
       (n_obs > 1 & !is.na(n_obs)) &
         (n_obs_run > 0 & !is.na(n_obs_run))
     ]
-    
+
     if (nrow(single_protein) == 0) {
         return(list(NULL, NULL))
     }
-    
+
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
-    
+
     if (impute & any(single_protein[["censored"]])) {
-        survival_fit = .fitSurvival(
-          single_protein[, cols, with = FALSE],
-          aft_iterations
-        )
+        fit_data = if (is_labeled_reference) {
+            single_protein[LABEL == "L", cols, with = FALSE]
+        } else {
+            single_protein[, cols, with = FALSE]
+        }
+        survival_fit = .fitSurvival(fit_data, aft_iterations)
         sigma2 = survival_fit$scale^2
 
         single_protein[, c("predicted", "imputation_var") := {
@@ -403,8 +408,13 @@ MSstatsSummarizeSingleLinear = function(single_protein,
             list(pred$fit, pred$se.fit^2 + sigma2)
         }]
 
-        single_protein[, predicted := ifelse(censored, predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+        if (is_labeled_reference) {
+            single_protein[, predicted := ifelse(censored & LABEL == "L", predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L", predicted, newABUNDANCE)]
+        } else {
+            single_protein[, predicted := ifelse(censored, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+        }
 
         survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
@@ -508,12 +518,14 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #'                                                    impute, cens, FALSE, 100)
 #' head(single_protein_summary[[1]])
 #' 
-MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
+MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                      remove50missing, aft_iterations = 90) {
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
                                                  "FEATURE", "ref_covariate"))
+    is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
+        any(single_protein$is_labeled_ref, na.rm = TRUE)
     single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
                                         (n_obs_run > 0 & !is.na(n_obs_run))]
     if (nrow(single_protein) == 0) {
@@ -522,28 +534,39 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
     if (impute & any(single_protein[["censored"]])) {
-        
+
         # Flag to track convergence warning
         converged = TRUE
-        
+
+        fit_data = if (is_labeled_reference) {
+            single_protein[LABEL == "L", cols, with = FALSE]
+        } else {
+            single_protein[, cols, with = FALSE]
+        }
+
         # Try to fit survival model and catch convergence warnings
         survival_fit = withCallingHandlers({
-            .fitSurvival(single_protein[, cols, with = FALSE], aft_iterations)
+            .fitSurvival(fit_data, aft_iterations)
         }, warning = function(w) {
             if (grepl("converge", conditionMessage(w), ignore.case = TRUE)) {
                 message("Convergence warning caught: ", conditionMessage(w))
                 converged <<- FALSE
             }
         })
-        
+
         if (converged) {
             single_protein[, predicted := predict(survival_fit, newdata = .SD)]
         } else {
             single_protein[, predicted := NA_real_]
         }
-        
-        single_protein[, predicted := ifelse(censored, predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+
+        if (is_labeled_reference) {
+            single_protein[, predicted := ifelse(censored & LABEL == "L", predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L", predicted, newABUNDANCE)]
+        } else {
+            single_protein[, predicted := ifelse(censored, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+        }
         survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
         survival = single_protein[, intersect(c(cols, "LABEL"), colnames(single_protein)), with = FALSE]
@@ -555,8 +578,6 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         return(list(NULL, NULL))
     } else {
         single_protein = single_protein[!is.na(newABUNDANCE), ]
-        is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
-            any(single_protein$is_labeled_ref, na.rm = TRUE)
         result = .runTukey(single_protein, is_labeled_reference, censored_symbol,
                            remove50missing)
         if (!is.null(result) && !is.element("LABEL", colnames(result))) {
