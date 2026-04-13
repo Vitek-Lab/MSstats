@@ -210,7 +210,7 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                               remove50missing, equal_variance, numberOfCores = 1,
                               aft_iterations = 90) {
     if (numberOfCores > 1) {
-        is_labeled_reference = "ref" %in% colnames(input) && any(input$ref, na.rm = TRUE)
+        is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
         if (is_labeled_reference) {
             protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
         } else {
@@ -299,7 +299,7 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
                             remove50missing, equal_variance, aft_iterations = 90) {
 
 
-    is_labeled_reference = "ref" %in% colnames(input) && any(input$ref, na.rm = TRUE)
+    is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
     if (is_labeled_reference) {
         protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
     } else {

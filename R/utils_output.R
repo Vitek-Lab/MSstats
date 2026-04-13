@@ -81,7 +81,7 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                               "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
                               "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
                               "newABUNDANCE", "predicted", "feature_quality",
-                              "is_outlier", "remove", "ref"), colnames(input))
+                              "is_outlier", "remove", "is_labeled_ref"), colnames(input))
     input = input[, output_cols, with = FALSE]
     
     if (is.element("remove", colnames(processed))) {
