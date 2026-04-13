@@ -327,6 +327,7 @@ expect_false(
   "ref" %in% colnames(out_lf),
   info = "label-free EQUALIZEMEDIANS must not add a 'ref' column"
 )
+labeled_in$RUN = as.factor(labeled_in$RUN)
 out_quant <- MSstatsNormalize(data.table::copy(labeled_in), "QUANTILE")
 expect_false(
   "ref" %in% colnames(out_quant),
