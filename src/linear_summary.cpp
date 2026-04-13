@@ -67,7 +67,7 @@ NumericVector get_ref(const CharacterVector& coef_names, const NumericVector& fi
             ref.attr("names") = temp_ref;
         } else {
             CharacterVector temp_ref = coef_names[find_ref];
-            CharacterVector refs = input["ref"];
+            CharacterVector refs = input["ref_covariate"];
             CharacterVector unique_refs = unique(refs);
             int n_refs = refs.length();
             ref = contrast_matrix[seq(0, n_refs - 2)];
