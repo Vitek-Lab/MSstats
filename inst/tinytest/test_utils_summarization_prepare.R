@@ -4,7 +4,8 @@ make_srm_prep_input <- function() {
         FEATURE   = rep(c("F1", "F2"), each = 4),
         RUN       = c("R1","R1","R2","R2","R1","R1","R2","R2"),
         LABEL     = c("H","L","H","L","H","L","H","L"),
-        ABUNDANCE = c(10, 14, 11, 15, 10.2, 14.2, 11.2, 15.2)
+        ABUNDANCE = c(10, 14, 11, 15, 10.2, 14.2, 11.2, 15.2),
+        ref = c(TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE)
     )
 }
 
@@ -70,3 +71,4 @@ expect_false(
     "ref_covariate" %in% colnames(prep_labelfree),
     info = "ref_covariate: must NOT be created for label-free (single LABEL) data"
 )
+
