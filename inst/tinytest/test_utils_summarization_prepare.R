@@ -118,3 +118,86 @@ expect_equal(
     info = ".prepareLinear: total_features for H must be 2"
 )
 
+# --- .prepareLinear: is_labeled_reference=TRUE groups WITHOUT LABEL -----------
+# For SRM, H is the normalization reference, not an independent label.
+# n_obs must combine L and H observations for each feature (no per-label split).
+
+result_prep_srm <- MSstats:::.prepareLinear(
+    make_two_label_input(),
+    impute = FALSE, censored_symbol = NULL,
+    is_labeled_reference = TRUE
+)
+
+# 2 L runs + 2 H runs per feature → combined n_obs = 4
+expect_equal(
+    unique(result_prep_srm[LABEL == "L" & FEATURE == "F1", n_obs]),
+    4L,
+    info = ".prepareLinear(is_labeled_reference=TRUE): n_obs must combine L and H observations"
+)
+expect_equal(
+    unique(result_prep_srm[LABEL == "H" & FEATURE == "F1", n_obs]),
+    4L,
+    info = ".prepareLinear(is_labeled_reference=TRUE): H rows must share the same n_obs as L rows"
+)
+
+# --- .prepareTMP: is_labeled_reference=FALSE groups by LABEL -----------------
+
+result_tmp_unlabeled <- MSstats:::.prepareTMP(
+    make_two_label_input(),
+    impute = FALSE, censored_symbol = NULL,
+    is_labeled_reference = FALSE
+)
+
+# Each FEATURE+LABEL combination has 2 runs → n_obs per label = 2
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "L" & FEATURE == "F1", n_obs]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): n_obs must be per-label (2 L runs)"
+)
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "H" & FEATURE == "F1", n_obs]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): H n_obs must be counted independently"
+)
+expect_false(
+    any(result_tmp_unlabeled$n_obs == 4L),
+    info = ".prepareTMP(is_labeled_reference=FALSE): n_obs must not be 4 (pooled across labels)"
+)
+
+# total_features per PROTEIN+LABEL
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "L", total_features]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): total_features for L must be 2"
+)
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "H", total_features]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): total_features for H must be 2"
+)
+
+# --- .prepareTMP: is_labeled_reference=TRUE groups WITHOUT LABEL -------------
+# For SRM, .getNonMissingFilter marks H rows as non-informative (is_labeled_ref=TRUE
+# → use_for_analysis=FALSE). Without LABEL grouping, each feature's n_obs is the
+# count of nonmissing L rows, but that count is assigned to ALL rows of the feature
+# (L and H alike). This prevents H rows from getting n_obs=0 and being filtered
+# out before they can serve as the normalization reference in .adjustLRuns.
+
+result_tmp_srm <- MSstats:::.prepareTMP(
+    make_srm_prep_input(),
+    impute = FALSE, censored_symbol = NULL,
+    is_labeled_reference = TRUE
+)
+
+# H rows share the L-derived n_obs for their feature (= 2); they must not get 0
+expect_equal(
+    unique(result_tmp_srm[LABEL == "H", n_obs]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=TRUE): H rows must share n_obs with L rows (not 0)"
+)
+# n_obs_run: similarly, H rows must have n_obs_run > 0 so they survive .isSummarizable
+expect_true(
+    all(result_tmp_srm[LABEL == "H", n_obs_run] > 0),
+    info = ".prepareTMP(is_labeled_reference=TRUE): H rows must have n_obs_run > 0"
+)
+
