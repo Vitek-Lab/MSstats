@@ -300,3 +300,35 @@ expect_false("ABUNDANCE_RUN" %in% colnames(out_labeled),
              info = ".normalizeMedian (labeled): ABUNDANCE_RUN column should be removed")
 expect_false("ABUNDANCE_FRACTION" %in% colnames(out_labeled),
              info = ".normalizeMedian (labeled): ABUNDANCE_FRACTION column should be removed")
+
+labeled_in <- create_labeled_input()
+out_eq <- MSstatsNormalize(data.table::copy(labeled_in), "EQUALIZEMEDIANS")
+
+expect_true(
+  "ref" %in% colnames(out_eq),
+  info = "EQUALIZEMEDIANS on labeled data must add 'ref' boolean column"
+)
+expect_true(
+  all(out_eq[LABEL == "H", ref]),
+  info = "'ref' must be TRUE for every H row"
+)
+expect_false(
+  any(out_eq[LABEL == "L", ref]),
+  info = "'ref' must be FALSE for every L row"
+)
+expect_true(
+  is.logical(out_eq$ref),
+  info = "'ref' column must be of logical type"
+)
+
+lf_input <- data.table::copy(labeled_in)[LABEL == "L"]
+out_lf <- MSstatsNormalize(lf_input, "EQUALIZEMEDIANS")
+expect_false(
+  "ref" %in% colnames(out_lf),
+  info = "label-free EQUALIZEMEDIANS must not add a 'ref' column"
+)
+out_quant <- MSstatsNormalize(data.table::copy(labeled_in), "QUANTILE")
+expect_false(
+  "ref" %in% colnames(out_quant),
+  info = "QUANTILE normalization must not add a 'ref' column"
+)

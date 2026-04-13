@@ -65,3 +65,47 @@ imputed_val_p2 <- dt_zero[
 ]
 expect_equal(imputed_val_p2, expected_val_p2)
 
+
+# Test MSstatsHandleMissing
+make_cens_input <- function() {
+  data.table::data.table(
+    PROTEIN   = rep("P1", 8),
+    FEATURE   = rep("F1", 8),
+    LABEL     = c("L","L","L","L","H","H","H","H"),
+    RUN       = rep(c("R1","R2","R3","R4"), 2),
+    GROUP     = rep(c("G1","G1","G2","G2"), 2),
+    FRACTION  = rep(1L, 8),
+    INTENSITY = c(1L, 1L, 100L, 200L,   # L: first two will be censored
+                  1L, 1L, 100L, 200L),  # H: same intensities but must NOT be censored
+    ABUNDANCE = c(0, 0, log2(100), log2(200),
+                  0, 0, log2(100), log2(200)),
+    ref       = c(FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE)
+  )
+}
+
+cens_in <- make_cens_input()
+out_cens <- MSstatsHandleMissing(
+  cens_in,
+  summary_method  = "TMP",
+  impute          = TRUE,
+  missing_symbol  = "0",
+  censored_cutoff = NULL
+)
+
+# H rows must never be flagged as censored regardless of intensity
+expect_false(
+  any(out_cens[LABEL == "H", censored]),
+  info = "H rows (ref=TRUE) must never be flagged censored (use_for_analysis=FALSE)"
+)
+
+# L rows with intensity==1 must be flagged censored
+expect_true(
+  any(out_cens[LABEL == "L" & INTENSITY == 1L, censored]),
+  info = "L rows with intensity=1 (use_for_analysis=TRUE) must be flagged censored"
+)
+
+# L rows with intensity>1 must NOT be flagged censored
+expect_false(
+  any(out_cens[LABEL == "L" & INTENSITY > 1L, censored]),
+  info = "L rows with high intensity must not be flagged censored"
+)
