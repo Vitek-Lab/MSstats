@@ -396,7 +396,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 
     if (impute & any(single_protein[["censored"]])) {
         fit_data = if (is_labeled_reference) {
-            single_protein[LABEL == "L", cols, with = FALSE]
+            single_protein[!is_labeled_ref, cols, with = FALSE]
         } else {
             single_protein[, cols, with = FALSE]
         }
@@ -409,8 +409,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         }]
 
         if (is_labeled_reference) {
-            single_protein[, predicted := ifelse(censored & LABEL == "L", predicted, NA)]
-            single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L", predicted, newABUNDANCE)]
+            single_protein[, predicted := ifelse(censored & !is_labeled_ref, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & !is_labeled_ref, predicted, newABUNDANCE)]
         } else {
             single_protein[, predicted := ifelse(censored, predicted, NA)]
             single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
@@ -539,7 +539,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         converged = TRUE
 
         fit_data = if (is_labeled_reference) {
-            single_protein[LABEL == "L", cols, with = FALSE]
+            single_protein[!is_labeled_ref, cols, with = FALSE]
         } else {
             single_protein[, cols, with = FALSE]
         }
@@ -561,8 +561,8 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         }
 
         if (is_labeled_reference) {
-            single_protein[, predicted := ifelse(censored & LABEL == "L", predicted, NA)]
-            single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L", predicted, newABUNDANCE)]
+            single_protein[, predicted := ifelse(censored & !is_labeled_ref, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & !is_labeled_ref, predicted, newABUNDANCE)]
         } else {
             single_protein[, predicted := ifelse(censored, predicted, NA)]
             single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
