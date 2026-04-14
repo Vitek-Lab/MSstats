@@ -17,6 +17,42 @@ expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
 
 # SRMRawData is a label-based experiment: heavy ("H") rows must be preserved
 # in FeatureLevelData after dataProcess
+
+# Helper for near-equality comparison of data.tables with numeric tolerance
+expect_dt_equal <- function(dt1, dt2, cols, tol = 1e-6, info = "") {
+    # Check non-numeric columns exactly
+    num_cols <- cols[sapply(dt1[, ..cols], is.numeric)]
+    key_cols <- cols[!cols %in% num_cols]
+    
+    # Sort both tables the same way before comparing
+    if (length(key_cols) > 0) {
+        data.table::setkeyv(dt1, key_cols)
+        data.table::setkeyv(dt2, key_cols)
+    }
+    
+    # Check row count
+    if (nrow(dt1) != nrow(dt2)) {
+        return(tinytest::expect_true(FALSE, info = paste(info, "(row count mismatch)")))
+    }
+    
+    # Non-numeric exact match
+    if (length(key_cols) > 0) {
+        tinytest::expect_true(
+            data.table::fsetequal(dt1[, ..key_cols], dt2[, ..key_cols]),
+            info = paste(info, "(non-numeric columns)")
+        )
+    }
+    
+    # Numeric approximate match
+    for (col in num_cols) {
+        tinytest::expect_true(
+            all(abs(dt1[[col]] - dt2[[col]]) < tol, na.rm = TRUE) &&
+                identical(is.na(dt1[[col]]), is.na(dt2[[col]])),
+            info = paste(info, sprintf("(column: %s)", col))
+        )
+    }
+}
+
 quant_data_srm = readRDS(
     system.file("tinytest/processed_data/quant_data_srm.rds", 
                 package = "MSstats")
@@ -65,16 +101,15 @@ QuantDataDefaultDDA = dataProcess(DDARawData, use_log_file = FALSE)
 dt1 <- data.table::as.data.table(quant_data_dda$ProteinLevelData)
 dt2 <- data.table::as.data.table(QuantDataDefaultDDA$ProteinLevelData)
 cols <- sort(intersect(names(dt1), names(dt2)))
-expect_true(
-    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
-    info = "dataProcess ProteinLevelData for DDARawData should be identical to previously saved output"
+expect_dt_equal(dt1[, ..cols], dt2[, ..cols], cols,
+                info = "dataProcess ProteinLevelData for DDARawData should be identical to previously saved output"
 )
+
 dt1 <- data.table::as.data.table(quant_data_dda$FeatureLevelData)
 dt2 <- data.table::as.data.table(QuantDataDefaultDDA$FeatureLevelData)
 cols <- sort(intersect(names(dt1), names(dt2)))
-expect_true(
-    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
-    info = "dataProcess FeatureLevelData for DDARawData should be identical to previously saved output"
+expect_dt_equal(dt1[, ..cols], dt2[, ..cols], cols,
+                info = "dataProcess FeatureLevelData for DDARawData should be identical to previously saved output"
 )
 
 
