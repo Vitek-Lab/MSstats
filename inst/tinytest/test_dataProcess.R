@@ -22,18 +22,18 @@ quant_data_srm = readRDS(
                 package = "MSstats")
 )
 
-dt1 <- as.data.table(quant_data_srm$ProteinLevelData)
-dt2 <- as.data.table(QuantDataDefault$ProteinLevelData)
+dt1 <- data.table::as.data.table(quant_data_srm$ProteinLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefault$ProteinLevelData)
 cols <- sort(intersect(names(dt1), names(dt2)))
 expect_true(
-    fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
     info = "dataProcess ProteinLevelData for SRMRawData should be identical to previously saved output"
 )
-dt1 <- as.data.table(quant_data_srm$FeatureLevelData)
-dt2 <- as.data.table(QuantDataDefault$FeatureLevelData)
+dt1 <- data.table::as.data.table(quant_data_srm$FeatureLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefault$FeatureLevelData)
 cols <- sort(intersect(names(dt1), names(dt2)))
 expect_true(
-    fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
     info = "dataProcess FeatureLevelData for SRMRawData should be identical to previously saved output"
 )
 
