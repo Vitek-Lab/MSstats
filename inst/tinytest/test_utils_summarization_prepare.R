@@ -87,58 +87,7 @@ make_two_label_input <- function(is_labeled_ref = FALSE) {
     )
 }
 
-prep_input <- make_two_label_input()
-result_prep <- MSstats:::.prepareLinear(prep_input, impute = FALSE, censored_symbol = NULL)
-
-# Each FEATURE+LABEL combination has 2 runs → n_obs should be 2
-expect_equal(
-    unique(result_prep[LABEL == "L" & FEATURE == "F1", n_obs]),
-    2L,
-    info = ".prepareLinear: n_obs must be 2 for L rows of F1 (2 L runs)"
-)
-expect_equal(
-    unique(result_prep[LABEL == "H" & FEATURE == "F1", n_obs]),
-    2L,
-    info = ".prepareLinear: n_obs must be 2 for H rows of F1 (2 H runs)"
-)
-
-# total_features per PROTEIN+LABEL: 2 features per label
-expect_equal(
-    unique(result_prep[LABEL == "L", total_features]),
-    2L,
-    info = ".prepareLinear: total_features for L must be 2"
-)
-expect_equal(
-    unique(result_prep[LABEL == "H", total_features]),
-    2L,
-    info = ".prepareLinear: total_features for H must be 2"
-)
-
-# --- .prepareLinear: is_labeled_reference=TRUE groups WITHOUT LABEL -----------
-# For SRM, H is the normalization reference, not an independent label.
-# n_obs must combine L and H observations for each feature (no per-label split).
-
-result_prep_srm <- MSstats:::.prepareLinear(
-    make_two_label_input(rep(c(FALSE, FALSE, TRUE, TRUE), 2)),
-    impute = FALSE, censored_symbol = NULL,
-    is_labeled_reference = TRUE
-)
-
-# 2 L runs + 2 H runs per feature → combined n_obs = 4
-expect_equal(
-    unique(result_prep_srm[LABEL == "L" & FEATURE == "F1", n_obs]),
-    2L,
-    info = ".prepareLinear(is_labeled_reference=TRUE): n_obs must only use L observations"
-)
-expect_equal(
-    unique(result_prep_srm[LABEL == "H" & FEATURE == "F1", n_obs]),
-    2L,
-    info = ".prepareLinear(is_labeled_reference=TRUE): H rows must share the same n_obs as L rows"
-)
-
-# --- .prepareTMP: is_labeled_reference=FALSE groups by LABEL -----------------
-
-result_tmp_unlabeled <- MSstats:::.prepareTMP(
+result_tmp_unlabeled <- MSstats:::.prepareSummary(
     make_two_label_input(),
     impute = FALSE, censored_symbol = NULL,
     is_labeled_reference = FALSE
@@ -168,7 +117,7 @@ expect_equal(
     info = ".prepareTMP(is_labeled_reference=FALSE): total_features for H must be 2"
 )
 
-result_tmp_srm <- MSstats:::.prepareTMP(
+result_tmp_srm <- MSstats:::.prepareSummary(
     make_two_label_input(rep(c(FALSE, FALSE, TRUE, TRUE), 2)),
     impute = FALSE, censored_symbol = NULL,
     is_labeled_reference = TRUE
