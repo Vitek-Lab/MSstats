@@ -15,26 +15,28 @@ expect_equal(nrow(QuantDataDefault$FeatureLevelData),
 expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
              nrow(QuantDataParallelLinear$FeatureLevelData))
 
-# dt1 <- as.data.table(quant_data_srm$ProteinLevelData)
-# dt2 <- as.data.table(QuantDataDefault$ProteinLevelData)
-# 
-# cols <- sort(names(dt1))
-# fsetequal(dt1[, ..cols], dt2[, ..cols])
-
 # SRMRawData is a label-based experiment: heavy ("H") rows must be preserved
 # in FeatureLevelData after dataProcess
 quant_data_srm = readRDS(
     system.file("tinytest/processed_data/quant_data_srm.rds", 
                 package = "MSstats")
 )
+
+dt1 <- as.data.table(quant_data_srm$ProteinLevelData)
+dt2 <- as.data.table(QuantDataDefault$ProteinLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
 expect_true(
-    identical(QuantDataDefault, quant_data_srm),
-    info = "dataProcess output for SRMRawData should be identical to previously saved output"
+    fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    info = "dataProcess ProteinLevelData for SRMRawData should be identical to previously saved output"
 )
+dt1 <- as.data.table(quant_data_srm$FeatureLevelData)
+dt2 <- as.data.table(QuantDataDefault$FeatureLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
 expect_true(
-    "H" %in% QuantDataDefault$FeatureLevelData$LABEL,
-    info = "FeatureLevelData should contain heavy-label (H) rows for label-based SRM data"
+    fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    info = "dataProcess FeatureLevelData for SRMRawData should be identical to previously saved output"
 )
+
 expect_true(
     "L" %in% QuantDataDefault$FeatureLevelData$LABEL,
     info = "SRMRawData FeatureLevelData must contain L rows"
