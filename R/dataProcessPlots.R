@@ -358,10 +358,11 @@ dataProcessPlots = function(
   }
   
   if (summaryPlot) {
-    protein_by_run = expand.grid(Protein = unique(summarized$Protein), 
+    protein_by_run = expand.grid(Protein = unique(summarized$Protein),
                                  RUN = unique(summarized$RUN))
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
+    summary_label = if ("Light" %in% levels(processed$LABEL)) "Light" else "Endogenous"
     if(!isPlotly) {
         savePlot(address, "ProfilePlot_wSummarization", width, height)
     }
@@ -385,7 +386,7 @@ dataProcessPlots = function(
         Protein == all_proteins[i],
         list(PROTEIN = unique(Protein), PEPTIDE = "Run summary",
              TRANSITION = "Run summary", FEATURE = "Run summary",
-             LABEL = "Endogenous", RUN = RUN,
+             LABEL = summary_label, RUN = RUN,
              ABUNDANCE = LogIntensities, FRACTION = 1, 
              UPPERBOUND = if("Variance" %in% names(.SD)) LogIntensities + 1.96 * sqrt(Variance) else NA_real_, # 95% confidence interval
              LOWERBOUND = if("Variance" %in% names(.SD)) LogIntensities - 1.96 * sqrt(Variance) else NA_real_
