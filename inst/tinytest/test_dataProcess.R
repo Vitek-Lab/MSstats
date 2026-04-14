@@ -55,6 +55,29 @@ expect_true(
 )
 
 
+# DDARawData Regression Testing
+quant_data_dda = readRDS(
+    system.file("tinytest/processed_data/quant_data_dda.rds", 
+                package = "MSstats")
+)
+QuantDataDefaultDDA = dataProcess(DDARawData, use_log_file = FALSE)
+
+dt1 <- data.table::as.data.table(quant_data_dda$ProteinLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefaultDDA$ProteinLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
+expect_true(
+    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    info = "dataProcess ProteinLevelData for DDARawData should be identical to previously saved output"
+)
+dt1 <- data.table::as.data.table(quant_data_dda$FeatureLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefaultDDA$FeatureLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
+expect_true(
+    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    info = "dataProcess FeatureLevelData for DDARawData should be identical to previously saved output"
+)
+
+
 # Test dataProcess with technical replicates & fractions ------------------
 msstats_input_fractions_techreps = data.table::fread(
     system.file("tinytest/processed_data/input_techreps_fractions.csv",
