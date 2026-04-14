@@ -444,9 +444,11 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     is_single_feature = .checkSingleFeature(single_protein)
     
     if (is_single_feature) {
+        # Todo: enable SRM linear summarization
+        if (is_labeled_reference) single_protein = single_protein[LABEL == "L"]
         result = single_protein[, .(LogIntensities = mean(newABUNDANCE)), by = RUN]
         result[, Protein := unique(single_protein$PROTEIN)]
-        result[, LABEL := unique(single_protein$LABEL)]
+        result[, LABEL := if (is_labeled_reference) "L" else unique(single_protein$LABEL)]
         result[, Variance := NA_real_]
         setcolorder(result, c("Protein", "RUN", "LogIntensities", "Variance"))
 
@@ -479,7 +481,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
             extracted_values = get_linear_summary(single_protein, cf,
                                                   counts, label, cov_mat)
             result = cbind(result, extracted_values)
-            result[, LABEL := unique(single_protein$LABEL)]
+            # Todo: enable SRM linear summarization
+            result[, LABEL := if (is_labeled_reference) "L" else unique(single_protein$LABEL)]
         }
         
         return(list(result, survival))
