@@ -580,9 +580,6 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         single_protein = single_protein[!is.na(newABUNDANCE), ]
         result = .runTukey(single_protein, is_labeled_reference, censored_symbol,
                            remove50missing)
-        if (!is.null(result) && !is.element("LABEL", colnames(result))) {
-            result[, LABEL := "L"]
-        }
     }
     list(result, survival)
 }

@@ -78,6 +78,7 @@
     } else {
         if (is_labeled_reference) {
             tmp_result = .adjustLRuns(input, TRUE)
+            tmp_result[, LABEL := "L"]
         } else {
             tmp_result = input[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
         }
@@ -103,7 +104,7 @@
 
     if (is_labeled_reference) {
         tmp_result = .adjustLRuns(tmp_result)
-        tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
+        tmp_result[, list(LABEL = "L", RUN, LogIntensities = newABUNDANCE)]
     } else {
         tmp_result[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
     }

@@ -101,9 +101,9 @@ expect_true(
 )
 
 result_tukey_srm <- MSstats:::.fitTukey(tukey_mf, is_labeled_reference = TRUE)
-expect_false(
-    "LABEL" %in% colnames(result_tukey_srm),
-    info = ".fitTukey(is_labeled_reference=TRUE): SRM path must not return LABEL column"
+expect_true(
+    "LABEL" %in% colnames(result_tukey_srm) && all(result_tukey_srm$LABEL == "L"),
+    info = ".fitTukey(is_labeled_reference=TRUE): SRM path must have label column"
 )
 
 
@@ -142,8 +142,8 @@ result_srm <- MSstats:::.runTukey(
     tukey_sf, is_labeled_reference = TRUE,
     censored_symbol = NULL, remove50missing = FALSE
 )
-expect_false(
-    "LABEL" %in% colnames(result_srm),
+expect_true(
+    "LABEL" %in% colnames(result_srm) && all(result_srm$LABEL == "L"),
     info = ".runTukey(is_labeled_reference=TRUE): SRM path must not return LABEL column"
 )
 
