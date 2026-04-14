@@ -165,7 +165,7 @@ dataProcessPlots = function(
           if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
-                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
+                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
