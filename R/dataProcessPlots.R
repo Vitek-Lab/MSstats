@@ -261,15 +261,10 @@ dataProcessPlots = function(
                             labels = seq(1, length(unique(RUN))))]
   summarized[, RUN := as.numeric(RUN)]
   
-  ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, c("GROUP", "RUN")])
-  if (length(unique(processed$LABEL)) == 2) {
-    tempGroupName = tempGroupName[GROUP != '0']
-  } 
-  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  tempGroupName = tempGroupName[order(RUN), ]
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  tempGroupName$GROUP = factor(tempGroupName$GROUP, levels = level.group)
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
@@ -457,15 +452,10 @@ dataProcessPlots = function(
   
   processed = processed[order(LABEL, GROUP, SUBJECT)]
   
-  ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, list(GROUP, RUN)])
-  if (length(unique(processed$LABEL)) == 2) {
-    tempGroupName = tempGroupName[GROUP != '0']
-  } 
-  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  tempGroupName = tempGroupName[order(RUN), ]
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  tempGroupName$GROUP = factor(tempGroupName$GROUP, levels = level.group)
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
