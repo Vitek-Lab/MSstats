@@ -291,13 +291,14 @@ dataProcessPlots = function(
       ifelse(is_labeled_ref, "Reference", "Endogenous"),
       levels = c("Reference", "Endogenous")
     )]
-  } else if (length(unique(processed$LABEL)) == 2) {
-    processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
   } else {
-    if (unique(processed$LABEL) == "L") {
+    label_levels = levels(factor(processed$LABEL))
+    if (length(label_levels) == 2) {
+      processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+    } else if ("L" %in% label_levels) {
       processed[, LABEL := factor(LABEL, labels = c("Endogenous"))]
     } else {
-      processed[, LABEL := factor(LABEL, labels = c("Reference"))]
+      processed[, LABEL := factor(LABEL, labels = c("Heavy"))]
     }
   }
 
@@ -448,15 +449,16 @@ dataProcessPlots = function(
       levels = c("Reference", "Endogenous")
     )]
     label.color = c("darkseagreen1", "lightblue")
-  } else if (length(unique(processed$LABEL)) == 2) {
-    processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
-    label.color = c("darkseagreen1", "lightblue")
   } else {
-    if (unique(processed$LABEL) == "L") {
+    label_levels = levels(factor(processed$LABEL))
+    if (length(label_levels) == 2) {
+      processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+      label.color = c("darkseagreen1", "lightblue")
+    } else if ("L" %in% label_levels) {
       processed[, LABEL := factor(LABEL, labels = c("Endogenous"))]
       label.color = c("lightblue")
     } else {
-      processed[, LABEL := factor(LABEL, labels = c("Reference"))]
+      processed[, LABEL := factor(LABEL, labels = c("Heavy"))]
       label.color = c("darkseagreen1")
     }
   }
