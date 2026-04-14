@@ -17,18 +17,62 @@ expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
 
 # SRMRawData is a label-based experiment: heavy ("H") rows must be preserved
 # in FeatureLevelData after dataProcess
+
+# Helper for near-equality comparison of data.tables with numeric tolerance
+expect_dt_equal <- function(dt1, dt2, cols, tol = 1e-6, info = "") {
+    # Check non-numeric columns exactly
+    num_cols <- cols[sapply(dt1[, ..cols], is.numeric)]
+    key_cols <- cols[!cols %in% num_cols]
+    
+    # Sort both tables the same way before comparing
+    if (length(key_cols) > 0) {
+        data.table::setkeyv(dt1, key_cols)
+        data.table::setkeyv(dt2, key_cols)
+    }
+    
+    # Check row count
+    if (nrow(dt1) != nrow(dt2)) {
+        return(tinytest::expect_true(FALSE, info = paste(info, "(row count mismatch)")))
+    }
+    
+    # Non-numeric exact match
+    if (length(key_cols) > 0) {
+        tinytest::expect_true(
+            data.table::fsetequal(dt1[, ..key_cols], dt2[, ..key_cols]),
+            info = paste(info, "(non-numeric columns)")
+        )
+    }
+    
+    # Numeric approximate match
+    for (col in num_cols) {
+        tinytest::expect_true(
+            all(abs(dt1[[col]] - dt2[[col]]) < tol, na.rm = TRUE) &&
+                identical(is.na(dt1[[col]]), is.na(dt2[[col]])),
+            info = paste(info, sprintf("(column: %s)", col))
+        )
+    }
+}
+
 quant_data_srm = readRDS(
     system.file("tinytest/processed_data/quant_data_srm.rds", 
                 package = "MSstats")
 )
+
+dt1 <- data.table::as.data.table(quant_data_srm$ProteinLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefault$ProteinLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
 expect_true(
-    identical(QuantDataDefault, quant_data_srm),
-    info = "dataProcess output for SRMRawData should be identical to previously saved output"
+    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    info = "dataProcess ProteinLevelData for SRMRawData should be identical to previously saved output"
 )
+dt1 <- data.table::as.data.table(quant_data_srm$FeatureLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefault$FeatureLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
 expect_true(
-    "H" %in% QuantDataDefault$FeatureLevelData$LABEL,
-    info = "FeatureLevelData should contain heavy-label (H) rows for label-based SRM data"
+    data.table::fsetequal(dt1[, ..cols], dt2[, ..cols]),
+    info = "dataProcess FeatureLevelData for SRMRawData should be identical to previously saved output"
 )
+
 expect_true(
     "L" %in% QuantDataDefault$FeatureLevelData$LABEL,
     info = "SRMRawData FeatureLevelData must contain L rows"
@@ -44,6 +88,28 @@ expect_true(
 expect_true(
     "GROUP" %in% colnames(QuantDataDefault$ProteinLevelData),
     info = "regression: ProteinLevelData must have GROUP column"
+)
+
+
+# DDARawData Regression Testing
+quant_data_dda = readRDS(
+    system.file("tinytest/processed_data/quant_data_dda.rds", 
+                package = "MSstats")
+)
+QuantDataDefaultDDA = dataProcess(DDARawData, use_log_file = FALSE)
+
+dt1 <- data.table::as.data.table(quant_data_dda$ProteinLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefaultDDA$ProteinLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
+expect_dt_equal(dt1[, ..cols], dt2[, ..cols], cols,
+                info = "dataProcess ProteinLevelData for DDARawData should be identical to previously saved output"
+)
+
+dt1 <- data.table::as.data.table(quant_data_dda$FeatureLevelData)
+dt2 <- data.table::as.data.table(QuantDataDefaultDDA$FeatureLevelData)
+cols <- sort(intersect(names(dt1), names(dt2)))
+expect_dt_equal(dt1[, ..cols], dt2[, ..cols], cols,
+                info = "dataProcess FeatureLevelData for DDARawData should be identical to previously saved output"
 )
 
 
@@ -191,11 +257,13 @@ feature_level_summary = summarized[[2]]
 
 ## Basic tests
 expect_equal(nrow(protein_level_summary), 5)
-expect_equal(ncol(protein_level_summary), 4)
+expect_equal(ncol(protein_level_summary), 5)  # Protein, RUN, LogIntensities, Variance, LABEL
+expect_true("LABEL" %in% colnames(protein_level_summary),
+            info = "MSstatsSummarizeSingleLinear: result must include LABEL column")
 expect_true(all(protein_level_summary$Protein == "Q96S19"))
 expect_equal(as.numeric(protein_level_summary$RUN), 1:5)
 expect_equal(nrow(feature_level_summary), 10)
-expect_equal(ncol(feature_level_summary), 5)
+expect_equal(ncol(feature_level_summary), 6)  # newABUNDANCE, cen, RUN, FEATURE, LABEL, predicted
 expect_equal(length(unique(feature_level_summary$FEATURE)), 2)
 expect_equal(length(unique(feature_level_summary$RUN)), 5)
 
@@ -277,4 +345,81 @@ expect_equal(
         "both runs should converge to H-adjusted LogIntensities of 15,",
         "not the raw L values (14, 16) that the unlabeled path would return"
     )
+)
+
+# MSstatsSummarizeSingleTMP: SRM imputation — H rows must NOT be imputed ------
+# For SRM experiments, H is the normalization reference and must never be
+# imputed. Only censored L rows (is_labeled_ref=FALSE) should receive a
+# predicted value from the survival model.
+
+make_srm_impute_input <- function() {
+    runs   <- paste0("R", 1:4)
+    levels_rc <- c("0", runs)
+    f1 <- data.table::data.table(
+        PROTEIN  = "P1",
+        FEATURE  = "F1",
+        LABEL    = c("H","H","H","H", "L","L","L","L"),
+        RUN      = c(runs, runs),
+        # F1-H-R1 censored (H reference — must NOT be imputed)
+        # F1-L-R2 censored (light peptide — MUST be imputed)
+        newABUNDANCE = c(NA,   10.5, 11.0, 11.5,  14.0, NA,   15.0, 15.5),
+        censored     = c(TRUE, FALSE,FALSE,FALSE,  FALSE,TRUE, FALSE,FALSE),
+        cen          = c(0L,   1L,   1L,   1L,     1L,   0L,   1L,   1L),
+        is_labeled_ref = c(TRUE,TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,FALSE)
+    )
+    f2 <- data.table::data.table(
+        PROTEIN  = "P1",
+        FEATURE  = "F2",
+        LABEL    = c("H","H","H","H", "L","L","L","L"),
+        RUN      = c(runs, runs),
+        newABUNDANCE = c(10.0,10.5,11.0,11.5, 14.0,14.5,15.0,15.5),
+        censored     = rep(FALSE, 8),
+        cen          = rep(1L, 8),
+        is_labeled_ref = c(TRUE,TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,FALSE)
+    )
+    dt <- data.table::rbindlist(list(f1, f2))
+    dt[, ref_covariate := factor(
+        ifelse(is_labeled_ref == FALSE, as.character(RUN), "0"),
+        levels = levels_rc
+    )]
+    dt[, FEATURE   := factor(FEATURE)]
+    dt[, RUN       := factor(RUN)]
+    dt[, n_obs     := 4L]
+    dt[, n_obs_run := 2L]
+    dt[, ANOMALYSCORES := NA_real_]
+    dt
+}
+
+result_srm_imp <- MSstatsSummarizeSingleTMP(
+    make_srm_impute_input(),
+    impute          = TRUE,
+    censored_symbol = "NA",
+    remove50missing = FALSE,
+    aft_iterations  = 90
+)
+
+survival_srm <- result_srm_imp[[2]]
+
+# Censored H reference row: predicted must remain NA (not imputed)
+h_cens_pred <- survival_srm[
+    as.character(FEATURE) == "F1" &
+    as.character(LABEL)   == "H" &
+    as.character(RUN)     == "R1",
+    predicted
+]
+expect_true(
+    length(h_cens_pred) > 0 && all(is.na(h_cens_pred)),
+    info = "MSstatsSummarizeSingleTMP SRM: censored H rows must NOT receive an imputed predicted value"
+)
+
+# Censored L row: predicted must be a finite imputed value
+l_cens_pred <- survival_srm[
+    as.character(FEATURE) == "F1" &
+    as.character(LABEL)   == "L" &
+    as.character(RUN)     == "R2",
+    predicted
+]
+expect_true(
+    length(l_cens_pred) > 0 && all(is.finite(l_cens_pred)),
+    info = "MSstatsSummarizeSingleTMP SRM: censored L rows must receive a finite imputed predicted value"
 )

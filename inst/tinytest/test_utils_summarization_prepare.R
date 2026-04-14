@@ -72,3 +72,65 @@ expect_false(
     info = "ref_covariate: must NOT be created for label-free (single LABEL) data"
 )
 
+# --- .prepareLinear: n_obs computed per PROTEIN+FEATURE+LABEL ----------------
+
+make_two_label_input <- function(is_labeled_ref = FALSE) {
+    data.table::data.table(
+        PROTEIN  = rep("P1", 8),
+        FEATURE  = factor(rep(c("F1", "F2"), each = 4)),
+        LABEL    = rep(c("L","L","H","H"), 2),
+        RUN      = factor(rep(c("R1","R2","R1","R2"), 2)),
+        ABUNDANCE = c(10, 11, 8, 9,   10.5, 11.5, 8.5, 9.5),
+        INTENSITY = rep(100L, 8),
+        ANOMALYSCORES = rep(NA_real_, 8),
+        is_labeled_ref = is_labeled_ref
+    )
+}
+
+result_tmp_unlabeled <- MSstats:::.prepareSummary(
+    make_two_label_input(),
+    impute = FALSE, censored_symbol = NULL,
+    is_labeled_reference = FALSE
+)
+
+# Each FEATURE+LABEL combination has 2 runs → n_obs per label = 2
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "L" & FEATURE == "F1", n_obs]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): n_obs must be per-label (2 L runs)"
+)
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "H" & FEATURE == "F1", n_obs]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): H n_obs must be counted independently"
+)
+
+# total_features per PROTEIN+LABEL
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "L", total_features]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): total_features for L must be 2"
+)
+expect_equal(
+    unique(result_tmp_unlabeled[LABEL == "H", total_features]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=FALSE): total_features for H must be 2"
+)
+
+result_tmp_srm <- MSstats:::.prepareSummary(
+    make_two_label_input(rep(c(FALSE, FALSE, TRUE, TRUE), 2)),
+    impute = FALSE, censored_symbol = NULL,
+    is_labeled_reference = TRUE
+)
+
+# H rows share the L-derived n_obs for their feature (= 2); they must not get 0
+expect_equal(
+    unique(result_tmp_srm[LABEL == "H", n_obs]),
+    2L,
+    info = ".prepareTMP(is_labeled_reference=TRUE): H rows must share n_obs with L rows (not 0)"
+)
+expect_true(
+    all(result_tmp_srm[LABEL == "H", n_obs_run] > 0),
+    info = ".prepareTMP(is_labeled_reference=TRUE): H rows must have n_obs_run > 0"
+)
+

@@ -1,3 +1,4 @@
+# --- .fitLinearModel tests --------------------------------------------------
 single_protein <- data.table::data.table(
     PROTEIN = c( "Q96S19", "Q96S19", "Q96S19", "Q96S19", "Q96S19", "Q96S19", "Q96S19", "Q96S19", "Q96S19", "Q96S19" ),
     PEPTIDE = c( "AFPLAEWQPSDVDQR_2", "ASGLLLER_2", "AFPLAEWQPSDVDQR_2", "ASGLLLER_2", "AFPLAEWQPSDVDQR_2", "ASGLLLER_2", "AFPLAEWQPSDVDQR_2", "ASGLLLER_2", "AFPLAEWQPSDVDQR_2", "ASGLLLER_2" ),
@@ -75,4 +76,94 @@ lm_fit <- MSstats:::.fitLinearModel(
 expect_true(
     any(grepl("ref_covariate", names(coef(lm_fit)))),
     info = "ref_covariate: model coefficients must include 'ref_covariate' terms"
+)
+
+# --- .fitTukey(is_labeled_reference=FALSE): result includes LABEL column -----
+
+# Multi-feature input — exercises .fitTukey
+tukey_mf <- data.table::data.table(
+    PROTEIN      = rep("P1", 16),
+    FEATURE      = factor(rep(c("F1","F2"), each = 8)),
+    LABEL        = rep(rep(c("L","L","L","L","H","H","H","H"), 1), 2),
+    RUN          = factor(rep(c("R1","R2","R3","R4","R1","R2","R3","R4"), 2)),
+    newABUNDANCE = c(10,11,12,13, 8,9,10,11, 10.2,11.2,12.2,13.2, 8.2,9.2,10.2,11.2)
+)
+
+result_tukey_turnover <- MSstats:::.fitTukey(tukey_mf, is_labeled_reference = FALSE)
+
+expect_true(
+    "LABEL" %in% colnames(result_tukey_turnover),
+    info = ".fitTukey(is_labeled_reference=FALSE): result must include LABEL column"
+)
+expect_true(
+    "LogIntensities" %in% colnames(result_tukey_turnover),
+    info = ".fitTukey(is_labeled_reference=FALSE): result must have LogIntensities column"
+)
+
+result_tukey_srm <- MSstats:::.fitTukey(tukey_mf, is_labeled_reference = TRUE)
+expect_true(
+    "LABEL" %in% colnames(result_tukey_srm) && all(result_tukey_srm$LABEL == "L"),
+    info = ".fitTukey(is_labeled_reference=TRUE): SRM path must have label column"
+)
+
+
+# Single-feature input — exercises the non-.fitTukey branch
+tukey_sf <- data.table::data.table(
+    PROTEIN      = rep("P1", 8),
+    FEATURE      = factor(rep("F1", 8)),
+    LABEL        = rep(c("L","H"), each = 4),
+    RUN          = factor(rep(c("R1","R2","R3","R4"), 2)),
+    newABUNDANCE = c(10, 11, 12, 13, 9, 10, 11, 12)
+)
+
+result_turnover <- MSstats:::.runTukey(
+    tukey_sf, is_labeled_reference = FALSE,
+    censored_symbol = NULL, remove50missing = FALSE
+)
+
+expect_true(
+    "LABEL" %in% colnames(result_turnover),
+    info = ".runTukey(is_labeled_reference=FALSE): result must have LABEL column"
+)
+expect_true(
+    "L" %in% as.character(result_turnover$LABEL),
+    info = ".runTukey(is_labeled_reference=FALSE): result must contain L rows"
+)
+expect_true(
+    "H" %in% as.character(result_turnover$LABEL),
+    info = ".runTukey(is_labeled_reference=FALSE): result must contain H rows"
+)
+expect_true(
+    "LogIntensities" %in% colnames(result_turnover),
+    info = ".runTukey(is_labeled_reference=FALSE): result must have LogIntensities column"
+)
+
+result_srm <- MSstats:::.runTukey(
+    tukey_sf, is_labeled_reference = TRUE,
+    censored_symbol = NULL, remove50missing = FALSE
+)
+expect_true(
+    "LABEL" %in% colnames(result_srm) && all(result_srm$LABEL == "L"),
+    info = ".runTukey(is_labeled_reference=TRUE): SRM path must not return LABEL column"
+)
+
+# --- .getNonMissingFilterStats -----------------------
+
+nonmiss_input <- data.table::data.table(
+    LABEL        = c("L","L","H","H"),
+    newABUNDANCE = c(10, NA, 8, NA),
+    INTENSITY    = c(100L, NA_integer_, 80L, NA_integer_),
+    censored     = c(FALSE, TRUE, FALSE, TRUE),
+    n_obs_run    = c(2L, 2L, 2L, 2L),
+    n_obs        = c(4L, 4L, 4L, 4L)
+)
+
+filter_result <- MSstats:::.getNonMissingFilterStats(nonmiss_input, censored_symbol = "NA")
+expect_true(
+    filter_result[nonmiss_input$LABEL == "L" & !is.na(nonmiss_input$newABUNDANCE)],
+    info = ".getNonMissingFilterStats: L non-missing row must be TRUE"
+)
+expect_true(
+    filter_result[nonmiss_input$LABEL == "H" & !is.na(nonmiss_input$newABUNDANCE)],
+    info = ".getNonMissingFilterStats: H non-missing row must also be TRUE"
 )

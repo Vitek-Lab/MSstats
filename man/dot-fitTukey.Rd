@@ -4,10 +4,16 @@
 \alias{.fitTukey}
 \title{Fit tukey median polish for a data matrix}
 \usage{
-.fitTukey(input)
+.fitTukey(input, is_labeled_reference)
 }
 \arguments{
 \item{input}{data.table with data for a single protein}
+
+\item{is_labeled_reference}{logical, if TRUE, H channel is used as a
+normalization reference (SRM experiment): L abundances are adjusted by
+subtracting the H value and adding back the H median, and only L results
+are returned. If FALSE (e.g. protein turnover), each label is summarized
+independently and results for all labels are returned.}
 }
 \value{
 data.table

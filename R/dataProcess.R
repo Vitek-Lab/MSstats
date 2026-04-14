@@ -210,7 +210,12 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
                               remove50missing, equal_variance, numberOfCores = 1,
                               aft_iterations = 90) {
     if (numberOfCores > 1) {
-        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+        is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
+        if (is_labeled_reference) {
+            protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+        } else {
+            protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+        }
         num_proteins = length(protein_indices)
         function_environment = environment()
         cl = parallel::makeCluster(numberOfCores)
@@ -292,9 +297,14 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' 
 MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
                             remove50missing, equal_variance, aft_iterations = 90) {
-    
-            
-    protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+
+
+    is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
+    if (is_labeled_reference) {
+        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+    } else {
+        protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+    }
     num_proteins = length(protein_indices)
     summarized_results = vector("list", num_proteins)
     if (method == "TMP") {
@@ -356,57 +366,59 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' head(single_protein_summary[[1]])
 #' 
 #' 
-MSstatsSummarizeSingleLinear = function(single_protein, 
+MSstatsSummarizeSingleLinear = function(single_protein,
                                         impute,
-                                        censored_symbol, 
-                                        remove50missing, 
+                                        censored_symbol,
+                                        remove50missing,
                                         aft_iterations = 90,
                                         equal_variances = TRUE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
-    
+
     cols = intersect(
       colnames(single_protein),
       c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref_covariate")
     )
-    
+
+    is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
+        any(single_protein$is_labeled_ref, na.rm = TRUE)
+
     single_protein = single_protein[
       (n_obs > 1 & !is.na(n_obs)) &
         (n_obs_run > 0 & !is.na(n_obs_run))
     ]
-    
+
     if (nrow(single_protein) == 0) {
         return(list(NULL, NULL))
     }
-    
+
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
-    
+
     if (impute & any(single_protein[["censored"]])) {
-        survival_fit = .fitSurvival(
-          single_protein[LABEL == "L", cols, with = FALSE],
-          aft_iterations
-        )
+        fit_data = if (is_labeled_reference) {
+            single_protein[is_labeled_ref == FALSE, cols, with = FALSE]
+        } else {
+            single_protein[, cols, with = FALSE]
+        }
+        survival_fit = .fitSurvival(fit_data, aft_iterations)
         sigma2 = survival_fit$scale^2
-        
+
         single_protein[, c("predicted", "imputation_var") := {
             pred = predict(survival_fit, newdata = .SD, se.fit = TRUE)
             list(pred$fit, pred$se.fit^2 + sigma2)
         }]
-        
-        single_protein[, predicted := ifelse(
-          censored & (LABEL == "L"),
-          predicted,
-          NA
-        )]
-        single_protein[, newABUNDANCE := ifelse(
-          censored & LABEL == "L",
-          predicted,
-          newABUNDANCE
-        )]
-        
-        survival = single_protein[, c(cols, "predicted"), with = FALSE]
+
+        if (is_labeled_reference) {
+            single_protein[, predicted := ifelse(censored & is_labeled_ref == FALSE, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & is_labeled_ref == FALSE, predicted, newABUNDANCE)]
+        } else {
+            single_protein[, predicted := ifelse(censored, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+        }
+
+        survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
-        survival = single_protein[, cols, with = FALSE]
+        survival = single_protein[, intersect(c(cols, "LABEL"), colnames(single_protein)), with = FALSE]
         survival[, predicted := NA]
     }
     
@@ -432,14 +444,14 @@ MSstatsSummarizeSingleLinear = function(single_protein,
     is_single_feature = .checkSingleFeature(single_protein)
     
     if (is_single_feature) {
-        result = single_protein[LABEL == "L",
-                                .(LogIntensities = mean(newABUNDANCE)),
-                                by = RUN]
+        # Todo: enable SRM linear summarization
+        if (is_labeled_reference) single_protein = single_protein[LABEL == "L"]
+        result = single_protein[, .(LogIntensities = mean(newABUNDANCE)), by = RUN]
         result[, Protein := unique(single_protein$PROTEIN)]
+        result[, LABEL := if (is_labeled_reference) "L" else unique(single_protein$LABEL)]
         result[, Variance := NA_real_]
-        setcolorder(result, c("Protein", "RUN", "LogIntensities",
-                              "Variance"))
-        
+        setcolorder(result, c("Protein", "RUN", "LogIntensities", "Variance"))
+
         return(list(result, survival))
     } else {
         counts = xtabs(
@@ -447,14 +459,14 @@ MSstatsSummarizeSingleLinear = function(single_protein,
           data = unique(single_protein[, .(FEATURE, RUN)])
         )
         counts = as.matrix(counts)
-        
+
         fit = try(
           .fitLinearModel(single_protein, is_single_feature,
                           is_labeled = label,
                           equal_variances),
           silent = TRUE
         )
-        
+
         if (inherits(fit, "try-error")) {
             msg = paste("*** error : can't fit the model for",
                         unique(single_protein$PROTEIN))
@@ -464,12 +476,13 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         } else {
             cf = summary(fit)$coefficients[, 1]
             cov_mat = vcov(fit)
-            
-            result = unique(single_protein[, .(Protein = PROTEIN,
-                                               RUN = RUN)])
+
+            result = unique(single_protein[, .(Protein = PROTEIN, RUN = RUN)])
             extracted_values = get_linear_summary(single_protein, cf,
                                                   counts, label, cov_mat)
             result = cbind(result, extracted_values)
+            # Todo: enable SRM linear summarization
+            result[, LABEL := if (is_labeled_reference) "L" else unique(single_protein$LABEL)]
         }
         
         return(list(result, survival))
@@ -508,12 +521,14 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #'                                                    impute, cens, FALSE, 100)
 #' head(single_protein_summary[[1]])
 #' 
-MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol, 
+MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                      remove50missing, aft_iterations = 90) {
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
                                                  "FEATURE", "ref_covariate"))
+    is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
+        any(single_protein$is_labeled_ref, na.rm = TRUE)
     single_protein = single_protein[(n_obs > 1 & !is.na(n_obs)) &
                                         (n_obs_run > 0 & !is.na(n_obs_run))]
     if (nrow(single_protein) == 0) {
@@ -522,43 +537,50 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
     single_protein[, RUN := factor(RUN)]
     single_protein[, FEATURE := factor(FEATURE)]
     if (impute & any(single_protein[["censored"]])) {
-        
+
         # Flag to track convergence warning
         converged = TRUE
-        
+
+        fit_data = if (is_labeled_reference) {
+            single_protein[is_labeled_ref == FALSE, cols, with = FALSE]
+        } else {
+            single_protein[, cols, with = FALSE]
+        }
+
         # Try to fit survival model and catch convergence warnings
         survival_fit = withCallingHandlers({
-            .fitSurvival(single_protein[LABEL == "L", cols, with = FALSE], 
-                         aft_iterations)
+            .fitSurvival(fit_data, aft_iterations)
         }, warning = function(w) {
             if (grepl("converge", conditionMessage(w), ignore.case = TRUE)) {
                 message("Convergence warning caught: ", conditionMessage(w))
                 converged <<- FALSE
             }
         })
-        
+
         if (converged) {
             single_protein[, predicted := predict(survival_fit, newdata = .SD)]
         } else {
             single_protein[, predicted := NA_real_]
         }
-        
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                                predicted, newABUNDANCE)]
-        survival = single_protein[, c(cols, "predicted"), with = FALSE]
+
+        if (is_labeled_reference) {
+            single_protein[, predicted := ifelse(censored & is_labeled_ref == FALSE, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored & is_labeled_ref == FALSE, predicted, newABUNDANCE)]
+        } else {
+            single_protein[, predicted := ifelse(censored, predicted, NA)]
+            single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+        }
+        survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
-        survival = single_protein[, cols, with = FALSE]
+        survival = single_protein[, intersect(c(cols, "LABEL"), colnames(single_protein)), with = FALSE]
         survival[, predicted := NA]
     }
-    
+
     single_protein = .isSummarizable(single_protein, remove50missing)
     if (is.null(single_protein)) {
         return(list(NULL, NULL))
     } else {
         single_protein = single_protein[!is.na(newABUNDANCE), ]
-        is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&
-            any(single_protein$is_labeled_ref, na.rm = TRUE)
         result = .runTukey(single_protein, is_labeled_reference, censored_symbol,
                            remove50missing)
     }
