@@ -4,18 +4,10 @@
 \alias{.prepareSummary}
 \title{Prepare feature-level data for summarization}
 \usage{
-.prepareSummary(
-  input,
-  method,
-  impute,
-  censored_symbol,
-  is_labeled_reference = FALSE
-)
+.prepareSummary(input, impute, censored_symbol, is_labeled_reference = FALSE)
 }
 \arguments{
 \item{input}{data.table}
-
-\item{method}{"TMP" / "linear"}
 
 \item{impute}{logical}
 
