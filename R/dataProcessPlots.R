@@ -291,14 +291,18 @@ dataProcessPlots = function(
       ifelse(is_labeled_ref, "Reference", "Endogenous"),
       levels = c("Reference", "Endogenous")
     )]
+    raw_label_map = c("H" = "Reference", "L" = "Endogenous")
   } else {
     label_levels = levels(factor(processed$LABEL))
     if (length(label_levels) == 2) {
       processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+      raw_label_map = c("H" = "Heavy", "L" = "Light")
     } else if ("L" %in% label_levels) {
       processed[, LABEL := factor(LABEL, labels = c("Endogenous"))]
+      raw_label_map = c("L" = "Endogenous")
     } else {
       processed[, LABEL := factor(LABEL, labels = c("Heavy"))]
+      raw_label_map = c("H" = "Heavy")
     }
   }
 
@@ -362,7 +366,6 @@ dataProcessPlots = function(
                                  RUN = unique(summarized$RUN))
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
-    summary_label = if ("Light" %in% levels(processed$LABEL)) "Light" else "Endogenous"
     if(!isPlotly) {
         savePlot(address, "ProfilePlot_wSummarization", width, height)
     }
@@ -372,7 +375,7 @@ dataProcessPlots = function(
       if (all(is.na(single_protein$ABUNDANCE))) {
         next()
       }
-      
+
       pept_feat = unique(single_protein[, list(PEPTIDE, FEATURE)])
       counts = pept_feat[, list(N = .N), by = "PEPTIDE"]$N
       s = rep(seq_along(counts), times = counts)
@@ -380,13 +383,13 @@ dataProcessPlots = function(
       groupNametemp = data.frame(groupName,
                                  FEATURE = unique(single_protein$FEATURE)[1],
                                  analysis = "Run summary")
-      
+
       single_protein_summ = summarized[Protein == all_proteins[i], ]
       quant = single_protein_summ[
         Protein == all_proteins[i],
         list(PROTEIN = unique(Protein), PEPTIDE = "Run summary",
              TRANSITION = "Run summary", FEATURE = "Run summary",
-             LABEL = summary_label, RUN = RUN,
+             LABEL = raw_label_map[LABEL], RUN = RUN,
              ABUNDANCE = LogIntensities, FRACTION = 1, 
              UPPERBOUND = if("Variance" %in% names(.SD)) LogIntensities + 1.96 * sqrt(Variance) else NA_real_, # 95% confidence interval
              LOWERBOUND = if("Variance" %in% names(.SD)) LogIntensities - 1.96 * sqrt(Variance) else NA_real_
