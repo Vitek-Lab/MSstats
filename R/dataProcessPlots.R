@@ -286,7 +286,12 @@ dataProcessPlots = function(
                          Name = levels(tempGroupName$GROUP))
 
   
-  if (length(unique(processed$LABEL)) == 2) {
+  if ("is_labeled_ref" %in% colnames(processed)) {
+    processed[, LABEL := factor(
+      ifelse(is_labeled_ref, "Reference", "Endogenous"),
+      levels = c("Reference", "Endogenous")
+    )]
+  } else if (length(unique(processed$LABEL)) == 2) {
     processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
   } else {
     if (unique(processed$LABEL) == "L") {
@@ -295,7 +300,7 @@ dataProcessPlots = function(
       processed[, LABEL := factor(LABEL, labels = c("Reference"))]
     }
   }
-  
+
   if ("feature_quality" %in% colnames(processed)) {
     processed[, feature_quality := NULL]
   }
@@ -437,7 +442,13 @@ dataProcessPlots = function(
   processed[, RUN := factor(RUN, levels = unique(processed$RUN),
                             labels = seq(1, data.table::uniqueN(processed$RUN)))]
   
-  if (length(unique(processed$LABEL)) == 2) {
+  if ("is_labeled_ref" %in% colnames(processed)) {
+    processed[, LABEL := factor(
+      ifelse(is_labeled_ref, "Reference", "Endogenous"),
+      levels = c("Reference", "Endogenous")
+    )]
+    label.color = c("darkseagreen1", "lightblue")
+  } else if (length(unique(processed$LABEL)) == 2) {
     processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
     label.color = c("darkseagreen1", "lightblue")
   } else {
