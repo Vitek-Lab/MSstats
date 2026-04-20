@@ -512,9 +512,13 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         }
         rm(survival_fit)
 
-        single_protein[, predicted := ifelse(censored & (LABEL == "L"), predicted, NA)]
-        single_protein[, newABUNDANCE := ifelse(censored & LABEL == "L",
-                                                predicted, newABUNDANCE)]
+        # Conditional writes instead of `ifelse(...)`. `ifelse` allocates a
+        # full-length result vector for every row on each call; the subset
+        # `:=` writes only the rows that actually need changing. Runs once
+        # per protein, so across the summarize loop this compounds.
+        single_protein[!(censored & LABEL == "L"), predicted := NA]
+        single_protein[censored & LABEL == "L",
+                       newABUNDANCE := predicted]
         survival = single_protein[, c(cols, "predicted"), with = FALSE]
     } else {
         survival = single_protein[, cols, with = FALSE]
