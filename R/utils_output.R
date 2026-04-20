@@ -137,10 +137,17 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                                             "FEATURE", "ref"))
         join_cols = setdiff(cols, "newABUNDANCE")
         data.table::set(input, j = "newABUNDANCE", value = NULL)
-        input[, c("newABUNDANCE", "predicted") := .(NA_real_, NA_real_)]
-        input[predicted_survival,
-              c("newABUNDANCE", "predicted") := .(i.newABUNDANCE, i.predicted),
-              on = join_cols]
+        # Keyed match instead of update-by-join: we only need the integer
+        # match indices (~nrow(input) × 4 bytes) rather than the `:=` form,
+        # which materialises the RHS as a table-sized vector internally.
+        # Eliminates the two ~157 MB transient allocations profmem flagged
+        # on this path. set() creates the columns in place from the lookup.
+        idx = predicted_survival[input, on = join_cols, which = TRUE,
+                                 mult = "first"]
+        data.table::set(input, j = "newABUNDANCE",
+                        value = predicted_survival$newABUNDANCE[idx])
+        data.table::set(input, j = "predicted",
+                        value = predicted_survival$predicted[idx])
     }
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats), 
