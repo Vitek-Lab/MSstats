@@ -178,6 +178,7 @@ dataProcess = function(
                             "== Summarization is done.")
     getOption("MSstatsMsg")("INFO",
                             " == Summarization is done.")
+    gc(verbose = FALSE)
     output = MSstatsSummarizationOutput(input, summarized, processed,
                                         summaryMethod, MBimpute, censoredInt)
     output

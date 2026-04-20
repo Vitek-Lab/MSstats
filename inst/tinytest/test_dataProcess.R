@@ -1,12 +1,12 @@
 # Test dataProcess with default parameters ------------------------------------
 QuantDataDefault = dataProcess(SRMRawData, use_log_file = FALSE)
-QuantDataDefaultLinear = dataProcess(DDARawData, use_log_file = FALSE, 
+QuantDataDefaultLinear = dataProcess(DDARawData, use_log_file = FALSE,
                                      summaryMethod = "linear")
 
 # Test dataProcess with numberOfCores parameter ----------------------
 QuantDataParallel = dataProcess(SRMRawData, use_log_file = FALSE,
                                                numberOfCores = 2)
-QuantDataParallelLinear = dataProcess(DDARawData, use_log_file = FALSE, 
+QuantDataParallelLinear = dataProcess(DDARawData, use_log_file = FALSE,
                                      summaryMethod = "linear", numberOfCores = 2)
 
 expect_equal(nrow(QuantDataDefault$FeatureLevelData),
@@ -21,7 +21,7 @@ msstats_input_fractions_techreps = data.table::fread(
     system.file("tinytest/processed_data/input_techreps_fractions.csv",
                 package = "MSstats")
 )
-QuantDataTechRepsFractions = dataProcess(msstats_input_fractions_techreps, 
+QuantDataTechRepsFractions = dataProcess(msstats_input_fractions_techreps,
                                          use_log_file = FALSE)
 expect_true(!is.null(QuantDataTechRepsFractions))
 expect_true(nrow(QuantDataTechRepsFractions$FeatureLevelData) > 0)
@@ -149,8 +149,8 @@ single_protein = data.table::data.table(
 summarized = MSstats::MSstatsSummarizeSingleLinear(
     single_protein,
     impute = FALSE,
-    censored_symbol = "NA", 
-    remove50missing = FALSE, 
+    censored_symbol = "NA",
+    remove50missing = FALSE,
     aft_iterations = 90,
     equal_variances = TRUE
 )
@@ -174,7 +174,7 @@ variance_runs_4_5 = protein_level_summary[RUN %in% 4:5, Variance]
 
 for (var_45 in variance_runs_4_5) {
     for (var_13 in variance_runs_1_3) {
-        expect_true(var_45 > var_13, 
+        expect_true(var_45 > var_13,
                   info = paste("Variance in runs 4-5 should be > variance in runs 1-3:",
                                var_45, ">", var_13))
     }
@@ -194,13 +194,13 @@ asgll_runs_4_5 = feature_level_summary[FEATURE == "ASGLLLER_2_y3_1" & RUN %in% 4
 for (i in 1:nrow(protein_runs_4_5)) {
     run_num = protein_runs_4_5$RUN[i]
     protein_logint = protein_runs_4_5$LogIntensities[i]
-    
+
     afpla_abundance = afpla_runs_4_5[RUN == run_num, newABUNDANCE]
     asgll_abundance = asgll_runs_4_5[RUN == run_num, newABUNDANCE]
-    
+
     dist_to_afpla = abs(protein_logint - afpla_abundance)
     dist_to_asgll = abs(protein_logint - asgll_abundance)
-    
+
     expect_true(dist_to_asgll < dist_to_afpla,
               info = paste("Run", run_num, ": Protein LogIntensity", protein_logint,
                            "should be closer to ASGLLLER", asgll_abundance,
@@ -211,76 +211,77 @@ for (i in 1:nrow(protein_runs_4_5)) {
 
 
 # =============================================================================
-# Integration test: dataProcess overall memory efficiency
+# Integration tests: dataProcess memory efficiency
 # =============================================================================
 #
-# This test verifies that the cumulative memory optimizations (Issues 1-9) keep
-# retained memory within a reasonable bound relative to the input data size.
+# One in-process measurement captures both numbers we care about per run:
 #
-# We measure "retained memory" — the net increase in Vcells "used (Mb)" after
-# dataProcess returns and GC runs. This captures the output size plus any
-# objects that weren't properly freed (leaked copies, un-freed intermediates).
-# Before the fixes, leaked copies from normalization, merge duplication in
-# .finalizeTMP, as.data.frame deep copies, and un-freed `raw` inflated
-# retained memory well beyond the output size. After the fixes, retained
-# memory should be roughly 1-2x the input (just the output tables).
+#   - retained_mb: Vcells "used (Mb)" delta after the call + gc(). Catches
+#     output-size bloat and objects that remain reachable after return
+#     (leaked references in package options, closures, or the global env).
 #
-# We test single-core (TMP), multi-core (TMP with 2 cores), and linear paths.
-# The threshold is 5x — generous enough to avoid flaky failures, but catches
-# regressions that would push retained memory back toward the pre-fix levels.
+#   - peak_mb: Vcells "max used (Mb)" delta across the call, read from gc()
+#     after gc(reset = TRUE). R updates max-used on every allocation, so
+#     transient spikes that are freed before return — merge copies,
+#     as.data.frame deep copies, per-protein lm/survreg model objects —
+#     still show up here.
+#
+# Scope limit: gc() only sees the current R process. In the parallel
+# (numberOfCores > 1) path, worker processes run in their own address spaces
+# and are invisible to this measurement. peak_mb there reflects the parent
+# only (serialization buffers, result collation); it will be much smaller
+# than total system memory pressure, but still catches any parent-side
+# regression. An earlier callr/ps-based subprocess sampler tried to see
+# workers, but dataProcess under pkgload::load_all in a fresh subprocess
+# did not finish in bounded time, so that approach was removed.
 # =============================================================================
 
-# --- Helper: measure retained memory after a function call -------------------
+# --- Helper: measure retained + peak memory for a single call ---------------
 #
 # Returns a list with:
-#   $result      — the return value of the function
-#   $retained_mb — net increase in Vcells "used (Mb)" after the call + GC
-#   $input_mb    — size of the input data (MB)
-#   $ratio       — retained_mb / input_mb
+#   $result          return value of expr_fn
+#   $input_mb        size of input_data in MB (for ratio reporting)
+#   $retained_mb     Vcells used delta after expr_fn + gc()
+#   $peak_mb         Vcells max-used delta seen during expr_fn
+#   $retained_ratio  retained_mb / input_mb
+#   $peak_ratio      peak_mb    / input_mb
+#   $elapsed_s       wall-clock time of expr_fn
 #
-# We compare Vcells "used (Mb)" before vs after the call, with gc() forced
-# at both ends. This measures how much memory the function's output retains
-# after all intermediates are freed — not the transient peak during execution.
-# gc(reset=TRUE) "max used" was unreliable because it accumulates from the
-# entire R session and is sensitive to GC timing.
-measure_peak_memory = function(expr_fn, input_data) {
+# gc()'s matrix layout varies by R version (some versions add a "limit (Mb)"
+# column), so we find the "(Mb)" column that follows each labelled count
+# column by name lookup rather than hardcoding positions.
+measure_memory = function(expr_fn, input_data) {
     input_mb = as.numeric(object.size(input_data)) / 1e6
-    # Measure memory retained after the call, not peak during it.
-    # gc()"max used" is unreliable for isolating a single function call
-    # because it accumulates from the entire R session. Instead, we
-    # compare Vcells "used (Mb)" before vs after — this tells us how
-    # much net memory the function retained (output + any leaks).
-    #
-    # For dataProcess, the output (FeatureLevelData + ProteinLevelData)
-    # should be roughly proportional to the input. If the function leaks
-    # copies or fails to free intermediates, the "after" will be much
-    # larger than expected.
-    gc()  # force GC to free dead objects
-    gc_before = gc()
-    baseline_mb = gc_before[2, 2]  # Vcells "used (Mb)"
+    gc()                       # free any dead objects so baseline is clean
+    gc(reset = TRUE)           # reset max-used tracking to current used
+    before = gc()
+    cols = colnames(before)
+    used_mb_col = which(cols == "used")[1] + 1      # (Mb) right after "used"
+    max_mb_col  = which(cols == "max used")[1] + 1  # (Mb) right after "max used"
+    baseline_mb = before["Vcells", used_mb_col]
+    t0 = Sys.time()
     result = expr_fn()
-    gc()  # force GC to free intermediates
-    gc_after = gc()
-    after_mb = gc_after[2, 2]  # Vcells "used (Mb)"
-    # Retained = memory still held after function returns and GC runs.
-    # This is the output size + any objects that weren't freed.
-    retained_mb = after_mb - baseline_mb
-    list(result = result, retained_mb = retained_mb,
-         after_mb = after_mb, baseline_mb = baseline_mb,
-         input_mb = input_mb, ratio = retained_mb / input_mb)
+    elapsed_s = as.numeric(difftime(Sys.time(), t0, units = "secs"))
+    gc()                       # free intermediates for retained measurement
+    after = gc()               # post-gc state also carries max-used
+    retained_mb = after["Vcells", used_mb_col] - baseline_mb
+    peak_mb     = after["Vcells", max_mb_col]  - baseline_mb
+    list(result = result,
+         input_mb = input_mb,
+         retained_mb = retained_mb,
+         peak_mb = peak_mb,
+         retained_ratio = retained_mb / input_mb,
+         peak_ratio = peak_mb / input_mb,
+         elapsed_s = elapsed_s)
 }
 
-# --- Build a test dataset large enough for meaningful memory measurement -----
+
+# --- Build a test dataset large enough for meaningful memory measurement ----
 #
-# The built-in SRMRawData (720 rows) and DDARawData (2070 rows) are too small
-# — memory differences of a few KB are lost in GC noise. We replicate
-# DDARawData to create a ~50K-row dataset where the optimizations produce
-# measurable differences.
-#
-# We create synthetic proteins by appending a suffix to ProteinName, so each
-# replicate is treated as a separate protein by dataProcess.
-# We need enough data (~50+ MB) so the data-proportional costs dominate the
-# fixed overhead (~60 MB from factor levels, model infrastructure, etc.).
+# SRMRawData (720 rows) and DDARawData (2070 rows) are too small to see
+# memory differences clearly against GC noise. Replicate DDARawData 100x,
+# synthesizing unique ProteinName suffixes so dataProcess treats each
+# replicate as a separate protein.
 set.seed(42)
 base_data = data.table::as.data.table(DDARawData)
 n_replicates = 100
@@ -289,111 +290,110 @@ replicated_data = data.table::rbindlist(lapply(seq_len(n_replicates), function(i
     d$ProteinName = paste0(d$ProteinName, "_rep", i)
     d
 }))
-# Convert back to data.frame (dataProcess expects this)
 replicated_data = as.data.frame(replicated_data)
 input_size_mb = as.numeric(object.size(replicated_data)) / 1e6
 
-cat(sprintf("Test dataset: %d rows, %.1f MB\n",
+cat(sprintf("Memory test dataset: %d rows, %.1f MB\n",
             nrow(replicated_data), input_size_mb))
 
 
-# --- Test: Single-core dataProcess retained memory < 5x input ----------------
-#
-# With all 9 fixes applied:
-#   - rm(raw) frees the input copy early (Issue 7)
-#   - Column removal is in-place (Issue 2)
-#   - .finalizeTMP uses join-update, not merge (Issue 3)
-#   - survival_predictions extracted upfront, nested list freed (Issue 4)
-#   - setDF instead of as.data.frame (Issue 5)
-#   - Model objects stripped (Issue 1)
-# Retained memory should be ~1-2x input (just the output tables).
+# Shared helper for reporting + asserting on a measure_memory() result.
+# retained_limit and peak_limit are ratios vs input_mb.
+check_memory = function(label, mem, retained_limit, peak_limit) {
+    cat(sprintf(
+        "%s: input=%.1f MB, retained=%.1f MB (%.1fx), peak=%.1f MB (%.1fx), %.1fs\n",
+        label, mem$input_mb,
+        mem$retained_mb, mem$retained_ratio,
+        mem$peak_mb,     mem$peak_ratio,
+        mem$elapsed_s))
+    expect_true(mem$retained_ratio < retained_limit,
+                info = sprintf(
+                    "%s retained memory should be < %gx input. retained=%.1f MB, ratio=%.1fx",
+                    label, retained_limit, mem$retained_mb, mem$retained_ratio))
+    expect_true(mem$peak_ratio < peak_limit,
+                info = sprintf(
+                    "%s peak memory should be < %gx input. peak=%.1f MB, ratio=%.1fx",
+                    label, peak_limit, mem$peak_mb, mem$peak_ratio))
+    expect_true(nrow(mem$result$FeatureLevelData) > 0,
+                info = sprintf("%s: FeatureLevelData should have rows", label))
+    expect_true(nrow(mem$result$ProteinLevelData) > 0,
+                info = sprintf("%s: ProteinLevelData should have rows", label))
+}
+
 
 MSstatsConvert::MSstatsLogsSettings(FALSE)
-single_core_mem = measure_peak_memory(
+
+# Thresholds below are calibrated against the current post-fix baseline on
+# this specific 100-replicate fixture (~10.8 MB input). Peak Vcells sits
+# around 55-60x input here because the fixture is tiny — fixed overhead
+# (factor levels, model infrastructure) dominates. The retained ratio is a
+# more portable regression signal and stays around 1.5x.
+#
+# Peak memory grows SUPERLINEARLY with input on the current implementation
+# (measured: n=100 -> 615 MB, n=300 -> 4.6 GB, n=500 -> 12.4 GB on this
+# machine). This test only guards the small-fixture behaviour; it is NOT a
+# statement that peak memory scales safely to production-sized data. Tuning
+# the pipeline so peak stays sub-linear is tracked separately.
+RETAINED_LIMIT = 5    # output is ~1x input; 5x catches leaked references
+PEAK_LIMIT_TMP = 75   # post-fix baseline on 10 MB fixture ~57x; 75x leaves
+                      # ~30% slack for R/OS variance without going flaky
+PEAK_LIMIT_LINEAR = 75
+
+# Single-core TMP (default).
+single_core = measure_memory(
     function() dataProcess(replicated_data, use_log_file = FALSE),
     replicated_data
 )
+check_memory("Single-core TMP", single_core,
+             retained_limit = RETAINED_LIMIT, peak_limit = PEAK_LIMIT_TMP)
+rm(single_core); gc()
 
-cat(sprintf("Single-core: input=%.1f MB, retained=%.1f MB, ratio=%.1fx\n",
-            single_core_mem$input_mb, single_core_mem$retained_mb,
-            single_core_mem$ratio))
-
-# Memory retained after dataProcess (output size + any un-freed objects)
-# should not exceed 5x the input size. The output is FeatureLevelData +
-# ProteinLevelData, which together are roughly 1-2x the input (more columns
-# added during processing). Before fixes, leaked copies and un-freed
-# intermediates pushed retained memory much higher.
-expect_true(single_core_mem$ratio < 5,
-            info = paste("Single-core retained memory should be < 5x input size.",
-                         "Input:", round(single_core_mem$input_mb, 1), "MB.",
-                         "Retained:", round(single_core_mem$retained_mb, 1), "MB.",
-                         "Ratio:", round(single_core_mem$ratio, 1), "x"))
-
-# Basic correctness: output should have data
-expect_true(nrow(single_core_mem$result$FeatureLevelData) > 0,
-            info = "Single-core memory test: FeatureLevelData should have rows")
-expect_true(nrow(single_core_mem$result$ProteinLevelData) > 0,
-            info = "Single-core memory test: ProteinLevelData should have rows")
-rm(single_core_mem)
-gc()
-
-
-# --- Test: Multi-core dataProcess retained memory < 5x input -----------------
-#
-# The parallel fix (Issue 6) pre-splits input into per-protein data.tables
-# and passes chunks to workers via parLapply, instead of clusterExport-ing
-# the entire dataset to every worker.
-#
-# Note: gc() only measures the main process. Worker memory is in separate
-# R processes and not visible here. But retained memory on the main process
-# is still a useful regression test — if the parallel fix is reverted,
-# serialization buffers and un-freed split lists would inflate retained
-# memory on the main process.
-
-multi_core_mem = measure_peak_memory(
+# Multi-core TMP (2 workers).
+# peak_mb here is parent-process only — worker processes are invisible to
+# gc(). This is a regression guard on parent memory only; serialization
+# buffers + result collation should stay within the same budget as the
+# single-core parent.
+multi_core = measure_memory(
     function() dataProcess(replicated_data, use_log_file = FALSE,
                            numberOfCores = 2),
     replicated_data
 )
+check_memory("Multi-core TMP (2)", multi_core,
+             retained_limit = RETAINED_LIMIT, peak_limit = PEAK_LIMIT_TMP)
+rm(multi_core); gc()
 
-cat(sprintf("Multi-core (2): input=%.1f MB, retained=%.1f MB, ratio=%.1fx\n",
-            multi_core_mem$input_mb, multi_core_mem$retained_mb,
-            multi_core_mem$ratio))
-
-# Memory retained on the main process should not exceed 5x input size.
-# Before fixes, clusterExport serialized the full input to each worker.
-# Worker memory is in separate processes (not visible to gc()), but the
-# main process still held input + split list + serialization buffers.
-expect_true(multi_core_mem$ratio < 5,
-            info = paste("Multi-core retained memory should be < 5x input size.",
-                         "Input:", round(multi_core_mem$input_mb, 1), "MB.",
-                         "Retained:", round(multi_core_mem$retained_mb, 1), "MB.",
-                         "Ratio:", round(multi_core_mem$ratio, 1), "x"))
-
-# Correctness: multi-core output should match single-core row counts.
-# (Already tested above in existing tests, but verify for this dataset too.)
-expect_true(nrow(multi_core_mem$result$FeatureLevelData) > 0,
-            info = "Multi-core memory test: FeatureLevelData should have rows")
-expect_true(nrow(multi_core_mem$result$ProteinLevelData) > 0,
-            info = "Multi-core memory test: ProteinLevelData should have rows")
-
-
-# --- Test: Linear method single-core retained memory < 5x input --------------
-#
-# The linear summarization path has its own model objects (lm + survreg)
-# and .updateUnequalVariances. Verify retained memory stays bounded here too.
-
-linear_mem = measure_peak_memory(
+# Linear single-core.
+# Linear path uses lm + survreg per protein; watches for Issue 1 regressions
+# where model objects retain qr/residuals/model frame past their last use.
+linear_mem = measure_memory(
     function() dataProcess(replicated_data, use_log_file = FALSE,
                            summaryMethod = "linear"),
     replicated_data
 )
+check_memory("Linear single-core", linear_mem,
+             retained_limit = RETAINED_LIMIT, peak_limit = PEAK_LIMIT_LINEAR)
+rm(linear_mem); gc()
 
-cat(sprintf("Linear single-core: input=%.1f MB, retained=%.1f MB, ratio=%.1fx\n",
-            linear_mem$input_mb, linear_mem$retained_mb, linear_mem$ratio))
 
-expect_true(linear_mem$ratio < 5,
-            info = paste("Linear single-core retained memory should be < 5x input.",
-                         "Input:", round(linear_mem$input_mb, 1), "MB.",
-                         "Retained:", round(linear_mem$retained_mb, 1), "MB.",
-                         "Ratio:", round(linear_mem$ratio, 1), "x"))
+# =============================================================================
+# profmem diagnostic — no single allocation should exceed 150 MB
+# =============================================================================
+#
+# Catches a different failure than peak: a regression that allocates one
+# large object (e.g. the pre-fix .finalizeTMP merge at ~350 MB) is pinned
+# directly to its allocation call, making it trivially diagnosable. Skipped
+# cleanly if profmem is unavailable. Single-core only — Rprofmem doesn't see
+# forked worker processes.
+
+if (!requireNamespace("profmem", quietly = TRUE)) {
+    exit_file("profmem not installed — skipping allocation diagnostic")
+}
+
+pm = profmem::profmem(
+    dataProcess(replicated_data, use_log_file = FALSE)
+)
+big_allocs = pm[!is.na(pm$bytes) & pm$bytes > 150 * 1024^2, ]
+expect_equal(nrow(big_allocs), 0L,
+             info = paste("Single allocation(s) >150 MB detected:",
+                          paste(utils::capture.output(print(big_allocs)),
+                                collapse = "\n")))
