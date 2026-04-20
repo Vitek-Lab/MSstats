@@ -87,9 +87,13 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     output_cols = intersect(c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
                               "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
                               "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
-                              "newABUNDANCE", "predicted", "feature_quality", 
+                              "newABUNDANCE", "predicted", "feature_quality",
                               "is_outlier", "remove"), colnames(input))
-    input = input[, output_cols, with = FALSE]
+    # Drop the unwanted columns by reference rather than subsetting with
+    # `input[, output_cols, with = FALSE]`, which would deep-copy every
+    # retained column into a new data.table.
+    drop_cols = setdiff(colnames(input), output_cols)
+    for (col in drop_cols) data.table::set(input, j = col, value = NULL)
     
     if (is.element("remove", colnames(processed))) {
         processed = processed[(remove), 
