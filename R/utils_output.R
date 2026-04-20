@@ -38,11 +38,18 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                                       method, impute, censored_symbol) {
     LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL
 
+    # Collate survival predictions first, then drop the per-protein survival
+    # references from `summarized` so those ~600 small data.tables become
+    # eligible for GC before we enter `.finalizeInput`. Previously the nested
+    # list, the flat `protein_summaries` list, and the new `predicted_survival`
+    # all coexisted across lines 41-46, carrying two copies of the survival
+    # data at the peak moment.
     predicted_survival = data.table::rbindlist(lapply(summarized, function(x) x[[2]]))
-    protein_summaries = lapply(summarized, function(x) x[[1]])
-    rm(summarized)
+    for (i in seq_along(summarized)) summarized[[i]][[2]] = NULL
     input = .finalizeInput(input, predicted_survival, method, impute, censored_symbol)
     rm(predicted_survival)
+    protein_summaries = lapply(summarized, function(x) x[[1]])
+    rm(summarized)
     summarized = data.table::rbindlist(protein_summaries)
     rm(protein_summaries)
     if (inherits(summarized, "try-error")) {
