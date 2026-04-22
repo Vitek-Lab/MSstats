@@ -116,7 +116,7 @@ test_unlabeled_standard_detected <- function() {
   
   output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, "unlabeled")
   
-  # Uniform standard => median_by_fraction == mean_by_run for every run,
+  # Uniform standard => median_by_fraction == median_by_run for every run,
   # so ABUNDANCE is unchanged for all peptides.
   expect_equal(
     output$ABUNDANCE, input$ABUNDANCE,
