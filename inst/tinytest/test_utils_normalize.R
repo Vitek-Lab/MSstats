@@ -117,7 +117,7 @@ test_unlabeled_standard_detected <- function() {
   output <- MSstats:::.normalizeGlobalStandards(input, peptide_dict, "unlabeled")
   
   # Uniform standard => median_by_fraction == median_by_run for every run,
-  # so ABUNDANCE is unchanged for all peptides.
+  # so ABUNDANCE is unchanged for all peptides (feature-level median, not per-peptide).
   expect_equal(
     output$ABUNDANCE, input$ABUNDANCE,
     info = "unlabeled path: uniform standard intensities should produce no shift in ABUNDANCE"
