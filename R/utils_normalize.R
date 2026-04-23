@@ -196,10 +196,11 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @keywords internal
 .normalizeGlobalStandards = function(input, peptides_dict, standards) {
     PeptideSequence = PEPTIDE = PROTEIN = median_by_fraction = NULL
-    Standard = FRACTION = LABEL = ABUNDANCE = RUN = mean_by_run = NULL
+    Standard = FRACTION = LABEL = ABUNDANCE = RUN = median_by_run = NULL
 
     input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
-    if (length(standards) == 1 && standards == "unlabeled") {
+    is_unlabeled <- length(standards) == 1 && standards == "unlabeled"
+    if (is_unlabeled) {
         standards = unique(input_with_peptides[is.na(input_with_peptides$LABEL), ]$PeptideSequence)
         if (length(standards) == 0) {
             msg = "nameStandards = 'unlabeled' but no unlabeled peptides found in data."
@@ -224,29 +225,37 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     standards_data[, standard := ifelse(!is.na(PeptideSequence) & PeptideSequence %in% standards,
                                         PeptideSequence,
                                         PROTEIN)]
-    means_by_standard <- standards_data[,
-                                        list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)),
-                                        by = .(RUN, standard)
-    ]
-    means_by_standard <- dcast(means_by_standard,
-                               RUN ~ standard,
-                               value.var = "mean_abundance")
-    means_by_standard = data.table::melt(means_by_standard, id.vars = "RUN",
-                                         variable.name = "Standard", value.name = "ABUNDANCE")
-    means_by_standard[, mean_by_run := mean(ABUNDANCE, na.rm = TRUE), by = "RUN"]
-    means_by_standard = merge(means_by_standard, unique(input[, list(RUN, FRACTION)]),
-                              by = "RUN")
-    means_by_standard[, median_by_fraction := median(mean_by_run, na.rm = TRUE),
-                      by = "FRACTION"]
-    means_by_standard[, ABUNDANCE := NULL]
-    means_by_standard[, Standard := NULL]
-    means_by_standard = unique(means_by_standard)
+    if (is_unlabeled) {
+        run_summaries <- standards_data[,
+                                        list(median_by_run = median(ABUNDANCE, na.rm = TRUE)),
+                                        by = "RUN"]
+        run_summaries <- merge(run_summaries, unique(input[, list(RUN, FRACTION)]), by = "RUN")
+        run_summaries[, median_by_fraction := median(median_by_run, na.rm = TRUE), by = "FRACTION"]
+    } else {
+        medians_by_standard <- standards_data[,
+                                              list(median_abundance = median(ABUNDANCE, na.rm = TRUE)),
+                                              by = .(RUN, standard)
+        ]
+        medians_by_standard <- dcast(medians_by_standard,
+                                     RUN ~ standard,
+                                     value.var = "median_abundance")
+        medians_by_standard <- data.table::melt(medians_by_standard, id.vars = "RUN",
+                                                variable.name = "Standard", value.name = "ABUNDANCE")
+        medians_by_standard[, median_by_run := median(ABUNDANCE, na.rm = TRUE), by = "RUN"]
+        medians_by_standard <- merge(medians_by_standard, unique(input[, list(RUN, FRACTION)]),
+                                     by = "RUN")
+        medians_by_standard[, median_by_fraction := median(median_by_run, na.rm = TRUE),
+                            by = "FRACTION"]
+        medians_by_standard[, ABUNDANCE := NULL]
+        medians_by_standard[, Standard := NULL]
+        run_summaries <- unique(medians_by_standard)
+    }
 
-    input = merge(input, means_by_standard, all.x = TRUE, by = c("RUN", "FRACTION"))
-    input[, ABUNDANCE := ABUNDANCE - mean_by_run + median_by_fraction]
+    input = merge(input, run_summaries, all.x = TRUE, by = c("RUN", "FRACTION"))
+    input[, ABUNDANCE := ABUNDANCE - median_by_run + median_by_fraction]
 
     getOption("MSstatsLog")("INFO", "Normalization : normalization with global standards protein - okay")
-    input[ , !(colnames(input) %in% c("mean_by_run", "median_by_fraction")), with = FALSE]
+    input[ , !(colnames(input) %in% c("median_by_run", "median_by_fraction")), with = FALSE]
 }
 
 
