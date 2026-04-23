@@ -158,7 +158,7 @@ groupComparisonPlots = function(
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
-                plotly_plot <- .convertGgplot2Plotly(plot,tips=c("logFC"))
+                plotly_plot <- .convertGgplot2Plotly(plot,tips=c("text"))
                 plotly_plots[[i]] = list(plotly_plot)
             }
             if(address != FALSE) {
