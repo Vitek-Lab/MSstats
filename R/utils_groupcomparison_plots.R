@@ -293,7 +293,8 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
                       data = input,
                       width = 0.1,
                       colour = "red") +
-        geom_point(size = dot.size, 
+        geom_point(aes(text = paste0("logFC: ", round(.data$logFC, 4), " ± ", round(.data$ciw, 4))),
+                   size = dot.size,
                    colour = "darkred") +
         scale_x_discrete('Comparison') +
         geom_hline(yintercept = 0, 
