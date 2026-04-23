@@ -155,6 +155,7 @@ dataProcessPlots = function(
                   og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
+                  og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
 
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
@@ -168,6 +169,7 @@ dataProcessPlots = function(
                   summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
+                  summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
@@ -692,6 +694,15 @@ dataProcessPlots = function(
     if (!is.na(first_true_index)) {
         plot$x$data[[first_true_index]]$name <- "Censored missing data"
         plot$x$data[[first_true_index]]$showlegend <- TRUE
+    }
+    plot
+}
+
+.fixErrorBarCapsPlotly = function(plot, cap_width = 8) {
+    for (i in seq_along(plot$x$data)) {
+        if (!is.null(plot$x$data[[i]]$error_y)) {
+            plot$x$data[[i]]$error_y$width <- cap_width
+        }
     }
     plot
 }
