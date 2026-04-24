@@ -21,7 +21,8 @@ MSstatsSummarizeWithSingleCore(
 
 \item{impute}{only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'.
 TRUE (default) imputes censored missing values using an Accelerated Failure
-Time model. FALSE leaves censored values at their cutoff without imputation.
+Time model. FALSE excludes censored observations from summarization entirely,
+treating them as missing at random; no imputed values are introduced.
 Has no effect when censored_symbol = NULL, since no values are considered censored.}
 
 \item{censored_symbol}{Indicates how censored missing values are encoded in

@@ -50,7 +50,8 @@
 #' censored, and imputation is disabled (MBimpute is ignored).
 #' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'.
 #' TRUE (default) imputes censored missing values using an Accelerated Failure
-#' Time model. FALSE leaves censored values at their cutoff without imputation.
+#' Time model. FALSE excludes censored observations from summarization entirely,
+#' treating them as missing at random; no imputed values are introduced.
 #' Has no effect when censoredInt = NULL, since no values are considered censored.
 #' See MSstats vignettes for recommendations on which imputation option to use.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
@@ -198,7 +199,8 @@ dataProcess = function(
 #' where every run has at least 50\% missing values for each peptide. FALSE is default.
 #' @param impute only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'.
 #' TRUE (default) imputes censored missing values using an Accelerated Failure
-#' Time model. FALSE leaves censored values at their cutoff without imputation.
+#' Time model. FALSE excludes censored observations from summarization entirely,
+#' treating them as missing at random; no imputed values are introduced.
 #' Has no effect when censored_symbol = NULL, since no values are considered censored.
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
 #' a logfile named `MSstats_dataProcess_log_progress.log` is created to 

@@ -90,7 +90,8 @@ censored, and imputation is disabled (MBimpute is ignored).}
 
 \item{MBimpute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'.
 TRUE (default) imputes censored missing values using an Accelerated Failure
-Time model. FALSE leaves censored values at their cutoff without imputation.
+Time model. FALSE excludes censored observations from summarization entirely,
+treating them as missing at random; no imputed values are introduced.
 Has no effect when censoredInt = NULL, since no values are considered censored.
 See MSstats vignettes for recommendations on which imputation option to use.}
 
