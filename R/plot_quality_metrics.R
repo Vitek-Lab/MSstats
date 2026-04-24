@@ -1,14 +1,16 @@
 #' Plot quality metrics from converter output
 #'
 #' Visualizes a quality metric column from the output of MSstats converter
-#' functions against run order. When the \code{Run} column is a factor with
-#' levels sorted by run order (as produced automatically when \code{runOrder}
-#' is supplied to the converter), the x-axis follows that temporal ordering.
+#' functions against run order for a single protein. Each
+#' PeptideSequence + PrecursorCharge combination is drawn as a distinct
+#' coloured line, mirroring the feature-level view in
+#' \code{\link[MSstats]{dataProcessPlots}}.
 #'
 #' @param input data.frame or data.table returned by an MSstatsConvert
 #'   converter function (e.g. \code{SpectronauttoMSstatsFormat}).
 #' @param metric character, name of the column to plot on the y-axis.
 #'   Defaults to \code{"AnomalyScores"}. Must be a column of \code{input}.
+#' @param which.Protein character, name of the protein to plot. Required.
 #' @param address prefix for the filename used when saving the plot.
 #'   If \code{FALSE} (default), the plot is returned without saving.
 #'   When \code{isPlotly = FALSE} a PDF is saved; when \code{isPlotly = TRUE}
@@ -22,14 +24,14 @@
 #'   when \code{isPlotly = TRUE}.
 #'
 #' @details
-#' Each point represents a single feature (precursor / fragment) measurement.
-#' A boxplot layer summarises the distribution per run, and individual points
-#' are overlaid with jitter to avoid over-plotting.
-#'
 #' The x-axis order is determined by the factor levels of the \code{Run}
 #' column. When \code{runOrder} is passed to the converter the \code{Run}
 #' column is automatically set to an ordered factor; otherwise the runs appear
 #' in alphabetical order.
+#'
+#' Metric values are averaged across fragment ions within each
+#' PeptideSequence + PrecursorCharge + Run combination before plotting, so
+#' each precursor contributes exactly one point per run.
 #'
 #' @import ggplot2
 #' @importFrom plotly ggplotly
@@ -45,11 +47,12 @@
 #'   anomalyModelFeatureTemporal = c("mean_decrease", "dispersion_increase"),
 #'   runOrder = my_run_order
 #' )
-#' MSstatsQualityMetricsPlot(result)
-#' MSstatsQualityMetricsPlot(result, metric = "EGDeltaRT")
-#' MSstatsQualityMetricsPlot(result, isPlotly = TRUE)
+#' MSstatsQualityMetricsPlot(result, which.Protein = "ProteinA")
+#' MSstatsQualityMetricsPlot(result, metric = "EGDeltaRT",
+#'                           which.Protein = "ProteinA", isPlotly = TRUE)
 #' }
 MSstatsQualityMetricsPlot <- function(input, metric = "AnomalyScores",
+                                      which.Protein,
                                       address = FALSE, isPlotly = FALSE) {
     input_df <- as.data.frame(input)
 
@@ -62,24 +65,47 @@ MSstatsQualityMetricsPlot <- function(input, metric = "AnomalyScores",
     if (!"Run" %in% colnames(input_df)) {
         stop("'Run' column not found in input.")
     }
+    if (!which.Protein %in% input_df$ProteinName) {
+        stop(paste0("Protein '", which.Protein, "' not found in input."))
+    }
+
+    input_df <- input_df[input_df$ProteinName == which.Protein, ]
 
     if (!is.factor(input_df$Run)) {
         input_df$Run <- factor(input_df$Run)
     }
 
-    p <- ggplot(input_df, aes(x = .data[["Run"]], y = .data[[metric]])) +
-        geom_boxplot(outlier.shape = NA, fill = "lightblue",
-                     alpha = 0.6, width = 0.5) +
-        geom_jitter(width = 0.2, alpha = 0.3, size = 0.8,
-                    color = "steelblue") +
+    input_df$Precursor <- paste(input_df$PeptideSequence,
+                                input_df$PrecursorCharge, sep = "_")
+
+    # Average across fragment ions so each precursor has one value per run
+    plot_df <- aggregate(
+        input_df[[metric]],
+        by  = list(Run = input_df$Run, Precursor = input_df$Precursor),
+        FUN = mean, na.rm = TRUE
+    )
+    colnames(plot_df)[colnames(plot_df) == "x"] <- metric
+
+    # Preserve run factor ordering from the original data
+    plot_df$Run <- factor(plot_df$Run, levels = levels(input_df$Run))
+
+    p <- ggplot(plot_df,
+                aes(x     = .data[["Run"]],
+                    y     = .data[[metric]],
+                    color = .data[["Precursor"]],
+                    group = .data[["Precursor"]])) +
+        geom_line(linewidth = 0.6) +
+        geom_point(size = 1.5) +
         scale_x_discrete(guide = guide_axis(angle = 45)) +
         theme_bw() +
-        theme(axis.text.x = element_text(size = 8)) +
-        labs(
-            x = "Run (temporal order)",
-            y = metric,
-            title = paste("Quality Metric:", metric)
-        )
+        theme(axis.text.x  = element_text(size = 8),
+              legend.title = element_text(size = 9),
+              legend.text  = element_text(size = 7)) +
+        labs(x        = "Run (temporal order)",
+             y        = metric,
+             title    = paste("Quality Metric:", metric),
+             subtitle = which.Protein,
+             color    = "Peptide_Charge")
 
     if (isPlotly) {
         plotly_p <- ggplotly(p)
