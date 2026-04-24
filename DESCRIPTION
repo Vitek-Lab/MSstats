@@ -27,7 +27,7 @@ Imports:
     survival,
     utils,
     Rcpp,
-    ggplot2,
+    ggplot2 (>= 3.4.0),
     ggrepel,
     gplots,
     plotly,
