@@ -19,18 +19,20 @@ MSstatsSummarizeWithSingleCore(
 
 \item{method}{summarization method: "linear" or "TMP"}
 
-\item{impute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
-FALSE uses the values assigned by cutoffCensored}
+\item{impute}{only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'.
+TRUE (default) imputes censored missing values using an Accelerated Failure
+Time model. FALSE leaves censored values at their cutoff without imputation.
+Has no effect when censored_symbol = NULL, since no values are considered censored.}
 
-\item{censored_symbol}{Missing values are censored or at random. 
-'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-'0' uses zero intensities as censored intensity. 
-In this case, NA intensities are missing at random. 
-The output from Skyline should use '0'. 
-Null assumes that all NA intensites are randomly missing.}
+\item{censored_symbol}{Indicates how censored missing values are encoded in
+the 'Intensity' column. 'NA' (default) treats all NA intensities as
+left-censored (i.e., below the limit of detection). '0' treats zero
+intensities as left-censored; in this case NA intensities are assumed to be
+missing at random and are not censored. Skyline output should use '0'. NULL
+assumes that all missing values are missing at random — no values are treated
+as censored, and imputation is disabled (impute is ignored).}
 
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
+\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins
 where every run has at least 50\% missing values for each peptide. FALSE is default.}
 
 \item{equal_variance}{only for summaryMethod = "linear". Default is TRUE. 
