@@ -54,16 +54,25 @@
 MSstatsQualityMetricsPlot <- function(input, metric = "AnomalyScores",
                                       which.Protein,
                                       address = FALSE, isPlotly = FALSE) {
+    if (missing(which.Protein)) {
+        stop("'which.Protein' is required. Please specify a protein name.")
+    }
+
     input_df <- as.data.frame(input)
 
+    required_cols <- c("ProteinName", "PeptideSequence", "PrecursorCharge", "Run")
+    missing_cols <- setdiff(required_cols, colnames(input_df))
+    if (length(missing_cols) > 0) {
+        stop(paste0(
+            "Required column(s) not found in input: ",
+            paste(missing_cols, collapse = ", ")
+        ))
+    }
     if (!metric %in% colnames(input_df)) {
         stop(paste0(
             "Column '", metric, "' not found in input. ",
             "Available columns: ", paste(colnames(input_df), collapse = ", ")
         ))
-    }
-    if (!"Run" %in% colnames(input_df)) {
-        stop("'Run' column not found in input.")
     }
     if (!which.Protein %in% input_df$ProteinName) {
         stop(paste0("Protein '", which.Protein, "' not found in input."))
