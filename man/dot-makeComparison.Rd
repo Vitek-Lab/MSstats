@@ -14,7 +14,8 @@
   hjust,
   vjust,
   y.limdown,
-  y.limup
+  y.limup,
+  sig
 )
 }
 \arguments{
@@ -29,6 +30,8 @@
 \item{y.axis.size}{size of axes labels, e.g. name of targeted proteins in heatmap. Default is 10.}
 
 \item{text.angle}{angle of x-axis labels represented each comparison at the bottom of graph in comparison plot. Default is 0.}
+
+\item{sig}{FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.}
 }
 \description{
 Create comparison plot

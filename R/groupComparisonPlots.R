@@ -421,8 +421,8 @@ groupComparisonPlots = function(
         vjust = ifelse(text.angle != 0, 1, 0.5)
         
         plot = .makeComparison(single_protein, log_base_FC, dot.size, x.axis.size,
-                               y.axis.size, text.angle, hjust, vjust, y.limdown, 
-                               y.limup)
+                               y.axis.size, text.angle, hjust, vjust, y.limdown,
+                               y.limup, sig)
         print(plot)
         plots[[i]] = plot
     }

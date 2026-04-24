@@ -282,18 +282,18 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
 .makeComparison = function(
-    input, log_base, dot.size, x.axis.size, y.axis.size, 
-    text.angle, hjust, vjust, y.limdown, y.limup
+    input, log_base, dot.size, x.axis.size, y.axis.size,
+    text.angle, hjust, vjust, y.limdown, y.limup, sig
 ) {
     logFC = ciw = NULL
-    
+    ci_label = paste0("(", (1 - sig) * 100, "% CI)")
     protein = unique(input$Protein)
     plot = ggplot(input, aes(x = .data$Label, y = .data$logFC)) +
         geom_errorbar(aes(ymax = .data$logFC + .data$ciw, ymin = .data$logFC - .data$ciw),
                       data = input,
                       width = 0.1,
                       colour = "red") +
-        geom_point(aes(text = paste0("logFC: ", round(.data$logFC, 4), " ± ", round(.data$ciw, 4))),
+        geom_point(aes(text = paste0("logFC: ", round(.data$logFC, 4), " ± ", round(.data$ciw, 4), " ", ci_label)),
                    size = dot.size,
                    colour = "darkred") +
         scale_x_discrete('Comparison') +
