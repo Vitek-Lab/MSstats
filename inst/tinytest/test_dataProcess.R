@@ -16,6 +16,42 @@ expect_equal(nrow(QuantDataDefaultLinear$FeatureLevelData),
              nrow(QuantDataParallelLinear$FeatureLevelData))
 
 
+# Test multicore linear parity --------------------------------------------
+# Linear summarization is deterministic per-protein, so multi-core should
+# produce the same ProteinLevelData as single-core: same rows, same
+# LogIntensities, same Variance values. The only difference across the two
+# paths is how work is distributed to workers.
+
+expect_equal(nrow(QuantDataDefaultLinear$ProteinLevelData),
+             nrow(QuantDataParallelLinear$ProteinLevelData),
+             info = "Linear multicore should yield same ProteinLevelData row count")
+
+# Sort both by (Protein, RUN) so the comparison is order-independent
+linear_single = QuantDataDefaultLinear$ProteinLevelData
+linear_multi  = QuantDataParallelLinear$ProteinLevelData
+linear_single = linear_single[order(as.character(linear_single$Protein),
+                                    as.character(linear_single$RUN)), ]
+linear_multi  = linear_multi[order(as.character(linear_multi$Protein),
+                                   as.character(linear_multi$RUN)), ]
+rownames(linear_single) = NULL
+rownames(linear_multi)  = NULL
+
+expect_equal(as.character(linear_single$Protein),
+             as.character(linear_multi$Protein),
+             info = "Linear multicore should cover the same set of proteins")
+
+expect_equal(linear_single$LogIntensities,
+             linear_multi$LogIntensities,
+             info = "Linear multicore LogIntensities should match single-core")
+
+if ("Variance" %in% colnames(linear_single) &&
+    "Variance" %in% colnames(linear_multi)) {
+    expect_equal(linear_single$Variance,
+                 linear_multi$Variance,
+                 info = "Linear multicore Variance should match single-core")
+}
+
+
 # Test dataProcess with technical replicates & fractions ------------------
 msstats_input_fractions_techreps = data.table::fread(
     system.file("tinytest/processed_data/input_techreps_fractions.csv",
@@ -373,6 +409,21 @@ linear_mem = measure_memory(
 check_memory("Linear single-core", linear_mem,
              retained_limit = RETAINED_LIMIT, peak_limit = PEAK_LIMIT_LINEAR)
 rm(linear_mem); gc()
+
+# Linear multi-core (2 workers).
+# Peak_mb here is parent-process only — workers are invisible to gc() — so
+# this is a regression guard on parent memory only. Pairs with the
+# "Linear single-core" test above: both should land at the same budget,
+# because the parent's job in the parallel path (serialize per-protein
+# chunks, collate results) is the same size as the single-core loop.
+linear_multi_mem = measure_memory(
+    function() dataProcess(replicated_data, use_log_file = FALSE,
+                           summaryMethod = "linear", numberOfCores = 2),
+    replicated_data
+)
+check_memory("Linear multi-core (2)", linear_multi_mem,
+             retained_limit = RETAINED_LIMIT, peak_limit = PEAK_LIMIT_LINEAR)
+rm(linear_multi_mem); gc()
 
 
 # =============================================================================
