@@ -9,12 +9,13 @@
 \arguments{
 \item{input}{data.table with data for a single protein}
 
-\item{censored_symbol}{Missing values are censored or at random. 
-'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-'0' uses zero intensities as censored intensity. 
-In this case, NA intensities are missing at random. 
-The output from Skyline should use '0'. 
-Null assumes that all NA intensites are randomly missing.}
+\item{censored_symbol}{Indicates how censored missing values are encoded in
+the 'Intensity' column. 'NA' (default) treats all NA intensities as
+left-censored (i.e., below the limit of detection). '0' treats zero
+intensities as left-censored; in this case NA intensities are assumed to be
+missing at random and are not censored. Skyline output should use '0'. NULL
+assumes that all missing values are missing at random — no values are treated
+as censored, and imputation is disabled (impute is ignored).}
 }
 \value{
 data.table

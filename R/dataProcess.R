@@ -41,16 +41,18 @@
 #' variance among intensities from features. FALSE means that we cannot assume equal 
 #' variance among intensities from features, then we will account for heterogeneous 
 #' variation from different features.
-#' @param censoredInt Missing values are censored or at random. 
-#' 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-#' '0' uses zero intensities as censored intensity. 
-#' In this case, NA intensities are missing at random. 
-#' The output from Skyline should use '0'. 
-#' Null assumes that all NA intensites are randomly missing.
-#' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-#' TRUE (default) imputes missing values with 'NA' or '0' (depending on censoredInt option) 
-#' by Accelerated failure model. If set to FALSE, no missing values are imputed. 
-#' FALSE is appropriate only when missingness is assumed to be at random.
+#' @param censoredInt Indicates how censored missing values are encoded in the
+#' 'Intensity' column. 'NA' (default) treats all NA intensities as left-censored
+#' (i.e., below the limit of detection). '0' treats zero intensities as
+#' left-censored; in this case NA intensities are assumed to be missing at
+#' random and are not censored. Skyline output should use '0'. NULL assumes
+#' that all missing values are missing at random — no values are treated as
+#' censored, and imputation is disabled (MBimpute is ignored).
+#' @param MBimpute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'.
+#' TRUE (default) imputes censored missing values using an Accelerated Failure
+#' Time model. FALSE excludes censored observations from summarization entirely,
+#' treating them as missing at random; no imputed values are introduced.
+#' Has no effect when censoredInt = NULL, since no values are considered censored.
 #' See MSstats vignettes for recommendations on which imputation option to use.
 #' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
 #' where every run has at least 50\% missing values for each peptide. FALSE is default.
@@ -186,17 +188,20 @@ dataProcess = function(
 #' variance among intensities from features. FALSE means that we cannot assume 
 #' equal variance among intensities from features, then we will account for
 #' heterogeneous variation from different features.
-#' @param censored_symbol Missing values are censored or at random. 
-#' 'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-#' '0' uses zero intensities as censored intensity. 
-#' In this case, NA intensities are missing at random. 
-#' The output from Skyline should use '0'. 
-#' Null assumes that all NA intensites are randomly missing.
-#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins 
+#' @param censored_symbol Indicates how censored missing values are encoded in
+#' the 'Intensity' column. 'NA' (default) treats all NA intensities as
+#' left-censored (i.e., below the limit of detection). '0' treats zero
+#' intensities as left-censored; in this case NA intensities are assumed to be
+#' missing at random and are not censored. Skyline output should use '0'. NULL
+#' assumes that all missing values are missing at random — no values are treated
+#' as censored, and imputation is disabled (impute is ignored).
+#' @param remove50missing only for summaryMethod = "TMP". TRUE removes the proteins
 #' where every run has at least 50\% missing values for each peptide. FALSE is default.
-#' @param impute only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-#' TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) by Accelated failure model. 
-#' FALSE uses the values assigned by cutoffCensored
+#' @param impute only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'.
+#' TRUE (default) imputes censored missing values using an Accelerated Failure
+#' Time model. FALSE excludes censored observations from summarization entirely,
+#' treating them as missing at random; no imputed values are introduced.
+#' Has no effect when censored_symbol = NULL, since no values are considered censored.
 #' @param numberOfCores Number of cores for parallel processing. When > 1, 
 #' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS. Default is 1.
