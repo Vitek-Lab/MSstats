@@ -645,3 +645,452 @@ MSstatsSummarizeWithMultipleCoresV3 <- function(
     getOption("MSstatsLog")("INFO", "V3: summarization complete.")
     summarized_results
 }
+
+
+## ── V4: matrix-native TMP ─────────────────────────────────────────────────────
+##
+## MSstatsSummarizeSingleTMPV2 takes the V3 packed double vector + meta list
+## directly and produces TMP results without ever building the full long-format
+## data.table or calling dcast.
+##
+## Compared with MSstatsSummarizeSingleTMP the hot path is:
+##   V3: packed → long-DT (melt) → filter → AFT fit → dcast → TMP
+##   V4: packed → FL×R matrix → mask → (AFT fit if needed) → t(mat) → TMP
+##
+## The dcast savings are most significant for high-feature proteins (>100
+## features) and large run counts (>50 runs), where the intermediate FL*R
+## data.table allocation dominates.
+## ─────────────────────────────────────────────────────────────────────────────
+
+
+#' Summarize a single protein with TMP directly from a V3 packed double vector
+#'
+#' Bypasses the long-format \code{data.table} reconstruction and the
+#' \code{dcast} inside \code{.fitTukey}.  The FL×R packed matrices are
+#' operated on directly:
+#' \enumerate{
+#'   \item Row/column masking replaces the \code{n_obs}/\code{n_obs_run} filter.
+#'   \item AFT survival fitting uses a lazily-built minimal \code{data.table}
+#'     (constructed only when \code{impute=TRUE} and censored values are
+#'     present).
+#'   \item TMP is applied via a vectorized scatter into a
+#'     \code{(LABEL×RUN) × FEATURE} wide matrix followed by
+#'     \code{median_polish_summary} — no \code{dcast} round-trip.
+#' }
+#'
+#' @param packed double vector produced by \code{.buildProteinSlotV3}
+#' @param meta metadata list from \code{.buildProteinSlotV3}
+#' @param impute logical; impute censored values with AFT survival model
+#' @param censored_symbol \code{"0"}, \code{"NA"}, or \code{NULL}
+#' @param remove50missing logical; skip proteins where all runs are >50\%
+#'   missing
+#' @param aft_iterations integer; max AFT iterations
+#' @return \code{list(result_dt, survival_dt)} matching the format of
+#'   \code{MSstatsSummarizeSingleTMP}
+#' @keywords internal
+MSstatsSummarizeSingleTMPV2 <- function(packed, meta,
+    impute, censored_symbol, remove50missing, aft_iterations = 90L)
+{
+    FL      <- meta$FL
+    R       <- meta$R
+    n_mat   <- FL * R
+    PROTEIN <- meta$PROTEIN
+    flp     <- meta$feat_label_pep   # data.frame: FEATURE, LABEL, PEPTIDE
+    runs    <- meta$runs
+
+    # ── 1. Unpack matrices ─────────────────────────────────────────────────────
+    # Layout (see top-of-file comment block):
+    #   pos 1           : slot_k (skip)
+    #   pos 2..FL*R+1   : newABUNDANCE (FL × R, column-major)
+    #   pos FL*R+2..    : ABUNDANCE    (skip — not needed for TMP)
+    #   pos 2*FL*R+2..  : censored     (FL × R)
+    #   pos 3*FL*R+2..  : cen          (FL × R)
+    #   pos 4*FL*R+2..  : ANOMALYSCORES(skip — not needed for TMP)
+    #   then: n_obs(FL), n_obs_run(R), prop_features(R)
+    i <- 2L
+    mat_newABU <- matrix(packed[i:(i + n_mat - 1L)], nrow = FL, ncol = R); i <- i + n_mat
+    i          <- i + n_mat                  # skip ABUNDANCE
+    mat_cens   <- matrix(packed[i:(i + n_mat - 1L)], nrow = FL, ncol = R); i <- i + n_mat
+    mat_cen    <- matrix(packed[i:(i + n_mat - 1L)], nrow = FL, ncol = R); i <- i + n_mat
+    i          <- i + n_mat                  # skip ANOMALYSCORES
+    n_obs_vec     <- packed[i:(i + FL - 1L)]; i <- i + FL
+    n_obs_run_vec <- packed[i:(i + R  - 1L)]; i <- i + R
+    prop_feat_vec <- packed[i:(i + R  - 1L)]
+
+    # ── 2. Row/column masking (mirrors the n_obs / n_obs_run filter) ───────────
+    keep_feat <- !is.na(n_obs_vec)    & n_obs_vec    > 1
+    keep_runs <- !is.na(n_obs_run_vec) & n_obs_run_vec > 0
+
+    mat_newABU <- mat_newABU[keep_feat, keep_runs, drop = FALSE]
+    mat_cens   <- mat_cens  [keep_feat, keep_runs, drop = FALSE]
+    mat_cen    <- mat_cen   [keep_feat, keep_runs, drop = FALSE]
+
+    flp_filt       <- flp[keep_feat, , drop = FALSE]
+    runs_filt      <- runs[keep_runs]
+    prop_feat_filt <- prop_feat_vec[keep_runs]
+    FL_filt        <- nrow(mat_newABU)
+    R_filt         <- ncol(mat_newABU)
+
+    # ── 3. Empty-matrix early exit ─────────────────────────────────────────────
+    if (FL_filt == 0L || R_filt == 0L) {
+        msg <- paste("Can't summarize for protein", PROTEIN,
+                     "because all measurements are missing or censored.")
+        try(getOption("MSstatsMsg")("INFO", msg), silent = TRUE)
+        try(getOption("MSstatsLog")("INFO", msg), silent = TRUE)
+        return(list(NULL, NULL))
+    }
+
+    # ── 4. remove50missing check (independent of imputation) ──────────────────
+    if (remove50missing &&
+        all(prop_feat_filt <= 0.5 | is.na(prop_feat_filt))) {
+        msg <- paste("Can't summarize for protein", PROTEIN,
+                     "because all runs have more than 50% missing values and",
+                     "are removed with the option, remove50missing=TRUE.")
+        try(getOption("MSstatsMsg")("INFO", msg), silent = TRUE)
+        try(getOption("MSstatsLog")("INFO", msg), silent = TRUE)
+        return(list(NULL, NULL))
+    }
+
+    # ── 5. AFT survival imputation (lazy: only if any censored present) ────────
+    n_rows_filt <- FL_filt * R_filt
+    orig_abu_vec <- as.vector(mat_newABU)
+
+    surv_cols <- c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref_covariate")
+    any_censored <- meta$has_censored && any(mat_cens > 0.5, na.rm = TRUE)
+
+    if (impute && any_censored && meta$has_cen) {
+        # Build minimal long-format DT — only columns needed by .fitSurvival
+        surv_dt <- data.table::data.table(
+            newABUNDANCE = orig_abu_vec,
+            cen          = as.vector(mat_cen),
+            censored     = as.logical(as.vector(mat_cens) > 0.5),
+            FEATURE      = factor(rep(flp_filt$FEATURE, times = R_filt)),
+            RUN          = factor(rep(runs_filt,         each  = FL_filt)),
+            LABEL        = rep(as.character(flp_filt$LABEL), times = R_filt)
+        )
+        if (meta$add_ref_covariate) {
+            surv_dt[, ref_covariate := factor(
+                data.table::fifelse(LABEL == "L", as.character(RUN), "0"))]
+        }
+
+        fit_cols <- intersect(surv_cols, colnames(surv_dt))
+        fit_data <- if (meta$is_labeled_ref) {
+            surv_dt[LABEL != "H", fit_cols, with = FALSE]
+        } else {
+            surv_dt[, fit_cols, with = FALSE]
+        }
+
+        converged <- TRUE
+        survival_fit <- withCallingHandlers({
+            .fitSurvival(fit_data, aft_iterations)
+        }, warning = function(w) {
+            if (grepl("converge", conditionMessage(w), ignore.case = TRUE)) {
+                message("Convergence warning caught: ", conditionMessage(w))
+                converged <<- FALSE
+            }
+        })
+
+        predicted_all <- if (converged) {
+            predict(survival_fit, newdata = surv_dt)
+        } else {
+            rep(NA_real_, n_rows_filt)
+        }
+
+        use_imputed <- if (meta$is_labeled_ref) {
+            surv_dt$censored & surv_dt$LABEL != "H"
+        } else {
+            surv_dt$censored
+        }
+
+        imputed_abu <- ifelse(use_imputed, predicted_all, orig_abu_vec)
+        surv_dt[, predicted    := ifelse(use_imputed, predicted_all, NA_real_)]
+        surv_dt[, newABUNDANCE := imputed_abu]
+        mat_newABU <- matrix(imputed_abu, nrow = FL_filt, ncol = R_filt)
+        survival   <- surv_dt[, intersect(c(surv_cols, "LABEL", "predicted"),
+                                          colnames(surv_dt)), with = FALSE]
+
+    } else {
+        # No imputation: build survival DT from original values
+        surv_dt <- data.table::data.table(
+            newABUNDANCE = orig_abu_vec,
+            cen          = if (meta$has_cen) as.vector(mat_cen)
+                           else rep(NA_real_, n_rows_filt),
+            FEATURE      = rep(as.character(flp_filt$FEATURE), times = R_filt),
+            RUN          = rep(runs_filt,                       each  = FL_filt),
+            LABEL        = rep(as.character(flp_filt$LABEL),    times = R_filt),
+            predicted    = NA_real_
+        )
+        survival <- surv_dt[, intersect(c(surv_cols, "LABEL", "predicted"),
+                                        colnames(surv_dt)), with = FALSE]
+    }
+
+    # ── 6. Post-imputation .isSummarizable check ───────────────────────────────
+    if (all(is.na(mat_newABU) | mat_newABU == 0)) {
+        msg <- paste("Can't summarize for protein", PROTEIN,
+                     "because all measurements are missing or censored.")
+        try(getOption("MSstatsMsg")("INFO", msg), silent = TRUE)
+        try(getOption("MSstatsLog")("INFO", msg), silent = TRUE)
+        return(list(NULL, NULL))
+    }
+
+    # ── 7. TMP via vectorized scatter into (LABEL×RUN) × FEATURE wide matrix ───
+    #
+    # Mirrors .fitTukey: dcast(LABEL + RUN ~ FEATURE, value.var="newABUNDANCE")
+    # Row order in wide_mat: (lbl1,run1),(lbl1,run2),...,(lbl2,run1),...
+    # where labels are sorted — matches dcast alphabetical ordering for
+    # character LABEL values.
+    if (FL_filt == 1L) {
+        # ── Single (FEATURE, LABEL) row: skip TMP, use values directly ────────
+        if (meta$is_labeled_ref) {
+            h_sel <- as.character(flp_filt$LABEL) == "H"
+            l_sel <- as.character(flp_filt$LABEL) == "L"
+            if (any(h_sel) && any(l_sel)) {
+                h_vals   <- as.vector(mat_newABU[h_sel, , drop = FALSE])
+                l_vals   <- as.vector(mat_newABU[l_sel, , drop = FALSE])
+                h_median <- stats::median(h_vals, na.rm = TRUE)
+                result <- data.table::data.table(
+                    Protein        = PROTEIN,
+                    LABEL          = "L",
+                    RUN            = runs_filt,
+                    LogIntensities = l_vals - h_vals + h_median
+                )
+            } else {
+                result <- data.table::data.table(
+                    Protein        = PROTEIN,
+                    LABEL          = as.character(flp_filt$LABEL[1L]),
+                    RUN            = runs_filt,
+                    LogIntensities = as.vector(mat_newABU)
+                )
+            }
+        } else {
+            result <- data.table::data.table(
+                Protein        = PROTEIN,
+                LABEL          = rep(as.character(flp_filt$LABEL), times = R_filt),
+                RUN            = rep(runs_filt, each = FL_filt),
+                LogIntensities = as.vector(mat_newABU)
+            )
+        }
+    } else {
+        # ── Multi-feature: scatter into wide matrix, apply TMP ─────────────────
+        unique_labels <- sort(unique(as.character(flp_filt$LABEL)))
+        unique_feats  <- sort(unique(as.character(flp_filt$FEATURE)))
+        n_lbl  <- length(unique_labels)
+        n_feat <- length(unique_feats)
+
+        lbl_idx_map  <- match(as.character(flp_filt$LABEL),   unique_labels)
+        feat_idx_map <- match(as.character(flp_filt$FEATURE),  unique_feats)
+
+        # Vectorized scatter: mat[fl, run] → wide[(lbl_idx-1)*R + run, feat_idx]
+        fl_rep   <- rep(seq_len(FL_filt), times = R_filt)
+        run_rep  <- rep(seq_len(R_filt),  each  = FL_filt)
+        wide_row <- (lbl_idx_map[fl_rep] - 1L) * R_filt + run_rep
+        wide_col <- feat_idx_map[fl_rep]
+
+        wide_mat <- matrix(NA_real_, nrow = n_lbl * R_filt, ncol = n_feat)
+        wide_mat[cbind(wide_row, wide_col)] <- as.vector(mat_newABU)
+
+        tmp_fitted <- median_polish_summary(wide_mat)
+
+        # Row → (LABEL, RUN) mapping: label index cycles every R_filt rows
+        result_labels <- rep(unique_labels, each = R_filt)
+        result_runs   <- rep(runs_filt,     times = n_lbl)
+
+        if (meta$is_labeled_ref) {
+            h_li <- match("H", unique_labels)
+            l_li <- match("L", unique_labels)
+            if (!is.na(h_li) && !is.na(l_li)) {
+                h_rows  <- (h_li - 1L) * R_filt + seq_len(R_filt)
+                l_rows  <- (l_li - 1L) * R_filt + seq_len(R_filt)
+                h_med   <- stats::median(tmp_fitted[h_rows], na.rm = TRUE)
+                result  <- data.table::data.table(
+                    Protein        = PROTEIN,
+                    LABEL          = "L",
+                    RUN            = runs_filt,
+                    LogIntensities = tmp_fitted[l_rows] - tmp_fitted[h_rows] + h_med
+                )
+            } else {
+                result <- data.table::data.table(
+                    Protein        = PROTEIN,
+                    LABEL          = result_labels,
+                    RUN            = result_runs,
+                    LogIntensities = tmp_fitted
+                )
+            }
+        } else {
+            result <- data.table::data.table(
+                Protein        = PROTEIN,
+                LABEL          = result_labels,
+                RUN            = result_runs,
+                LogIntensities = tmp_fitted
+            )
+        }
+    }
+
+    list(result, survival)
+}
+
+
+#' Feature-level data summarization via matrix-native TMP (V4)
+#'
+#' Improves on \code{MSstatsSummarizeWithMultipleCoresV3} by eliminating
+#' the long-format \code{data.table} reconstruction and the \code{dcast}
+#' inside Tukey median polish fitting.  Workers extract the FL×R matrix
+#' from the V3 packed double vector and call
+#' \code{MSstatsSummarizeSingleTMPV2} directly.
+#'
+#' For the \code{method = "linear"} case this function delegates to
+#' \code{MSstatsSummarizeWithMultipleCoresV3} transparently (V4 only
+#' implements the TMP path).
+#'
+#' @inheritParams MSstatsSummarizeWithMultipleCoresV2
+#'
+#' @return A named list with one element per protein slot, identical in
+#'   structure to \code{MSstatsSummarizeWithMultipleCores}.
+#'
+#' @importFrom matter matter_list mem_realized SnowfastParam chunkLapply
+#' @importFrom data.table data.table fifelse
+#' @importFrom stats median predict
+#'
+#' @export
+MSstatsSummarizeWithMultipleCoresV4 <- function(
+    input,
+    method,
+    impute,
+    censored_symbol,
+    remove50missing,
+    equal_variance,
+    numberOfCores       = 1L,
+    aft_iterations      = 90L,
+    backing_path        = NULL,
+    result_path         = NULL,
+    ram_overhead_factor = 4,
+    verbose             = FALSE
+) {
+    # ── 0. Fallbacks ───────────────────────────────────────────────────────────
+    if (numberOfCores <= 1L) {
+        return(MSstatsSummarizeWithSingleCore(
+            input, method, impute, censored_symbol,
+            remove50missing, equal_variance, aft_iterations))
+    }
+    if (!identical(method, "TMP")) {
+        # V4 implements TMP only; delegate linear to V3
+        return(MSstatsSummarizeWithMultipleCoresV3(
+            input, method, impute, censored_symbol,
+            remove50missing, equal_variance, numberOfCores,
+            aft_iterations, backing_path, result_path,
+            ram_overhead_factor, verbose))
+    }
+
+    # ── 1. Split and build matter backing store (identical to V3) ─────────────
+    is_labeled_reference <- "is_labeled_ref" %in% colnames(input) &&
+        any(input$is_labeled_ref, na.rm = TRUE)
+    split_keys <- if (is_labeled_reference) list(input$PROTEIN) else
+        list(input$PROTEIN, input$LABEL)
+    protein_indices <- split(seq_len(nrow(input)), split_keys)
+    protein_ids     <- names(protein_indices)
+    num_proteins    <- length(protein_indices)
+
+    all_runs <- if (is.factor(input$RUN)) levels(input$RUN) else
+        sort(unique(as.character(input$RUN)))
+    R <- length(all_runs)
+
+    getOption("MSstatsLog")("INFO",
+        paste0("V4: building matter matrices for ", num_proteins,
+               " proteins × ", R, " runs"))
+
+    if (is.null(backing_path)) backing_path <- tempfile(fileext = ".bin")
+
+    slots <- vector("list", num_proteins)
+    for (k in seq_len(num_proteins)) {
+        slots[[k]] <- .buildProteinSlotV3(
+            dt       = input[protein_indices[[k]], ],
+            slot_k   = k,
+            all_runs = all_runs)
+    }
+    packed_list <- lapply(slots, `[[`, "packed")
+    meta_list   <- lapply(slots, `[[`, "meta")
+    rm(slots)
+
+    protein_matter <- matter::matter_list(
+        packed_list, type = "double",
+        path = backing_path, names = protein_ids)
+    rm(packed_list)
+    gc(verbose = FALSE)
+
+    getOption("MSstatsLog")("INFO",
+        paste0("V4: backing store written to ", backing_path,
+               " (", format(matter::mem_realized(protein_matter)), ")"))
+
+    # ── 2. Adaptive chunk sizing ──────────────────────────────────────────────
+    per_protein_bytes <- as.numeric(matter::mem_realized(protein_matter)) /
+        num_proteins
+    effective_bytes   <- per_protein_bytes * ram_overhead_factor
+    gc_stats <- gc(reset = FALSE)
+    used_bytes <- sum(gc_stats[, "used"]) * 8
+    worker_budget_bytes <- max(256 * 1024^2, used_bytes * 0.5)
+    n_concurrent <- max(1L,
+        floor(worker_budget_bytes / (numberOfCores * effective_bytes)))
+
+    getOption("MSstatsLog")("INFO",
+        paste0("V4: chunk size = ", n_concurrent,
+               " proteins/worker (estimated ",
+               format(round(effective_bytes / 1024^2, 2)), " MB per protein)"))
+
+    # ── 3. Parallel backend ───────────────────────────────────────────────────
+    BPPARAM <- matter::SnowfastParam(
+        workers       = numberOfCores,
+        force.GC      = TRUE,
+        stop.on.error = FALSE)
+
+    # ── 4. Worker closure ─────────────────────────────────────────────────────
+    #
+    # Captures meta_list and MSstatsSummarizeSingleTMPV2.  Workers receive the
+    # closure once; subsequent proteins in the same chunk reuse it.
+    # MSstatsSummarizeSingleTMPV2 is defined in the MSstats namespace, so its
+    # internal calls (.fitSurvival, median_polish_summary) resolve correctly
+    # after library(MSstats) in the worker.
+    .processProteinV4 <- local({
+        meta_list_       <- meta_list
+        summarize_v2_    <- MSstatsSummarizeSingleTMPV2
+        impute_          <- impute
+        censored_symbol_ <- censored_symbol
+        remove50missing_ <- remove50missing
+        aft_iterations_  <- aft_iterations
+
+        function(packed) {
+            library(MSstats, quietly = TRUE, warn.conflicts = FALSE)
+            k <- as.integer(packed[1L])
+            summarize_v2_(packed, meta_list_[[k]],
+                          impute_, censored_symbol_,
+                          remove50missing_, aft_iterations_)
+        }
+    })
+
+    # ── 5. Dispatch ───────────────────────────────────────────────────────────
+    if (!is.null(result_path)) {
+        .streaming <- local({
+            inner_ <- .processProteinV4
+            function(packed) serialize(inner_(packed), connection = NULL)
+        })
+        result_matter <- matter::chunkLapply(
+            protein_matter, FUN = .streaming,
+            outpath   = result_path,
+            chunkopts = list(chunksize = n_concurrent),
+            verbose   = verbose,
+            BPPARAM   = BPPARAM)
+        summarized_results <- lapply(seq_len(num_proteins), function(i) {
+            unserialize(result_matter[[i]])
+        })
+        names(summarized_results) <- protein_ids
+    } else {
+        summarized_results <- matter::chunkLapply(
+            protein_matter, FUN = .processProteinV4,
+            chunkopts = list(chunksize = n_concurrent),
+            verbose   = verbose,
+            BPPARAM   = BPPARAM)
+        names(summarized_results) <- protein_ids
+    }
+
+    getOption("MSstatsLog")("INFO", "V4: summarization complete.")
+    summarized_results
+}
