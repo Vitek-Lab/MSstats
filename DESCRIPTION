@@ -38,8 +38,9 @@ Imports:
     methods,
     statmod,
     parallel,
-    rlang
-Suggests: 
+    rlang,
+    matter
+Suggests:
     BiocStyle,
     knitr,
     rmarkdown,
