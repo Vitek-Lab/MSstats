@@ -6,3 +6,5 @@
 ^docs$
 ^pkgdown$
 appspec.yml
+^\.positai$
+^\.claude$
