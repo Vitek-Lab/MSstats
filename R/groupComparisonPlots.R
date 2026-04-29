@@ -369,7 +369,7 @@ groupComparisonPlots = function(
         plot = .makeVolcano(single_label, label_name, log_base_FC, log_base_pval, x.lim, ProteinName, dot.size,
                             y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
                             legend.size, log_adjp)
-        print(plot)
+        if (!isPlotly) print(plot)
         plots[[i]] = plot
     }
     if (address != FALSE) {
@@ -423,7 +423,7 @@ groupComparisonPlots = function(
         plot = .makeComparison(single_protein, log_base_FC, dot.size, x.axis.size,
                                y.axis.size, text.angle, hjust, vjust, y.limdown,
                                y.limup, sig)
-        print(plot)
+        if (!isPlotly) print(plot)
         plots[[i]] = plot
     }
     if (address != FALSE) {
