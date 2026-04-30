@@ -1094,3 +1094,140 @@ MSstatsSummarizeWithMultipleCoresV4 <- function(
     getOption("MSstatsLog")("INFO", "V4: summarization complete.")
     summarized_results
 }
+
+
+#' Feature-level data summarization via socket-dispatched packed double vectors (V5)
+#'
+#' Replaces the matter backing-file approach of V3/V4 with direct socket
+#' transfer of compact per-protein double vectors.  Each protein's numeric
+#' columns are packed into a flat \code{double} vector by
+#' \code{.buildProteinSlotV3} in the main process; \code{bplapply} sends
+#' exactly one protein's vector to each worker task through the socket channel.
+#'
+#' Compared with earlier versions:
+#' \itemize{
+#'   \item No temporary backing file — works identically on LUSTRE, NFS, or any
+#'     filesystem because data never touches the disk during parallel dispatch.
+#'   \item Smaller per-task payload than the original \code{parLapply} approach
+#'     (packed doubles only — no factor levels, character columns, or R object
+#'     framing).
+#'   \item \code{SnowfastParam} provides GC-between-tasks and dynamic port
+#'     selection over plain \code{makeCluster}.
+#'   \item For \code{method = "TMP"}: workers call
+#'     \code{MSstatsSummarizeSingleTMPV2} (no \code{dcast} round-trip).
+#'   \item For \code{method = "linear"}: workers reconstruct the data.table
+#'     via \code{.reconstructProteinDTV3} and call
+#'     \code{MSstatsSummarizeSingleLinear}.
+#' }
+#'
+#' @inheritParams MSstatsSummarizeWithMultipleCoresV2
+#'
+#' @return A named list with one element per protein slot, identical in
+#'   structure to \code{MSstatsSummarizeWithMultipleCores}.
+#'
+#' @importFrom matter SnowfastParam
+#' @importFrom BiocParallel bplapply
+#' @importFrom data.table data.table fifelse
+#' @importFrom stats median predict
+#'
+#' @export
+MSstatsSummarizeWithMultipleCoresV5 <- function(
+    input,
+    method,
+    impute,
+    censored_symbol,
+    remove50missing,
+    equal_variance,
+    numberOfCores  = 1L,
+    aft_iterations = 90L,
+    verbose        = FALSE
+) {
+    # ── 0. Single-core fallback ────────────────────────────────────────────────
+    if (numberOfCores <= 1L) {
+        return(MSstatsSummarizeWithSingleCore(
+            input, method, impute, censored_symbol,
+            remove50missing, equal_variance, aft_iterations))
+    }
+
+    # ── 1. Split input by protein slot ────────────────────────────────────────
+    is_labeled_reference <- "is_labeled_ref" %in% colnames(input) &&
+        any(input$is_labeled_ref, na.rm = TRUE)
+    split_keys <- if (is_labeled_reference) list(input$PROTEIN) else
+        list(input$PROTEIN, input$LABEL)
+    protein_indices <- split(seq_len(nrow(input)), split_keys)
+    protein_ids     <- names(protein_indices)
+    num_proteins    <- length(protein_indices)
+
+    all_runs <- if (is.factor(input$RUN)) levels(input$RUN) else
+        sort(unique(as.character(input$RUN)))
+
+    getOption("MSstatsLog")("INFO",
+        paste0("V5: packing ", num_proteins, " proteins × ",
+               length(all_runs), " runs into double vectors"))
+
+    # ── 2. Pack each protein into a compact double vector ─────────────────────
+    #
+    # input is consumed here in the main process only.
+    # Workers never receive input — only their one packed vector via socket.
+    packed_list <- vector("list", num_proteins)
+    meta_list   <- vector("list", num_proteins)
+    for (k in seq_len(num_proteins)) {
+        slot             <- .buildProteinSlotV3(
+                                input[protein_indices[[k]], ],
+                                k, all_runs)
+        packed_list[[k]] <- slot$packed
+        meta_list[[k]]   <- slot$meta
+    }
+
+    getOption("MSstatsLog")("INFO",
+        paste0("V5: dispatching via sockets (",
+               format(round(sum(lengths(packed_list)) * 8 / 1024^2, 1)),
+               " MB total payload)"))
+
+    # ── 3. Worker closure ─────────────────────────────────────────────────────
+    #
+    # meta_list (string metadata) is captured once into the closure and sent
+    # to each worker at startup.  packed_list elements are sent one-per-task
+    # through the socket channel — no filesystem access during dispatch.
+    use_TMP <- identical(method, "TMP")
+
+    .worker <- local({
+        meta_list_       <- meta_list
+        reconstruct_     <- .reconstructProteinDTV3
+        use_TMP_         <- use_TMP
+        impute_          <- impute
+        censored_symbol_ <- censored_symbol
+        remove50missing_ <- remove50missing
+        aft_iterations_  <- aft_iterations
+        equal_variance_  <- equal_variance
+
+        function(packed) {
+            library(MSstats, quietly = TRUE, warn.conflicts = FALSE)
+            k <- as.integer(packed[1L])
+            if (use_TMP_) {
+                MSstatsSummarizeSingleTMPV2(
+                    packed, meta_list_[[k]],
+                    impute_, censored_symbol_,
+                    remove50missing_, aft_iterations_)
+            } else {
+                dt <- reconstruct_(packed, meta_list_[[k]])
+                MSstatsSummarizeSingleLinear(
+                    dt, impute_, censored_symbol_,
+                    remove50missing_, aft_iterations_,
+                    equal_variances = equal_variance_)
+            }
+        }
+    })
+
+    # ── 4. Dispatch ───────────────────────────────────────────────────────────
+    BPPARAM <- matter::SnowfastParam(
+        workers       = numberOfCores,
+        force.GC      = TRUE,
+        stop.on.error = FALSE)
+
+    results <- BiocParallel::bplapply(packed_list, .worker, BPPARAM = BPPARAM)
+    names(results) <- protein_ids
+
+    getOption("MSstatsLog")("INFO", "V5: summarization complete.")
+    results
+}

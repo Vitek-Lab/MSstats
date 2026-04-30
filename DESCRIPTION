@@ -39,7 +39,8 @@ Imports:
     statmod,
     parallel,
     rlang,
-    matter
+    matter,
+    BiocParallel
 Suggests:
     BiocStyle,
     knitr,
