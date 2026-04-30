@@ -213,8 +213,13 @@ dataProcess = function(
 #' 
 MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
                               remove50missing, equal_variance, numberOfCores = 1,
-                              aft_iterations = 90) {
+                              aft_iterations = 90, track_memory = FALSE) {
     if (numberOfCores > 1) {
+        t_start  <- proc.time()[["elapsed"]]
+        .snap    <- if (track_memory) MSstats:::.memMB else function() NA_real_
+        mem_log  <- list()
+        mem_log[["baseline (main)"]] <- .snap()
+
         is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
         if (is_labeled_reference) {
             protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
@@ -222,50 +227,99 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
             protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
         }
         num_proteins = length(protein_indices)
+        mem_log[["after protein split"]] <- .snap()
+
         function_environment = environment()
         cl = parallel::makeCluster(numberOfCores)
         getOption("MSstatsLog")("INFO",
                                 "Starting the cluster setup for summarization")
-        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
+        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP",
                                       "MSstatsSummarizeSingleLinear",
                                       "input", "impute", "censored_symbol",
-                                      "remove50missing", "protein_indices", 
-                                      "equal_variance", "aft_iterations"), 
+                                      "remove50missing", "protein_indices",
+                                      "equal_variance", "aft_iterations",
+                                      "track_memory"),
                                 envir = function_environment)
-        cat(paste0("Number of proteins to process: ", num_proteins), 
+        mem_log[["after clusterExport (input copied)"]] <- .snap()
+
+        cat(paste0("Number of proteins to process: ", num_proteins),
             sep = "\n", file = "MSstats_dataProcess_log_progress.log")
+
         if (method == "TMP") {
             summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
                 if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
+                    cat("Finished processing an additional 100 proteins",
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
                 single_protein = input[protein_indices[[i]],]
-                MSstatsSummarizeSingleTMP(
+                result <- MSstatsSummarizeSingleTMP(
                     single_protein, impute, censored_symbol, remove50missing,
                     aft_iterations)
+                if (track_memory) {
+                    .wm <- function() {
+                        if (file.exists("/proc/self/status")) {
+                            ln <- readLines("/proc/self/status", warn = FALSE)
+                            m  <- grep("^VmRSS:", ln, value = TRUE)
+                            if (length(m)) return(as.numeric(gsub("[^0-9]", "", m[1L])) / 1024)
+                        }
+                        g <- gc(reset = FALSE)
+                        (g["Ncells", "used"] * 8L + g["Vcells", "used"] * 8L) / 1024^2
+                    }
+                    list(.r = result, .m = .wm())
+                } else {
+                    result
+                }
             })
         } else {
             summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
                 if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
+                    cat("Finished processing an additional 100 proteins",
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
                 single_protein = input[protein_indices[[i]],]
-                MSstatsSummarizeSingleLinear(
+                result <- MSstatsSummarizeSingleLinear(
                     single_protein,
-                    impute, 
-                    censored_symbol, 
+                    impute,
+                    censored_symbol,
                     remove50missing,
                     aft_iterations)
+                if (track_memory) {
+                    .wm <- function() {
+                        if (file.exists("/proc/self/status")) {
+                            ln <- readLines("/proc/self/status", warn = FALSE)
+                            m  <- grep("^VmRSS:", ln, value = TRUE)
+                            if (length(m)) return(as.numeric(gsub("[^0-9]", "", m[1L])) / 1024)
+                        }
+                        g <- gc(reset = FALSE)
+                        (g["Ncells", "used"] * 8L + g["Vcells", "used"] * 8L) / 1024^2
+                    }
+                    list(.r = result, .m = .wm())
+                } else {
+                    result
+                }
             })
         }
+        mem_log[["after parLapply"]] <- .snap()
         parallel::stopCluster(cl)
+        mem_log[["after stopCluster"]] <- .snap()
+
+        worker_mems <- NULL
+        if (track_memory) {
+            worker_mems <- vapply(summarized_results, function(x)
+                if (is.list(x) && !is.null(x$.m)) x$.m else NA_real_, numeric(1L))
+            summarized_results <- lapply(summarized_results, function(x)
+                if (is.list(x) && !is.null(x$.r)) x$.r else x)
+            MSstats:::.printMemReport(
+                "MSstatsSummarizeWithMultipleCores",
+                mem_log, worker_mems,
+                elapsed = proc.time()[["elapsed"]] - t_start)
+        }
+
         return(summarized_results)
     } else {
-        return(MSstatsSummarizeWithSingleCore(input, method, impute, 
-                                              censored_symbol, 
-                                              remove50missing, 
+        return(MSstatsSummarizeWithSingleCore(input, method, impute,
+                                              censored_symbol,
+                                              remove50missing,
                                               equal_variance,
                                               aft_iterations))
     }

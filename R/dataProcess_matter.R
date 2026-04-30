@@ -243,6 +243,61 @@ MSstatsSummarizeWithMultipleCoresV2 <- function(
 }
 
 
+## ── Memory-monitoring helpers ─────────────────────────────────────────────────
+
+# RSS of the current process in MB.
+# On Linux reads /proc/self/status (VmRSS); elsewhere falls back to gc() counts.
+.memMB <- function() {
+    if (file.exists("/proc/self/status")) {
+        ln <- readLines("/proc/self/status", warn = FALSE)
+        m  <- grep("^VmRSS:", ln, value = TRUE)
+        if (length(m))
+            return(as.numeric(gsub("[^0-9]", "", m[1L])) / 1024)
+    }
+    g <- gc(reset = FALSE)
+    (g["Ncells", "used"] * 8L + g["Vcells", "used"] * 8L) / 1024^2
+}
+
+# Print a formatted memory report to stderr via message().
+# checkpoints: named numeric vector of RSS snapshots (MB).
+# worker_mems: numeric vector of per-task RSS values from workers (may be NA).
+# elapsed:     total wall-clock seconds (NULL to omit).
+.printMemReport <- function(fn_name, checkpoints, worker_mems = NULL,
+                            elapsed = NULL) {
+    w  <- 65L
+    hr <- strrep("─", w)
+    fmt_mb    <- function(x) if (is.na(x)) "    n/a" else sprintf("%7.1f", x)
+    fmt_delta <- function(now, prev) {
+        if (is.na(now) || is.na(prev)) return("")
+        sprintf("  (%+.1f MB)", now - prev)
+    }
+    lines <- c(
+        hr,
+        sprintf(" MSstats Memory Report — %s", fn_name),
+        hr,
+        sprintf("  %-36s  %7s  %s", "Checkpoint", "RSS MB", "Delta")
+    )
+    prev <- NA_real_
+    for (nm in names(checkpoints)) {
+        val <- checkpoints[[nm]]
+        lines <- c(lines,
+            sprintf("  %-36s  %s%s", nm, fmt_mb(val), fmt_delta(val, prev)))
+        prev <- val
+    }
+    if (!is.null(worker_mems)) {
+        wm <- worker_mems[!is.na(worker_mems)]
+        if (length(wm)) {
+            lines <- c(lines, "",
+                sprintf("  Worker RSS  min / mean / max :  %.1f / %.1f / %.1f MB",
+                        min(wm), mean(wm), max(wm)))
+        }
+    }
+    if (!is.null(elapsed))
+        lines <- c(lines, sprintf("  Total elapsed: %.1f s", as.numeric(elapsed)))
+    lines <- c(lines, hr)
+    message(paste(lines, collapse = "\n"))
+}
+
 ## ── V3 internal helpers ───────────────────────────────────────────────────────
 ##
 ## Packed double-vector layout for one protein slot (all column-major matrices):
@@ -1140,14 +1195,21 @@ MSstatsSummarizeWithMultipleCoresV5 <- function(
     equal_variance,
     numberOfCores  = 1L,
     aft_iterations = 90L,
-    verbose        = FALSE
+    verbose        = FALSE,
+    BPPARAM        = NULL,
+    track_memory   = FALSE
 ) {
     # ── 0. Single-core fallback ────────────────────────────────────────────────
-    if (numberOfCores <= 1L) {
+    if (numberOfCores <= 1L && is.null(BPPARAM)) {
         return(MSstatsSummarizeWithSingleCore(
             input, method, impute, censored_symbol,
             remove50missing, equal_variance, aft_iterations))
     }
+
+    t_start <- proc.time()[["elapsed"]]
+    .snap   <- if (track_memory) .memMB else function() NA_real_
+    mem_log <- list()
+    mem_log[["baseline (main)"]] <- .snap()
 
     # ── 1. Split input by protein slot ────────────────────────────────────────
     is_labeled_reference <- "is_labeled_ref" %in% colnames(input) &&
@@ -1157,6 +1219,7 @@ MSstatsSummarizeWithMultipleCoresV5 <- function(
     protein_indices <- split(seq_len(nrow(input)), split_keys)
     protein_ids     <- names(protein_indices)
     num_proteins    <- length(protein_indices)
+    mem_log[["after protein split"]] <- .snap()
 
     all_runs <- if (is.factor(input$RUN)) levels(input$RUN) else
         sort(unique(as.character(input$RUN)))
@@ -1166,9 +1229,6 @@ MSstatsSummarizeWithMultipleCoresV5 <- function(
                length(all_runs), " runs into double vectors"))
 
     # ── 2. Pack each protein into a compact double vector ─────────────────────
-    #
-    # input is consumed here in the main process only.
-    # Workers never receive input — only their one packed vector via socket.
     packed_list <- vector("list", num_proteins)
     meta_list   <- vector("list", num_proteins)
     for (k in seq_len(num_proteins)) {
@@ -1178,17 +1238,14 @@ MSstatsSummarizeWithMultipleCoresV5 <- function(
         packed_list[[k]] <- slot$packed
         meta_list[[k]]   <- slot$meta
     }
+    mem_log[["after packing (packed_list built)"]] <- .snap()
 
+    payload_mb <- sum(lengths(packed_list)) * 8 / 1024^2
     getOption("MSstatsLog")("INFO",
         paste0("V5: dispatching via sockets (",
-               format(round(sum(lengths(packed_list)) * 8 / 1024^2, 1)),
-               " MB total payload)"))
+               format(round(payload_mb, 1)), " MB total payload)"))
 
     # ── 3. Worker closure ─────────────────────────────────────────────────────
-    #
-    # meta_list (string metadata) is captured once into the closure and sent
-    # to each worker at startup.  packed_list elements are sent one-per-task
-    # through the socket channel — no filesystem access during dispatch.
     use_TMP <- identical(method, "TMP")
 
     .worker <- local({
@@ -1200,11 +1257,12 @@ MSstatsSummarizeWithMultipleCoresV5 <- function(
         remove50missing_ <- remove50missing
         aft_iterations_  <- aft_iterations
         equal_variance_  <- equal_variance
+        track_memory_    <- track_memory
 
         function(packed) {
             library(MSstats, quietly = TRUE, warn.conflicts = FALSE)
             k <- as.integer(packed[1L])
-            if (use_TMP_) {
+            result <- if (use_TMP_) {
                 MSstatsSummarizeSingleTMPV2(
                     packed, meta_list_[[k]],
                     impute_, censored_symbol_,
@@ -1216,17 +1274,36 @@ MSstatsSummarizeWithMultipleCoresV5 <- function(
                     remove50missing_, aft_iterations_,
                     equal_variances = equal_variance_)
             }
+            if (track_memory_)
+                list(.r = result, .m = MSstats:::.memMB())
+            else
+                result
         }
     })
 
     # ── 4. Dispatch ───────────────────────────────────────────────────────────
-    BPPARAM <- matter::SnowfastParam(
-        workers       = numberOfCores,
-        force.GC      = TRUE,
-        stop.on.error = FALSE)
+    if (is.null(BPPARAM))
+        BPPARAM <- matter::SnowfastParam(
+            workers       = numberOfCores,
+            force.GC      = TRUE,
+            stop.on.error = FALSE)
 
     results <- BiocParallel::bplapply(packed_list, .worker, BPPARAM = BPPARAM)
+    mem_log[["after bplapply"]] <- .snap()
     names(results) <- protein_ids
+
+    worker_mems <- NULL
+    if (track_memory) {
+        worker_mems <- vapply(results, function(x)
+            if (is.list(x) && !is.null(x$.m)) x$.m else NA_real_, numeric(1L))
+        results <- lapply(results, function(x)
+            if (is.list(x) && !is.null(x$.r)) x$.r else x)
+        names(results) <- protein_ids
+        .printMemReport(
+            "MSstatsSummarizeWithMultipleCoresV5",
+            mem_log, worker_mems,
+            elapsed = proc.time()[["elapsed"]] - t_start)
+    }
 
     getOption("MSstatsLog")("INFO", "V5: summarization complete.")
     results
