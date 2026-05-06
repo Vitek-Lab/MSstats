@@ -20,6 +20,6 @@ These objects are imported from other packages. Follow the links
 below to see their documentation.
 
 \describe{
-  \item{MSstatsConvert}{\code{\link[MSstatsConvert]{DIANNtoMSstatsFormat}}, \code{\link[MSstatsConvert]{DIAUmpiretoMSstatsFormat}}, \code{\link[MSstatsConvert]{FragPipetoMSstatsFormat}}, \code{\link[MSstatsConvert]{MaxQtoMSstatsFormat}}, \code{\link[MSstatsConvert]{OpenMStoMSstatsFormat}}, \code{\link[MSstatsConvert]{OpenSWATHtoMSstatsFormat}}, \code{\link[MSstatsConvert]{PDtoMSstatsFormat}}, \code{\link[MSstatsConvert]{ProgenesistoMSstatsFormat}}, \code{\link[MSstatsConvert]{SkylinetoMSstatsFormat}}, \code{\link[MSstatsConvert]{SpectronauttoMSstatsFormat}}}
+  \item{MSstatsConvert}{\code{\link[MSstatsConvert:DIANNtoMSstatsFormat]{DIANNtoMSstatsFormat()}}, \code{\link[MSstatsConvert:DIAUmpiretoMSstatsFormat]{DIAUmpiretoMSstatsFormat()}}, \code{\link[MSstatsConvert:FragPipetoMSstatsFormat]{FragPipetoMSstatsFormat()}}, \code{\link[MSstatsConvert:MaxQtoMSstatsFormat]{MaxQtoMSstatsFormat()}}, \code{\link[MSstatsConvert:OpenMStoMSstatsFormat]{OpenMStoMSstatsFormat()}}, \code{\link[MSstatsConvert:OpenSWATHtoMSstatsFormat]{OpenSWATHtoMSstatsFormat()}}, \code{\link[MSstatsConvert:PDtoMSstatsFormat]{PDtoMSstatsFormat()}}, \code{\link[MSstatsConvert:ProgenesistoMSstatsFormat]{ProgenesistoMSstatsFormat()}}, \code{\link[MSstatsConvert:SkylinetoMSstatsFormat]{SkylinetoMSstatsFormat()}}, \code{\link[MSstatsConvert:SpectronauttoMSstatsFormat]{SpectronauttoMSstatsFormat()}}}
 }}
 
