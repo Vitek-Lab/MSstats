@@ -180,10 +180,11 @@
         }
     }
     if (!equal_variances) {
-        linear_model = .updateUnequalVariances(input = input, 
+        linear_model = .updateUnequalVariances(input = input,
                                                fit = linear_model,
                                                num_iter = 1)
     }
+    linear_model$model = NULL
     linear_model
 }
 
@@ -198,26 +199,27 @@
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
     weight = NULL
-    
+
+    # Convert to data.frame once upfront. The original code did this
+    # implicitly via data.frame(input, ...) on every column add, which
+    # copied ALL existing columns each time (~5 full copies per iteration).
+    # Now we convert once and add/remove columns in-place.
+    input = as.data.frame(input)
     for (i in seq_len(num_iter)) {
         if (i == 1) {
-            abs.resids = data.frame(abs.resids = abs(fit$residuals))
-            fitted = data.frame(fitted = fit$fitted.values)
-            input = data.frame(input, 
-                               "abs.resids" = abs.resids, 
-                               "fitted" = fitted)
+            input[["abs.resids"]] = abs(fit$residuals)
+            input[["fitted"]] = fit$fitted.values
         }
         fit.loess = loess(abs.resids ~ fitted, data = input)
-        loess.fitted = data.frame(loess.fitted = fitted(fit.loess))
-        input = data.frame(input, "loess.fitted" = loess.fitted)
-        ## loess fitted valuaes are predicted sd
-        input$weight = 1 / (input$loess.fitted ^ 2)
-        input = input[, !(colnames(input) %in% "abs.resids")]
+        input[["loess.fitted"]] = fitted(fit.loess)
+        ## loess fitted values are predicted sd
+        input[["weight"]] = 1 / (input[["loess.fitted"]] ^ 2)
+        input[["abs.resids"]] = NULL
         ## re-fit using weight
         wls.fit = lm(formula(fit), data = input, weights = weight)
-        abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
-        input = data.frame(input, "abs.resids" = abs.resids)
-        input = input[, -which(colnames(input) %in% c("loess.fitted", "weight"))]
+        input[["abs.resids"]] = abs(wls.fit$residuals)
+        input[["loess.fitted"]] = NULL
+        input[["weight"]] = NULL
     }
     wls.fit
 }
