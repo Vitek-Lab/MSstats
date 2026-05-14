@@ -39,7 +39,7 @@ Imports:
     statmod,
     parallel,
     rlang
-Suggests: 
+Suggests:
     BiocStyle,
     knitr,
     rmarkdown,
@@ -47,7 +47,10 @@ Suggests:
     covr,
     markdown,
     mockery,
-    kableExtra
+    kableExtra,
+    callr,
+    ps,
+    profmem
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse

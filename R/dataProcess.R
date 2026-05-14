@@ -220,45 +220,34 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
     if (numberOfCores > 1) {
         is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
         if (is_labeled_reference) {
-            protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN))
+            protein_data = split(input, input$PROTEIN)
         } else {
-            protein_indices = split(seq_len(nrow(input)), list(input$PROTEIN, input$LABEL))
+            protein_data = split(input, list(input$PROTEIN, input$LABEL))
         }
-        num_proteins = length(protein_indices)
-        function_environment = environment()
+        num_proteins = length(protein_data)
         cl = parallel::makeCluster(numberOfCores)
         getOption("MSstatsLog")("INFO",
                                 "Starting the cluster setup for summarization")
-        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
+        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP",
                                       "MSstatsSummarizeSingleLinear",
-                                      "input", "impute", "censored_symbol",
-                                      "remove50missing", "protein_indices", 
-                                      "equal_variance", "aft_iterations"), 
-                                envir = function_environment)
-        cat(paste0("Number of proteins to process: ", num_proteins), 
+                                      "impute", "censored_symbol",
+                                      "remove50missing", "equal_variance",
+                                      "aft_iterations"),
+                                envir = environment())
+        cat(paste0("Number of proteins to process: ", num_proteins),
             sep = "\n", file = "MSstats_dataProcess_log_progress.log")
         if (method == "TMP") {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
+            summarized_results = parallel::parLapply(cl, protein_data, function(single_protein) {
                 MSstatsSummarizeSingleTMP(
                     single_protein, impute, censored_symbol, remove50missing,
                     aft_iterations)
             })
         } else {
-            summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
-                if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
-                        sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
-                }
-                single_protein = input[protein_indices[[i]],]
+            summarized_results = parallel::parLapply(cl, protein_data, function(single_protein) {
                 MSstatsSummarizeSingleLinear(
                     single_protein,
-                    impute, 
-                    censored_symbol, 
+                    impute,
+                    censored_symbol,
                     remove50missing,
                     aft_iterations)
             })

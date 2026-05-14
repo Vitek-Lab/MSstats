@@ -113,6 +113,42 @@ expect_dt_equal(dt1[, ..cols], dt2[, ..cols], cols,
 )
 
 
+# Test multicore linear parity --------------------------------------------
+# Linear summarization is deterministic per-protein, so multi-core should
+# produce the same ProteinLevelData as single-core: same rows, same
+# LogIntensities, same Variance values. The only difference across the two
+# paths is how work is distributed to workers.
+
+expect_equal(nrow(QuantDataDefaultLinear$ProteinLevelData),
+             nrow(QuantDataParallelLinear$ProteinLevelData),
+             info = "Linear multicore should yield same ProteinLevelData row count")
+
+# Sort both by (Protein, RUN) so the comparison is order-independent
+linear_single = QuantDataDefaultLinear$ProteinLevelData
+linear_multi  = QuantDataParallelLinear$ProteinLevelData
+linear_single = linear_single[order(as.character(linear_single$Protein),
+                                    as.character(linear_single$RUN)), ]
+linear_multi  = linear_multi[order(as.character(linear_multi$Protein),
+                                   as.character(linear_multi$RUN)), ]
+rownames(linear_single) = NULL
+rownames(linear_multi)  = NULL
+
+expect_equal(as.character(linear_single$Protein),
+             as.character(linear_multi$Protein),
+             info = "Linear multicore should cover the same set of proteins")
+
+expect_equal(linear_single$LogIntensities,
+             linear_multi$LogIntensities,
+             info = "Linear multicore LogIntensities should match single-core")
+
+if ("Variance" %in% colnames(linear_single) &&
+    "Variance" %in% colnames(linear_multi)) {
+    expect_equal(linear_single$Variance,
+                 linear_multi$Variance,
+                 info = "Linear multicore Variance should match single-core")
+}
+
+
 # Test dataProcess with technical replicates & fractions ------------------
 msstats_input_fractions_techreps = data.table::fread(
     system.file("tinytest/processed_data/input_techreps_fractions.csv",
