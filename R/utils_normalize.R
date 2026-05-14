@@ -61,8 +61,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     input[, ABUNDANCE_FRACTION := median(ABUNDANCE_RUN, na.rm = TRUE),
           by = "FRACTION"]
     input[, ABUNDANCE := ABUNDANCE - ABUNDANCE_RUN + ABUNDANCE_FRACTION]
-    input = input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
-                  with = FALSE]
+    data.table::set(input, j = "ABUNDANCE_RUN", value = NULL)
+    data.table::set(input, j = "ABUNDANCE_FRACTION", value = NULL)
     getOption("MSstatsLog")("Normalization based on median: OK")
     input
 }
@@ -255,7 +255,9 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     input[, ABUNDANCE := ABUNDANCE - median_by_run + median_by_fraction]
 
     getOption("MSstatsLog")("INFO", "Normalization : normalization with global standards protein - okay")
-    input[ , !(colnames(input) %in% c("median_by_run", "median_by_fraction")), with = FALSE]
+    data.table::set(input, j = "median_by_run", value = NULL)
+    data.table::set(input, j = "median_by_fraction", value = NULL)
+    input
 }
 
 
@@ -344,23 +346,31 @@ MSstatsMergeFractions = function(input) {
                 match_runs = unique(match_runs[, list(GROUP_ORIGINAL,
                                                       SUBJECT_ORIGINAL,
                                                       newRun)])
-                
-                input = merge(input, match_runs,
-                              by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
-                              all.x = TRUE)
+
+                # In-place add of newRun via keyed-match lookup instead of
+                # `merge(all.x=TRUE)`, which would deep-copy the whole table.
+                nr_idx = match_runs[input,
+                                    on = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+                                    which = TRUE, mult = "first"]
+                data.table::set(input, j = "newRun",
+                                value = match_runs$newRun[nr_idx])
                 select_fraction = input[!is.na(ABUNDANCE) & input$ABUNDANCE > 0,
                                         list(ncount = .N),
                                         by = c("FEATURE", "FRACTION")]
                 select_fraction = select_fraction[ncount != 0]
-                select_fraction[, tmp := paste(FEATURE, FRACTION, sep = "_")]
-                input$tmp = paste(input$FEATURE, input$FRACTION, sep = "_")
-                input = input[tmp %in% select_fraction$tmp, ]
+                # Filter by (FEATURE, FRACTION) pair directly instead of
+                # synthesising a concatenated "tmp" string column on both
+                # sides. Saves two 207k-string character vectors plus the
+                # paste() cost each call.
+                keep_idx = select_fraction[input,
+                                           on = c("FEATURE", "FRACTION"),
+                                           which = TRUE, mult = "first"]
+                input = input[!is.na(keep_idx)]
                 input$originalRUN = input$newRun
                 input$RUN = input$originalRUN
-                input$RUN = factor(input$RUN, levels = unique(input$RUN), 
+                input$RUN = factor(input$RUN, levels = unique(input$RUN),
                                    labels = seq_along(unique(input$RUN)))
-                input = input[, !(colnames(input) %in% c('tmp','newRun')), 
-                              with = FALSE]
+                data.table::set(input, j = "newRun", value = NULL)
             }
         }
     }

@@ -211,9 +211,14 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     cols = toupper(cols)
     cols = intersect(c(cols, "FRACTION", "TECHREPLICATE"),
                      colnames(input))
-    input = input[, cols, with = FALSE]
-    
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, 
+    # Drop unwanted columns by reference rather than subsetting with
+    # `input[, cols, with = FALSE]`, which would deep-copy every retained
+    # column into a new data.table. On large inputs this subset was
+    # allocating hundreds of MB (~nrow x ncol x 8 bytes).
+    drop_cols = setdiff(colnames(input), cols)
+    for (col in drop_cols) data.table::set(input, j = col, value = NULL)
+
+    input$PEPTIDE = paste(input$PEPTIDESEQUENCE,
                           input$PRECURSORCHARGE, sep = "_")
     input$TRANSITION = paste(input$FRAGMENTION, 
                              input$PRODUCTCHARGE, sep = "_")
@@ -322,8 +327,11 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     input[, PROTEIN := factor(PROTEIN)]
     input[, PEPTIDE := factor(PEPTIDE)]
     input[, TRANSITION := factor(TRANSITION)]
-    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
-                        RUN, PROTEIN, PEPTIDE, TRANSITION), ]
+    # Sort in place instead of `input = input[order(...), ]`, which builds
+    # a full row-reshuffle copy of the whole table. setorder rewrites the
+    # underlying column vectors without allocating a new data.table.
+    data.table::setorder(input, LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                         RUN, PROTEIN, PEPTIDE, TRANSITION)
     input[, GROUP := factor(GROUP)]
     input[, SUBJECT := factor(SUBJECT)]
     input[, FEATURE := factor(FEATURE)]

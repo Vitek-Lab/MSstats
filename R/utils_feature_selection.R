@@ -74,29 +74,27 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
-    PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = is_censored = NULL
+    PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = censored = NULL
     is_obs = log2inty = LABEL = NULL
-    
-    cols = c("PROTEIN", "PEPTIDE", "FEATURE", "originalRUN", "LABEL", 
-             "ABUNDANCE", "censored")
-    cols = intersect(cols, colnames(input))
-    input = input[, cols, with = FALSE]
-    if (!("censored" %in% cols)) {
-        input$censored = FALSE
-    } 
-    data.table::setnames(input, "censored", "is_censored")
-    input = input[, list(protein = as.character(PROTEIN),
-                         peptide = as.character(PEPTIDE),
-                         feature = as.character(FEATURE),
-                         run = as.character(originalRUN),
-                         label = as.character(LABEL),
-                         log2inty = ifelse(!(is.na(ABUNDANCE) | is_censored),
-                                           ABUNDANCE, NA),
-                         is_censored)]
-    input[, is_obs := !(is.na(log2inty) | is_censored)]
-    input[, is_censored := NULL]
-    
-    features_quality = data.table::rbindlist(lapply(split(input, input$label),
+
+    has_censored = is.element("censored", colnames(input))
+    # Build the working copy in a single operation. Previously this was two
+    # steps: (1) column-subset via input[, cols, with = FALSE] which deep-
+    # copied 7 columns from the 17-column table (~120 MB), then (2) a
+    # transform that created another new data.table (~100 MB). Combining
+    # them into one expression eliminates the intermediate copy.
+    work = input[, list(protein = as.character(PROTEIN),
+                        peptide = as.character(PEPTIDE),
+                        feature = as.character(FEATURE),
+                        run = as.character(originalRUN),
+                        label = as.character(LABEL),
+                        log2inty = ifelse(!(is.na(ABUNDANCE) |
+                                           if (has_censored) censored else FALSE),
+                                          ABUNDANCE, NA),
+                        is_obs = FALSE)]
+    work[, is_obs := !is.na(log2inty)]
+
+    features_quality = data.table::rbindlist(lapply(split(work, work$label),
                                                     .flagUninformativeSingleLabel,
                                                     min_feature_count = min_feature_count))
     features_quality

@@ -414,19 +414,19 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         }]
 
         if (is_labeled_reference) {
-            single_protein[, predicted := ifelse(censored & is_labeled_ref == FALSE, predicted, NA)]
-            single_protein[, newABUNDANCE := ifelse(censored & is_labeled_ref == FALSE, predicted, newABUNDANCE)]
+            single_protein[!(censored & is_labeled_ref == FALSE), predicted := NA]
+            single_protein[(censored) & is_labeled_ref == FALSE,
+                           newABUNDANCE := predicted]
         } else {
-            single_protein[, predicted := ifelse(censored, predicted, NA)]
-            single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+            single_protein[!(censored), predicted := NA]
+            single_protein[(censored), newABUNDANCE := predicted]
         }
-
         survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {
         survival = single_protein[, intersect(c(cols, "LABEL"), colnames(single_protein)), with = FALSE]
         survival[, predicted := NA]
     }
-    
+
     if (all(!is.na(single_protein$ANOMALYSCORES))) {
         single_protein[, weights :=
             anomaly_weights_z_vec(ANOMALYSCORES),
@@ -569,11 +569,13 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         }
 
         if (is_labeled_reference) {
-            single_protein[, predicted := ifelse(censored & is_labeled_ref == FALSE, predicted, NA)]
-            single_protein[, newABUNDANCE := ifelse(censored & is_labeled_ref == FALSE, predicted, newABUNDANCE)]
+            single_protein[!(censored & is_labeled_ref == FALSE), predicted := NA]
+            single_protein[(censored) & is_labeled_ref == FALSE,
+                           newABUNDANCE := predicted]
         } else {
-            single_protein[, predicted := ifelse(censored, predicted, NA)]
-            single_protein[, newABUNDANCE := ifelse(censored, predicted, newABUNDANCE)]
+            single_protein[!(censored), predicted := NA]
+            single_protein[(censored),
+                           newABUNDANCE := predicted]
         }
         survival = single_protein[, intersect(c(cols, "LABEL", "predicted"), colnames(single_protein)), with = FALSE]
     } else {

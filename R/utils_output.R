@@ -34,13 +34,20 @@
 #' output = output = MSstatsSummarizationOutput(input, summarized, processed,
 #' method, impute, cens)
 #' 
-MSstatsSummarizationOutput = function(input, summarized, processed, 
+MSstatsSummarizationOutput = function(input, summarized, processed,
                                       method, impute, censored_symbol) {
     LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL
-    
-    input = .finalizeInput(input, summarized, method, impute, censored_symbol)
-    summarized = lapply(summarized, function(x) x[[1]])
-    summarized = data.table::rbindlist(summarized, fill = TRUE)
+
+    predicted_survival = data.table::rbindlist(lapply(summarized, function(x) x[[2]]),
+                                                fill = TRUE)
+    for (i in seq_along(summarized)) summarized[[i]][[2]] = NULL
+    input = .finalizeInput(input, predicted_survival, method, impute, censored_symbol)
+    rm(predicted_survival)
+    protein_summaries = lapply(summarized, function(x) x[[1]])
+    rm(summarized)
+    summarized = data.table::rbindlist(protein_summaries, fill = TRUE)
+    rm(protein_summaries)
+
     if (inherits(summarized, "try-error")) {
         msg = paste("*** error : can't summarize per subplot with ",
                     method, ".")
@@ -82,18 +89,21 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                               "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
                               "newABUNDANCE", "predicted", "feature_quality",
                               "is_outlier", "remove", "is_labeled_ref"), colnames(input))
-    input = input[, output_cols, with = FALSE]
-    
+    drop_cols = setdiff(colnames(input), output_cols)
+    for (col in drop_cols) data.table::set(input, j = col, value = NULL)
+
     if (is.element("remove", colnames(processed))) {
-        processed = processed[(remove), 
-                              intersect(output_cols, 
+        processed = processed[(remove),
+                              intersect(output_cols,
                                         colnames(processed)), with = FALSE]
         input = rbind(input, processed, fill = TRUE)
     }
-    list(FeatureLevelData = as.data.frame(input), 
-         ProteinLevelData = as.data.frame(rqall), 
+    data.table::setDF(input)
+    data.table::setDF(rqall)
+    list(FeatureLevelData = input,
+         ProteinLevelData = rqall,
          SummaryMethod = method)
-    
+
 }
 
 
@@ -104,9 +114,9 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' @param impute if TRUE, censored missing values were imputed
 #' @param censored_symbol censored missing value indicator
 #' @keywords internal
-.finalizeInput = function(input, summarized, method, impute, censored_symbol) {
+.finalizeInput = function(input, predicted_survival, method, impute, censored_symbol) {
     # if (method == "TMP") {
-    input = .finalizeTMP(input, censored_symbol, impute, summarized)
+    input = .finalizeTMP(input, censored_symbol, impute, predicted_survival)
     # } else {
     #     input = .finalizeLinear(input, censored_symbol)
     # }
@@ -117,21 +127,27 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' Summary statistics for output of TMP-based summarization
 #' @inheritParams .finalizeInput
 #' @keywords internal
-.finalizeTMP = function(input, censored_symbol, impute, summarized) {
+.finalizeTMP = function(input, censored_symbol, impute, predicted_survival) {
     NonMissingStats = NumMeasuredFeature = MissingPercentage = LABEL = NULL
     total_features = more50missing = nonmissing_orig = censored = NULL
     INTENSITY = newABUNDANCE = NumImputedFeature = NULL
-    
-    survival_predictions = lapply(summarized, function(x) x[[2]])
-    predicted_survival = data.table::rbindlist(survival_predictions, fill = TRUE)
+
     if (impute) {
-        cols = intersect(colnames(input), c("newABUNDANCE",
-                                            "cen", "RUN",
-                                            "FEATURE", "ref_covariate", "LABEL"))
-        input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE],
-                      predicted_survival,
-                      by = setdiff(cols, "newABUNDANCE"),
-                      all.x = TRUE)
+        # Join columns must exist in BOTH tables. The per-protein survival
+        # tables built in MSstatsSummarizeSingleLinear / TMP exclude LABEL,
+        # so intersect with predicted_survival to avoid a missing-column
+        # error when LABEL is in input but not in the survival table.
+        join_cols = intersect(intersect(colnames(input),
+                                        colnames(predicted_survival)),
+                              c("cen", "RUN", "FEATURE", "ref_covariate",
+                                "LABEL"))
+        data.table::set(input, j = "newABUNDANCE", value = NULL)
+        idx = predicted_survival[input, on = join_cols, which = TRUE,
+                                 mult = "first"]
+        data.table::set(input, j = "newABUNDANCE",
+                        value = predicted_survival$newABUNDANCE[idx])
+        data.table::set(input, j = "predicted",
+                        value = predicted_survival$predicted[idx])
     }
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
     input[, NumMeasuredFeature := sum(NonMissingStats),
@@ -144,7 +160,11 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
         } else {
             input[, nonmissing_orig := !is.na(INTENSITY)]
         }
-        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
+        # In-place conditional write: only overwrite nonmissing_orig for
+        # the rows where newABUNDANCE is NA. `ifelse(...)` would build a
+        # full-length logical vector for every row regardless; this writes
+        # only the rows that need changing.
+        input[is.na(newABUNDANCE), nonmissing_orig := TRUE]
         if (impute) {
             input[, NumImputedFeature := sum(!nonmissing_orig),
                   by = c("PROTEIN", "RUN", "LABEL")]
@@ -175,7 +195,11 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
         } else {
             input[, nonmissing_orig := !is.na(INTENSITY)]
         }
-        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
+        # In-place conditional write: only overwrite nonmissing_orig for
+        # the rows where newABUNDANCE is NA. `ifelse(...)` would build a
+        # full-length logical vector for every row regardless; this writes
+        # only the rows that need changing.
+        input[is.na(newABUNDANCE), nonmissing_orig := TRUE]
         input[, NumImputedFeature := 0]
     }
     input
