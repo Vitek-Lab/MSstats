@@ -1,28 +1,20 @@
-# Tests for memory optimizations in the dataProcess pipeline that target
-# data.table deep-copy ops: in-place column drops, merge() -> keyed lookup,
-# ifelse() -> targeted [i, j := v] writes, and the predicted_survival
-# extraction in MSstatsSummarizationOutput.
+# Tests for in-place data.table operations in the dataProcess pipeline:
+# column drops, keyed-lookup joins, targeted [i, j := v] writes, and
+# the predicted_survival extraction in MSstatsSummarizationOutput.
 
 
-# --- Issue 2: Column Removal via Subsetting Creates Full Copies ---------------
+# --- .normalizeMedian: column drops are in place ------------------------------
 #
 # .normalizeMedian() adds two temp columns (ABUNDANCE_RUN, ABUNDANCE_FRACTION)
-# via := (in-place), uses them, then removes them. Previously it used
-# input[, !(colnames(input) %in% ...), with = FALSE] which created a full
-# copy of the data.table (~250 MB for a real dataset). Now it uses
-# data.table::set(input, j = ..., value = NULL) which removes in-place.
-#
-# We test this by checking that the data.table's memory address is preserved
-# after the function call — proving no copy was made.
+# via :=, uses them, then removes them with data.table::set(j=, value=NULL)
+# so the data.table is modified in-place. We verify the address is preserved.
 
-# Suppress MSstats log messages during test
 MSstatsConvert::MSstatsLogsSettings(FALSE)
 
-# Test 2a: .normalizeMedian preserves data.table identity (no copy) ---
+# Test 2a: .normalizeMedian preserves data.table identity ---
 #
 # data.table::address() returns the hex pointer of the data.table object.
-# If the function modifies in-place, the address stays the same.
-# If it creates a copy (the old bug), the address changes.
+# An in-place modification preserves the address; a copy changes it.
 
 norm_input = data.table::data.table(
     PROTEIN = factor(rep(c("P1", "P2"), each = 20)),
@@ -60,10 +52,8 @@ expect_true("ABUNDANCE" %in% colnames(norm_result),
 
 # Test 2b: .normalizeMedian does not allocate a full-table copy ---
 #
-# Create a larger dataset and measure memory allocated during the call.
 # With in-place set(), the only allocations should be the two temp column
-# vectors (~2x nrow doubles). With the old column-subset approach, the
-# allocation would be ~15x nrow doubles (copying all kept columns).
+# vectors (~2x nrow doubles), not the whole table.
 
 n_rows = 100000
 big_input = data.table::data.table(
@@ -127,24 +117,19 @@ expect_false("ABUNDANCE_RUN" %in% colnames(big_result),
              info = "Large table: temp column ABUNDANCE_RUN should be removed")
 
 
-# --- Issue 3: .finalizeTMP Merge Duplicates the Entire Input ------------------
+# --- .finalizeTMP: in-place update from predicted_survival --------------------
 #
 # .finalizeTMP replaces the pre-imputation newABUNDANCE column in the full
-# feature-level table with imputed values from predicted_survival. Previously
-# it did: merge(input[, cols != "newABUNDANCE", with=FALSE], predicted_survival)
-# which created a column-subset copy (~333 MB) and a merge result (~370 MB),
-# peaking at ~1,133 MB for ~350 MB of data.
-#
-# The fix uses in-place operations:
-#   set(input, j = "newABUNDANCE", value = NULL)  — remove old column (0 bytes)
-#   input[, c(...) := .(NA_real_, NA_real_)]       — add NA placeholders (~40 MB)
-#   input[predicted_survival, ... := ..., on = .]  — update matched rows (0 bytes)
+# feature-level table with imputed values from predicted_survival, using:
+#   set(input, j = "newABUNDANCE", value = NULL)  — remove old column
+#   input[, c(...) := .(NA_real_, NA_real_)]       — add NA placeholders
+#   input[predicted_survival, ... := ..., on = .]  — update matched rows
 #
 # These tests verify:
 # (a) The data.table is modified in-place (address preserved)
 # (b) Matched rows get imputed values from predicted_survival
-# (c) Unmatched rows get NA (same as the old merge with all.x = TRUE)
-# (d) Memory allocation is minimal compared to a full-table copy
+# (c) Unmatched rows are left as NA (equivalent to all.x = TRUE)
+# (d) Allocation stays small relative to a full-table copy
 
 # Test 3a: .finalizeTMP modifies input in-place with correct values ---
 
@@ -206,7 +191,7 @@ result = MSstats:::.finalizeTMP(finalize_input, censored_symbol = "NA",
 
 addr_after = data.table::address(result)
 
-# (a) Address preserved — the data.table was modified in-place, no full copy.
+# (a) Address preserved — the data.table was modified in-place.
 expect_equal(addr_before, addr_after,
              info = paste(".finalizeTMP should modify input in-place.",
                           "Before:", addr_before, "After:", addr_after))
@@ -236,10 +221,8 @@ expect_true("predicted" %in% colnames(result),
 
 # Test 3b: .finalizeTMP at scale — memory stays low ---
 #
-# Create a larger dataset and verify that peak memory allocation during
-# .finalizeTMP is far below what a full-table merge would require.
-# With the old merge approach, peak would be ~3x the table size.
-# With in-place join, peak should be close to ~1x (just the table + 2 new cols).
+# At ~50K rows, .finalizeTMP should modify the input in place; peak Vcells
+# should stay close to the input size, not balloon to a multi-table merge.
 
 n_big = 50000
 n_runs = 50
@@ -289,8 +272,7 @@ big_finalize_result = MSstats:::.finalizeTMP(
     predicted_survival = big_predicted)
 gc_issue3 = gc()
 
-# Peak Vcells (MB) — informational. The old merge approach would show a peak
-# roughly 3x the input size. The in-place approach should be much less.
+# Peak Vcells (MB) — informational.
 peak_mb_issue3 = gc_issue3[2, 6]
 
 # Address preserved = in-place modification, no full-table copy.
@@ -316,33 +298,23 @@ expect_true(na_count > 0,
                          sum(unmatched_mask), "unmatched rows"))
 
 
-# --- Issue 4: survival_predictions List Duplication ---------------------------
+# --- MSstatsSummarizationOutput / .finalizeTMP: predicted_survival contract ---
 #
-# MSstatsSummarizationOutput used to pass the full nested 'summarized' list
-# (both protein results AND survival predictions for every protein) into
-# .finalizeTMP. That function only needed the survival predictions, but the
-# protein results (~50% of the list) were held hostage in memory.
-#
-# The fix: MSstatsSummarizationOutput now splits the list upfront:
+# MSstatsSummarizationOutput splits the nested 'summarized' list upfront:
 #   predicted_survival = rbindlist(lapply(summarized, function(x) x[[2]]))
 #   protein_summaries  = lapply(summarized, function(x) x[[1]])
-#   rm(summarized)  — frees the nested list immediately
-#
-# .finalizeTMP now receives predicted_survival directly (a combined data.table),
-# not the full nested list. This means:
-# (a) .finalizeTMP never sees the protein results — they can't waste memory
-# (b) The nested list is freed before .finalizeTMP runs
+#   rm(summarized)
+# .finalizeTMP receives predicted_survival directly (a combined data.table),
+# not the full nested list.
 #
 # These tests verify:
-# (a) .finalizeTMP accepts predicted_survival directly (not a nested list)
+# (a) .finalizeTMP accepts predicted_survival as a data.table
 # (b) MSstatsSummarizationOutput correctly decomposes the nested list
-# (c) Memory: the nested list doesn't persist through .finalizeTMP
+# (c) The nested list does not persist through .finalizeTMP
 
 # Test 4a: .finalizeTMP takes a combined data.table, not a nested list ---
 #
-# Verify the function signature change: .finalizeTMP's 4th parameter is now
-# 'predicted_survival' (a data.table), not 'summarized' (a nested list).
-# If someone reverts to the old code, passing a data.table would break.
+# .finalizeTMP's 4th parameter is 'predicted_survival', a data.table.
 
 # Reuse finalize_input from Issue 3 tests (rebuild if needed since
 # .finalizeTMP modified it in-place above).
@@ -418,8 +390,8 @@ expect_true(is.list(summarized_list[[1]]),
 expect_equal(length(summarized_list[[1]]), 2,
              info = "Each element should have exactly 2 components")
 
-# Now call MSstatsSummarizationOutput — this is where Issue 4 fix lives.
-# It should decompose the nested list, free it, and produce correct output.
+# MSstatsSummarizationOutput should decompose the nested list and produce
+# valid FeatureLevelData / ProteinLevelData.
 output = MSstatsSummarizationOutput(small_input, summarized_list, processed,
                                      "TMP", TRUE, "NA")
 
@@ -437,16 +409,11 @@ expect_true("predicted" %in% colnames(output$FeatureLevelData),
             info = "FeatureLevelData should contain predicted column")
 
 
-# Test 4c: Memory — nested list is freed before .finalizeTMP runs ---
+# Test 4c: predicted_survival alone is smaller than the full nested list ---
 #
-# We can't directly observe rm(summarized) inside MSstatsSummarizationOutput,
-# but we can measure the total memory footprint. With a larger dataset, the
-# old approach held the full nested list (~200 MB) alive through .finalizeTMP.
-# The new approach frees it before .finalizeTMP runs, so peak should be lower.
-#
-# We measure by comparing: the size of the nested summarized list vs the
-# size of predicted_survival alone. The fix ensures only predicted_survival
-# (the smaller half) is alive during .finalizeTMP, not both halves.
+# .finalizeTMP receives only predicted_survival (the survival half of the
+# nested summarized list), not the full list. We verify the combined
+# predicted_survival table is smaller than the full nested list.
 
 # Measure sizes of the two halves from the real summarized list.
 survival_tables = lapply(summarized_list, function(x) x[[2]])
@@ -464,6 +431,4 @@ expect_true(size_combined_survival < size_full_list,
             info = paste("Combined predicted_survival should be smaller than",
                          "the full nested list.",
                          "predicted_survival:", size_combined_survival, "bytes.",
-                         "Full nested list:", size_full_list, "bytes.",
-                         "Savings:", size_full_list - size_combined_survival, "bytes.",
-                         "This is the memory .finalizeTMP no longer holds."))
+                         "Full nested list:", size_full_list, "bytes."))

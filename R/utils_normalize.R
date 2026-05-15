@@ -347,8 +347,6 @@ MSstatsMergeFractions = function(input) {
                                                       SUBJECT_ORIGINAL,
                                                       newRun)])
 
-                # In-place add of newRun via keyed-match lookup instead of
-                # `merge(all.x=TRUE)`, which would deep-copy the whole table.
                 nr_idx = match_runs[input,
                                     on = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
                                     which = TRUE, mult = "first"]
@@ -358,10 +356,6 @@ MSstatsMergeFractions = function(input) {
                                         list(ncount = .N),
                                         by = c("FEATURE", "FRACTION")]
                 select_fraction = select_fraction[ncount != 0]
-                # Filter by (FEATURE, FRACTION) pair directly instead of
-                # synthesising a concatenated "tmp" string column on both
-                # sides. Saves two 207k-string character vectors plus the
-                # paste() cost each call.
                 keep_idx = select_fraction[input,
                                            on = c("FEATURE", "FRACTION"),
                                            which = TRUE, mult = "first"]

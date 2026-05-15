@@ -133,10 +133,6 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     INTENSITY = newABUNDANCE = NumImputedFeature = NULL
 
     if (impute) {
-        # Join columns must exist in BOTH tables. The per-protein survival
-        # tables built in MSstatsSummarizeSingleLinear / TMP exclude LABEL,
-        # so intersect with predicted_survival to avoid a missing-column
-        # error when LABEL is in input but not in the survival table.
         join_cols = intersect(intersect(colnames(input),
                                         colnames(predicted_survival)),
                               c("cen", "RUN", "FEATURE", "ref_covariate",
@@ -160,10 +156,6 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
         } else {
             input[, nonmissing_orig := !is.na(INTENSITY)]
         }
-        # In-place conditional write: only overwrite nonmissing_orig for
-        # the rows where newABUNDANCE is NA. `ifelse(...)` would build a
-        # full-length logical vector for every row regardless; this writes
-        # only the rows that need changing.
         input[is.na(newABUNDANCE), nonmissing_orig := TRUE]
         if (impute) {
             input[, NumImputedFeature := sum(!nonmissing_orig),
@@ -195,10 +187,6 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
         } else {
             input[, nonmissing_orig := !is.na(INTENSITY)]
         }
-        # In-place conditional write: only overwrite nonmissing_orig for
-        # the rows where newABUNDANCE is NA. `ifelse(...)` would build a
-        # full-length logical vector for every row regardless; this writes
-        # only the rows that need changing.
         input[is.na(newABUNDANCE), nonmissing_orig := TRUE]
         input[, NumImputedFeature := 0]
     }

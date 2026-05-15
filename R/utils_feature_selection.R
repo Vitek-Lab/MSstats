@@ -78,11 +78,6 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     is_obs = log2inty = LABEL = NULL
 
     has_censored = is.element("censored", colnames(input))
-    # Build the working copy in a single operation. Previously this was two
-    # steps: (1) column-subset via input[, cols, with = FALSE] which deep-
-    # copied 7 columns from the 17-column table (~120 MB), then (2) a
-    # transform that created another new data.table (~100 MB). Combining
-    # them into one expression eliminates the intermediate copy.
     work = input[, list(protein = as.character(PROTEIN),
                         peptide = as.character(PEPTIDE),
                         feature = as.character(FEATURE),
