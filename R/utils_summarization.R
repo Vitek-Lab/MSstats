@@ -199,11 +199,6 @@
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
     weight = NULL
-
-    # Convert to data.frame once upfront. The original code did this
-    # implicitly via data.frame(input, ...) on every column add, which
-    # copied ALL existing columns each time (~5 full copies per iteration).
-    # Now we convert once and add/remove columns in-place.
     input = as.data.frame(input)
     for (i in seq_len(num_iter)) {
         if (i == 1) {

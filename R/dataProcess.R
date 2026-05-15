@@ -146,13 +146,8 @@ dataProcess = function(
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
-    # 'raw' is never used after this point but stays alive as a function
-    # parameter (~250-400 MB) through normalization, feature selection, and
-    # the entire summarization loop. Free it before the heavy processing.
     rm(raw)
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
-    # 'peptides_dict' is never used after normalization. Usually NULL
-    # (non-global-standards), but free it for the global-standards case.
     rm(peptides_dict)
     input = MSstatsMergeFractions(input)
     input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
