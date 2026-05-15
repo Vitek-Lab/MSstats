@@ -270,16 +270,16 @@ gc(reset = TRUE)
 big_finalize_result = MSstats:::.finalizeTMP(
     big_finalize_input, censored_symbol = "NA", impute = TRUE,
     predicted_survival = big_predicted)
-gc_issue3 = gc()
+gc_after_finalize = gc()
 
 # Peak Vcells (MB) — informational.
-peak_mb_issue3 = gc_issue3[2, 6]
+peak_mb_finalize = gc_after_finalize[2, 6]
 
 # Address preserved = in-place modification, no full-table copy.
 expect_equal(addr_big_before, data.table::address(big_finalize_result),
              info = paste("Large .finalizeTMP: should modify in-place.",
                           "Input size:", round(input_size / 1e6, 1), "MB.",
-                          "Peak Vcells:", peak_mb_issue3, "MB"))
+                          "Peak Vcells:", peak_mb_finalize, "MB"))
 
 # newABUNDANCE and predicted columns should both exist.
 expect_true("newABUNDANCE" %in% colnames(big_finalize_result),
@@ -316,8 +316,8 @@ expect_true(na_count > 0,
 #
 # .finalizeTMP's 4th parameter is 'predicted_survival', a data.table.
 
-# Reuse finalize_input from Issue 3 tests (rebuild if needed since
-# .finalizeTMP modified it in-place above).
+# Rebuild a finalize_input fixture since .finalizeTMP modified the previous
+# one in-place above.
 finalize_input_4 = data.table::data.table(
     PROTEIN = factor(rep(c("P1", "P2"), each = 6)),
     FEATURE = factor(rep(c("feat1", "feat2"), each = 3, times = 2)),
