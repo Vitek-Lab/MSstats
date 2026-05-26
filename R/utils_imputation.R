@@ -46,8 +46,10 @@
                                         data = input, dist = "gaussian", 
                               control = list(maxiter=aft_iterations))
             }
-        }  
+        }
     }
+    fit$y = NULL
+    fit$linear.predictors = NULL
     fit
 }
 

@@ -180,10 +180,11 @@
         }
     }
     if (!equal_variances) {
-        linear_model = .updateUnequalVariances(input = input, 
+        linear_model = .updateUnequalVariances(input = input,
                                                fit = linear_model,
                                                num_iter = 1)
     }
+    linear_model$model = NULL
     linear_model
 }
 
@@ -197,27 +198,25 @@
 #' @return merMod
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
-    weight = NULL
-    
+    weight = abs.resids = loess.fitted = NULL
+    if (!data.table::is.data.table(input)) {
+        input = data.table::as.data.table(input)
+    }
     for (i in seq_len(num_iter)) {
         if (i == 1) {
-            abs.resids = data.frame(abs.resids = abs(fit$residuals))
-            fitted = data.frame(fitted = fit$fitted.values)
-            input = data.frame(input, 
-                               "abs.resids" = abs.resids, 
-                               "fitted" = fitted)
+            input[, abs.resids := abs(fit$residuals)]
+            input[, fitted := fit$fitted.values]
         }
         fit.loess = loess(abs.resids ~ fitted, data = input)
-        loess.fitted = data.frame(loess.fitted = fitted(fit.loess))
-        input = data.frame(input, "loess.fitted" = loess.fitted)
-        ## loess fitted valuaes are predicted sd
-        input$weight = 1 / (input$loess.fitted ^ 2)
-        input = input[, !(colnames(input) %in% "abs.resids")]
+        input[, loess.fitted := fitted(fit.loess)]
+        ## loess fitted values are predicted sd
+        input[, weight := 1 / (loess.fitted ^ 2)]
+        input[, abs.resids := NULL]
         ## re-fit using weight
         wls.fit = lm(formula(fit), data = input, weights = weight)
-        abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
-        input = data.frame(input, "abs.resids" = abs.resids)
-        input = input[, -which(colnames(input) %in% c("loess.fitted", "weight"))]
+        input[, abs.resids := abs(wls.fit$residuals)]
+        input[, loess.fitted := NULL]
+        input[, weight := NULL]
     }
     wls.fit
 }

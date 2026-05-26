@@ -146,7 +146,9 @@ dataProcess = function(
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
+    rm(raw)
     input = MSstatsNormalize(input, normalization, peptides_dict, nameStandards)
+    rm(peptides_dict)
     input = MSstatsMergeFractions(input)
     input = MSstatsHandleMissing(input, summaryMethod, MBimpute,
                                  censoredInt, maxQuantileforCensored)
@@ -173,6 +175,7 @@ dataProcess = function(
                             "== Summarization is done.")
     getOption("MSstatsMsg")("INFO",
                             " == Summarization is done.")
+    gc(verbose = FALSE)
     output = MSstatsSummarizationOutput(input, summarized, processed,
                                         summaryMethod, MBimpute, censoredInt)
     output
@@ -412,7 +415,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
             pred = predict(survival_fit, newdata = .SD, se.fit = TRUE)
             list(pred$fit, pred$se.fit^2 + sigma2)
         }]
-
+        rm(survival_fit)
         if (is_labeled_reference) {
             single_protein[, predicted := ifelse(censored & is_labeled_ref == FALSE, predicted, NA)]
             single_protein[, newABUNDANCE := ifelse(censored & is_labeled_ref == FALSE, predicted, newABUNDANCE)]
@@ -489,7 +492,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
             # Todo: enable SRM linear summarization
             result[, LABEL := if (is_labeled_reference) "L" else unique(single_protein$LABEL)]
         }
-        
+        rm(fit)
         return(list(result, survival))
     }
 }
@@ -567,7 +570,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         } else {
             single_protein[, predicted := NA_real_]
         }
-
+        rm(survival_fit)
         if (is_labeled_reference) {
             single_protein[, predicted := ifelse(censored & is_labeled_ref == FALSE, predicted, NA)]
             single_protein[, newABUNDANCE := ifelse(censored & is_labeled_ref == FALSE, predicted, newABUNDANCE)]
