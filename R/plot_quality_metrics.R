@@ -24,10 +24,12 @@
 #'   when \code{isPlotly = TRUE}.
 #'
 #' @details
-#' The x-axis order is determined by the factor levels of the \code{Run}
-#' column. When \code{runOrder} is passed to the converter the \code{Run}
-#' column is automatically set to an ordered factor; otherwise the runs appear
-#' in alphabetical order.
+#' The x-axis shows the integer order position of each run (1, 2, 3, ...)
+#' rather than the run name, to avoid clutter when run names are long.
+#' Positions are determined by the factor levels of the \code{Run} column.
+#' When \code{runOrder} is passed to the converter the \code{Run} column is
+#' automatically set to an ordered factor; otherwise the runs appear in
+#' alphabetical order.
 #'
 #' Metric values are averaged across fragment ions within each
 #' PeptideSequence + PrecursorCharge + Run combination before plotting, so
@@ -95,22 +97,25 @@ MSstatsQualityMetricsPlot <- function(input, metric = "AnomalyScores",
     )
     colnames(plot_df)[colnames(plot_df) == "x"] <- metric
 
-    # Preserve run factor ordering from the original data
-    plot_df$Run <- factor(plot_df$Run, levels = levels(input_df$Run))
+    # Preserve run factor ordering from the original data and map each
+    # Run to its integer position so the x-axis shows order numbers
+    # instead of run names (which can be long and clutter the axis).
+    run_levels <- levels(input_df$Run)
+    plot_df$RunOrder <- match(as.character(plot_df$Run), run_levels)
 
     p <- ggplot(plot_df,
-                aes(x     = .data[["Run"]],
+                aes(x     = .data[["RunOrder"]],
                     y     = .data[[metric]],
                     color = .data[["Precursor"]],
                     group = .data[["Precursor"]])) +
         geom_line(linewidth = 0.6) +
         geom_point(size = 1.5) +
-        scale_x_discrete(guide = guide_axis(angle = 45)) +
+        scale_x_continuous(breaks = seq(5, length(run_levels), by = 5)) +
         theme_bw() +
         theme(axis.text.x  = element_text(size = 8),
               legend.title = element_text(size = 9),
               legend.text  = element_text(size = 7)) +
-        labs(x        = "Run (temporal order)",
+        labs(x        = "Run order",
              y        = metric,
              title    = paste("Quality Metric:", metric),
              subtitle = which.Protein,
