@@ -5,7 +5,7 @@
 # Peak-memory + wall-clock instrumentation for MSstats::dataProcess.
 #
 # Replays dataProcess's internals manually, printing the gc() high-water
-# mark and elapsed time at every stage boundary. Useful for locating
+# mark and elapsed time at every stage boundary. Useful forunning max of `used` since gc(reset = TRUE)r locating
 # which pipeline stage drives overall peak memory and runtime.
 #
 # Usage
@@ -14,43 +14,46 @@
 #   # From the package root:
 #   Rscript benchmark/profile_dataprocess_peak.R
 #
-#   # With an alternate MSstats-format CSV (10 cols: ProteinName,
-#   # PeptideSequence, PrecursorCharge, FragmentIon, ProductCharge,
-#   # IsotopeLabelType, Run, BioReplicate, Condition, Intensity):
+#   # With an alternate MSstats-format CSV:
 #   Rscript benchmark/profile_dataprocess_peak.R path/to/input.csv
+#
+# Input is expected to already be in MSstats format. Store MSstats-format
+# fixtures alongside this script (or on HPC) — converters live elsewhere.
 #
 # How to read the output
 # ----------------------
 #
-#   used : Vcells currently in use at the checkpoint.
-#   max  : running max of `used` since gc(reset = TRUE) at "start".
-#   dt   : seconds elapsed since the previous checkpoint.
+#   used      : Vcells currently in use at the checkpoint.
+#   max       : running max of `used` since gc(reset = TRUE) at "start".
+#               Example: if "after Normalize" reports max=420 and
+#               "after MergeFractions" reports max=510, the MergeFractions
+#               stage drove peak memory up by ~90 MB.
+#   elapsed_s : seconds elapsed since the previous checkpoint.
 #
 # The *delta in the max column between consecutive rows* is the peak
-# memory contribution of that stage. The dt column is per-stage wall time.
+# memory contribution of that stage. elapsed_s is per-stage wall time.
 
-# --- CLI arg: path to MSstats-format CSV, or integer for DDARawData ----
+# --- CLI arg: path to MSstats-format CSV, or integer to scale DDARawData ---
 #
 # - Rscript profile_dataprocess_peak.R                 -> default CSV
 # - Rscript profile_dataprocess_peak.R path/to/x.csv   -> use that CSV
-# - Rscript profile_dataprocess_peak.R 100             -> replicate
-#                                                         DDARawData 100x
+# - Rscript profile_dataprocess_peak.R 100             -> stack 100 copies
+#                                                         of DDARawData with
+#                                                         renamed proteins to
+#                                                         scale up the input
 
 default_input <- "data/reduce_output_spectronaut_input_qc_test.csv"
 args <- commandArgs(trailingOnly = TRUE)
 arg <- if (length(args) >= 1) args[1] else default_input
-n_replicates <- suppressWarnings(as.integer(arg))
-use_ddaraw <- !is.na(n_replicates) && n_replicates >= 1
+n_protein_copies <- suppressWarnings(as.integer(arg))
+use_ddaraw <- !is.na(n_protein_copies) && n_protein_copies >= 1
 if (!use_ddaraw && !file.exists(arg)) {
     stop(sprintf("Input file not found: %s", arg))
 }
 
-# --- Load the package from source ---------------------------------------
+# --- Load the package ---------------------------------------------------
 
-if (!requireNamespace("pkgload", quietly = TRUE)) {
-    stop("pkgload is required: install.packages('pkgload')")
-}
-pkgload::load_all(".", quiet = TRUE)
+library(MSstats)
 MSstatsConvert::MSstatsLogsSettings(FALSE)
 
 # --- Load the fixture ---------------------------------------------------
@@ -61,26 +64,16 @@ required_cols <- c("ProteinName", "PeptideSequence", "PrecursorCharge",
 if (use_ddaraw) {
     set.seed(42)
     base <- data.table::as.data.table(DDARawData)
-    raw_input <- data.table::rbindlist(lapply(seq_len(n_replicates), function(i) {
+    raw_input <- data.table::rbindlist(lapply(seq_len(n_protein_copies), function(i) {
         d <- data.table::copy(base)
-        d$ProteinName <- paste0(d$ProteinName, "_rep", i)
+        d$ProteinName <- paste0(d$ProteinName, "_copy", i)
         d
     }))
     raw_input <- as.data.frame(raw_input)
-    fixture_label <- sprintf("DDARawData x %d", n_replicates)
+    fixture_label <- sprintf("DDARawData x %d protein copies", n_protein_copies)
 } else {
     raw_input <- data.table::fread(arg, data.table = FALSE)
     fixture_label <- arg
-    # If this looks like a raw Spectronaut export (has R.FileName /
-    # PG.ProteinAccessions, etc.), convert to MSstats 10-col format.
-    if ("R.FileName" %in% colnames(raw_input) &&
-        !all(required_cols %in% colnames(raw_input))) {
-        cat("Detected raw Spectronaut export — converting via",
-            "SpectronauttoMSstatsFormat()...\n")
-        raw_input <- MSstatsConvert::SpectronauttoMSstatsFormat(
-            raw_input, use_log_file = FALSE)
-        fixture_label <- paste0(arg, " (Spectronaut-converted)")
-    }
 }
 missing_cols <- setdiff(required_cols, colnames(raw_input))
 if (length(missing_cols) > 0) {
@@ -98,23 +91,23 @@ bench_rows <- list()
 checkpoint <- function(label, reset = FALSE) {
     if (reset) { gc(); gc(reset = TRUE); .last_time <<- proc.time() }
     now <- proc.time()
-    dt  <- if (is.null(.last_time)) 0 else (now - .last_time)[["elapsed"]]
+    elapsed_s <- if (is.null(.last_time)) 0 else (now - .last_time)[["elapsed"]]
     .last_time <<- now
     g <- gc()
     cols <- colnames(g)
     used_mb <- g["Vcells", which(cols == "used")[1] + 1]
     max_mb  <- g["Vcells", which(cols == "max used")[1] + 1]
-    cat(sprintf("%-42s  used=%7.1f  max=%7.1f  dt=%6.2fs\n",
-                label, used_mb, max_mb, dt),
+    cat(sprintf("%-42s  used=%7.1f  max=%7.1f  elapsed_s=%6.2f\n",
+                label, used_mb, max_mb, elapsed_s),
         file = stderr())
     bench_rows[[length(bench_rows) + 1L]] <<- data.frame(
-        stage   = label,
-        used_mb = used_mb,
-        max_mb  = max_mb,
-        dt_s    = dt,
+        stage     = label,
+        used_mb   = used_mb,
+        max_mb    = max_mb,
+        elapsed_s = elapsed_s,
         stringsAsFactors = FALSE
     )
-    invisible(dt)
+    invisible(elapsed_s)
 }
 
 # --- Replay dataProcess stages manually ---------------------------------
@@ -140,11 +133,11 @@ checkpoint("after MergeFractions")
 input <- MSstats:::MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 checkpoint("after HandleMissing")
 
-input <- MSstats:::MSstatsSelectFeatures(input, "all", 3, 2)
+input <- MSstats:::MSstatsSelectFeatures(input, "topN", 100, 2)
 checkpoint("after SelectFeatures")
 
 processed <- MSstats:::getProcessed(input)
-input <- MSstats:::MSstatsPrepareForSummarization(input, "TMP", TRUE, "NA", TRUE)
+input <- MSstats:::MSstatsPrepareForSummarization(input, "TMP", TRUE, "NA", FALSE)
 checkpoint("after PrepareForSummarization")
 
 summarized <- MSstats:::MSstatsSummarizeWithMultipleCores(

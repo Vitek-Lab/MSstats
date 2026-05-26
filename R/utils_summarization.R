@@ -198,23 +198,27 @@
 #' @return merMod
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
-    weight = NULL
-    input = as.data.frame(input)
+    weight = abs.resids = loess.fitted = NULL
+    if (data.table::is.data.table(input)) {
+        input = data.table::copy(input)
+    } else {
+        input = data.table::as.data.table(input)
+    }
     for (i in seq_len(num_iter)) {
         if (i == 1) {
-            input[["abs.resids"]] = abs(fit$residuals)
-            input[["fitted"]] = fit$fitted.values
+            input[, abs.resids := abs(fit$residuals)]
+            input[, fitted := fit$fitted.values]
         }
         fit.loess = loess(abs.resids ~ fitted, data = input)
-        input[["loess.fitted"]] = fitted(fit.loess)
+        input[, loess.fitted := fitted(fit.loess)]
         ## loess fitted values are predicted sd
-        input[["weight"]] = 1 / (input[["loess.fitted"]] ^ 2)
-        input[["abs.resids"]] = NULL
+        input[, weight := 1 / (loess.fitted ^ 2)]
+        input[, abs.resids := NULL]
         ## re-fit using weight
         wls.fit = lm(formula(fit), data = input, weights = weight)
-        input[["abs.resids"]] = abs(wls.fit$residuals)
-        input[["loess.fitted"]] = NULL
-        input[["weight"]] = NULL
+        input[, abs.resids := abs(wls.fit$residuals)]
+        input[, loess.fitted := NULL]
+        input[, weight := NULL]
     }
     wls.fit
 }
