@@ -199,9 +199,7 @@
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
     weight = abs.resids = loess.fitted = NULL
-    if (data.table::is.data.table(input)) {
-        input = data.table::copy(input)
-    } else {
+    if (!data.table::is.data.table(input)) {
         input = data.table::as.data.table(input)
     }
     for (i in seq_len(num_iter)) {
