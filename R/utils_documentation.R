@@ -1,8 +1,7 @@
 #' A dummy function to store shared documentation items.
 #' 
 #' @import data.table
-#' @importFrom MSstatsConvert MSstatsImport MSstatsClean MSstatsPreprocess 
-#' MSstatsBalancedDesign MSstatsMakeAnnotation MSstatsLogsSettings
+#' @importFrom MSstatsConvert MSstatsImport MSstatsClean MSstatsPreprocess MSstatsBalancedDesign MSstatsMakeAnnotation MSstatsLogsSettings
 #' 
 #' @param removeFewMeasurements TRUE (default) will remove the features that have 1 or 2 measurements across runs.
 #' @param useUniquePeptide TRUE (default) removes peptides that are assigned for more than one proteins. 

@@ -43,10 +43,12 @@ coloured line, mirroring the feature-level view in
 \code{\link[MSstats]{dataProcessPlots}}.
 }
 \details{
-The x-axis order is determined by the factor levels of the \code{Run}
-column. When \code{runOrder} is passed to the converter the \code{Run}
-column is automatically set to an ordered factor; otherwise the runs appear
-in alphabetical order.
+The x-axis shows the integer order position of each run (1, 2, 3, ...)
+rather than the run name, to avoid clutter when run names are long.
+Positions are determined by the factor levels of the \code{Run} column.
+When \code{runOrder} is passed to the converter the \code{Run} column is
+automatically set to an ordered factor; otherwise the runs appear in
+alphabetical order.
 
 Metric values are averaged across fragment ions within each
 PeptideSequence + PrecursorCharge + Run combination before plotting, so
