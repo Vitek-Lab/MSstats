@@ -360,10 +360,9 @@ MSstatsMergeFractions = function(input) {
                                            on = c("FEATURE", "FRACTION"),
                                            which = TRUE, mult = "first"]
                 input = input[!is.na(keep_idx)]
-                input$originalRUN = input$newRun
-                input$RUN = input$originalRUN
-                input$RUN = factor(input$RUN, levels = unique(input$RUN),
-                                   labels = seq_along(unique(input$RUN)))
+                input[, originalRUN := newRun]
+                input[, RUN := factor(newRun, levels = unique(newRun),
+                                      labels = seq_along(unique(newRun)))]
                 data.table::set(input, j = "newRun", value = NULL)
             }
         }
