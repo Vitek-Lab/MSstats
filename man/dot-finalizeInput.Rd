@@ -4,18 +4,18 @@
 \alias{.finalizeInput}
 \title{Add summary statistics to dataProcess output}
 \usage{
-.finalizeInput(input, summarized, method, impute, censored_symbol)
+.finalizeInput(input, predicted_survival, method, impute, censored_symbol)
 }
 \arguments{
 \item{input}{feature-level data}
-
-\item{summarized}{protein-level data (list)}
 
 \item{method}{summary method}
 
 \item{impute}{if TRUE, censored missing values were imputed}
 
 \item{censored_symbol}{censored missing value indicator}
+
+\item{summarized}{protein-level data (list)}
 }
 \description{
 Add summary statistics to dataProcess output

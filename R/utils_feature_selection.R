@@ -75,7 +75,7 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
     PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = censored = NULL
-    is_obs = log2inty = LABEL = NULL
+    is_obs = log2inty = is_censored = LABEL = NULL
 
     has_censored = is.element("censored", colnames(input))
     input = input[, list(protein = as.character(PROTEIN),
@@ -83,11 +83,12 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
                          feature = as.character(FEATURE),
                          run = as.character(originalRUN),
                          label = as.character(LABEL),
-                         log2inty = ifelse(!(is.na(ABUNDANCE) |
-                                            if (has_censored) censored else FALSE),
-                                           ABUNDANCE, NA),
-                         is_obs = FALSE)]
+                         log2inty = ABUNDANCE,
+                         is_censored = if (has_censored) censored else FALSE)]
+    # Censored or missing intensities are not observations.
+    input[is_censored | is.na(log2inty), log2inty := NA]
     input[, is_obs := !is.na(log2inty)]
+    input[, is_censored := NULL]
 
     features_quality = data.table::rbindlist(lapply(split(input, input$label),
                                                     .flagUninformativeSingleLabel,

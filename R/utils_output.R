@@ -38,25 +38,27 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                                       method, impute, censored_symbol) {
     LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL
 
-    predicted_survival = data.table::rbindlist(lapply(summarized, function(x) x[[2]]),
-                                                fill = TRUE)
-    for (i in seq_along(summarized)) summarized[[i]][[2]] = NULL
-    input = .finalizeInput(input, predicted_survival, method, impute, censored_symbol)
-    rm(predicted_survival)
-    protein_summaries = lapply(summarized, function(x) x[[1]])
-    rm(summarized)
-    summarized = data.table::rbindlist(protein_summaries, fill = TRUE)
-    rm(protein_summaries)
-
-    if (inherits(summarized, "try-error")) {
+    # Summarization failure is signalled by a NULL `summarized` (the caller
+    # wraps the per-subplot summarization in tryCatch(error = ...) returning
+    # NULL). Guard before unpacking, otherwise .finalizeInput() below joins on
+    # an empty predicted_survival and errors.
+    if (is.null(summarized)) {
         msg = paste("*** error : can't summarize per subplot with ",
                     method, ".")
         getOption("MSstatsLog")("ERROR", msg)
         getOption("MSstatsMsg")("ERROR", msg)
         rqall = NULL
-        rqmodelqc = NULL
-        workpred = NULL
     } else {
+        predicted_survival = data.table::rbindlist(lapply(summarized, function(x) x[[2]]),
+                                                    fill = TRUE)
+        for (i in seq_along(summarized)) summarized[[i]][[2]] = NULL
+        input = .finalizeInput(input, predicted_survival, method, impute, censored_symbol)
+        rm(predicted_survival)
+        protein_summaries = lapply(summarized, function(x) x[[1]])
+        rm(summarized)
+        summarized = data.table::rbindlist(protein_summaries, fill = TRUE)
+        rm(protein_summaries)
+
         input[, TotalGroupMeasurements := uniqueN(.SD),
               by = c("PROTEIN", "GROUP", "LABEL"),
               .SDcols = c("FEATURE", "originalRUN")]
@@ -74,10 +76,9 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
                       by.y = c(merge_col, "PROTEIN", "LABEL"))
         data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
                              c("GROUP", "SUBJECT"), skip_absent = TRUE)
-        
+
         rqall$GROUP = factor(as.character(rqall$GROUP))
         rqall$Protein = factor(rqall$Protein)
-        rqmodelqc = summarized$ModelQC
     }
     
     if (is.element("RUN", colnames(rqall)) & !is.null(rqall)) {
@@ -99,7 +100,7 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
         input = rbind(input, processed, fill = TRUE)
     }
     data.table::setDF(input)
-    data.table::setDF(rqall)
+    if (!is.null(rqall)) data.table::setDF(rqall)
     list(FeatureLevelData = input,
          ProteinLevelData = rqall,
          SummaryMethod = method)

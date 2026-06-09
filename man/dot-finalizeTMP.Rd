@@ -4,7 +4,7 @@
 \alias{.finalizeTMP}
 \title{Summary statistics for output of TMP-based summarization}
 \usage{
-.finalizeTMP(input, censored_symbol, impute, summarized)
+.finalizeTMP(input, censored_symbol, impute, predicted_survival)
 }
 \arguments{
 \item{input}{feature-level data}
@@ -12,8 +12,6 @@
 \item{censored_symbol}{censored missing value indicator}
 
 \item{impute}{if TRUE, censored missing values were imputed}
-
-\item{summarized}{protein-level data (list)}
 }
 \description{
 Summary statistics for output of TMP-based summarization
