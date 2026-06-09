@@ -203,13 +203,17 @@ expect_equal(addr_before, addr_after,
              info = paste(".finalizeTMP should modify input in-place.",
                           "Before:", addr_before, "After:", addr_after))
 
-# (b) Matched rows should have newABUNDANCE from predicted_survival.
-# Any row whose (cen, RUN, FEATURE) key exists in predicted_survival
-# should get a non-NA newABUNDANCE value.
+# (b) Every input row whose (cen, RUN, FEATURE) key exists in
+# predicted_survival must get a non-NA newABUNDANCE, and rows with no matching
+# key must be NA. Assert the exact expected count, not merely "> 0" (which would
+# still pass if the join silently matched the wrong rows).
+join_key = function(dt) paste(dt$cen, dt$RUN, dt$FEATURE, sep = "|")
+expected_matched = sum(join_key(result) %in% join_key(predicted_survival))
 matched_count = sum(!is.na(result$newABUNDANCE))
-expect_true(matched_count > 0,
-            info = paste("Matched rows should have non-NA newABUNDANCE.",
-                         "Found", matched_count, "non-NA values"))
+expect_equal(matched_count, expected_matched,
+             info = paste("Each matched (cen, RUN, FEATURE) key should yield a",
+                          "non-NA newABUNDANCE. Expected", expected_matched,
+                          "got", matched_count))
 
 # (c) Unmatched rows should have NA.
 # predicted_survival has 11 rows but input has 12. The missing key

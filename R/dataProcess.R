@@ -401,7 +401,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 
     if (impute & any(single_protein[["censored"]])) {
         fit_data = if (is_labeled_reference) {
-            single_protein[is_labeled_ref == FALSE, cols, with = FALSE]
+            single_protein[(!is_labeled_ref), cols, with = FALSE]
         } else {
             single_protein[, cols, with = FALSE]
         }
@@ -414,8 +414,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         }]
 
         if (is_labeled_reference) {
-            single_protein[!(censored & is_labeled_ref == FALSE), predicted := NA]
-            single_protein[(censored) & is_labeled_ref == FALSE,
+            single_protein[!(censored & !is_labeled_ref), predicted := NA]
+            single_protein[(censored) & !is_labeled_ref,
                            newABUNDANCE := predicted]
         } else {
             single_protein[!(censored), predicted := NA]
@@ -547,7 +547,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         converged = TRUE
 
         fit_data = if (is_labeled_reference) {
-            single_protein[is_labeled_ref == FALSE, cols, with = FALSE]
+            single_protein[(!is_labeled_ref), cols, with = FALSE]
         } else {
             single_protein[, cols, with = FALSE]
         }
@@ -569,8 +569,8 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         }
 
         if (is_labeled_reference) {
-            single_protein[!(censored & is_labeled_ref == FALSE), predicted := NA]
-            single_protein[(censored) & is_labeled_ref == FALSE,
+            single_protein[!(censored & !is_labeled_ref), predicted := NA]
+            single_protein[(censored) & !is_labeled_ref,
                            newABUNDANCE := predicted]
         } else {
             single_protein[!(censored), predicted := NA]
