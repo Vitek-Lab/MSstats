@@ -1,0 +1,187 @@
+---
+title: "MSstats: Metabolomics workflow with MZMine"
+date: June 17th, 2026
+---
+
+
+```{r style, echo = FALSE, results = 'asis'}
+BiocStyle::markdown()
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=7, warning=FALSE, message=FALSE)
+options(width=110)
+```
+
+```{=html}
+<!--
+%\VignetteIndexEntry{MSstats: Metabolomics workflow with MZMine}
+%\VignetteEngine{knitr::knitr}
+-->
+```
+# __MSstats: Metabolomics workflow with MZMine__
+
+Author: MSstats Team
+
+Date: June 17th, 2026
+
+## __Introduction__
+
+`MSstats` supports differential analysis of metabolomics data acquired with
+LC-MS untargeted workflows. This vignette walks an end-to-end run: import
+MZMine feature quantifications and library annotations, layer in SIRIUS
+structure identifications, convert to the MSstats format, summarize features
+into compound-level abundance, and test for differences between conditions.
+
+Compound identification combines two evidence sources:
+
+* __MZMine compound names__ come from MS/MS spectral-library matching and
+  correspond to MSI Level 2 putative identifications (Sumner et al., 2007).
+* __SIRIUS names__ come from in-silico structure prediction and correspond to
+  MSI Level 3 identifications. The SIRIUS pass extends discovery coverage to
+  features the spectral library does not cover.
+
+`MZMinetoMSstatsFormat` is re-exported from `MSstatsConvert`, so attaching
+`MSstats` alone is enough to run the full workflow.
+
+## __1. Setup__
+
+```{r setup}
+library(MSstats)
+library(data.table)
+```
+
+## __2. Load example data__
+
+Example MZMine input, sample annotation, MZMine library annotations, and
+SIRIUS structure identifications ship with `MSstatsConvert` and are loaded
+via `system.file()`.
+
+```{r load-data}
+input_path = system.file("tinytest/raw_data/MZMine/mzmine_input.csv",
+                         package = "MSstatsConvert")
+annotation_path = system.file("tinytest/raw_data/MZMine/annotation.csv",
+                              package = "MSstatsConvert")
+mzmine_ann_path = system.file("tinytest/raw_data/MZMine/mzmine_annotations.csv",
+                              package = "MSstatsConvert")
+sirius_path = system.file("tinytest/raw_data/MZMine/structure_identifications.tsv",
+                          package = "MSstatsConvert")
+
+mzmine_input = data.table::fread(input_path)
+annotation = data.table::fread(annotation_path)
+mzmine_annotations = data.table::fread(mzmine_ann_path)
+sirius_annotations = data.table::fread(sirius_path)
+
+head(mzmine_input, 5)
+head(annotation)
+head(mzmine_annotations)
+head(sirius_annotations)
+```
+
+The MZMine feature table is wide: one row per feature, columns `row ID`,
+`row m/z`, `row retention time`, and per-sample `"<run> Peak area"` columns.
+The annotation table maps each MS run to its `Condition` and `BioReplicate`.
+`mzmine_annotations` is the spectral-library match table
+(`id`, `compound_name`, `score`, `adduct`); features with multiple library
+hits resolve to the highest-scoring compound. `sirius_annotations` is
+SIRIUS's `structure_identifications.tsv`; its `mappingFeatureId` joins to
+`row ID` in the MZMine input.
+
+## __3. Convert with `MZMinetoMSstatsFormat`__
+
+```{r convert, message = FALSE}
+mzmine_msstats = MZMinetoMSstatsFormat(
+    input              = mzmine_input,
+    annotation         = annotation,
+    mzmine_annotations = mzmine_annotations,
+    sirius_annotations = sirius_annotations,
+    use_log_file       = FALSE
+)
+head(mzmine_msstats)
+```
+
+`ProteinName` is assigned per feature in priority order: (1) the
+highest-scoring MZMine compound name when present, (2) the SIRIUS name when
+MZMine has no match, (3) an `m/z_RT` fallback identifier for features
+neither source identified. Every feature is retained -- discovery coverage
+is preserved at the cost of a wider multiple-testing burden in Section 5.
+
+### Lactate caveat
+
+Lactate (feature 3) is missing one of its four measurements in this fixture, so its
+differential result is unreliable. That value is dropped rather than estimated, so Lactate is
+tested on three points and its degrees of freedom fall to 1, against 2 for the fully measured
+compounds. With so little data the variance estimate is unstable, which is why Lactate shows a
+very small standard error, a large t-statistic, and the only small p-value in the table. Treat
+it as an artifact of the tiny example, not a real difference.
+
+## __4. Summarize with `dataProcess`__
+
+```{r summarize, message = FALSE}
+summarized = dataProcess(
+    mzmine_msstats,
+    logTrans      = 2,
+    normalization = "equalizeMedians",
+    featureSubset = "all",
+    summaryMethod = "TMP",
+    censoredInt   = "NA",
+    MBimpute      = TRUE,
+    use_log_file  = FALSE
+)
+head(summarized$FeatureLevelData)
+head(summarized$ProteinLevelData)
+```
+
+The settings above mirror the `MSstatsWorkflow` vignette: log-2 transform,
+median-equalized normalization, all features used, and Tukey median polish
+summarization. Model-based imputation is enabled (`MBimpute = TRUE`), but no
+values are imputed in this small example. Caffeine is detected at two adducts (`[M+H]+` on feature 1,
+`[M+Na]+` on feature 6) and is summarized into a single compound-level
+abundance per run.
+
+## __5. Test for differences with `groupComparison`__
+
+With two conditions in the design, a single Control-vs-Treatment contrast
+is generated by passing `"pairwise"`:
+
+```{r contrast, message = FALSE}
+comparison = groupComparison(contrast.matrix = "pairwise",
+                             data            = summarized,
+                             use_log_file    = FALSE)
+comparison$ComparisonResult
+```
+
+Each row of `ComparisonResult` is one compound (or `m/z_RT` fallback) tested
+against the contrast. Columns of interest: `log2FC`, `pvalue`, and
+`adj.pvalue`. The `issue` column flags compounds that could not be tested
+normally, for example one missing from an entire condition; in this small
+fixture it is empty for every compound shown.
+
+## __6. Visualization__
+
+Profile plots show feature-level intensities alongside the protein-level
+summary. Caffeine is identified at two adducts in this dataset and is
+summarized into a single compound -- the profile plot makes that aggregation
+visible.
+
+```{r profile, fig.width = 8, fig.height = 5}
+dataProcessPlots(summarized,
+                 type          = "ProfilePlot",
+                 which.Protein = "Caffeine",
+                 address       = FALSE)
+```
+
+For a study-wide view of fold-change versus significance, pass the
+`groupComparison` result to `groupComparisonPlots`. On a four-sample fixture
+the volcano is sparse; on a real metabolomics dataset it is the standard
+summary plot:
+
+```{r volcano, eval = FALSE}
+groupComparisonPlots(data    = comparison$ComparisonResult,
+                     type    = "VolcanoPlot",
+                     address = FALSE)
+```
+
+```{r session}
+sessionInfo()
+```
