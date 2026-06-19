@@ -182,6 +182,12 @@ groupComparisonPlots(data    = comparison$ComparisonResult,
                      address = FALSE)
 ```
 
+## __References__
+
+Sumner LW, Amberg A, Barrett D, et al. (2007). Proposed minimum reporting standards for
+chemical analysis: Chemical Analysis Working Group (CAWG) Metabolomics Standards Initiative
+(MSI). *Metabolomics* 3(3): 211-221. doi: [10.1007/s11306-007-0082-2](https://doi.org/10.1007/s11306-007-0082-2)
+
 ```{r session}
 sessionInfo()
 ```
