@@ -133,15 +133,15 @@ abundance per run.
 ## __5. Test for differences with `groupComparison`__
 
 We construct the contrast matrix by hand to show how a comparison is specified.
-The two-condition design admits a single Control-vs-Treatment contrast:
+The two-condition design admits a single Treatment-vs-Control contrast:
 
 ```{r contrast, message = FALSE}
 # A contrast matrix has one row per comparison and one column per condition.
 # Columns must match the condition levels (alphabetical here: Control, Treatment).
-# The +1 / -1 pair selects the two groups being compared.
-contrast_matrix = matrix(c(1, -1), nrow = 1)
+# The -1 / +1 pair selects the two groups being compared.
+contrast_matrix = matrix(c(-1, 1), nrow = 1)
 colnames(contrast_matrix) = c("Control", "Treatment")
-rownames(contrast_matrix) = "Control vs Treatment"
+rownames(contrast_matrix) = "Treatment vs Control"
 contrast_matrix
 
 comparison = groupComparison(contrast.matrix = contrast_matrix,
@@ -154,15 +154,6 @@ against the contrast. Columns of interest: `log2FC`, `pvalue`, and
 `adj.pvalue`. The `issue` column flags compounds that could not be tested
 normally, for example one missing from an entire condition; in this small
 fixture the `issue` column is `NA` for every compound shown.
-
-### Lactate caveat
-
-Lactate (feature 3) is missing one of its four measurements in this fixture, so its
-differential result is unreliable. That value is dropped rather than estimated, so Lactate is
-tested on three points and its degrees of freedom fall to 1, against 2 for the fully measured
-compounds. With so little data the variance estimate is unstable, which is why Lactate shows a
-very small standard error, a large t-statistic, and the only small p-value in the table. Treat
-it as an artifact of the tiny example, not a real difference.
 
 ## __6. Visualization__
 
