@@ -18,6 +18,10 @@ MSstatsConvert::FragPipetoMSstatsFormat
 MSstatsConvert::MaxQtoMSstatsFormat
 
 #' @export
+#' @importFrom MSstatsConvert MZMinetoMSstatsFormat
+MSstatsConvert::MZMinetoMSstatsFormat
+
+#' @export
 #' @importFrom MSstatsConvert OpenMStoMSstatsFormat
 MSstatsConvert::OpenMStoMSstatsFormat
 
