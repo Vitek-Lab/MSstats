@@ -12,6 +12,8 @@
 \item{censored_symbol}{censored missing value indicator}
 
 \item{impute}{if TRUE, censored missing values were imputed}
+
+\item{predicted_survival}{data.table of predicted survival values used for imputation}
 }
 \description{
 Summary statistics for output of TMP-based summarization

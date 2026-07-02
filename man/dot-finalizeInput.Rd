@@ -9,13 +9,13 @@
 \arguments{
 \item{input}{feature-level data}
 
+\item{predicted_survival}{data.table of predicted survival values used for imputation}
+
 \item{method}{summary method}
 
 \item{impute}{if TRUE, censored missing values were imputed}
 
 \item{censored_symbol}{censored missing value indicator}
-
-\item{summarized}{protein-level data (list)}
 }
 \description{
 Add summary statistics to dataProcess output

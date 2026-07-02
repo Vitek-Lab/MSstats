@@ -170,7 +170,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     input = data.table::as.data.table(unclass(input))
     
     if (!"AnomalyScores" %in% colnames(input)){
-      data.table::set(input, j = "AnomalyScores", value = NA)
+      data.table::set(input, j = "AnomalyScores", value = NA_real_)
     }
     
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",

@@ -110,7 +110,7 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 
 #' Add summary statistics to dataProcess output
 #' @param input feature-level data
-#' @param summarized protein-level data (list)
+#' @param predicted_survival data.table of predicted survival values used for imputation
 #' @param method summary method
 #' @param impute if TRUE, censored missing values were imputed
 #' @param censored_symbol censored missing value indicator
