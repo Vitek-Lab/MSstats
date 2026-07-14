@@ -61,8 +61,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     input[, ABUNDANCE_FRACTION := median(ABUNDANCE_RUN, na.rm = TRUE),
           by = "FRACTION"]
     input[, ABUNDANCE := ABUNDANCE - ABUNDANCE_RUN + ABUNDANCE_FRACTION]
-    input = input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
-                  with = FALSE]
+    data.table::set(input, j = "ABUNDANCE_RUN", value = NULL)
+    data.table::set(input, j = "ABUNDANCE_FRACTION", value = NULL)
     getOption("MSstatsLog")("Normalization based on median: OK")
     input
 }
@@ -255,7 +255,9 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     input[, ABUNDANCE := ABUNDANCE - median_by_run + median_by_fraction]
 
     getOption("MSstatsLog")("INFO", "Normalization : normalization with global standards protein - okay")
-    input[ , !(colnames(input) %in% c("median_by_run", "median_by_fraction")), with = FALSE]
+    data.table::set(input, j = "median_by_run", value = NULL)
+    data.table::set(input, j = "median_by_fraction", value = NULL)
+    input
 }
 
 
@@ -282,7 +284,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' 
 MSstatsMergeFractions = function(input) {
     ABUNDANCE = INTENSITY = GROUP_ORIGINAL = SUBJECT_ORIGINAL = RUN = NULL
-    originalRUN = FRACTION = TECHREPLICATE = tmp = merged = newRun = NULL
+    originalRUN = FRACTION = TECHREPLICATE = tmp = newRun = NULL
     ncount = FEATURE = NULL
     
     input[!is.na(ABUNDANCE) & ABUNDANCE < 0, "ABUNDANCE"] = 0
@@ -338,29 +340,45 @@ MSstatsMergeFractions = function(input) {
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
-                match_runs[, merged := "merged"]
-                match_runs[, newRun := do.call(paste, c(.SD, sep = "_")), 
-                           .SDcols = c(1:3, ncol(match_runs))]
-                match_runs = unique(match_runs[, list(GROUP_ORIGINAL,
-                                                      SUBJECT_ORIGINAL,
-                                                      newRun)])
-                
-                input = merge(input, match_runs,
-                              by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
-                              all.x = TRUE)
+                # dcast pivoted fractions into columns, so the fraction columns
+                # are everything that is not a sample-identifier column.
+                fraction_cols = setdiff(colnames(match_runs),
+                                        c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
+                # Use the first fraction's run as the sample's representative run.
+                first_fraction_run = match_runs[[fraction_cols[1]]]
+                # Build the merged-run name: <group>_<subject>_<run>_merged.
+                match_runs[, newRun := paste(GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                                             first_fraction_run, "merged",
+                                             sep = "_")]
+                # Reduce to a (group, subject) -> merged-run lookup table.
+                match_runs = match_runs[, list(GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                                               newRun)]
+                # For each input row, find its sample's row in the lookup.
+                nr_idx = match_runs[input,
+                                    on = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+                                    which = TRUE, mult = "first"]
+                # Write that merged-run name onto every input row.
+                data.table::set(input, j = "newRun",
+                                value = match_runs$newRun[nr_idx])
+                # Count, per feature/fraction, the rows observed above zero.
                 select_fraction = input[!is.na(ABUNDANCE) & input$ABUNDANCE > 0,
                                         list(ncount = .N),
                                         by = c("FEATURE", "FRACTION")]
+                # Keep only feature/fraction combinations seen at least once.
                 select_fraction = select_fraction[ncount != 0]
-                select_fraction[, tmp := paste(FEATURE, FRACTION, sep = "_")]
-                input$tmp = paste(input$FEATURE, input$FRACTION, sep = "_")
-                input = input[tmp %in% select_fraction$tmp, ]
-                input$originalRUN = input$newRun
-                input$RUN = input$originalRUN
-                input$RUN = factor(input$RUN, levels = unique(input$RUN), 
-                                   labels = seq_along(unique(input$RUN)))
-                input = input[, !(colnames(input) %in% c('tmp','newRun')), 
-                              with = FALSE]
+                # Mark which input rows belong to a kept combination (NA = none).
+                keep_idx = select_fraction[input,
+                                           on = c("FEATURE", "FRACTION"),
+                                           which = TRUE, mult = "first"]
+                # Drop rows whose feature/fraction was never observed.
+                input = input[!is.na(keep_idx)]
+                # The merged run replaces the original per-fraction run.
+                input[, originalRUN := newRun]
+                # Renumber RUN as a factor, one level per merged run.
+                input[, RUN := factor(newRun, levels = unique(newRun),
+                                      labels = seq_along(unique(newRun)))]
+                # Drop the temporary newRun helper column.
+                data.table::set(input, j = "newRun", value = NULL)
             }
         }
     }

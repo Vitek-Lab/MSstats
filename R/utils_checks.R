@@ -170,7 +170,7 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     input = data.table::as.data.table(unclass(input))
     
     if (!"AnomalyScores" %in% colnames(input)){
-      input$AnomalyScores = NA
+      data.table::set(input, j = "AnomalyScores", value = NA_real_)
     }
     
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
@@ -200,7 +200,8 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     
     if (!is.numeric(input$INTENSITY)) {	
         suppressWarnings({
-            input$INTENSITY = as.numeric(as.character(input$INTENSITY))
+            data.table::set(input, j = "INTENSITY",
+                            value = as.numeric(as.character(input$INTENSITY)))
         })
     }
     
@@ -211,12 +212,15 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     cols = toupper(cols)
     cols = intersect(c(cols, "FRACTION", "TECHREPLICATE"),
                      colnames(input))
-    input = input[, cols, with = FALSE]
-    
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, 
-                          input$PRECURSORCHARGE, sep = "_")
-    input$TRANSITION = paste(input$FRAGMENTION, 
-                             input$PRODUCTCHARGE, sep = "_")
+    drop_cols = setdiff(colnames(input), cols)
+    for (col in drop_cols) data.table::set(input, j = col, value = NULL)
+
+    data.table::set(input, j = "PEPTIDE",
+                    value = paste(input$PEPTIDESEQUENCE,
+                                  input$PRECURSORCHARGE, sep = "_"))
+    data.table::set(input, j = "TRANSITION",
+                    value = paste(input$FRAGMENTION,
+                                  input$PRODUCTCHARGE, sep = "_"))
     
     if (data.table::uniqueN(input$ISOTOPELABELTYPE) > 2) {
         getOption("MSstatsLog")(
@@ -226,7 +230,8 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
         stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
     }
     
-    input$ISOTOPELABELTYPE <- .mapIsotopeLabelType(input$ISOTOPELABELTYPE)
+    data.table::set(input, j = "ISOTOPELABELTYPE",
+                    value = .mapIsotopeLabelType(input$ISOTOPELABELTYPE))
     input
 }
 
@@ -242,9 +247,14 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
         data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
-    input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
-    input$ISOTOPELABELTYPE <- .mapIsotopeLabelType(input$ISOTOPELABELTYPE)
+    data.table::set(input, j = "PEPTIDE",
+                    value = paste(input$PEPTIDESEQUENCE,
+                                  input$PRECURSORCHARGE, sep = "_"))
+    data.table::set(input, j = "TRANSITION",
+                    value = paste(input$FRAGMENTION,
+                                  input$PRODUCTCHARGE, sep = "_"))
+    data.table::set(input, j = "ISOTOPELABELTYPE",
+                    value = .mapIsotopeLabelType(input$ISOTOPELABELTYPE))
     input
 }
 
@@ -322,8 +332,8 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     input[, PROTEIN := factor(PROTEIN)]
     input[, PEPTIDE := factor(PEPTIDE)]
     input[, TRANSITION := factor(TRANSITION)]
-    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
-                        RUN, PROTEIN, PEPTIDE, TRANSITION), ]
+    data.table::setorder(input, LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                         RUN, PROTEIN, PEPTIDE, TRANSITION)
     input[, GROUP := factor(GROUP)]
     input[, SUBJECT := factor(SUBJECT)]
     input[, FEATURE := factor(FEATURE)]
