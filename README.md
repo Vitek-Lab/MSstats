@@ -41,8 +41,6 @@ on its regular 6-month release cycle.
 - **Thousands of downloads per month** across the ecosystem (see
   [Download statistics](#download-statistics)), tracked automatically from
   Bioconductor's own logs
-- Used as the statistical engine behind [Skyline](https://skyline.ms/) and the
-  [MSstatsShiny](https://www.msstatsshiny.com) web app
 
 ## The MSstats Ecosystem
 
@@ -64,6 +62,10 @@ flowchart LR
     C --> J["MSstatsShiny<br/>point-and-click GUI"]
     D --> J
     E --> J
+    F --> J
+    G --> J
+    H --> J
+    I --> J
 ```
 
 | Package | Description |
@@ -165,20 +167,6 @@ Prospector, SpectroMine) for isobaric-labeling experiments, used with
 [MSstatsTMT](https://bioconductor.org/packages/MSstatsTMT) instead of MSstats.
 See the [End to End Workflow vignette](vignettes/MSstatsWorkflow.Rmd) for the
 required input files and options for each converter.
-
-## Example Output
-
-MSstats produces publication-ready visualizations directly from
-`groupComparison()` results via `groupComparisonPlots()` — volcano plots,
-per-protein comparison plots, and heatmaps summarizing many comparisons at
-once. The heatmap below is generated directly from the package's own bundled
-example data (`DDARawData`, a spike-in benchmark with proteins from six
-species), comparing all pairs of conditions; darker red/blue indicates a
-larger, more significant increase/decrease in abundance:
-
-<p align="center">
-  <img src="man/figures/example_heatmap.png" alt="Example MSstats heatmap of differential abundance across pairwise comparisons" width="650">
-</p>
 
 ## Documentation
 
