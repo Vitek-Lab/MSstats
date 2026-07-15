@@ -127,9 +127,37 @@ complete, tool-specific examples.
 
 MSstats has been part of Bioconductor since release 2.13 (2013) and is used
 across the proteomics community, integrated as an external tool in Skyline and
-underlying the MSstats family of packages and MSstatsShiny. Citation counts for
-MSstats and related packages can be tracked via
-[Google Scholar](https://scholar.google.com/citations?hl=en&user=&q=MSstats).
+underlying the MSstats family of packages and MSstatsShiny.
+
+### Citations
+
+<!-- CITATION-STATS:START -->
+
+_Citation counts from [OpenAlex](https://openalex.org), updated monthly. Google Scholar counts are typically higher, since Scholar indexes a broader range of sources (theses, gray literature, etc.); OpenAlex has a free, stable, official API. Last updated 2026-07-15 (UTC)._
+
+| Paper | Citations |
+| --- | --- |
+| [MSstats (2014)](https://doi.org/10.1093/bioinformatics/btu305) | 1,158 |
+| [MSstats 4.0 (2023)](https://doi.org/10.1021/acs.jproteome.2c00834) | 134 |
+| [MSstats + FragPipe DIA workflow (2024)](https://doi.org/10.1038/s41596-024-01000-3) | 13 |
+| [MSstatsTMT (2020)](https://doi.org/10.1074/mcp.RA120.002105) | 203 |
+| [MSstatsTMT repeated measures (2023)](https://doi.org/10.1021/acs.jproteome.3c00155) | 14 |
+| [MSstatsPTM (2022)](https://doi.org/10.1016/j.mcpro.2022.100477) | 53 |
+| [MSstatsLiP / LiP-MS protocol (2023)](https://doi.org/10.1038/s41596-022-00771-x) | 127 |
+| [MSstatsShiny (2023)](https://doi.org/10.1021/acs.jproteome.2c00603) | 23 |
+| [MSstatsResponse (2026, preprint)](https://doi.org/10.64898/2026.03.09.710598) | 1 |
+| **Total** | **1,726** |
+
+<!-- CITATION-STATS:END -->
+
+This table is regenerated automatically alongside the download statistics
+below by
+[`.github/workflows/update-citation-stats.yaml`](.github/workflows/update-citation-stats.yaml),
+using [OpenAlex](https://openalex.org) rather than Google Scholar — Scholar
+has no official API and blocks automated requests, which makes it unreliable
+for an unattended scheduled job. If you'd like exact Google Scholar counts,
+see the [MSstats citations search](https://scholar.google.com/scholar?q=MSstats+Vitek+proteomics)
+directly.
 
 ### Download statistics
 
