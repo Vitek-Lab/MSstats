@@ -105,6 +105,37 @@ with a `*toMSstatsFormat` converter from `MSstatsConvert`, then proceeding with
 `dataProcess()` and `groupComparison()` as above. See the vignettes below for
 complete, tool-specific examples.
 
+## Supported Converters
+
+MSstats does not read raw search-tool output directly. Instead, a converter
+translates each tool's report into MSstats format (one row per feature, run,
+and condition) before `dataProcess()` is called. These converters are
+implemented in [MSstatsConvert](https://bioconductor.org/packages/MSstatsConvert)
+and re-exported directly from MSstats, so they're available as soon as you
+`library(MSstats)`:
+
+| Search tool / format | Converter function |
+| --- | --- |
+| Skyline | `SkylinetoMSstatsFormat()` |
+| MaxQuant | `MaxQtoMSstatsFormat()` |
+| Progenesis | `ProgenesistoMSstatsFormat()` |
+| Spectronaut | `SpectronauttoMSstatsFormat()` |
+| Proteome Discoverer | `PDtoMSstatsFormat()` |
+| DIA-NN | `DIANNtoMSstatsFormat()` |
+| DIA-Umpire | `DIAUmpiretoMSstatsFormat()` |
+| FragPipe | `FragPipetoMSstatsFormat()` |
+| OpenMS | `OpenMStoMSstatsFormat()` |
+| OpenSWATH | `OpenSWATHtoMSstatsFormat()` |
+
+MSstatsConvert also provides a `MetamorpheusToMSstatsFormat()` converter
+(`MSstatsConvert::MetamorpheusToMSstatsFormat()`) that isn't yet re-exported
+from MSstats directly, and a set of `*toMSstatsTMTFormat()` converters
+(MaxQuant, OpenMS, Proteome Discoverer, Philosopher/FragPipe, Protein
+Prospector, SpectroMine) for isobaric-labeling experiments, used with
+[MSstatsTMT](https://bioconductor.org/packages/MSstatsTMT) instead of MSstats.
+See the [End to End Workflow vignette](vignettes/MSstatsWorkflow.Rmd) for the
+required input files and options for each converter.
+
 ## Documentation
 
 - [MSstats: Protein/Peptide significance analysis](vignettes/MSstats.Rmd) — overview of all functionality
