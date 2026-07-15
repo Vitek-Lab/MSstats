@@ -30,11 +30,41 @@ This repository is used for active development and testing of MSstats. The
 package is released through [Bioconductor](https://bioconductor.org/packages/MSstats)
 on its regular 6-month release cycle.
 
+## At a Glance
+
+- **13+ years** in Bioconductor (since release 2.13, 2013)
+- **9 packages** in the MSstats ecosystem, covering DDA/DIA/SRM, TMT, PTMs,
+  LiP-MS, large-scale/out-of-memory data, network analysis, dose-response, and
+  a no-code GUI
+- **9 peer-reviewed publications / preprints**, [~1,700+ citations](#citations)
+  combined (see [Citations](#citations))
+- **Thousands of downloads per month** across the ecosystem (see
+  [Download statistics](#download-statistics)), tracked automatically from
+  Bioconductor's own logs
+- Used as the statistical engine behind [Skyline](https://skyline.ms/) and the
+  [MSstatsShiny](https://www.msstatsshiny.com) web app
+
 ## The MSstats Ecosystem
 
 MSstats has grown into a family of packages that share the same statistical
 framework and data model, each targeting a different experiment type or stage
 of the analysis pipeline:
+
+```mermaid
+flowchart LR
+    A["Upstream search tools<br/>Skyline · MaxQuant · Spectronaut<br/>DIA-NN · FragPipe · OpenMS/OpenSWATH · ..."] --> B["MSstatsConvert<br/>(format converters)"]
+    B --> C["MSstats<br/>DDA / DIA / SRM<br/>label-free & label-based"]
+    B --> D["MSstatsTMT<br/>isobaric labeling"]
+    C --> E["MSstatsPTM<br/>post-translational mods"]
+    D --> E
+    C --> F["MSstatsLiP<br/>limited proteolysis"]
+    C --> G["MSstatsBig<br/>larger-than-memory data"]
+    C --> H["MSstatsBioNet<br/>network enrichment"]
+    C --> I["MSstatsResponse<br/>dose-response"]
+    C --> J["MSstatsShiny<br/>point-and-click GUI"]
+    D --> J
+    E --> J
+```
 
 | Package | Description |
 | --- | --- |
@@ -135,6 +165,20 @@ Prospector, SpectroMine) for isobaric-labeling experiments, used with
 [MSstatsTMT](https://bioconductor.org/packages/MSstatsTMT) instead of MSstats.
 See the [End to End Workflow vignette](vignettes/MSstatsWorkflow.Rmd) for the
 required input files and options for each converter.
+
+## Example Output
+
+MSstats produces publication-ready visualizations directly from
+`groupComparison()` results via `groupComparisonPlots()` — volcano plots,
+per-protein comparison plots, and heatmaps summarizing many comparisons at
+once. The heatmap below is generated directly from the package's own bundled
+example data (`DDARawData`, a spike-in benchmark with proteins from six
+species), comparing all pairs of conditions; darker red/blue indicates a
+larger, more significant increase/decrease in abundance:
+
+<p align="center">
+  <img src="man/figures/example_heatmap.png" alt="Example MSstats heatmap of differential abundance across pairwise comparisons" width="650">
+</p>
 
 ## Documentation
 
