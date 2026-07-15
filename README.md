@@ -127,11 +127,35 @@ complete, tool-specific examples.
 
 MSstats has been part of Bioconductor since release 2.13 (2013) and is used
 across the proteomics community, integrated as an external tool in Skyline and
-underlying the MSstats family of packages and MSstatsShiny. Up-to-date download
-statistics are available on the
-[Bioconductor stats page](https://bioconductor.org/packages/stats/bioc/MSstats/),
-and citation counts for MSstats and related packages can be tracked via
+underlying the MSstats family of packages and MSstatsShiny. Citation counts for
+MSstats and related packages can be tracked via
 [Google Scholar](https://scholar.google.com/citations?hl=en&user=&q=MSstats).
+
+### Download statistics
+
+<!-- DOWNLOAD-STATS:START -->
+
+_Average monthly downloads over the last 6 complete months, computed directly from Bioconductor's download logs. Last updated 2026-07-15 (UTC)._
+
+| Package | Avg. monthly downloads |
+| --- | --- |
+| [MSstats](https://bioconductor.org/packages/stats/bioc/MSstats/) | 1,566 |
+| [MSstatsTMT](https://bioconductor.org/packages/stats/bioc/MSstatsTMT/) | 796 |
+| [MSstatsPTM](https://bioconductor.org/packages/stats/bioc/MSstatsPTM/) | 632 |
+| [MSstatsLiP](https://bioconductor.org/packages/stats/bioc/MSstatsLiP/) | 442 |
+| [MSstatsBig](https://bioconductor.org/packages/stats/bioc/MSstatsBig/) | 384 |
+| [MSstatsShiny](https://bioconductor.org/packages/stats/bioc/MSstatsShiny/) | 437 |
+| [MSstatsBioNet](https://bioconductor.org/packages/stats/bioc/MSstatsBioNet/) | 311 |
+| [MSstatsResponse](https://bioconductor.org/packages/stats/bioc/MSstatsResponse/) | 298 |
+| [MSstatsConvert](https://bioconductor.org/packages/stats/bioc/MSstatsConvert/) | 1,100 |
+
+<!-- DOWNLOAD-STATS:END -->
+
+This table is regenerated automatically once a month by
+[`.github/workflows/update-download-stats.yaml`](.github/workflows/update-download-stats.yaml),
+which pulls the latest numbers from
+[Bioconductor's download logs](https://bioconductor.org/packages/stats/bioc/MSstats/)
+for every package in the ecosystem.
 
 ## References
 
