@@ -38,7 +38,7 @@ on its regular 6-month release cycle.
   a no-code GUI
 - **13 peer-reviewed publications / preprints**, [~2,000+ citations](#citations)
   combined (see [Citations](#citations))
-- **~6,0000 monthly downloads** across the ecosystem (see
+- **~6,000 monthly downloads** across the ecosystem (see
   [Download statistics](#download-statistics)), tracked automatically from
   Bioconductor's own logs
 
