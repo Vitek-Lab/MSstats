@@ -2,7 +2,6 @@
 
 <!-- badges: start -->
 [![Bioconductor Release Build](https://bioconductor.org/shields/build/release/bioc/MSstats.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/MSstats/)
-[![Bioconductor Devel Build](https://bioconductor.org/shields/build/devel/bioc/MSstats.svg)](https://bioconductor.org/checkResults/devel/bioc-LATEST/MSstats/)
 [![Codecov test coverage](https://codecov.io/gh/Vitek-Lab/MSstats/branch/devel/graph/badge.svg)](https://codecov.io/gh/Vitek-Lab/MSstats/branch/devel)
 [![Bioconductor Downloads Rank](https://bioconductor.org/shields/downloads/release/MSstats.svg)](https://bioconductor.org/packages/stats/bioc/MSstats/)
 [![Years in Bioconductor](https://bioconductor.org/shields/years-in-bioc/MSstats.svg)](https://bioconductor.org/packages/release/bioc/html/MSstats.html#since)
