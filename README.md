@@ -19,7 +19,11 @@ identified and quantified peaks from upstream tools (Skyline, MaxQuant,
 Proteome Discoverer, Spectronaut, DIA-NN, FragPipe, OpenSWATH, and others),
 MSstats performs normalization, missing value handling, run-level
 summarization, and model-based statistical testing to detect differentially
-abundant proteins or peptides across conditions.
+abundant proteins or peptides across conditions. Because the underlying
+statistical framework operates on generic quantitative features rather than
+anything protein-specific, it is general enough to apply to other
+targeted/SRM- or DIA-style quantitative signals as well, such as targeted
+metabolomics data.
 
 MSstats has been developed and maintained by the [Vitek Lab](https://olga-vitek-lab.khoury.northeastern.edu/)
 at the Khoury College of Computer Sciences, Northeastern University, since
@@ -80,6 +84,13 @@ flowchart LR
 | **[MSstatsResponse](https://bioconductor.org/packages/MSstatsResponse)** ([GitHub](https://github.com/Vitek-Lab/MSstatsResponse)) | Semi-parametric dose-response modeling for chemoproteomics experiments (drug-protein interaction / IC50 estimation). |
 | **[MSstatsConvert](https://bioconductor.org/packages/MSstatsConvert)** ([GitHub](https://github.com/Vitek-Lab/MSstatsConvert)) | Shared converters that translate output from Skyline, MaxQuant, Proteome Discoverer, Spectronaut, DIA-NN, FragPipe, OpenSWATH, and more into MSstats format. |
 
+MSstatsResponse's semi-parametric curve-fitting approach to dose-response data
+generalizes beyond drug-protein interaction/IC50 estimation: the same concept
+applies to related experiment types such as Thermal Proteome Profiling (TPP)
+and protein turnover kinetics, where abundance is likewise modeled as a smooth
+function of a continuous variable (temperature or time) rather than a fixed
+curve shape.
+
 ## Developers
 
 MSstats is developed and maintained out of the [Vitek Lab](https://olga-vitek-lab.khoury.northeastern.edu/)
@@ -96,6 +107,11 @@ Former developers include Meena Choi, Deril Raju, Tsung-Heng Tsai, Ting Huang,
 and Olga Vitek. See the full author list in [DESCRIPTION](DESCRIPTION) and the
 lab's [publications page](https://olga-vitek-lab.khoury.northeastern.edu/publications/)
 for the wider set of contributors across the MSstats ecosystem.
+
+The lab also organizes the annual [May Institute](https://computationalproteomics.khoury.northeastern.edu/),
+a computational proteomics training program at Northeastern University
+covering mass spectrometry, statistics, and bioinformatics, which regularly
+features MSstats developers as instructors.
 
 ## Installation
 
@@ -303,6 +319,13 @@ relevant publication(s):
 MSstatsBioNet does not yet have a dedicated publication; see the
 [Bioconductor package page](https://bioconductor.org/packages/MSstatsBioNet)
 for details and how to cite the software directly.
+
+## Funding
+
+MSstats development has been supported by the Chan Zuckerberg Initiative's
+[Essential Open Source Software for Science](https://chanzuckerberg.com/eoss/proposals/)
+program (Cycle 1, 2019), through the award *"MSstats and Cardinal: Next
+Generation Statistical Mass Spectrometry in R"* (PI: Olga Vitek).
 
 ## License
 
