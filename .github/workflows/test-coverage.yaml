@@ -1,0 +1,89 @@
+name: test-coverage
+
+on:
+  push:
+    branches: [master, devel]
+  pull_request:
+    branches: [master, devel]
+
+permissions: read-all
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup R and Bioconductor
+        uses: grimbough/bioc-actions/setup-bioc@v1
+        with:
+          bioc-version: devel
+
+      - name: Install dependencies
+        run: |
+          # log4r (a dependency of our Imports:: MSstatsConvert) was archived
+          # (removed) from CRAN on 2026-07-14 for unresolved check issues --
+          # see https://cran.r-project.org/web/packages/log4r/index.html.
+          # That's an upstream removal, not a repo-configuration problem, so
+          # no amount of options(repos=...) tinkering fixes it. Install the
+          # last released version straight from the CRAN Archive first, so
+          # it's already satisfied when we resolve the rest of the
+          # dependencies below.
+          #
+          # We also skip r-lib/actions/setup-r-dependencies@v2 (which
+          # delegates to pak). pak resolves dependencies in a persistent
+          # background subprocess (pak:::remote()) that only forwards options
+          # matching pkg.*/async_http_*/Ncpus/BioC_mirror and env vars
+          # matching PKG_*/R_BIOC_VERSION/PATH/PACKAGEMANAGER_* -- `repos`
+          # itself is never forwarded, so options(repos=...), ~/.Rprofile,
+          # and RENV_CONFIG_REPOS_OVERRIDE (an renv-only variable pak doesn't
+          # read at all) are all invisible to it, making it awkward to inject
+          # an already-installed/archived package like this. Installing
+          # directly with remotes::install_deps() runs in this same R
+          # session, so it just sees whatever we configure here directly.
+          repos <- BiocManager::repositories()
+          repos["CRAN"] <- "https://cloud.r-project.org"
+          options(repos = repos)
+
+          install.packages(c("remotes", "sessioninfo", "xml2"))
+          install.packages(
+            "https://cran.r-project.org/src/contrib/Archive/log4r/log4r_0.4.4.tar.gz",
+            repos = NULL,
+            type = "source"
+          )
+          remotes::install_deps(dependencies = TRUE, upgrade = "never")
+        shell: Rscript {0}
+
+      - name: Test coverage
+        run: |
+          cov <- covr::package_coverage(
+            quiet = FALSE,
+            clean = FALSE,
+            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+          )
+          covr::to_cobertura(cov)
+        shell: Rscript {0}
+
+      - uses: codecov/codecov-action@v4
+        with:
+          file: ./cobertura.xml
+          plugin: noop
+          disable_search: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Show testthat output
+        if: always()
+        run: |
+          find '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \; || true
+        shell: bash
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-test-failures
+          path: ${{ runner.temp }}/package
