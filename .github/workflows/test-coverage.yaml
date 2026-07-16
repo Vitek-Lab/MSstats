@@ -22,37 +22,40 @@ jobs:
         with:
           bioc-version: devel
 
-      - name: Persist CRAN + Bioconductor repos for later steps
+      - name: Install dependencies
         run: |
-          # setup-bioc's use-public-rspm behavior sets RENV_CONFIG_REPOS_OVERRIDE
-          # to a CRAN-only Posit Package Manager URL. pak/pkgcache treat that
-          # override as authoritative, so it wins over anything set via
-          # options(repos=...) or ~/.Rprofile -- which is why pak could resolve
-          # MSstatsConvert (via its own Bioconductor-aware logic) but not
-          # log4r, a plain CRAN dependency missing from the override. Replace
-          # the override with the full CRAN + Bioconductor repo set so later
-          # steps' pak subprocess sees everything.
+          # log4r (a dependency of our Imports:: MSstatsConvert) was archived
+          # (removed) from CRAN on 2026-07-14 for unresolved check issues --
+          # see https://cran.r-project.org/web/packages/log4r/index.html.
+          # That's an upstream removal, not a repo-configuration problem, so
+          # no amount of options(repos=...) tinkering fixes it. Install the
+          # last released version straight from the CRAN Archive first, so
+          # it's already satisfied when we resolve the rest of the
+          # dependencies below.
+          #
+          # We also skip r-lib/actions/setup-r-dependencies@v2 (which
+          # delegates to pak). pak resolves dependencies in a persistent
+          # background subprocess (pak:::remote()) that only forwards options
+          # matching pkg.*/async_http_*/Ncpus/BioC_mirror and env vars
+          # matching PKG_*/R_BIOC_VERSION/PATH/PACKAGEMANAGER_* -- `repos`
+          # itself is never forwarded, so options(repos=...), ~/.Rprofile,
+          # and RENV_CONFIG_REPOS_OVERRIDE (an renv-only variable pak doesn't
+          # read at all) are all invisible to it, making it awkward to inject
+          # an already-installed/archived package like this. Installing
+          # directly with remotes::install_deps() runs in this same R
+          # session, so it just sees whatever we configure here directly.
           repos <- BiocManager::repositories()
           repos["CRAN"] <- "https://cloud.r-project.org"
+          options(repos = repos)
 
-          line <- paste0(
-            "options(repos = c(",
-            paste(sprintf('"%s" = "%s"', names(repos), repos), collapse = ", "),
-            "))"
+          install.packages(c("remotes", "sessioninfo", "xml2"))
+          install.packages(
+            "https://cran.r-project.org/src/contrib/Archive/log4r/log4r_0.4.4.tar.gz",
+            repos = NULL,
+            type = "source"
           )
-          cat(line, "\n", file = "~/.Rprofile", append = TRUE)
-
-          cat(
-            sprintf("RENV_CONFIG_REPOS_OVERRIDE=%s\n", paste(unname(repos), collapse = ",")),
-            file = Sys.getenv("GITHUB_ENV"),
-            append = TRUE
-          )
+          remotes::install_deps(dependencies = TRUE, upgrade = "never")
         shell: Rscript {0}
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::covr, any::xml2
-          needs: coverage
 
       - name: Test coverage
         run: |
