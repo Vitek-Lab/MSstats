@@ -22,6 +22,25 @@ jobs:
         with:
           bioc-version: devel
 
+      - name: Persist CRAN + Bioconductor repos for later steps
+        run: |
+          # setup-bioc only sets options(repos=...) inside its own transient
+          # R process (via BiocManager::install()); it never writes that to
+          # ~/.Rprofile, so later steps' fresh R sessions (like pak's
+          # dependency resolution below) don't see the Bioconductor repos and
+          # fail to resolve CRAN-only transitive dependencies (e.g. log4r,
+          # via MSstatsConvert). Write the full repos list explicitly so it
+          # persists for the rest of the job.
+          repos <- BiocManager::repositories()
+          repos["CRAN"] <- "https://cloud.r-project.org"
+          line <- paste0(
+            "options(repos = c(",
+            paste(sprintf('"%s" = "%s"', names(repos), repos), collapse = ", "),
+            "))"
+          )
+          cat(line, "\n", file = "~/.Rprofile", append = TRUE)
+        shell: Rscript {0}
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::covr, any::xml2
