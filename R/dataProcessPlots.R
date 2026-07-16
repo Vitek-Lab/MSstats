@@ -45,8 +45,8 @@
 #' above graph in Profile Plot. Default is 7.
 #' @param dot.size.profile size of dots in profile plot. Default is 2.
 #' @param dot.size.condition size of dots in condition plot. Default is 3.
-#' @param width width of the saved file. Default is 10.
-#' @param height height of the saved file. Default is 10.
+#' @param width width of the saved file in pixels. Default is 800 pixels.
+#' @param height height of the saved file in pixels. Default is 600 pixels.
 #' @param which.Protein Protein list to draw plots. List can be names of Proteins
 #' or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).
 #' Default is "all", which generates all plots for each protein. 
@@ -155,6 +155,7 @@ dataProcessPlots = function(
                   og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
+                  og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
 
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
@@ -165,9 +166,10 @@ dataProcessPlots = function(
           if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
-                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","ABUNDANCE"))
+                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
+                  summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
@@ -261,15 +263,10 @@ dataProcessPlots = function(
                             labels = seq(1, length(unique(RUN))))]
   summarized[, RUN := as.numeric(RUN)]
   
-  ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, c("GROUP", "RUN")])
-  if (length(unique(processed$LABEL)) == 2) {
-    tempGroupName = tempGroupName[GROUP != '0']
-  } 
-  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  tempGroupName = tempGroupName[order(RUN), ]
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  tempGroupName$GROUP = factor(tempGroupName$GROUP, levels = level.group)
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
@@ -291,16 +288,26 @@ dataProcessPlots = function(
                          Name = levels(tempGroupName$GROUP))
 
   
-  if (length(unique(processed$LABEL)) == 2) {
-    processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
+  if ("is_labeled_ref" %in% colnames(processed)) {
+    processed[, LABEL := factor(
+      ifelse(is_labeled_ref, "Reference", "Endogenous"),
+      levels = c("Reference", "Endogenous")
+    )]
+    raw_label_map = c("H" = "Reference", "L" = "Endogenous")
   } else {
-    if (unique(processed$LABEL) == "L") {
+    label_levels = levels(factor(processed$LABEL))
+    if (length(label_levels) == 2) {
+      processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+      raw_label_map = c("H" = "Heavy", "L" = "Light")
+    } else if ("L" %in% label_levels) {
       processed[, LABEL := factor(LABEL, labels = c("Endogenous"))]
+      raw_label_map = c("L" = "Endogenous")
     } else {
-      processed[, LABEL := factor(LABEL, labels = c("Reference"))]
+      processed[, LABEL := factor(LABEL, labels = c("Heavy"))]
+      raw_label_map = c("H" = "Heavy")
     }
   }
-  
+
   if ("feature_quality" %in% colnames(processed)) {
     processed[, feature_quality := NULL]
   }
@@ -357,7 +364,7 @@ dataProcessPlots = function(
   }
   
   if (summaryPlot) {
-    protein_by_run = expand.grid(Protein = unique(summarized$Protein), 
+    protein_by_run = expand.grid(Protein = unique(summarized$Protein),
                                  RUN = unique(summarized$RUN))
     summarized = merge(summarized, protein_by_run, by = c("Protein", "RUN"),
                        all.x = TRUE, all.y = TRUE)
@@ -370,7 +377,7 @@ dataProcessPlots = function(
       if (all(is.na(single_protein$ABUNDANCE))) {
         next()
       }
-      
+
       pept_feat = unique(single_protein[, list(PEPTIDE, FEATURE)])
       counts = pept_feat[, list(N = .N), by = "PEPTIDE"]$N
       s = rep(seq_along(counts), times = counts)
@@ -378,15 +385,18 @@ dataProcessPlots = function(
       groupNametemp = data.frame(groupName,
                                  FEATURE = unique(single_protein$FEATURE)[1],
                                  analysis = "Run summary")
-      
+
       single_protein_summ = summarized[Protein == all_proteins[i], ]
       quant = single_protein_summ[
         Protein == all_proteins[i],
         list(PROTEIN = unique(Protein), PEPTIDE = "Run summary",
              TRANSITION = "Run summary", FEATURE = "Run summary",
-             LABEL = "Endogenous", RUN = RUN,
-             ABUNDANCE = LogIntensities, FRACTION = 1)
-        ]
+             LABEL = raw_label_map[LABEL], RUN = RUN,
+             ABUNDANCE = LogIntensities, FRACTION = 1, 
+             UPPERBOUND = if("Variance" %in% names(.SD)) LogIntensities + 1.96 * sqrt(Variance) else NA_real_, # 95% confidence interval
+             LOWERBOUND = if("Variance" %in% names(.SD)) LogIntensities - 1.96 * sqrt(Variance) else NA_real_
+        )
+      ]
       if (is_censored) {
         quant$censored = FALSE
       }
@@ -439,30 +449,32 @@ dataProcessPlots = function(
   processed[, RUN := factor(RUN, levels = unique(processed$RUN),
                             labels = seq(1, data.table::uniqueN(processed$RUN)))]
   
-  if (length(unique(processed$LABEL)) == 2) {
-    processed[, LABEL := factor(LABEL, labels = c("Reference", "Endogenous"))]
+  if ("is_labeled_ref" %in% colnames(processed)) {
+    processed[, LABEL := factor(
+      ifelse(is_labeled_ref, "Reference", "Endogenous"),
+      levels = c("Reference", "Endogenous")
+    )]
     label.color = c("darkseagreen1", "lightblue")
   } else {
-    if (unique(processed$LABEL) == "L") {
+    label_levels = levels(factor(processed$LABEL))
+    if (length(label_levels) == 2) {
+      processed[, LABEL := factor(LABEL, labels = c("Heavy", "Light"))]
+      label.color = c("darkseagreen1", "lightblue")
+    } else if ("L" %in% label_levels) {
       processed[, LABEL := factor(LABEL, labels = c("Endogenous"))]
       label.color = c("lightblue")
     } else {
-      processed[, LABEL := factor(LABEL, labels = c("Reference"))]
+      processed[, LABEL := factor(LABEL, labels = c("Heavy"))]
       label.color = c("darkseagreen1")
     }
   }
   
   processed = processed[order(LABEL, GROUP, SUBJECT)]
   
-  ## Meena :due to GROUP=0 for labeled.. extra care required.
   tempGroupName = unique(processed[, list(GROUP, RUN)])
-  if (length(unique(processed$LABEL)) == 2) {
-    tempGroupName = tempGroupName[GROUP != '0']
-  } 
-  tempGroupName = tempGroupName[order(RUN), ] ## Meena : should we order by GROUP or RUN? I guess by RUn, because x-axis is by RUN
+  tempGroupName = tempGroupName[order(RUN), ]
   level.group = as.character(unique(tempGroupName$GROUP))
-  tempGroupName$GROUP = factor(tempGroupName$GROUP,
-                                levels = level.group) ## Meena : factor GROUP again, due to 1, 10, 2, ... if you have better way, please change
+  tempGroupName$GROUP = factor(tempGroupName$GROUP, levels = level.group)
   
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
@@ -686,6 +698,15 @@ dataProcessPlots = function(
     plot
 }
 
+.fixErrorBarCapsPlotly = function(plot, cap_width = 8) {
+    for (i in seq_along(plot$x$data)) {
+        if (!is.null(plot$x$data[[i]]$error_y)) {
+            plot$x$data[[i]]$error_y$width <- cap_width
+        }
+    }
+    plot
+}
+
 .fixLegendPlotlyPlotsVolcano = function(plot) {
     df <- data.frame(id = seq_along(plot$x$data), legend_entries = unlist(lapply(plot$x$data, `[[`, "name")))
     # Create a mapping
@@ -746,7 +767,7 @@ dataProcessPlots = function(
     setTxtProgressBar(pb, 4)
     zip(paste0(gsub("\\.html$", "", file_name),".zip"), c(file_name, "lib"))
     unlink(file_name)
-    unlink("lib",recursive = T)
+    unlink("lib",recursive = TRUE)
     
     close(pb)
 }

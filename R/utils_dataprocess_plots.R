@@ -56,14 +56,14 @@
         type_color = "PEPTIDE"
     }
     
-    profile_plot = ggplot(input, aes_string(x = "RUN", y = "newABUNDANCE",
-                                            color = type_color, linetype = "FEATURE")) +
+    profile_plot = ggplot(data = input, aes(x = .data$RUN, y = .data$newABUNDANCE,
+                                            color = .data[[type_color]], linetype = .data$FEATURE)) +
         facet_grid(~LABEL) +
-        geom_line(size = 0.5)
+        geom_line(linewidth = 0.5)
     
     if (is_censored) {
         profile_plot = profile_plot +
-        geom_point(aes_string(x = "RUN", y = "newABUNDANCE", color = type_color, shape = "censored"),
+        geom_point(aes(x = .data$RUN, y = .data$newABUNDANCE, color = .data[[type_color]], shape = .data$censored),
                    data = input,
                    size = dot.size.profile) +
         scale_shape_manual(values = c(16, 1),
@@ -97,7 +97,7 @@
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey", linetype = "longdash") +
         labs(title = unique(input$PROTEIN)) +
-        geom_text(data = groupNametemp, aes(x = RUN, y = ABUNDANCE, label = Name), 
+        geom_text(data = groupNametemp, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Name), 
                   size = text.size, 
                   angle = text.angle, 
                   color = "black") +
@@ -156,22 +156,30 @@
     
     num_features = data.table::uniqueN(input$FEATURE)
     profile_plot = ggplot(data = input, 
-                          aes_string(x = "RUN", y = "newABUNDANCE", 
-                                     color = "analysis", linetype = "FEATURE", 
-                                     size = "analysis")) +
+                          aes(x = .data$RUN, y = .data$newABUNDANCE, 
+                                     color = .data$analysis, linetype = .data$FEATURE, 
+                                     size = .data$analysis)) +
         facet_grid(~LABEL) +
-        geom_line(size = 0.5)
+        geom_line(linewidth = 0.5)
     
     if (is_censored) { # splitting into two layers to keep red above grey
         profile_plot = profile_plot +
             geom_point(data = input[input$PEPTIDE != "Run summary"], 
-                       aes_string(x = "RUN", y = "newABUNDANCE", 
-                                  color = "analysis", size = "analysis", 
-                                  shape = "censored")) +
+                       aes(x = .data$RUN, y = .data$newABUNDANCE, 
+                                  color = .data$analysis, size = .data$analysis, 
+                                  shape = .data$censored)) +
             geom_point(data = input[input$PEPTIDE == "Run summary"], 
-                       aes_string(x = "RUN", y = "newABUNDANCE", 
-                                  color = "analysis", size = "analysis", 
-                                  shape = "censored")) +
+                       aes(x = .data$RUN, y = .data$newABUNDANCE, 
+                                  color = .data$analysis, size = .data$analysis, 
+                                  shape = .data$censored)) +
+            geom_errorbar(data = input[input$PEPTIDE == "Run summary"],
+                          aes(x = .data$RUN, 
+                              ymin = .data$LOWERBOUND, 
+                              ymax = .data$UPPERBOUND,
+                              color = .data$analysis),
+                          width = 0.3,
+                          linewidth = 0.5,
+                          linetype = "solid") + 
             scale_shape_manual(values = c(16, 1), 
                                labels = c("Detected data",
                                           "Censored missing data"))
@@ -191,7 +199,7 @@
         geom_vline(xintercept = lineNameAxis + 0.5, 
                    colour = "grey", linetype = "longdash") +
         labs(title = unique(input$PROTEIN)) +
-        geom_text(data = groupNametemp, aes(x = RUN, y = ABUNDANCE, label = Name), 
+        geom_text(data = groupNametemp, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Name), 
                   size = text.size, 
                   angle = text.angle, 
                   color = "black") +
@@ -209,8 +217,8 @@
     } else {
         profile_plot = profile_plot +
             guides(color = color_guide) +
-            geom_point(aes_string(x = "RUN", y = "newABUNDANCE", size = "analysis",
-                                  color = "analysis"), data = input)
+            geom_point(aes(x = .data$RUN, y = .data$newABUNDANCE, size = .data$analysis,
+                                  color = .data$analysis), data = input)
     }
     profile_plot
 }
@@ -234,9 +242,9 @@
         plot_title = unique(input$PROTEIN)
     }
     
-    ggplot(input, aes_string(x = "RUN", y = "ABUNDANCE")) +
+    ggplot(input, aes(x = .data$RUN, y = .data$ABUNDANCE)) +
         facet_grid(~LABEL) +
-        geom_boxplot(aes_string(fill = "LABEL"), outlier.shape = 1,
+        geom_boxplot(aes(fill = .data$LABEL), outlier.shape = 1,
                      outlier.size = 1.5) +
         scale_fill_manual(values = label.color, guide = "none") +
         scale_x_discrete("MS runs", breaks = cumGroupAxis) +
@@ -244,7 +252,7 @@
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey",
                    linetype = "longdash") +
         labs(title  =  plot_title) +
-        geom_text(data = groupName, aes(x = RUN, y = ABUNDANCE, label = Name),
+        geom_text(data = groupName, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Name),
                   size = text.size, angle = text.angle, color = "black") +
         theme_msstats("QCPLOT", x.axis.size, y.axis.size,
                       legend_size = NULL)
@@ -268,8 +276,8 @@
         input$Label = as.numeric(gsub("\\D", "", unique(input$Label)))
     }
     
-    plot = ggplot(aes_string(x = "Label", y = "Mean"), data = input) +
-        geom_errorbar(aes(ymax = Mean + ciw, ymin = Mean - ciw),
+    plot = ggplot(aes(x = .data$Label, y = .data$Mean), data = input) +
+        geom_errorbar(aes(ymax = .data$Mean + .data$ciw, ymin = .data$Mean - .data$ciw),
                       data = input, width = 0.1, colour = "red") +
         geom_point(size = dot.size.condition, colour = "darkred")
     
@@ -283,7 +291,7 @@
     plot = plot +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_hline(yintercept = 0, linetype = "twodash", 
-                   colour = "darkgrey", size = 0.6) +
+                   colour = "darkgrey", linewidth = 0.6) +
         labs(title = unique(single_protein$PROTEIN)) +
         theme_msstats("CONDITIONPLOT", x.axis.size, y.axis.size, 
                       text_angle = text.angle)

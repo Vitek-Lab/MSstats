@@ -1,7 +1,7 @@
 #' @importFrom data.table uniqueN
 #' @importFrom survival survreg Surv
 #' @keywords internal
-.fitSurvival = function(input) {
+.fitSurvival = function(input, aft_iterations) {
     FEATURE = RUN = NULL
     
     missingness_filter = is.finite(input$newABUNDANCE)
@@ -17,31 +17,39 @@
         if (length(unique(input$FEATURE)) == 1) {
             # with single feature, not converge, wrong intercept
             # need to check
-            fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
-                                    data = input, dist = "gaussian")
+            fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref_covariate,
+                                    data = input, dist = "gaussian",
+                          control = list(maxiter=aft_iterations))
         } else {
             if (countdf) {
-                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref,
-                                        data = input, dist = "gaussian")
+                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ RUN + ref_covariate,
+                                        data = input, dist = "gaussian",
+                              control = list(maxiter=aft_iterations))
             } else {
-                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref,
-                                        data = input, dist = "gaussian")
+                fit = survreg(Surv(newABUNDANCE, cen, type='left') ~ FEATURE + RUN + ref_covariate,
+                                        data = input, dist = "gaussian",
+                              control = list(maxiter=aft_iterations))
             }
         }
     } else {
         if (n_features == 1L) {
             fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
-                                    data = input, dist = "gaussian")    
+                                    data = input, dist = "gaussian",
+                          control = list(maxiter=aft_iterations))
         } else {
             if (countdf) {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ RUN,
-                                        data = input, dist = "gaussian")
+                                        data = input, dist = "gaussian",
+                              control = list(maxiter=aft_iterations))
             } else {
                 fit = survreg(Surv(newABUNDANCE, cen, type = "left") ~ FEATURE + RUN,
-                                        data = input, dist = "gaussian")
+                                        data = input, dist = "gaussian", 
+                              control = list(maxiter=aft_iterations))
             }
-        }  
+        }
     }
+    fit$y = NULL
+    fit$linear.predictors = NULL
     fit
 }
 

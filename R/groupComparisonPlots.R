@@ -26,8 +26,8 @@
 #' @param numProtein For ggplot2: The number of proteins which will be presented in each heatmap. Default is 100. Maximum possible number of protein for one heatmap is 180.
 #' For Plotly: use this parameter to adjust the number of proteins to be displayed on the heatmap 
 #' @param clustering Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.
-#' @param width width of the saved file. Default is 10.
-#' @param height height of the saved file. Default is 10.
+#' @param width width of the saved file in pixels. Default is 800.
+#' @param height height of the saved file in pixels. Default is 600.
 #' @param which.Comparison list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.
 #' @param which.Protein Protein list to draw comparison plots. List can be names of Proteins or order numbers of Proteins from levels(testResultMultiComparisons$ComparisonResult$Protein). Default is "all", which generates all comparison plots for each protein.
 #' @param address the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.
@@ -104,14 +104,17 @@ groupComparisonPlots = function(
     all_labels = as.character(unique(data$Label))
     log_base_FC = ifelse(is.element("log2FC", colnames(data)), 2, 10)
     
-    getOption("MSstatsLog")("INFO", "MSstats - groupComparisonPlots function")
     chosen_labels = .checkGCPlotsInput(type, logBase.pvalue, which.Comparison,
                                        all_labels)
     input = input[Label %in% chosen_labels]
     input[, Protein := factor(Protein)]
     input[, Label := factor(Label)]
-    warning("Avoid plotting all proteins as it can take a large amount of time 
+    
+    if(type == "HEATMAP" || type == "COMPARISONPLOT") {
+        warning("Avoid plotting all proteins as it can take a large amount of time 
             to download the files")
+    }
+    
     if(isPlotly & address != FALSE) {
         print("Plots will be saved as .HTML file as plotly is selected, set isPlotly = FALSE, if 
             you want to generate PDF using ggplot2")
@@ -155,7 +158,7 @@ groupComparisonPlots = function(
         if(isPlotly) {
             for(i in seq_along(plots)) {
                 plot <- plots[[i]]
-                plotly_plot <- .convertGgplot2Plotly(plot,tips=c("logFC"))
+                plotly_plot <- .convertGgplot2Plotly(plot,tips=c("text"))
                 plotly_plots[[i]] = list(plotly_plot)
             }
             if(address != FALSE) {
@@ -332,9 +335,9 @@ groupComparisonPlots = function(
     } else {
         logFC_cutoff = log(FCcutoff, log_base_FC)
     }
-    input[, colgroup := ifelse(adj.pvalue >= sig, "black",
-                               ifelse(logFC > logFC_cutoff,
-                                      "red", "blue"))]
+    input[, colgroup := ifelse(adj.pvalue <= sig & logFC >= logFC_cutoff, "red",
+                                ifelse(adj.pvalue <= sig & logFC <= -logFC_cutoff, "blue", 
+                                        "black"))]
     input[, colgroup := factor(colgroup, levels = c("black", "blue", "red"))]
     input[, Protein := as.character(Protein)]
     input[!is.na(issue) & issue == "oneConditionMissing", 
@@ -366,7 +369,7 @@ groupComparisonPlots = function(
         plot = .makeVolcano(single_label, label_name, log_base_FC, log_base_pval, x.lim, ProteinName, dot.size,
                             y.limdown, y.limup, text.size, FCcutoff, sig, x.axis.size, y.axis.size,
                             legend.size, log_adjp)
-        print(plot)
+        if (!isPlotly) print(plot)
         plots[[i]] = plot
     }
     if (address != FALSE) {
@@ -418,9 +421,9 @@ groupComparisonPlots = function(
         vjust = ifelse(text.angle != 0, 1, 0.5)
         
         plot = .makeComparison(single_protein, log_base_FC, dot.size, x.axis.size,
-                               y.axis.size, text.angle, hjust, vjust, y.limdown, 
-                               y.limup)
-        print(plot)
+                               y.axis.size, text.angle, hjust, vjust, y.limdown,
+                               y.limup, sig)
+        if (!isPlotly) print(plot)
         plots[[i]] = plot
     }
     if (address != FALSE) {

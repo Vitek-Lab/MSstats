@@ -28,6 +28,7 @@
 #' head(input_informative)
 #' 
 MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2) {
+    checkmate::assertChoice(method, c("all", "top3", "topN", "highQuality"))
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
     } else if (method == "highQuality") {
@@ -73,28 +74,22 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @return data.table
 #' @keywords internal
 .selectHighQualityFeatures = function(input, min_feature_count) {
-    PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = is_censored = NULL
-    is_obs = log2inty = LABEL = NULL
-    
-    cols = c("PROTEIN", "PEPTIDE", "FEATURE", "originalRUN", "LABEL", 
-             "ABUNDANCE", "censored")
-    cols = intersect(cols, colnames(input))
-    input = input[, cols, with = FALSE]
-    if (!("censored" %in% cols)) {
-        input$censored = FALSE
-    } 
-    data.table::setnames(input, "censored", "is_censored")
+    PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = censored = NULL
+    is_obs = log2inty = is_censored = LABEL = NULL
+
+    has_censored = is.element("censored", colnames(input))
     input = input[, list(protein = as.character(PROTEIN),
                          peptide = as.character(PEPTIDE),
                          feature = as.character(FEATURE),
                          run = as.character(originalRUN),
                          label = as.character(LABEL),
-                         log2inty = ifelse(!(is.na(ABUNDANCE) | is_censored),
-                                           ABUNDANCE, NA),
-                         is_censored)]
-    input[, is_obs := !(is.na(log2inty) | is_censored)]
+                         log2inty = ABUNDANCE,
+                         is_censored = if (has_censored) censored else FALSE)]
+    # Censored or missing intensities are not observations.
+    input[is_censored | is.na(log2inty), log2inty := NA]
+    input[, is_obs := !is.na(log2inty)]
     input[, is_censored := NULL]
-    
+
     features_quality = data.table::rbindlist(lapply(split(input, input$label),
                                                     .flagUninformativeSingleLabel,
                                                     min_feature_count = min_feature_count))

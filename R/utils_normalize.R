@@ -28,8 +28,13 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     normalization_method = toupper(normalization_method)
     if (normalization_method == "NONE" | normalization_method == "FALSE") {
         return(input)
-    } else if (normalization_method == "EQUALIZEMEDIANS") {
+    }
+
+    if (normalization_method == "EQUALIZEMEDIANS") {
         input = .normalizeMedian(input)
+        if ("H" %in% input$LABEL) {
+            input[, is_labeled_ref := LABEL == "H"]
+        }
     } else if (normalization_method == "QUANTILE") {
         input = .normalizeQuantile(input)
     } else if (normalization_method == "GLOBALSTANDARDS") {
@@ -56,8 +61,8 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
     input[, ABUNDANCE_FRACTION := median(ABUNDANCE_RUN, na.rm = TRUE),
           by = "FRACTION"]
     input[, ABUNDANCE := ABUNDANCE - ABUNDANCE_RUN + ABUNDANCE_FRACTION]
-    input = input[, !(colnames(input) %in% c("ABUNDANCE_RUN", "ABUNDANCE_FRACTION")),
-                  with = FALSE]
+    data.table::set(input, j = "ABUNDANCE_RUN", value = NULL)
+    data.table::set(input, j = "ABUNDANCE_FRACTION", value = NULL)
     getOption("MSstatsLog")("Normalization based on median: OK")
     input
 }
@@ -191,54 +196,68 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' @keywords internal
 .normalizeGlobalStandards = function(input, peptides_dict, standards) {
     PeptideSequence = PEPTIDE = PROTEIN = median_by_fraction = NULL
-    Standard = FRACTION = LABEL = ABUNDANCE = RUN = GROUP = NULL
-    
-    proteins = as.character(unique(input$PROTEIN))
-    means_by_standard = unique(input[, list(RUN)])
-    for (standard_id in seq_along(standards)) {
-        peptide_name = unlist(peptides_dict[PeptideSequence == standards[standard_id],
-                                            as.character(PEPTIDE)], FALSE, FALSE)
-        if (length(peptide_name) > 0) {
-            standard = input[PEPTIDE == peptide_name, ]
-        } else {
-            if (standards[standard_id] %in% proteins) {
-                standard = input[PROTEIN == standards[standard_id], ]
-            } else {
-                msg = paste("global standard peptides or proteins, ",
-                            standards[standard_id],", is not in dataset.",
-                            "Please check whether 'nameStandards' input is correct or not.")
-                getOption("MSstatsLog")("ERROR", msg)
-                stop(msg)
-            }
+    Standard = FRACTION = LABEL = ABUNDANCE = RUN = median_by_run = NULL
+
+    input_with_peptides <- merge(input, peptides_dict, by = "PEPTIDE", all.x = TRUE)
+    is_unlabeled <- length(standards) == 1 && standards == "unlabeled"
+    if (is_unlabeled) {
+        standards = unique(input_with_peptides[is.na(input_with_peptides$LABEL), ]$PeptideSequence)
+        if (length(standards) == 0) {
+            msg = "nameStandards = 'unlabeled' but no unlabeled peptides found in data."
+            getOption("MSstatsLog")("ERROR", msg)
+            stop(msg)
         }
-        mean_by_run = standard[GROUP != "0" & !is.na(ABUNDANCE),
-                               list(mean_abundance = mean(ABUNDANCE, na.rm = TRUE)),
-                               by = "RUN"]
-        colnames(mean_by_run)[2] = paste0("meanStandard", standard_id)
-        means_by_standard = merge(means_by_standard, mean_by_run,
-                                  by = "RUN", all.x = TRUE)
     }
-    means_by_standard = data.table::melt(means_by_standard, id.vars = "RUN",
-                                         variable.name = "Standard", value.name = "ABUNDANCE")
-    means_by_standard[, mean_by_run := mean(ABUNDANCE, na.rm = TRUE), by = "RUN"]
-    means_by_standard = merge(means_by_standard, unique(input[, list(RUN, FRACTION)]),
-                              by = "RUN")
-    means_by_standard[, median_by_fraction := median(mean_by_run, na.rm = TRUE),
-                      by = "FRACTION"]
-    means_by_standard[, ABUNDANCE := NULL]
-    means_by_standard[, Standard := NULL]
-    means_by_standard = unique(means_by_standard)
-    
-    input = merge(input, means_by_standard, all.x = TRUE, by = c("RUN", "FRACTION"))
-    input[, ABUNDANCE := ifelse(LABEL == "L", ABUNDANCE - mean_by_run + median_by_fraction, ABUNDANCE)]
-    
-    if (data.table::uniqueN(input$FRACTION) == 1L) {
-        msg = "Normalization : normalization with global standards protein - okay"
+    standards_data <- input_with_peptides[
+        (PeptideSequence %in% standards | PROTEIN %in% standards) &
+            !is.na(ABUNDANCE)
+    ]
+    missing_standards <- standards[
+        !standards %in% c(standards_data$PeptideSequence, standards_data$PROTEIN)
+    ]
+    if (length(missing_standards) > 0) {
+        msg <- paste("Global standard peptides or proteins,",
+                     paste(missing_standards, collapse = ", "),
+                     "are not in dataset. Please check whether 'nameStandards' input is correct.")
+        getOption("MSstatsLog")("ERROR", msg)
+        stop(msg)
+    }
+    standards_data[, standard := ifelse(!is.na(PeptideSequence) & PeptideSequence %in% standards,
+                                        PeptideSequence,
+                                        PROTEIN)]
+    if (is_unlabeled) {
+        run_summaries <- standards_data[,
+                                        list(median_by_run = median(ABUNDANCE, na.rm = TRUE)),
+                                        by = "RUN"]
+        run_summaries <- merge(run_summaries, unique(input[, list(RUN, FRACTION)]), by = "RUN")
+        run_summaries[, median_by_fraction := median(median_by_run, na.rm = TRUE), by = "FRACTION"]
     } else {
-        msg = "Normalization : normalization with global standards protein - okay"
+        medians_by_standard <- standards_data[,
+                                              list(median_abundance = median(ABUNDANCE, na.rm = TRUE)),
+                                              by = .(RUN, standard)
+        ]
+        medians_by_standard <- dcast(medians_by_standard,
+                                     RUN ~ standard,
+                                     value.var = "median_abundance")
+        medians_by_standard <- data.table::melt(medians_by_standard, id.vars = "RUN",
+                                                variable.name = "Standard", value.name = "ABUNDANCE")
+        medians_by_standard[, median_by_run := median(ABUNDANCE, na.rm = TRUE), by = "RUN"]
+        medians_by_standard <- merge(medians_by_standard, unique(input[, list(RUN, FRACTION)]),
+                                     by = "RUN")
+        medians_by_standard[, median_by_fraction := median(median_by_run, na.rm = TRUE),
+                            by = "FRACTION"]
+        medians_by_standard[, ABUNDANCE := NULL]
+        medians_by_standard[, Standard := NULL]
+        run_summaries <- unique(medians_by_standard)
     }
-    getOption("MSstatsLog")("INFO", msg)
-    input[ , !(colnames(input) %in% c("mean_by_run", "median_by_fraction")), with = FALSE]
+
+    input = merge(input, run_summaries, all.x = TRUE, by = c("RUN", "FRACTION"))
+    input[, ABUNDANCE := ABUNDANCE - median_by_run + median_by_fraction]
+
+    getOption("MSstatsLog")("INFO", "Normalization : normalization with global standards protein - okay")
+    data.table::set(input, j = "median_by_run", value = NULL)
+    data.table::set(input, j = "median_by_fraction", value = NULL)
+    input
 }
 
 
@@ -265,7 +284,7 @@ MSstatsNormalize = function(input, normalization_method, peptides_dict = NULL, s
 #' 
 MSstatsMergeFractions = function(input) {
     ABUNDANCE = INTENSITY = GROUP_ORIGINAL = SUBJECT_ORIGINAL = RUN = NULL
-    originalRUN = FRACTION = TECHREPLICATE = tmp = merged = newRun = NULL
+    originalRUN = FRACTION = TECHREPLICATE = tmp = newRun = NULL
     ncount = FEATURE = NULL
     
     input[!is.na(ABUNDANCE) & ABUNDANCE < 0, "ABUNDANCE"] = 0
@@ -292,7 +311,7 @@ MSstatsMergeFractions = function(input) {
                 run_info[, GROUP_ORIGINAL := as.character(GROUP_ORIGINAL)]
                 run_info[, SUBJECT_ORIGINAL := as.character(SUBJECT_ORIGINAL)]
                 for (k in seq_len(nrow(run_info))) {
-                    input[originalRUN %in% run_info[k, 4:ncol(run_info)], "newRun"] = paste(paste(run_info[k, 1:4], collapse = "_"), 'merged', sep = "_")   
+                    input[originalRUN %in% run_info$originalRUN[k], "newRun"] = paste(paste(run_info[k, 1:4], collapse = "_"), 'merged', sep = "_")
                 }
                 
                 select_fraction = input[!is.na(ABUNDANCE) & ABUNDANCE > 0, 
@@ -321,29 +340,45 @@ MSstatsMergeFractions = function(input) {
                 getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
-                match_runs[, merged := "merged"]
-                match_runs[, newRun := do.call(paste, c(.SD, sep = "_")), 
-                           .SDcols = c(1:3, ncol(match_runs))]
-                match_runs = unique(match_runs[, list(GROUP_ORIGINAL,
-                                                      SUBJECT_ORIGINAL,
-                                                      newRun)])
-                
-                input = merge(input, match_runs,
-                              by = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
-                              all.x = TRUE)
+                # dcast pivoted fractions into columns, so the fraction columns
+                # are everything that is not a sample-identifier column.
+                fraction_cols = setdiff(colnames(match_runs),
+                                        c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"))
+                # Use the first fraction's run as the sample's representative run.
+                first_fraction_run = match_runs[[fraction_cols[1]]]
+                # Build the merged-run name: <group>_<subject>_<run>_merged.
+                match_runs[, newRun := paste(GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                                             first_fraction_run, "merged",
+                                             sep = "_")]
+                # Reduce to a (group, subject) -> merged-run lookup table.
+                match_runs = match_runs[, list(GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                                               newRun)]
+                # For each input row, find its sample's row in the lookup.
+                nr_idx = match_runs[input,
+                                    on = c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
+                                    which = TRUE, mult = "first"]
+                # Write that merged-run name onto every input row.
+                data.table::set(input, j = "newRun",
+                                value = match_runs$newRun[nr_idx])
+                # Count, per feature/fraction, the rows observed above zero.
                 select_fraction = input[!is.na(ABUNDANCE) & input$ABUNDANCE > 0,
                                         list(ncount = .N),
                                         by = c("FEATURE", "FRACTION")]
+                # Keep only feature/fraction combinations seen at least once.
                 select_fraction = select_fraction[ncount != 0]
-                select_fraction[, tmp := paste(FEATURE, FRACTION, sep = "_")]
-                input$tmp = paste(input$FEATURE, input$FRACTION, sep = "_")
-                input = input[tmp %in% select_fraction$tmp, ]
-                input$originalRUN = input$newRun
-                input$RUN = input$originalRUN
-                input$RUN = factor(input$RUN, levels = unique(input$RUN), 
-                                   labels = seq_along(unique(input$RUN)))
-                input = input[, !(colnames(input) %in% c('tmp','newRun')), 
-                              with = FALSE]
+                # Mark which input rows belong to a kept combination (NA = none).
+                keep_idx = select_fraction[input,
+                                           on = c("FEATURE", "FRACTION"),
+                                           which = TRUE, mult = "first"]
+                # Drop rows whose feature/fraction was never observed.
+                input = input[!is.na(keep_idx)]
+                # The merged run replaces the original per-fraction run.
+                input[, originalRUN := newRun]
+                # Renumber RUN as a factor, one level per merged run.
+                input[, RUN := factor(newRun, levels = unique(newRun),
+                                      labels = seq_along(unique(newRun)))]
+                # Drop the temporary newRun helper column.
+                data.table::set(input, j = "newRun", value = NULL)
             }
         }
     }

@@ -62,21 +62,25 @@
 
 #' Fit Tukey median polish
 #' @param input data.table with data for a single protein
-#' @param is_labeled logical, if TRUE, data is coming from an SRM experiment
-#' @inheritParams MSstatsSummarize
+#' @param is_labeled_reference logical, if TRUE, H channel is used as a
+#'   normalization reference (SRM experiment): L abundances are adjusted by
+#'   subtracting the H value and adding back the H median, and only L results
+#'   are returned. If FALSE (e.g. protein turnover), each label is summarized
+#'   independently and results for all labels are returned.
+#' @inheritParams MSstatsSummarizeWithSingleCore
 #' @return data.table
 #' @keywords internal
-.runTukey = function(input, is_labeled, censored_symbol, remove50missing) {
+.runTukey = function(input, is_labeled_reference, censored_symbol, remove50missing) {
     Protein = RUN = newABUNDANCE = NULL
-    
+
     if (nlevels(input$FEATURE) > 1) {
-        tmp_result = .fitTukey(input)
-    } else { 
-        if (is_labeled) {
+        tmp_result = .fitTukey(input, is_labeled_reference)
+    } else {
+        if (is_labeled_reference) {
             tmp_result = .adjustLRuns(input, TRUE)
+            tmp_result[, LABEL := "L"]
         } else {
-            tmp_result = input[input$LABEL == "L", 
-                               list(RUN, LogIntensities = newABUNDANCE)]
+            tmp_result = input[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
         }
     }
     tmp_result[, Protein := unique(input$PROTEIN)]
@@ -88,20 +92,22 @@
 #' @inheritParams .runTukey
 #' @return data.table
 #' @keywords internal
-.fitTukey = function(input) {
+.fitTukey = function(input, is_labeled_reference) {
     LABEL = RUN = newABUNDANCE = NULL
-    
+
     features = as.character(unique(input$FEATURE))
     wide = data.table::dcast(LABEL + RUN ~ FEATURE, data = input,
                              value.var = "newABUNDANCE", keep = TRUE)
     tmp_fitted = median_polish_summary(as.matrix(wide[, features, with = FALSE]))
     wide[, newABUNDANCE := tmp_fitted]
     tmp_result = wide[, list(LABEL, RUN, newABUNDANCE)]
-    
-    if (data.table::uniqueN(input$LABEL) == 2) {
+
+    if (is_labeled_reference) {
         tmp_result = .adjustLRuns(tmp_result)
+        tmp_result[, list(LABEL = "L", RUN, LogIntensities = newABUNDANCE)]
+    } else {
+        tmp_result[, list(LABEL, RUN, LogIntensities = newABUNDANCE)]
     }
-    tmp_result[, list(RUN, LogIntensities = newABUNDANCE)]
 }
 
 
@@ -133,13 +139,9 @@
 #' @keywords internal
 .getNonMissingFilterStats = function(input, censored_symbol) {
     if (!is.null(censored_symbol)) {
-        if (censored_symbol == "NA") {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored
-        } else {
-            nonmissing_filter = input$LABEL == "L" & !is.na(input$newABUNDANCE) & !input$censored 
-        }
+        nonmissing_filter = !is.na(input$newABUNDANCE) & !input$censored
     } else {
-        nonmissing_filter = input$LABEL == "L" & !is.na(input$INTENSITY)
+        nonmissing_filter = !is.na(input$INTENSITY)
     }
     nonmissing_filter = nonmissing_filter & input$n_obs_run > 0 & input$n_obs > 1
     nonmissing_filter
@@ -156,24 +158,33 @@
 #' @keywords internal
 .fitLinearModel = function(input, is_single_feature, is_labeled,
                            equal_variances) {
+    if (all(!is.na(input$weights))){
+        weight_input = input$weights
+    } else {
+        weight_input = NULL
+    }
+    
     if (!is_labeled) {
         if (is_single_feature) {
-            linear_model = lm(ABUNDANCE ~ RUN , data = input)
+            linear_model = lm(newABUNDANCE ~ RUN , data = input, 
+                              weights=weight_input)
         } else {
-            linear_model = lm(ABUNDANCE ~ FEATURE + RUN , data = input)
+            linear_model = lm(newABUNDANCE ~ FEATURE + RUN, 
+                              data = input, weights=weight_input)
         }
     } else {
         if (is_single_feature) {
-            linear_model = lm(ABUNDANCE ~ RUN + ref , data = input)
+            linear_model = lm(ABUNDANCE ~ RUN + ref_covariate, data = input)
         } else {
-            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref, data = input)
+            linear_model = lm(ABUNDANCE ~ FEATURE + RUN + ref_covariate, data = input)
         }
     }
     if (!equal_variances) {
-        linear_model = .updateUnequalVariances(input = input, 
+        linear_model = .updateUnequalVariances(input = input,
                                                fit = linear_model,
                                                num_iter = 1)
     }
+    linear_model$model = NULL
     linear_model
 }
 
@@ -187,27 +198,25 @@
 #' @return merMod
 #' @keywords internal
 .updateUnequalVariances = function(input, fit, num_iter) {
-    weight = NULL
-    
+    weight = abs.resids = loess.fitted = NULL
+    if (!data.table::is.data.table(input)) {
+        input = data.table::as.data.table(input)
+    }
     for (i in seq_len(num_iter)) {
         if (i == 1) {
-            abs.resids = data.frame(abs.resids = abs(fit$residuals))
-            fitted = data.frame(fitted = fit$fitted.values)
-            input = data.frame(input, 
-                               "abs.resids" = abs.resids, 
-                               "fitted" = fitted)
+            input[, abs.resids := abs(fit$residuals)]
+            input[, fitted := fit$fitted.values]
         }
         fit.loess = loess(abs.resids ~ fitted, data = input)
-        loess.fitted = data.frame(loess.fitted = fitted(fit.loess))
-        input = data.frame(input, "loess.fitted" = loess.fitted)
-        ## loess fitted valuaes are predicted sd
-        input$weight = 1 / (input$loess.fitted ^ 2)
-        input = input[, !(colnames(input) %in% "abs.resids")]
+        input[, loess.fitted := fitted(fit.loess)]
+        ## loess fitted values are predicted sd
+        input[, weight := 1 / (loess.fitted ^ 2)]
+        input[, abs.resids := NULL]
         ## re-fit using weight
         wls.fit = lm(formula(fit), data = input, weights = weight)
-        abs.resids = data.frame(abs.resids = abs(wls.fit$residuals))
-        input = data.frame(input, "abs.resids" = abs.resids)
-        input = input[, -which(colnames(input) %in% c("loess.fitted", "weight"))]
+        input[, abs.resids := abs(wls.fit$residuals)]
+        input[, loess.fitted := NULL]
+        input[, weight := NULL]
     }
     wls.fit
 }

@@ -9,10 +9,10 @@ dataProcess(
   logTrans = 2,
   normalization = "equalizeMedians",
   nameStandards = NULL,
-  featureSubset = "all",
+  featureSubset = "topN",
   remove_uninformative_feature_outlier = FALSE,
   min_feature_count = 2,
-  n_top_feature = 3,
+  n_top_feature = 100,
   summaryMethod = "TMP",
   equalFeatureVar = TRUE,
   censoredInt = "NA",
@@ -23,7 +23,9 @@ dataProcess(
   use_log_file = TRUE,
   append = FALSE,
   verbose = TRUE,
-  log_file_path = NULL
+  log_file_path = NULL,
+  numberOfCores = 1,
+  aft_iterations = 90
 )
 }
 \arguments{
@@ -37,16 +39,18 @@ There are three different normalizations supported:
 based on reference signals is performed. 
 'quantile' represents quantile normalization based on reference signals 
 'globalStandards' represents normalization with global standards proteins. 
-If FALSE, no normalization is performed.}
+If FALSE, no normalization is performed.  See MSstats vignettes for 
+recommendations on which normalization option to use.}
 
 \item{nameStandards}{optional vector of global standard peptide names. 
 Required only for normalization with global standard peptides.}
 
-\item{featureSubset}{"all" (default) uses all features that the data set has. 
+\item{featureSubset}{"topN" (default) uses top N features which has highest average of log-intensity across runs. 
 "top3" uses top 3 features which have highest average of log-intensity across runs. 
-"topN" uses top N features which has highest average of log-intensity across runs. 
+"all" uses all features that the data set has (not recommended in DIA experiments).
 It needs the input for n_top_feature option. 
-"highQuality" flags uninformative feature and outliers.}
+"highQuality" flags uninformative feature and outliers. See MSstats vignettes for 
+recommendations on which feature selection option to use.}
 
 \item{remove_uninformative_feature_outlier}{optional. Only required if 
 featureSubset = "highQuality". TRUE allows to remove 
@@ -59,12 +63,15 @@ for run-level summarization.}
 Defines a minimum number of informative features a protein needs to be considered
 in the feature selection algorithm.}
 
-\item{n_top_feature}{optional. Only required if featureSubset = 'topN'.
-It that case, it specifies number of top features that will be used.
-Default is 3, which means to use top 3 features.}
+\item{n_top_feature}{Specifies the number of top features to use in summarization (100 default). 
+Only required if featureSubset = 'topN'.  
+Default is 100, which means to use top 100 features. 
+Smaller numbers can be set to improve processing times. This option is by default on 
+at a high number (100) to improve processing times without affecting differential analysis.}
 
 \item{summaryMethod}{"TMP" (default) means Tukey's median polish, 
-which is robust estimation method. "linear" uses linear mixed model.}
+which is robust estimation method. "linear" uses linear mixed model. If 
+anomaly detection algorithm is performed, "linear" must be used.}
 
 \item{equalFeatureVar}{only for summaryMethod = "linear". default is TRUE. 
 Logical variable for whether the model should account for heterogeneous variation 
@@ -73,19 +80,23 @@ variance among intensities from features. FALSE means that we cannot assume equa
 variance among intensities from features, then we will account for heterogeneous 
 variation from different features.}
 
-\item{censoredInt}{Missing values are censored or at random. 
-'NA' (default) assumes that all 'NA's in 'Intensity' column are censored. 
-'0' uses zero intensities as censored intensity. 
-In this case, NA intensities are missing at random. 
-The output from Skyline should use '0'. 
-Null assumes that all NA intensites are randomly missing.}
+\item{censoredInt}{Indicates how censored missing values are encoded in the
+'Intensity' column. 'NA' (default) treats all NA intensities as left-censored
+(i.e., below the limit of detection). '0' treats zero intensities as
+left-censored; in this case NA intensities are assumed to be missing at
+random and are not censored. Skyline output should use '0'. NULL assumes
+that all missing values are missing at random — no values are treated as
+censored, and imputation is disabled (MBimpute is ignored).}
 
-\item{MBimpute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'. 
-TRUE (default) imputes 'NA' or '0' (depending on censoredInt option) 
-by Accelated failure model. FALSE uses the values assigned by cutoffCensored.}
+\item{MBimpute}{only for summaryMethod = "TMP" and censoredInt = 'NA' or '0'.
+TRUE (default) imputes censored missing values using an Accelerated Failure
+Time model. FALSE excludes censored observations from summarization entirely,
+treating them as missing at random; no imputed values are introduced.
+Has no effect when censoredInt = NULL, since no values are considered censored.
+See MSstats vignettes for recommendations on which imputation option to use.}
 
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the runs 
-which have more than 50\% missing values. FALSE is default.}
+\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins 
+where every run has at least 50\% missing values for each peptide. FALSE is default.}
 
 \item{fix_missing}{Optional, same as the `fix_missing` parameter in MSstatsConvert::MSstatsBalancedDesign function}
 
@@ -104,6 +115,51 @@ to the console.}
 data processing will be saved. 
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
+
+\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
+a logfile named `MSstats_dataProcess_log_progress.log` is created to 
+track progress. Only works for Linux & Mac OS. Default is 1.}
+
+\item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
+}
+\value{
+A list containing:
+\describe{
+  \item{FeatureLevelData}{A data frame with feature-level information after processing. Columns include:
+    \describe{
+      \item{PROTEIN}{Identifier for the protein associated with the feature.}
+      \item{PEPTIDE}{Identifier for the peptide sequence.}
+      \item{TRANSITION}{Identifier for the transition, typically representing a specific ion pair.}
+      \item{FEATURE}{Unique identifier for the feature, which could be a combination of peptide and transition.}
+      \item{LABEL}{Specifies the isotopic labeling of peptides, notably for SRM-based experiments. "L" indicates light-labeled peptides while "H" denotes heavy-labeled peptides.}
+      \item{GROUP}{Experimental group identifier.}
+      \item{RUN}{Identifier for the specific MS run.}
+      \item{SUBJECT}{Subject identifier within the experimental group.}
+      \item{FRACTION}{Fraction identifier if fractionation was performed.}
+      \item{originalRUN}{Original run identifier before any processing.}
+      \item{censored}{Logical indicator of whether the intensity value is considered missing or below limit of detection.}
+      \item{INTENSITY}{Original intensity measurement of the feature in the given run.}
+      \item{ABUNDANCE}{Processed abundance or intensity value after log-transformation and normalization.}
+      \item{newABUNDANCE}{The ABUNDANCE column but includes imputed missing values. It is the column that is used for protein summarization.}
+      \item{predicted}{Predicted intensity values for censored data, typically derived from a statistical model.}
+    }
+  }
+  \item{ProteinLevelData}{A data frame with run-level summarized information for each protein. Columns include:
+    \describe{
+      \item{RUN}{Identifier for the specific MS run.}
+      \item{Protein}{Identifier for the protein.}
+      \item{LogIntensities}{Log-transformed intensities for the protein in each run.}
+      \item{originalRUN}{Original run identifier before any processing.}
+      \item{GROUP}{Experimental group identifier.}
+      \item{SUBJECT}{Subject identifier within the experimental group.}
+      \item{TotalGroupMeasurements}{Total number of feature measurements for the protein in the given group.}
+      \item{NumMeasuredFeatures}{Number of features measured for the protein in the given run.}
+      \item{MissingPercentage}{Percentage of missing feature values for the protein in the given run.}
+      \item{more50missing}{Logical indicator of whether more than 50 percent of the features values are missing for the protein in the given run.}
+      \item{NumImputedFeature}{Number of features for which values were imputed due to missing or censored data for the protein in the given run.}
+    }
+  }
+}
 }
 \description{
 Process MS data: clean, normalize and summarize before differential analysis

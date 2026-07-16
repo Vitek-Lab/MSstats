@@ -4,10 +4,25 @@
 \alias{MSstatsSummarizeSingleLinear}
 \title{Linear model-based summarization for a single protein}
 \usage{
-MSstatsSummarizeSingleLinear(single_protein, equal_variances = TRUE)
+MSstatsSummarizeSingleLinear(
+  single_protein,
+  impute,
+  censored_symbol,
+  remove50missing,
+  aft_iterations = 90,
+  equal_variances = TRUE
+)
 }
 \arguments{
 \item{single_protein}{feature-level data for a single protein}
+
+\item{impute}{boolean for whether imputation should be performed}
+
+\item{censored_symbol}{Character string indicating how censored values are represented}
+
+\item{remove50missing}{if TRUE, proteins with more than 50\% missing values in each run are removed}
+
+\item{aft_iterations}{number of iterations for AFT model fitting}
 
 \item{equal_variances}{if TRUE, observation are assumed to be homoskedastic}
 }
@@ -31,7 +46,8 @@ input = MSstatsHandleMissing(input, "TMP", TRUE, "NA", 0.999)
 input = MSstatsSelectFeatures(input, "all")
 input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
 input_split = split(input, input$PROTEIN)
-single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]])
+single_protein_summary = MSstatsSummarizeSingleLinear(input_split[[1]], impute, cens, TRUE, 100)
 head(single_protein_summary[[1]])
+
 
 }

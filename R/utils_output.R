@@ -1,7 +1,7 @@
 #' Post-processing output from MSstats summarization
 #' 
 #' @param input `data.table` in MSstats format
-#' @param summarized output of the `MSstatsSummarize` function
+#' @param summarized output of the `MSstatsSummarizeWithSingleCore` function
 #' @param processed output of MSstatsSelectFeatures
 #' @param method name of the summarization method
 #' (`summaryMethod` parameter to `dataProcess`)
@@ -10,12 +10,10 @@
 #' @param censored_symbol censored missing value indicator 
 #' (`censoredInt` parameter to `dataProcess`)
 #' 
-#' @return list that consists of the following elements:
-#' \itemize{
-#' \item{FeatureLevelData}{ - feature-level data after processing} 
-#' \item{ProteinLevelData}{ - protein-level (summarized) data}
-#' \item{SummaryMethod}{ (string) - name of summarization method that was used}
-#' }
+#' @return A list with the following elements:
+#'   \item{FeatureLevelData}{Feature-level data after processing.}
+#'   \item{ProteinLevelData}{Protein-level (summarized) data.}
+#'   \item{SummaryMethod}{String: name of the summarization method used.}
 #' 
 #' @export
 #' 
@@ -32,51 +30,55 @@
 #' input = MSstatsSelectFeatures(input, "all")
 #' processed = getProcessed(input)
 #' input = MSstatsPrepareForSummarization(input, method, impute, cens, FALSE)
-#' input_split = split(input, input$PROTEIN)
-#' summarized = MSstatsSummarize(input_split, method, impute, cens, FALSE, TRUE)
+#' summarized = MSstatsSummarizeWithSingleCore(input, method, impute, cens, FALSE, TRUE, 100)
 #' output = output = MSstatsSummarizationOutput(input, summarized, processed,
 #' method, impute, cens)
 #' 
-MSstatsSummarizationOutput = function(input, summarized, processed, 
+MSstatsSummarizationOutput = function(input, summarized, processed,
                                       method, impute, censored_symbol) {
     LABEL = TotalGroupMeasurements = GROUP = Protein = RUN = NULL
-    
-    input = .finalizeInput(input, summarized, method, impute, censored_symbol)
-    summarized = lapply(summarized, function(x) x[[1]])
-    summarized = data.table::rbindlist(summarized)
-    if (inherits(summarized, "try-error")) {
-        msg = paste("*** error : can't summarize per subplot with ", 
+
+    # Summarization failure is signalled by a NULL `summarized` (the caller
+    # wraps the per-subplot summarization in tryCatch(error = ...) returning
+    # NULL). Guard before unpacking, otherwise .finalizeInput() below joins on
+    # an empty predicted_survival and errors.
+    if (is.null(summarized)) {
+        msg = paste("*** error : can't summarize per subplot with ",
                     method, ".")
         getOption("MSstatsLog")("ERROR", msg)
         getOption("MSstatsMsg")("ERROR", msg)
         rqall = NULL
-        rqmodelqc = NULL
-        workpred = NULL
     } else {
-        input[LABEL == "L", TotalGroupMeasurements := uniqueN(.SD),
-              by = c("PROTEIN", "GROUP"), 
+        predicted_survival = data.table::rbindlist(lapply(summarized, function(x) x[[2]]),
+                                                    fill = TRUE)
+        for (i in seq_along(summarized)) summarized[[i]][[2]] = NULL
+        input = .finalizeInput(input, predicted_survival, method, impute, censored_symbol)
+        rm(predicted_survival)
+        protein_summaries = lapply(summarized, function(x) x[[1]])
+        rm(summarized)
+        summarized = data.table::rbindlist(protein_summaries, fill = TRUE)
+        rm(protein_summaries)
+
+        input[, TotalGroupMeasurements := uniqueN(.SD),
+              by = c("PROTEIN", "GROUP", "LABEL"),
               .SDcols = c("FEATURE", "originalRUN")]
         cols = intersect(c("PROTEIN", "originalRUN", "RUN", "GROUP",
-                           "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", 
+                           "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "LABEL",
                            "TotalGroupMeasurements",
-                           "NumMeasuredFeature", "MissingPercentage", 
+                           "NumMeasuredFeature", "MissingPercentage",
                            "more50missing", "NumImputedFeature"),
                          colnames(input))
-        merge_col = ifelse(is.element("RUN", colnames(summarized)), 
+        merge_col = ifelse(is.element("RUN", colnames(summarized)),
                            "RUN", "SUBJECT_ORIGINAL")
-        lab = unique(input[LABEL == "L", cols, with = FALSE])
-        if (nlevels(input$LABEL) > 1) {
-            lab = lab[GROUP != 0]
-        }
+        lab = unique(input[, cols, with = FALSE])
         lab = lab[, colnames(lab) != "GROUP", with = FALSE]
-        rqall = merge(summarized, lab, by.x = c(merge_col, "Protein"),
-                      by.y = c(merge_col, "PROTEIN"))
+        rqall = merge(summarized, lab, by.x = c(merge_col, "Protein", "LABEL"),
+                      by.y = c(merge_col, "PROTEIN", "LABEL"))
         data.table::setnames(rqall, c("GROUP_ORIGINAL", "SUBJECT_ORIGINAL"),
                              c("GROUP", "SUBJECT"), skip_absent = TRUE)
-        
+
         rqall$GROUP = factor(as.character(rqall$GROUP))
         rqall$Protein = factor(rqall$Protein)
-        rqmodelqc = summarized$ModelQC
     }
     
     if (is.element("RUN", colnames(rqall)) & !is.null(rqall)) {
@@ -86,36 +88,39 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     output_cols = intersect(c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE",
                               "LABEL", "GROUP", "RUN", "SUBJECT", "FRACTION",
                               "originalRUN", "censored", "INTENSITY", "ABUNDANCE",
-                              "newABUNDANCE", "predicted", "feature_quality", 
-                              "is_outlier", "remove"), colnames(input))
-    input = input[, output_cols, with = FALSE]
-    
+                              "newABUNDANCE", "predicted", "feature_quality",
+                              "is_outlier", "remove", "is_labeled_ref"), colnames(input))
+    drop_cols = setdiff(colnames(input), output_cols)
+    for (col in drop_cols) data.table::set(input, j = col, value = NULL)
+
     if (is.element("remove", colnames(processed))) {
-        processed = processed[(remove), 
-                              intersect(output_cols, 
+        processed = processed[(remove),
+                              intersect(output_cols,
                                         colnames(processed)), with = FALSE]
         input = rbind(input, processed, fill = TRUE)
     }
-    list(FeatureLevelData = as.data.frame(input), 
-         ProteinLevelData = as.data.frame(rqall), 
+    data.table::setDF(input)
+    if (!is.null(rqall)) data.table::setDF(rqall)
+    list(FeatureLevelData = input,
+         ProteinLevelData = rqall,
          SummaryMethod = method)
-    
+
 }
 
 
 #' Add summary statistics to dataProcess output
 #' @param input feature-level data
-#' @param summarized protein-level data (list)
+#' @param predicted_survival data.table of predicted survival values used for imputation
 #' @param method summary method
 #' @param impute if TRUE, censored missing values were imputed
 #' @param censored_symbol censored missing value indicator
 #' @keywords internal
-.finalizeInput = function(input, summarized, method, impute, censored_symbol) {
-    if (method == "TMP") {
-        input = .finalizeTMP(input, censored_symbol, impute, summarized)
-    } else {
-        input = .finalizeLinear(input, censored_symbol)
-    }
+.finalizeInput = function(input, predicted_survival, method, impute, censored_symbol) {
+    # if (method == "TMP") {
+    input = .finalizeTMP(input, censored_symbol, impute, predicted_survival)
+    # } else {
+    #     input = .finalizeLinear(input, censored_symbol)
+    # }
     input
 }
 
@@ -123,37 +128,39 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
 #' Summary statistics for output of TMP-based summarization
 #' @inheritParams .finalizeInput
 #' @keywords internal
-.finalizeTMP = function(input, censored_symbol, impute, summarized) {
+.finalizeTMP = function(input, censored_symbol, impute, predicted_survival) {
     NonMissingStats = NumMeasuredFeature = MissingPercentage = LABEL = NULL
     total_features = more50missing = nonmissing_orig = censored = NULL
     INTENSITY = newABUNDANCE = NumImputedFeature = NULL
-    
-    survival_predictions = lapply(summarized, function(x) x[[2]])
-    predicted_survival = data.table::rbindlist(survival_predictions)
+
     if (impute) {
-        cols = intersect(colnames(input), c("newABUNDANCE", 
-                                            "cen", "RUN",
-                                            "FEATURE", "ref"))
-        input = merge(input[, colnames(input) != "newABUNDANCE", with = FALSE], 
-                      predicted_survival,
-                      by = setdiff(cols, "newABUNDANCE"),
-                      all.x = TRUE)
+        join_cols = intersect(intersect(colnames(input),
+                                        colnames(predicted_survival)),
+                              c("cen", "RUN", "FEATURE", "ref_covariate",
+                                "LABEL"))
+        data.table::set(input, j = "newABUNDANCE", value = NULL)
+        idx = predicted_survival[input, on = join_cols, which = TRUE,
+                                 mult = "first"]
+        data.table::set(input, j = "newABUNDANCE",
+                        value = predicted_survival$newABUNDANCE[idx])
+        data.table::set(input, j = "predicted",
+                        value = predicted_survival$predicted[idx])
     }
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
-    input[, NumMeasuredFeature := sum(NonMissingStats), 
-          by = c("PROTEIN", "RUN")]
+    input[, NumMeasuredFeature := sum(NonMissingStats),
+          by = c("PROTEIN", "RUN", "LABEL")]
     input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
     input[, more50missing := MissingPercentage >= 0.5]
     if (!is.null(censored_symbol)) {
         if (is.element("censored", colnames(input))) {
-            input[, nonmissing_orig := LABEL == "L" & !censored]
+            input[, nonmissing_orig := !censored]
         } else {
-            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
+            input[, nonmissing_orig := !is.na(INTENSITY)]
         }
-        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
+        input[is.na(newABUNDANCE), nonmissing_orig := TRUE]
         if (impute) {
-            input[, NumImputedFeature := sum(LABEL == "L" & !nonmissing_orig),
-                  by = c("PROTEIN", "RUN")]
+            input[, NumImputedFeature := sum(!nonmissing_orig),
+                  by = c("PROTEIN", "RUN", "LABEL")]
         } else {
             input[, NumImputedFeature := 0]
         }
@@ -171,17 +178,17 @@ MSstatsSummarizationOutput = function(input, summarized, processed,
     censored = INTENSITY = newABUNDANCE = NumImputedFeature = NULL
     
     input[, NonMissingStats := .getNonMissingFilterStats(.SD, censored_symbol)]
-    input[, NumMeasuredFeature := sum(NonMissingStats), 
-          by = c("PROTEIN", "RUN")]
+    input[, NumMeasuredFeature := sum(NonMissingStats),
+          by = c("PROTEIN", "RUN", "LABEL")]
     input[, MissingPercentage := 1 - (NumMeasuredFeature / total_features)]
     input[, more50missing := MissingPercentage >= 0.5]
     if (!is.null(censored_symbol)) {
         if (is.element("censored", colnames(input))) {
-            input[, nonmissing_orig := LABEL == "L" & !censored]
+            input[, nonmissing_orig := !censored]
         } else {
-            input[, nonmissing_orig := LABEL == "L" & !is.na(INTENSITY)]
+            input[, nonmissing_orig := !is.na(INTENSITY)]
         }
-        input[, nonmissing_orig := ifelse(is.na(newABUNDANCE), TRUE, nonmissing_orig)]
+        input[is.na(newABUNDANCE), nonmissing_orig := TRUE]
         input[, NumImputedFeature := 0]
     }
     input

@@ -2,6 +2,43 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.20.0 (2026-04-23)}{
+    \itemize{
+        \item \strong{Protein turnover analysis}: Added support for multi-label summarization, enabling experiments that use multiple isotope labels to quantify protein synthesis and degradation rates. Each isotope label is now summarized independently, giving more accurate per-label abundance estimates.
+        \item \strong{Protein turnover analysis}: Normalization using unlabeled peptides is now available for protein turnover experiments. Specify \code{nameStandards = "unlabeled"} in \code{dataProcess} to use all unlabeled peptides as references for normalization
+        \item \strong{Profile plots}: Run-level profile plots in \code{dataProcessPlots} now display 95\% confidence interval bars around summarized protein abundance values when applying anomaly score based feature weighting, giving a direct visual indication of quantification uncertainty across biological replicates.
+        \item \strong{Global standards normalization}: The reference signal used for normalization is now computed as the median (instead of the mean) across standard peptide measurements, making the normalization more robust to outlier measurements in the reference channel.
+        \item \strong{Bug fix}: Anomaly-score-based feature weighting could produce invalid weights (division by zero) when all features in a run had identical intensities. A variance floor has also been added to prevent degenerate variance estimates that could distort protein-level summaries.
+    }
+}
+
+\section{Version 4.18.0 (2025-10-15)}{
+    \itemize{
+	    \item Introduced MSstats+ functionalities.
+		\item Added MSstats+ vignette.
+		\item Updated dataProcess function to leverage quantification weights in the form of anomaly scores.
+		\item Updated groupComparison function to leverage variance from summarization in model.
+    }
+}
+
+\section{Version 4.14.0 (2024-10-30)}{
+    \itemize{
+	    \item Introduced GroupComparisonQC plots to visualize quality control.
+		\item Added a new vignette illustrating a full MSstats workflow.
+		\item Fixed bug for designs with technical replicates.
+		\item Optimized memory usage for large datasets.
+		\item Enabled multicore processing for improved performance.
+		\item Added interactive plotting functions using Plotly.
+    }
+}
+
+\section{Version 4.12.0 (2024-05-01)}{
+    \itemize{
+        \item groupComparison : Added numberOfCores parameter to enable parallel processing
+        \item dataProcess : Added numberOfCores parameter to enable parallel processing
+    }
+}
+
 \section{Version 4.10.0 (2023-10-23)}{
     \itemize{
         \item Added functions to convert SDRF annotation files into MSstats annotation format.

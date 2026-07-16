@@ -12,7 +12,8 @@ groupComparison(
   use_log_file = TRUE,
   append = FALSE,
   verbose = TRUE,
-  log_file_path = NULL
+  log_file_path = NULL,
+  numberOfCores = 1
 )
 }
 \arguments{
@@ -38,10 +39,53 @@ to the console.}
 data processing will be saved. 
 If not provided, such a file will be created automatically.
 If `append = TRUE`, has to be a valid path to a file.}
+
+\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
+a logfile named `MSstats_groupComparison_log_progress.log` is created to 
+track progress. Only works for Linux & Mac OS. Default is 1.}
 }
 \value{
-list that consists of three elements: "ComparisonResult" - data.frame with results of statistical testing,
-"ModelQC" - data.frame with data used to fit models for group comparison and "FittedModel" - list of fitted models.
+A list with the following components:
+\describe{
+  \item{ComparisonResult}{A `data.frame` containing the results of the statistical testing for each protein. The columns include:
+    \describe{
+      \item{Protein}{The name of the protein for which the comparison is made.}
+      \item{Label}{The label of the comparison, typically derived from the `contrast.matrix`.}
+      \item{log2FC}{The log2 fold change between the conditions being compared. The base of the logarithm is specified by the `log_base` parameter.
+         \itemize{
+             \item{`log2FC = Inf` or `-Inf`: This occurs when one condition has entirely missing measurements for a protein, resulting in an undefined ratio.}
+             \item{`log2FC` is a numeric value but all other columns are `NA`: This occurs when there is only one sample per condition. Fold change can be estimated, but variance cannot be estimated, so no statistical testing is possible.}
+         }
+      }
+      \item{SE}{The standard error of the log2 fold change estimate. May be `NA` when variance cannot be estimated (e.g., when only one sample per group).}
+      \item{Tvalue}{The t-statistic value for the comparison. May be `NA` when variance cannot be estimated (e.g., when only one sample per group).}
+      \item{DF}{The degrees of freedom associated with the t-statistic. A value of 0 indicates that, although variance could be estimated, the total number of observations is too small to support hypothesis testing.}
+      \item{pvalue}{The p-value for the statistical test of the comparison. Applicable if degrees of freedom is greater than 0}
+      \item{adj.pvalue}{The adjusted p-value using the Benjamini-Hochberg method for controlling the false discovery rate.}
+      \item{issue}{Any issues encountered during the comparison.  NA indicates no issues. "oneConditionMissing" occurs when data for one of the conditions being compared is entirely missing for a particular protein.}
+      \item{MissingPercentage}{The percentage of missing features for a given protein across all runs. This column is included only if missing values were imputed.}
+      \item{ImputationPercentage}{The percentage of features that were imputed for a given protein across all runs. This column is included only if missing values were imputed.}
+    }
+  }
+  \item{ModelQC}{A `data.frame` containing quality control data used to fit models for group comparison. The columns include:
+    \describe{
+      \item{RUN}{Identifier for the specific MS run.}
+      \item{Protein}{Identifier for the protein.}
+      \item{ABUNDANCE}{Summarized intensity for the protein in a given run.}
+      \item{originalRUN}{Original run identifier before any processing.}
+      \item{GROUP}{Experimental group identifier.}
+      \item{SUBJECT}{Subject identifier within the experimental group.}
+      \item{TotalGroupMeasurements}{Total number of feature measurements for the protein in the given group.}
+      \item{NumMeasuredFeatures}{Number of features measured for the protein in the given run.}
+      \item{MissingPercentage}{Percentage of missing feature values for the protein in the given run.}
+      \item{more50missing}{Logical indicator of whether more than 50 percent of the features values are missing for the protein in the given run.}
+      \item{NumImputedFeature}{Number of features for which values were imputed due to missing or censored data for the protein in the given run.}
+      \item{residuals}{Contains the differences between the observed values and the values predicted by the fitted model. }
+      \item{fitted}{The predicted values obtained from the model for a protein measurement for a given run in the dataset. }
+    }
+  }
+  \item{FittedModel}{A list of fitted models for each protein. This is included only if `save_fitted_models` is set to TRUE. Each element of the list corresponds to a protein and contains the fitted model object.}
+}
 }
 \description{
 Whole plot testing

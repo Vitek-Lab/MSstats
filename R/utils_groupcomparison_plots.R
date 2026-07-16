@@ -18,7 +18,6 @@
                               "Result does not have the following comparisons:")
                 msg_2 = paste(wrong_labels, sep = ", ", collapse = ", ")
                 msg = paste(msg_1, msg_2)
-                getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             }
         }
@@ -27,7 +26,6 @@
             if (n_labels < max(selected_labels)) {
                 msg = paste("Please check your selection of comparisons. There are",
                             n_labels, "comparisons in this result.")
-                getOption("MSstatsLog")("ERROR", msg)
                 stop(msg)
             } else {
                 chosen_labels = all_labels[selected_labels]
@@ -191,10 +189,10 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     legend.size, log_adjp
 ) {
     Protein = NULL
-    plot = ggplot(aes_string(x = "logFC", 
-                             y = log_adjp,
-                             color = "colgroup",
-                             label = "Protein"),
+    plot = ggplot(aes(x = .data$logFC, 
+                             y = .data[[log_adjp]],
+                             color = .data$colgroup,
+                             label = .data$Protein),
                   data = input) +
         geom_point(size = dot.size) +
         scale_colour_manual(values = c("gray65", "blue", "red"), 
@@ -205,13 +203,13 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
                            limits = c(y.limdown, y.limup)) +
         labs(title = unique(label_name))
     plot = plot +
-        scale_x_continuous(paste0("Log", log_base_pval, " fold change"),
+        scale_x_continuous(paste0("Log", log_base_FC, " fold change"),
                            limits = c(-x.lim, x.lim))
     if (ProteinName) {
         if (!(length(unique(input$colgroup)) == 1 & any(unique(input$colgroup) == "black"))) {
             plot = plot +
                 geom_text_repel(data = input[input$colgroup != "black", ],
-                                aes(label = Protein),
+                                aes(label = .data$Protein),
                                 size = text.size,
                                 col = "black")
         }
@@ -228,9 +226,9 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     if (!FCcutoff) {
         plot = plot +
             geom_line(data = sigcut,
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6,
+                      linewidth = 0.6,
                       show.legend = TRUE) +
             scale_linetype_manual(values = c("twodash" = 6),
                                   labels = c(paste0("Adj p-value cutoff (", sig, ")"))) +
@@ -239,30 +237,30 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
     }
     if (is.numeric(FCcutoff)) {
         FCcutpos = data.table::setnames(data.table("sigline", 
-                                                   log(FCcutoff, log_base_pval), 
+                                                   log(FCcutoff, log_base_FC), 
                                                    seq(y.limdown, y.limup, length.out = 10), 
                                                    "dotted"),
                                         c("Protein", "logFC", log_adjp, "line"))
         FCcutneg = data.table::setnames(data.table("sigline", 
-                                                   (-log(FCcutoff, log_base_pval)), 
+                                                   (-log(FCcutoff, log_base_FC)), 
                                                    seq(y.limdown, y.limup, length.out = 10), 
                                                    "dotted"),
                                         c("Protein", "logFC", log_adjp, "line"))
         plot = plot +
             geom_line(data = sigcut, 
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6,
+                      linewidth = 0.6,
                       show.legend = TRUE) +
             geom_line(data = FCcutpos,
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6,
+                      linewidth = 0.6,
                       show.legend = TRUE) +
             geom_line(data = FCcutneg,
-                      aes_string(x = "logFC", y = log_adjp, linetype = "line"),
+                      aes(x = .data$logFC, y = .data[[log_adjp]], linetype = .data$line),
                       colour = "darkgrey",
-                      size = 0.6) +
+                      linewidth = 0.6) +
             scale_linetype_manual(values = c("dotted" = 3, "twodash" = 6),
                                   labels = c(paste0("Fold change cutoff (", FCcutoff, ")"),
                                              paste0("Adj p-value cutoff (", sig, ")"))) +
@@ -284,24 +282,25 @@ colMin <- function(data) sapply(data, min, na.rm = TRUE)
 #' @inheritParams groupComparisonPlots
 #' @keywords internal
 .makeComparison = function(
-    input, log_base, dot.size, x.axis.size, y.axis.size, 
-    text.angle, hjust, vjust, y.limdown, y.limup
+    input, log_base, dot.size, x.axis.size, y.axis.size,
+    text.angle, hjust, vjust, y.limdown, y.limup, sig
 ) {
     logFC = ciw = NULL
-    
+    ci_label = paste0("(", (1 - sig) * 100, "% CI)")
     protein = unique(input$Protein)
-    plot = ggplot(input, aes_string(x = "Label", y = "logFC")) +
-        geom_errorbar(aes(ymax = logFC + ciw, ymin = logFC - ciw),
+    plot = ggplot(input, aes(x = .data$Label, y = .data$logFC)) +
+        geom_errorbar(aes(ymax = .data$logFC + .data$ciw, ymin = .data$logFC - .data$ciw),
                       data = input,
                       width = 0.1,
                       colour = "red") +
-        geom_point(size = dot.size, 
+        geom_point(aes(text = paste0("logFC: ", round(.data$logFC, 4), " ± ", round(.data$ciw, 4), " ", ci_label)),
+                   size = dot.size,
                    colour = "darkred") +
         scale_x_discrete('Comparison') +
         geom_hline(yintercept = 0, 
                    linetype = "twodash", 
                    colour = "darkgrey", 
-                   size = 0.6) +
+                   linewidth = 0.6) +
         labs(title = protein) +
         theme_msstats("COMPARISONPLOT", x.axis.size, y.axis.size, 
                       text_angle = text.angle, text_hjust = hjust, 

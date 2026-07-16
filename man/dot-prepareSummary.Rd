@@ -4,16 +4,19 @@
 \alias{.prepareSummary}
 \title{Prepare feature-level data for summarization}
 \usage{
-.prepareSummary(input, method, impute, censored_symbol)
+.prepareSummary(input, impute, censored_symbol, is_labeled_reference = FALSE)
 }
 \arguments{
 \item{input}{data.table}
 
-\item{method}{"TMP" / "linear"}
-
 \item{impute}{logical}
 
 \item{censored_symbol}{"0"/"NA"}
+
+\item{is_labeled_reference}{logical, if TRUE the H channel is a normalization
+reference (SRM) and grouping keys do not include LABEL; if FALSE (e.g.
+protein turnover) LABEL is added to grouping keys so each label is
+processed independently.}
 }
 \value{
 data.table

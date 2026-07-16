@@ -4,3 +4,6 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+appspec.yml
+^\.positai$
+^\.claude$
