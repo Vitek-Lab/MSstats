@@ -249,7 +249,7 @@ groupComparisonPlots = function(
     
     
     
-    if (address != FALSE) {
+    if (address != FALSE & !isPlotly) {
         dev.off()
     }
     if(isPlotly) {
@@ -372,7 +372,7 @@ groupComparisonPlots = function(
         if (!isPlotly) print(plot)
         plots[[i]] = plot
     }
-    if (address != FALSE) {
+    if (address != FALSE & !isPlotly) {
         dev.off()
     }
     if (isPlotly) {
@@ -426,7 +426,7 @@ groupComparisonPlots = function(
         if (!isPlotly) print(plot)
         plots[[i]] = plot
     }
-    if (address != FALSE) {
+    if (address != FALSE & !isPlotly) {
         dev.off()
     }
     if (isPlotly) {
