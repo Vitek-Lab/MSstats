@@ -215,7 +215,7 @@ _Citation counts from [OpenAlex](https://openalex.org), updated monthly. Google 
 | [MSstats (2014)](https://doi.org/10.1093/bioinformatics/btu305) | 1,161 |
 | [MSstats feature selection (2020)](https://doi.org/10.1074/mcp.RA119.001792) | 37 |
 | [MSstats 4.0 (2023)](https://doi.org/10.1021/acs.jproteome.2c00834) | 135 |
-| [MSstats + FragPipe DIA workflow (2024)](https://doi.org/10.1038/s41596-024-01000-3) | 13 |
+| [MSstats & FragPipe DIA workflow (2024)](https://doi.org/10.1038/s41596-024-01000-3) | 13 |
 | [MSstats+ / longitudinal peak quality (2025, preprint)](https://doi.org/10.1101/2025.09.11.675573) | 1 |
 | [MSstatsTMT (2020)](https://doi.org/10.1074/mcp.RA120.002105) | 204 |
 | [MSstatsTMT repeated measures (2023)](https://doi.org/10.1021/acs.jproteome.3c00155) | 14 |
