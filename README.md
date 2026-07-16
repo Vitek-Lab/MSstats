@@ -17,13 +17,10 @@ Data-Dependent Acquisition (DDA/shotgun), and Data-Independent Acquisition
 (DIA/SWATH-MS) experiments, including designs with fractionation. Given
 identified and quantified peaks from upstream tools (Skyline, MaxQuant,
 Proteome Discoverer, Spectronaut, DIA-NN, FragPipe, OpenSWATH, and others),
-MSstats performs normalization, missing value handling, run-level
+MSstats performs normalization, missing value imputation, feature selection, run-level
 summarization, and model-based statistical testing to detect differentially
 abundant proteins or peptides across conditions. Because the underlying
-statistical framework operates on generic quantitative features rather than
-anything protein-specific, it is general enough to apply to other
-targeted/SRM- or DIA-style quantitative signals as well, such as targeted
-metabolomics data.
+statistical framework operates on generic quantitative features, it can be easily extended to other quantitative signals, such as targeted metabolomics data.
 
 MSstats has been developed and maintained by the [Vitek Lab](https://olga-vitek-lab.khoury.northeastern.edu/)
 at the Khoury College of Computer Sciences, Northeastern University, since
@@ -40,36 +37,38 @@ on its regular 6-month release cycle.
 - **9 packages** in the MSstats ecosystem, covering DDA/DIA/SRM, TMT, PTMs,
   LiP-MS, large-scale/out-of-memory data, network analysis, dose-response, and
   a no-code GUI
-- **9 peer-reviewed publications / preprints**, [~1,700+ citations](#citations)
+- **13 peer-reviewed publications / preprints**, [~2,000+ citations](#citations)
   combined (see [Citations](#citations))
-- **Thousands of downloads per month** across the ecosystem (see
+- **~6,0000 monthly downloads** across the ecosystem (see
   [Download statistics](#download-statistics)), tracked automatically from
   Bioconductor's own logs
 
 ## The MSstats Ecosystem
 
-MSstats has grown into a family of packages that share the same statistical
-framework and data model, each targeting a different experiment type or stage
+MSstats has grown into a family of packages that address distinct needs in MS-based proteomics analysis. Each package targets a different experiment type or stage
 of the analysis pipeline:
 
 ```mermaid
 flowchart LR
     A["Upstream search tools<br/>Skyline · MaxQuant · Spectronaut<br/>DIA-NN · FragPipe · OpenMS/OpenSWATH · ..."] --> B["MSstatsConvert<br/>(format converters)"]
+    A --> G["MSstatsBig<br/>(larger-than-memory converters)"]
     B --> C["MSstats<br/>DDA / DIA / SRM<br/>label-free & label-based"]
-    B --> D["MSstatsTMT<br/>isobaric labeling"]
+    G --> C
+    C --> D["MSstatsTMT<br/>isobaric labeling"]
     C --> E["MSstatsPTM<br/>post-translational mods"]
-    D --> E
     C --> F["MSstatsLiP<br/>limited proteolysis"]
-    C --> G["MSstatsBig<br/>larger-than-memory data"]
-    C --> H["MSstatsBioNet<br/>network enrichment"]
     C --> I["MSstatsResponse<br/>dose-response"]
+    D --> H["MSstatsBioNet<br/>network enrichment"]
+    E --> H
+    F --> H
+    I --> H
+    C --> H
     C --> J["MSstatsShiny<br/>point-and-click GUI"]
     D --> J
     E --> J
     F --> J
-    G --> J
-    H --> J
     I --> J
+    H --> J
 ```
 
 | Package | Description |
@@ -79,7 +78,7 @@ flowchart LR
 | **[MSstatsPTM](https://bioconductor.org/packages/MSstatsPTM)** ([GitHub](https://github.com/Vitek-Lab/MSstatsPTM)) | Quantitative analysis of post-translational modifications (PTMs), jointly modeling PTM-site and protein-level abundance. |
 | **[MSstatsLiP](https://bioconductor.org/packages/MSstatsLiP)** ([GitHub](https://github.com/Vitek-Lab/MSstatsLiP)) | Analysis of limited proteolysis mass spectrometry (LiP-MS) data to detect protein structural changes. |
 | **[MSstatsBig](https://bioconductor.org/packages/MSstatsBig)** ([GitHub](https://github.com/Vitek-Lab/MSstatsBig)) | Converters and tooling for processing larger-than-memory quantitative datasets. |
-| **[MSstatsShiny](https://bioconductor.org/packages/MSstatsShiny)** ([GitHub](https://github.com/Vitek-Lab/MSstatsShiny) · [web app](https://www.msstatsshiny.com)) | Point-and-click R-Shiny GUI integrating MSstats, MSstatsTMT, and MSstatsPTM for code-free analysis. |
+| **[MSstatsShiny](https://bioconductor.org/packages/MSstatsShiny)** ([GitHub](https://github.com/Vitek-Lab/MSstatsShiny) · [web app](https://www.msstatsshiny.com)) | Point-and-click R-Shiny GUI integrating MSstats family of packages. |
 | **[MSstatsBioNet](https://bioconductor.org/packages/MSstatsBioNet)** ([GitHub](https://github.com/Vitek-Lab/MSstatsBioNet)) | Network analysis and enrichment of MSstats differential abundance results using prior-knowledge networks (e.g., INDRA). |
 | **[MSstatsResponse](https://bioconductor.org/packages/MSstatsResponse)** ([GitHub](https://github.com/Vitek-Lab/MSstatsResponse)) | Semi-parametric dose-response modeling for chemoproteomics experiments (drug-protein interaction / IC50 estimation). |
 | **[MSstatsConvert](https://bioconductor.org/packages/MSstatsConvert)** ([GitHub](https://github.com/Vitek-Lab/MSstatsConvert)) | Shared converters that translate output from Skyline, MaxQuant, Proteome Discoverer, Spectronaut, DIA-NN, FragPipe, OpenSWATH, and more into MSstats format. |
@@ -103,8 +102,7 @@ Current developers:
 - Mateusz Staniak
 - Sarah Szvetecz
 
-Former developers include Meena Choi, Deril Raju, Tsung-Heng Tsai, Ting Huang,
-and Olga Vitek. See the full author list in [DESCRIPTION](DESCRIPTION) and the
+Former developers include Meena Choi, Deril Raju, Tsung-Heng Tsai, and Ting Huang. See the full author list in [DESCRIPTION](DESCRIPTION) and the
 lab's [publications page](https://olga-vitek-lab.khoury.northeastern.edu/publications/)
 for the wider set of contributors across the MSstats ecosystem.
 
@@ -158,9 +156,7 @@ complete, tool-specific examples.
 MSstats does not read raw search-tool output directly. Instead, a converter
 translates each tool's report into MSstats format (one row per feature, run,
 and condition) before `dataProcess()` is called. These converters are
-implemented in [MSstatsConvert](https://bioconductor.org/packages/MSstatsConvert)
-and re-exported directly from MSstats, so they're available as soon as you
-`library(MSstats)`:
+implemented in [MSstatsConvert](https://bioconductor.org/packages/MSstatsConvert):
 
 | Search tool / format | Converter function |
 | --- | --- |
@@ -174,10 +170,9 @@ and re-exported directly from MSstats, so they're available as soon as you
 | FragPipe | `FragPipetoMSstatsFormat()` |
 | OpenMS | `OpenMStoMSstatsFormat()` |
 | OpenSWATH | `OpenSWATHtoMSstatsFormat()` |
+| Metamorpheus | `MetamorpheusToMSstatsFormat()` |
 
-MSstatsConvert also provides a `MetamorpheusToMSstatsFormat()` converter
-(`MSstatsConvert::MetamorpheusToMSstatsFormat()`) that isn't yet re-exported
-from MSstats directly, and a set of `*toMSstatsTMTFormat()` converters
+MSstatsConvert also provides a set of `*toMSstatsTMTFormat()` converters
 (MaxQuant, OpenMS, Proteome Discoverer, Philosopher/FragPipe, Protein
 Prospector, SpectroMine) for isobaric-labeling experiments, used with
 [MSstatsTMT](https://bioconductor.org/packages/MSstatsTMT) instead of MSstats.
@@ -212,20 +207,24 @@ underlying the MSstats family of packages and MSstatsShiny.
 
 <!-- CITATION-STATS:START -->
 
-_Citation counts from [OpenAlex](https://openalex.org), updated monthly. Google Scholar counts are typically higher, since Scholar indexes a broader range of sources (theses, gray literature, etc.); OpenAlex has a free, stable, official API. Last updated 2026-07-15 (UTC)._
+_Citation counts from [OpenAlex](https://openalex.org), updated monthly. Google Scholar counts are typically higher, since Scholar indexes a broader range of sources (theses, gray literature, etc.); OpenAlex has a free, stable, official API. Last updated 2026-07-16 (UTC)._
 
 | Paper | Citations |
 | --- | --- |
-| [MSstats (2014)](https://doi.org/10.1093/bioinformatics/btu305) | 1,158 |
-| [MSstats 4.0 (2023)](https://doi.org/10.1021/acs.jproteome.2c00834) | 134 |
+| [Statistical design of MS proteomics experiments (2009)](https://doi.org/10.1021/pr8010099) | 265 |
+| [MSstats (2014)](https://doi.org/10.1093/bioinformatics/btu305) | 1,161 |
+| [MSstats feature selection (2020)](https://doi.org/10.1074/mcp.RA119.001792) | 37 |
+| [MSstats 4.0 (2023)](https://doi.org/10.1021/acs.jproteome.2c00834) | 135 |
 | [MSstats + FragPipe DIA workflow (2024)](https://doi.org/10.1038/s41596-024-01000-3) | 13 |
-| [MSstatsTMT (2020)](https://doi.org/10.1074/mcp.RA120.002105) | 203 |
+| [MSstats+ / longitudinal peak quality (2025, preprint)](https://doi.org/10.1101/2025.09.11.675573) | 1 |
+| [MSstatsTMT (2020)](https://doi.org/10.1074/mcp.RA120.002105) | 204 |
 | [MSstatsTMT repeated measures (2023)](https://doi.org/10.1021/acs.jproteome.3c00155) | 14 |
+| [MSstatsTMT for Thermal Proteome Profiling (2025)](https://doi.org/10.1016/j.mcpro.2025.100999) | 1 |
 | [MSstatsPTM (2022)](https://doi.org/10.1016/j.mcpro.2022.100477) | 53 |
 | [MSstatsLiP / LiP-MS protocol (2023)](https://doi.org/10.1038/s41596-022-00771-x) | 127 |
 | [MSstatsShiny (2023)](https://doi.org/10.1021/acs.jproteome.2c00603) | 23 |
 | [MSstatsResponse (2026, preprint)](https://doi.org/10.64898/2026.03.09.710598) | 1 |
-| **Total** | **1,726** |
+| **Total** | **2,035** |
 
 <!-- CITATION-STATS:END -->
 
@@ -269,52 +268,69 @@ for every package in the ecosystem.
 If you use MSstats or a package from the MSstats ecosystem, please cite the
 relevant publication(s):
 
-1. Choi M, Chang CY, Clough T, Broudy D, Killeen T, MacLean B, Vitek O.
+1. Oberg AL, Vitek O. **Statistical design of quantitative mass spectrometry-based
+   proteomic experiments.** *J Proteome Res*. 2009;8(5):2144-2156.
+   [DOI: 10.1021/pr8010099](https://doi.org/10.1021/pr8010099)
+2. Choi M, Chang CY, Clough T, Broudy D, Killeen T, MacLean B, Vitek O.
    **MSstats: an R package for statistical analysis of quantitative mass
    spectrometry-based proteomic experiments.** *Bioinformatics*. 2014;30(17):2524-2526.
    [DOI: 10.1093/bioinformatics/btu305](https://doi.org/10.1093/bioinformatics/btu305)
-2. Kohler D, Staniak M, Tsai TH, Huang T, Shulman N, Bernhardt OM, MacLean BX,
+3. Tsai TH, Choi M, Banfai B, Liu Y, MacLean BX, Dunkley T, Vitek O.
+   **Selection of Features with Consistent Profiles Improves Relative Protein
+   Quantification in Mass Spectrometry Experiments.** *Mol Cell Proteomics*.
+   2020;19(6):944-959.
+   [DOI: 10.1074/mcp.RA119.001792](https://doi.org/10.1074/mcp.RA119.001792)
+4. Kohler D, Staniak M, Tsai TH, Huang T, Shulman N, Bernhardt OM, MacLean BX,
    Nesvizhskii AI, Reiter L, Sabido E, Choi M, Vitek O. **MSstats Version 4.0:
    Statistical Analyses of Quantitative Mass Spectrometry-Based Proteomic
    Experiments with Chromatography-Based Quantification at Scale.**
    *J Proteome Res*. 2023;22(5):1466-1482.
    [DOI: 10.1021/acs.jproteome.2c00834](https://doi.org/10.1021/acs.jproteome.2c00834)
-3. Kohler D, Vitek O, et al. **An MSstats workflow for detecting differentially
+5. Kohler D, Vitek O, et al. **An MSstats workflow for detecting differentially
    abundant proteins in large-scale data-independent acquisition mass
    spectrometry experiments with FragPipe processing.** *Nat Protoc*.
    2024;19:2915-2938.
    [DOI: 10.1038/s41596-024-01000-3](https://doi.org/10.1038/s41596-024-01000-3)
-4. Huang T, Choi M, Tzouros M, Golling S, Pandya NJ, Banfai B, Dunkley T,
+6. Kohler D, Dogu E, Bhattacharya M, Karayel O, Magana M, Wu A, Anania VG,
+   Vitek O. **Accounting for longitudinal peak quality metrics with MSstats+
+   enhances differential analysis in proteomic experiments with
+   data-independent acquisition** (introduces MSstats+). *bioRxiv*. 2025.
+   [DOI: 10.1101/2025.09.11.675573](https://doi.org/10.1101/2025.09.11.675573)
+7. Huang T, Choi M, Tzouros M, Golling S, Pandya NJ, Banfai B, Dunkley T,
    Vitek O. **MSstatsTMT: Statistical Detection of Differentially Abundant
    Proteins in Experiments with Isobaric Labeling and Multiple Mixtures.**
    *Mol Cell Proteomics*. 2020;19(10):1706-1723.
    [DOI: 10.1074/mcp.RA120.002105](https://doi.org/10.1074/mcp.RA120.002105)
-5. Huang T, Staniak M, da Veiga Leprevost F, Figueroa-Navedo AM, Ivanov AR,
+8. Huang T, Staniak M, da Veiga Leprevost F, Figueroa-Navedo AM, Ivanov AR,
    Nesvizhskii AI, Choi M, Vitek O. **Statistical Detection of Differentially
    Abundant Proteins in Experiments with Repeated Measures Designs and
    Isobaric Labeling.** *J Proteome Res*. 2023;22(8):2641-2659.
    [DOI: 10.1021/acs.jproteome.3c00155](https://doi.org/10.1021/acs.jproteome.3c00155)
-6. Kohler D, Tsai TH, Verschueren E, Huang T, Hinkle T, Phu L, Choi M, Vitek O.
-   **MSstatsPTM: Statistical Relative Quantification of Posttranslational
-   Modifications in Bottom-Up Mass Spectrometry-Based Proteomics.**
-   *Mol Cell Proteomics*. 2022;22(1):100477.
-   [DOI: 10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)
-7. Malinovska L, Cappelletti V, Kohler D, Piazza I, Tsai TH, Pepelnjak M,
-   Stalder P, Dörig C, Sesterhenn F, Elsässer F, Kralickova L, Beaton N,
-   Reiter L, de Souza N, Vitek O, Picotti P. **Proteome-wide structural
-   changes measured with limited proteolysis-mass spectrometry: an advanced
-   protocol for high-throughput applications** (introduces MSstatsLiP).
-   *Nat Protoc*. 2023;18(3):659-682.
-   [DOI: 10.1038/s41596-022-00771-x](https://doi.org/10.1038/s41596-022-00771-x)
-8. Kohler D, Kaza M, Pasi C, Huang T, Staniak M, Mohandas D, Sabido E, Choi M,
-   Vitek O. **MSstatsShiny: A GUI for Versatile, Scalable, and Reproducible
-   Statistical Analyses of Quantitative Proteomic Experiments.**
-   *J Proteome Res*. 2023;22(2):551-556.
-   [DOI: 10.1021/acs.jproteome.2c00603](https://doi.org/10.1021/acs.jproteome.2c00603)
-9. Szvetecz S, Kohler D, Vitek O. **MSstatsResponse: Semi-parametric
-   statistical model enhances detection of drug-protein interactions in
-   chemoproteomics experiments.** *bioRxiv*. 2026.
-   [DOI: 10.64898/2026.03.09.710598](https://doi.org/10.64898/2026.03.09.710598)
+9. Figueroa-Navedo AM, Kapre R, Gupta T, Xu Y, Phaneuf CG, Jean Beltran PM,
+   Xue L, Ivanov AR, Vitek O. **MSstatsTMT Improves Accuracy of Thermal
+   Proteome Profiling.** *Mol Cell Proteomics*. 2025;24(8):100999.
+   [DOI: 10.1016/j.mcpro.2025.100999](https://doi.org/10.1016/j.mcpro.2025.100999)
+10. Kohler D, Tsai TH, Verschueren E, Huang T, Hinkle T, Phu L, Choi M, Vitek O.
+    **MSstatsPTM: Statistical Relative Quantification of Posttranslational
+    Modifications in Bottom-Up Mass Spectrometry-Based Proteomics.**
+    *Mol Cell Proteomics*. 2022;22(1):100477.
+    [DOI: 10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)
+11. Malinovska L, Cappelletti V, Kohler D, Piazza I, Tsai TH, Pepelnjak M,
+    Stalder P, Dörig C, Sesterhenn F, Elsässer F, Kralickova L, Beaton N,
+    Reiter L, de Souza N, Vitek O, Picotti P. **Proteome-wide structural
+    changes measured with limited proteolysis-mass spectrometry: an advanced
+    protocol for high-throughput applications** (introduces MSstatsLiP).
+    *Nat Protoc*. 2023;18(3):659-682.
+    [DOI: 10.1038/s41596-022-00771-x](https://doi.org/10.1038/s41596-022-00771-x)
+12. Kohler D, Kaza M, Pasi C, Huang T, Staniak M, Mohandas D, Sabido E, Choi M,
+    Vitek O. **MSstatsShiny: A GUI for Versatile, Scalable, and Reproducible
+    Statistical Analyses of Quantitative Proteomic Experiments.**
+    *J Proteome Res*. 2023;22(2):551-556.
+    [DOI: 10.1021/acs.jproteome.2c00603](https://doi.org/10.1021/acs.jproteome.2c00603)
+13. Szvetecz S, Kohler D, Vitek O. **MSstatsResponse: Semi-parametric
+    statistical model enhances detection of drug-protein interactions in
+    chemoproteomics experiments.** *bioRxiv*. 2026.
+    [DOI: 10.64898/2026.03.09.710598](https://doi.org/10.64898/2026.03.09.710598)
 
 MSstatsBioNet does not yet have a dedicated publication; see the
 [Bioconductor package page](https://bioconductor.org/packages/MSstatsBioNet)
@@ -323,9 +339,7 @@ for details and how to cite the software directly.
 ## Funding
 
 MSstats development has been supported by the Chan Zuckerberg Initiative's
-[Essential Open Source Software for Science](https://chanzuckerberg.com/eoss/proposals/)
-program (Cycle 1, 2019), through the award *"MSstats and Cardinal: Next
-Generation Statistical Mass Spectrometry in R"* (PI: Olga Vitek).
+[Essential Open Source Software for Science](https://chanzuckerberg.com/eoss/proposals/).
 
 ## License
 

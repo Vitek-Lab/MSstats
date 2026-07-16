@@ -23,11 +23,15 @@ END_MARKER = "<!-- CITATION-STATS:END -->"
 # (short label, doi) for every paper in the References section, in the same
 # order they appear there.
 PAPERS = [
+    ("Statistical design of MS proteomics experiments (2009)", "10.1021/pr8010099"),
     ("MSstats (2014)", "10.1093/bioinformatics/btu305"),
+    ("MSstats feature selection (2020)", "10.1074/mcp.RA119.001792"),
     ("MSstats 4.0 (2023)", "10.1021/acs.jproteome.2c00834"),
     ("MSstats + FragPipe DIA workflow (2024)", "10.1038/s41596-024-01000-3"),
+    ("MSstats+ / longitudinal peak quality (2025, preprint)", "10.1101/2025.09.11.675573"),
     ("MSstatsTMT (2020)", "10.1074/mcp.RA120.002105"),
     ("MSstatsTMT repeated measures (2023)", "10.1021/acs.jproteome.3c00155"),
+    ("MSstatsTMT for Thermal Proteome Profiling (2025)", "10.1016/j.mcpro.2025.100999"),
     ("MSstatsPTM (2022)", "10.1016/j.mcpro.2022.100477"),
     ("MSstatsLiP / LiP-MS protocol (2023)", "10.1038/s41596-022-00771-x"),
     ("MSstatsShiny (2023)", "10.1021/acs.jproteome.2c00603"),
