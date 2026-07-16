@@ -52,9 +52,12 @@ SDRFtoAnnotation = function(
     if (length(colnames(data)) < length(extract_cols)){
         stop("ERROR: One or more of the column passed in the parameters were not found in the data. Please ensure that the column names are correct.")
     }
-    data.table::setnames(data, extract_cols, 
-                         c("Run", "Condition", "BioReplicate"))
-    
+    new_names = c("Run", "Condition", "BioReplicate")
+    if (!is.null(fraction)){
+        new_names = c(new_names, "Fraction")
+    }
+    data.table::setnames(data, extract_cols, new_names)
+
     return(data)
 }
 
@@ -102,10 +105,10 @@ extractSDRF = function(
     
     if (is.null(fraction)){
         data$Fraction = NULL
-        data.table::setnames(data, c("Condition", "BioReplicate", "Run"), 
+        data.table::setnames(data, c("Run", "Condition", "BioReplicate"),
                  c(run_name, condition_name, biological_replicate))
     } else {
-        data.table::setnames(data, extract_cols, 
+        data.table::setnames(data, c("Run", "Condition", "BioReplicate", "Fraction"),
                  c(run_name, condition_name, biological_replicate, fraction))
     }
     
