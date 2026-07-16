@@ -27,10 +27,9 @@ NumericVector get_intercept(CharacterVector coef_names) {
 } 
 
 NumericVector get_features(CharacterVector coef_names, NumericVector find_features,
-                           NumericVector find_colon, NumericVector contrast_matrix,
+                           NumericVector contrast_matrix,
                            NumericMatrix counts, DataFrame input) {
-    NumericVector just_features = setdiff(find_features, find_colon);
-    CharacterVector temp_feature = coef_names[just_features];
+    CharacterVector temp_feature = coef_names[find_features];
     
     NumericVector feature(0);
     if (temp_feature.length() != 0) {
@@ -41,12 +40,11 @@ NumericVector get_features(CharacterVector coef_names, NumericVector find_featur
 } 
 
 NumericVector get_run(CharacterVector coef_names,
-                      NumericVector find_runs, NumericVector find_colon,
+                      NumericVector find_runs,
                       NumericVector contrast_matrix, bool label, int n_runs) {
-    NumericVector just_runs = setdiff(find_runs, find_colon);
     NumericVector run(0);
-    if (just_runs.length() != 0) {
-        CharacterVector temp_run = coef_names[just_runs];
+    if (find_runs.length() != 0) {
+        CharacterVector temp_run = coef_names[find_runs];
         if (label) {
             run = rep(1 / n_runs, temp_run.length());
         } else {
@@ -62,14 +60,14 @@ NumericVector get_ref(const CharacterVector& coef_names, const NumericVector& fi
                       const NumericVector& contrast_matrix, const DataFrame& input,
                       const bool is_reference) {
     NumericVector ref(0);
-    if ((find_ref.length() != 0) & !(find_ref[0] == -1)) {
+    if ((find_ref.length() != 0) && !(find_ref[0] == -1)) {
         if (is_reference) {
             CharacterVector temp_ref = coef_names[find_ref];
             ref = rep(0.0, find_ref.length());
             ref.attr("names") = temp_ref;
         } else {
             CharacterVector temp_ref = coef_names[find_ref];
-            CharacterVector refs = input["ref"];
+            CharacterVector refs = input["ref_covariate"];
             CharacterVector unique_refs = unique(refs);
             int n_refs = refs.length();
             ref = contrast_matrix[seq(0, n_refs - 2)];
@@ -85,7 +83,7 @@ NumericVector get_feature_run(NumericVector find_runs, NumericVector find_featur
     NumericVector find_run_feature = intersect(find_runs, find_features);
     int n_rows = counts.nrow();
     NumericVector rf(0);
-    if ((find_run_feature.length() != 0) & !(find_run_feature[0] == -1)) {
+    if ((find_run_feature.length() != 0) && !(find_run_feature[0] == -1)) {
         CharacterVector temp_rf = coef_names[find_run_feature];
         rf = rep(1 / n_rows, temp_rf.length());
         rf.attr("names") = temp_rf;
@@ -103,6 +101,13 @@ double get_quant(const NumericVector& coefs, const NumericVector& contrast) {
     return (result(0, 0));
 }
 
+double get_quant_var(const NumericVector& contrast,
+                     const NumericMatrix& cov_mat) {
+    arma::colvec c = as<arma::colvec>(contrast);
+    arma::mat sigma = as<arma::mat>(cov_mat);
+    double var = arma::as_scalar(c.t() * sigma * c);
+    return var;
+}
 
 NumericVector combine_contrast(bool is_reference, NumericVector intercept, 
                                NumericVector features, NumericVector runs, 
@@ -131,14 +136,13 @@ NumericVector make_contrast_run_quant(DataFrame input,
     
     CharacterVector coef_names = coefs.attr("names");
     NumericVector find_features = grep("FEATURE", coef_names);
-    NumericVector find_colon = grep(":", coef_names);
     NumericVector find_runs = grep("RUN", coef_names);
     NumericVector find_ref = grep("ref", coef_names);
 
     NumericVector intercept = get_intercept(coef_names);
-    NumericVector features = get_features(coef_names, find_features, find_colon,
+    NumericVector features = get_features(coef_names, find_features,
                                           contrast_matrix, counts, input);
-    NumericVector runs = get_run(coef_names, find_runs, find_colon, 
+    NumericVector runs = get_run(coef_names, find_runs,
                                  contrast_matrix, is_labeled, n_runs);
     NumericVector refs = get_ref(coef_names, find_ref, contrast_matrix, input,
                                  is_reference);
@@ -159,16 +163,19 @@ NumericVector make_contrast_run_quant(DataFrame input,
 
 
 // [[Rcpp::export]]
-NumericVector get_linear_summary(const DataFrame& input,
+DataFrame get_linear_summary(const DataFrame& input,
                                  const NumericVector& coefs,
                                  const NumericMatrix& counts,
-                                 const bool is_labeled) {
+                                 const bool is_labeled,
+                                 const NumericMatrix& cov_mat) {
     CharacterVector runs = input["RUN"];
     CharacterVector unique_runs = unique(runs);
     CharacterVector ref = {"ref"};
     unique_runs = setdiff(unique_runs, ref);
     int num_runs = unique_runs.length();
+    
     NumericVector log_intensities(num_runs);
+    NumericVector variances(num_runs);
     
     for (int run_id = 0; run_id < num_runs; ++run_id) {
         NumericVector contrast_matrix(num_runs);
@@ -180,6 +187,7 @@ NumericVector get_linear_summary(const DataFrame& input,
                                                          is_labeled);
         double quantified = get_quant(coefs, contrast);
         log_intensities(run_id) = quantified;
+        variances[run_id] = get_quant_var(contrast, cov_mat);
     }
     
     if (is_labeled) {
@@ -189,7 +197,11 @@ NumericVector get_linear_summary(const DataFrame& input,
                                                          contrast_matrix, 
                                                          counts, true, true);
         log_intensities.push_back(get_quant(coefs, contrast));
+        variances.push_back(get_quant_var(contrast, cov_mat));
     }
     
-    return(log_intensities);
+    return DataFrame::create(
+        Named("LogIntensities") = log_intensities,
+        Named("Variance") = variances
+    );
 }

@@ -1,12 +1,15 @@
 Package: MSstats
 Title: Protein Significance Analysis in DDA, SRM and DIA for Label-free
         or Label-based Proteomics Experiments
-Version: 4.9.9
-Date: 2022-06-27
+Version: 4.21.0
+Date: 2025-03-05
 Description: A set of tools for statistical relative protein significance analysis in DDA, SRM and DIA experiments.
 Authors@R: c(
   person("Meena", "Choi", email = "mnchoi67@gmail.com", role = c("aut", "cre")),
   person("Mateusz", "Staniak", email = "mtst@mstaniak.pl", role = "aut"),
+  person("Devon", "Kohler", email = "kohler.d@northeastern.edu", role = "aut"),
+  person("Tony", "Wu", email = "wu.anthon@northeastern.edu", role = "aut"),
+  person("Deril", "Raju", email = "raju.d@northeastern.edu", role = "aut"),
   person("Tsung-Heng", "Tsai", email = "tsai.tsungheng@gmail.com", role = "aut"), 
   person("Ting", "Huang", email = "thuang0703@gmail.com", role = "aut"),
   person("Olga", "Vitek", email = "o.vitek@northeastern.edu", role = "aut")) 
@@ -24,7 +27,7 @@ Imports:
     survival,
     utils,
     Rcpp,
-    ggplot2,
+    ggplot2 (>= 3.4.0),
     ggrepel,
     gplots,
     plotly,
@@ -33,24 +36,28 @@ Imports:
     grDevices,
     graphics,
     methods,
-    statmod
+    statmod,
+    parallel,
+    rlang
 Suggests: 
     BiocStyle,
     knitr,
     rmarkdown,
     tinytest,
     covr,
-    markdown
+    markdown,
+    mockery,
+    kableExtra
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Proteomics, Software, Normalization,
         QualityControl, TimeCourse
 LazyData: true
 URL: http://msstats.org
 BugReports: https://groups.google.com/forum/#!forum/msstats
-RoxygenNote: 7.3.0
 Encoding: UTF-8
 NeedsCompilation: no
 Packaged: 2017-10-20 02:13:12 UTC; meenachoi
 LinkingTo: 
     Rcpp,
     RcppArmadillo
+Config/roxygen2/version: 8.0.0

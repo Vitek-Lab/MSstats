@@ -26,9 +26,9 @@
 
 \item{address}{the name of folder that will store the results. Default folder is the current working directory. The other assigned folder has to be existed under the current working directory. An output pdf file is automatically created with the default name of "VolcanoPlot.pdf" or "Heatmap.pdf" or "ComparisonPlot.pdf". The command address can help to specify where to store the file as well as how to modify the beginning of the file name. If address=FALSE, plot will be not saved as pdf file but showed in window.}
 
-\item{width}{width of the saved file. Default is 10.}
+\item{width}{width of the saved file in pixels. Default is 800.}
 
-\item{height}{height of the saved file. Default is 10.}
+\item{height}{height of the saved file in pixels. Default is 600.}
 
 \item{sig}{FDR cutoff for the adjusted p-values in heatmap and volcano plot. level of significance for comparison plot. 100(1-sig)\% confidence interval will be drawn.  sig=0.05 is default.}
 

@@ -5,4 +5,8 @@
 .DS_Store
 *.log
 *.txt
+.codiumai
+.idea
+*.Rproj
 
+.positai

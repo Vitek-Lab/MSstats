@@ -27,9 +27,13 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
                                           remove_uninformative_feature_outlier) {
     ABUNDANCE = feature_quality = is_outlier = PROTEIN = NULL
     
-    label = data.table::uniqueN(input$LABEL) == 2
-    if (label) {
-        input[, ref := factor(ifelse(LABEL == "L", RUN, 0))]
+    if (!"ANOMALYSCORES" %in% colnames(input)) {
+        input[, ANOMALYSCORES := NA]
+    }
+    
+    add_ref_covariate = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
+    if (add_ref_covariate) {
+      input[, ref_covariate := factor(ifelse(LABEL == "L", RUN, 0))]
     }
     
     if (is.element("remove", colnames(input))) {
@@ -46,7 +50,7 @@ MSstatsPrepareForSummarization = function(input, method, impute, censored_symbol
         getOption("MSstatsMsg")("INFO", msg)
     }
     
-    input = .prepareSummary(input, method, impute, censored_symbol)
+    input = .prepareSummary(input, impute, censored_symbol, add_ref_covariate)
     input[, PROTEIN := factor(PROTEIN)]
     input
 }
@@ -97,51 +101,21 @@ getProcessed = function(input) {
 
 #' Prepare feature-level data for summarization
 #' @param input data.table
-#' @param method "TMP" / "linear"
 #' @param impute logical
 #' @param censored_symbol "0"/"NA"
+#' @param is_labeled_reference logical, if TRUE the H channel is a normalization
+#'   reference (SRM) and grouping keys do not include LABEL; if FALSE (e.g.
+#'   protein turnover) LABEL is added to grouping keys so each label is
+#'   processed independently.
 #' @return data.table
 #' @keywords internal
-.prepareSummary = function(input, method, impute, censored_symbol) {
-    if (method == "TMP") {
-        input = .prepareTMP(input, impute, censored_symbol)
-    } else {
-        input = .prepareLinear(input, FALSE, censored_symbol)
-    }
-    input
-}
-
-
-#' Prepare feature-level data for linear summarization
-#' @inheritParams .prepareSummary
-#' @return data.table
-#' @keywords internal
-.prepareLinear = function(input, impute, censored_symbol) {
-    newABUNDANCE = ABUNDANCE = nonmissing = n_obs = n_obs_run = NULL
-    total_features = FEATURE = prop_features = NULL
-    
-    input[, newABUNDANCE := ABUNDANCE]
-    input[, nonmissing := .getNonMissingFilter(.SD, impute, censored_symbol)]
-    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
-    # remove feature with 1 measurement
-    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)] 
-    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
-    
-    input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
-    input[, prop_features := sum(nonmissing) / total_features,
-          by = c("PROTEIN", "RUN")] 
-    input
-}
-
-
-#' Prepare feature-level data for TMP summarization
-#' @inheritParams .prepareSummary
-#' @return data.table
-#' @keywords internal
-.prepareTMP = function(input, impute, censored_symbol) {
+.prepareSummary = function(input, impute, censored_symbol,
+                           is_labeled_reference = FALSE) {
     censored = feature_quality = newABUNDANCE = cen = nonmissing = n_obs = NULL
     n_obs_run = total_features = FEATURE = prop_features = NULL
     remove50missing = ABUNDANCE = NULL
+    
+    label_by = if (is_labeled_reference) character(0) else "LABEL"
     
     if (impute & !is.null(censored_symbol)) {
         if (is.element("feature_quality", colnames(input))) {
@@ -159,19 +133,19 @@ getProcessed = function(input) {
     }
     
     input[, nonmissing := .getNonMissingFilter(input, impute, censored_symbol)]
-    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE")]
-    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)] 
-    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN")]
+    input[, n_obs := sum(nonmissing), by = c("PROTEIN", "FEATURE", label_by)]
+    input[, nonmissing := ifelse(n_obs <= 1, FALSE, nonmissing)]
+    input[, n_obs_run := sum(nonmissing), by = c("PROTEIN", "RUN", label_by)]
     
-    input[, total_features := uniqueN(FEATURE), by = "PROTEIN"]
+    input[, total_features := uniqueN(FEATURE), by = c("PROTEIN", label_by)]
     input[, prop_features := sum(nonmissing) / total_features,
-          by = c("PROTEIN", "RUN")] 
+          by = c("PROTEIN", "RUN", label_by)]
     
     if (is.element("cen", colnames(input))) {
         if (any(input[["cen"]] == 0)) {
             .setCensoredByThreshold(input, censored_symbol, remove50missing)
         }
     }
-
+    
     input
 }

@@ -1,0 +1,19 @@
+on:
+  pull_request:
+    types: [opened]
+jobs:
+  pr_agent_job:
+    if: ${{ github.event.sender.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    name: Run pr agent on every pull request
+    steps:
+      - name: PR Agent action step
+        id: pragent
+        uses: Codium-ai/pr-agent@main
+        env:
+          OPENAI_KEY: ${{ secrets.MSSTATS_OPENAI_KEY }}
+          OPENAI_ORG: ${{ secrets.MSSTATS_OPENAI_ORG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

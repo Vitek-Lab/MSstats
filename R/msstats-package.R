@@ -1,6 +1,7 @@
 #' @import data.table
 ## usethis namespace: start
 #' @importFrom Rcpp sourceCpp
+#' @importFrom rlang .data
 ## usethis namespace: end
 #' @useDynLib MSstats, .registration=TRUE
 NULL

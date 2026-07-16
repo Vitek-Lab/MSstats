@@ -1,3 +1,43 @@
+#' Check if annotation matches intended experimental design
+#' 
+#' @param msstats_table output of a converter function
+#' @param design_type character, "group comparison" or "repeated measures"
+#' 
+#' @importFrom data.table as.data.table uniqueN
+#' 
+#' @return TRUE if annotation file is consistent with intended experimental design. Otherwise, an error is thrown
+#' @export
+#' 
+validateAnnotation = function(msstats_table, design_type = "group comparison") {
+  annotation = unique(data.table::as.data.table(msstats_table)[, list(BioReplicate, Condition)])
+  if (data.table::uniqueN(annotation[["Condition"]]) == 1) { 
+    stop("MSstats performs relative protein quantification, which requires more than one Condition. Please check the annotation file.")
+  }
+  
+  num_conditions_per_biorep = annotation[, list(NumConditions = data.table::uniqueN(Condition)), by = "BioReplicate"]
+  num_bioreps_per_condition = annotation[, list(NumBioReps = data.table::uniqueN(BioReplicate)), by = "Condition"]
+  if (design_type == "group comparison") {
+      if (all(num_conditions_per_biorep[["NumConditions"]] == 1L)) {
+        return(TRUE)
+      } else {
+        stop(paste("In group comparison design, each biological replicate should be assigned to a single condition.\n", 
+                   "Currently, some biological replicates match to multiple conditions"))
+      }
+    if (all(num_bioreps_per_condition[["NumBioReps"]] == 1L)) { 
+      message("Each condition only consists of a single biological replicate. Hypothesis testing for differential abundance will not be possible.")
+    }
+  } else if (design_type == "repeated measures") {
+    if (all(num_conditions_per_biorep[["NumConditions"]] > 1)) {
+      return(TRUE)
+    } else {
+      stop(paste("In repeated measures design, biological replicates should be measured across multiple conditions.\n",
+                 "Currently, each biological replicate matches to a different condition."))
+    }
+  } else {
+    stop("Unrecognized design type. Accepted values are 'group comparison' or 'repeated measures'")
+  }
+}
+
 #' Prepare data for processing by `dataProcess` function
 #' 
 #' @param input `data.table` in MSstats format
@@ -46,15 +86,23 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 #' @param feature_selection list with elements: remove_uninformative
 #' @param summarization list with elements: method.
 #' @param imputation list with elements: cutoff, symbol.
+#' @param input_columns character vector of input columns
 #' @keywords internal
 .checkDataProcessParams = function(log_base, normalization_method,
                                    standards_names, feature_selection, 
-                                   summarization, imputation) {
+                                   summarization, imputation, input_columns) {
     checkmate::assertChoice(log_base, c(2, 10), .var.name = "logTrans")
     checkmate::assertChoice(summarization$method, c("linear", "TMP"),
-                            .var.name = "summaryMethod") 
+                            .var.name = "summaryMethod")
     getOption("MSstatsLog")("INFO", paste("Summary method:", 
                                           summarization$method))
+    if ("AnomalyScores" %in% input_columns) {
+        if (summarization$method != "linear") {
+            stop("AnomalyScores column detected in your input columns.  ",
+                 "Please set summaryMethod to 'linear' to use anomaly scores for protein summarization, ",
+                 "or remove the AnomalyScores column from your input data.")
+        }
+    }
     checkmate::assertChoice(imputation$symbol, c("0", "NA"), 
                             null.ok = TRUE, .var.name = "censoredInt")
     getOption("MSstatsLog")("INFO", paste("censoredInt:", imputation$symbol))
@@ -94,19 +142,44 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
 }
 
 
+#' Map IsotopeLabelType values to canonical "H"/"L" levels
+#' @param x character or factor vector of IsotopeLabelType values
+#' @return factor with levels from \code{c("H","L")} restricted to those present
+#' @keywords internal
+#' @noRd
+.mapIsotopeLabelType = function(x) {
+    label_map <- c(
+        "h"     = "H",
+        "l"     = "L",
+        "heavy" = "H",
+        "light" = "L"
+    )
+    key <- tolower(trimws(as.character(x)))
+    mapped <- unname(label_map[key])
+    factor(mapped, levels = intersect(c("H", "L"), mapped))
+}
+
+
 #' Check validity of data that were not processed by MSstats converter
 #' @param input data.table
 #' @inheritParams MSstatsPrepareForDataProcess
 #' @importFrom data.table uniqueN as.data.table
 #' @keywords internal
 .checkUnProcessedDataValidity = function(input, fix_missing, fill_incomplete) {
+  
     input = data.table::as.data.table(unclass(input))
+    
+    if (!"AnomalyScores" %in% colnames(input)){
+      data.table::set(input, j = "AnomalyScores", value = NA_real_)
+    }
+    
     cols = c("ProteinName", "PeptideSequence", "PeptideModifiedSequence",
              "PrecursorCharge", "FragmentIon", "ProductCharge", 
-             "IsotopeLabelType", "Condition", "BioReplicate", "Run", "Intensity")
+             "IsotopeLabelType", "Condition", "BioReplicate", "Run", 
+             "Intensity", "AnomalyScores")
     provided_cols = intersect(cols, colnames(input))
     
-    if (length(provided_cols) < 10) {
+    if (length(provided_cols) < 11) {
         msg = paste("Missing columns in the input:", 
                     paste(setdiff(cols, colnames(input)), collapse = " "))
         getOption("MSstatsLog")("ERROR", msg)
@@ -118,14 +191,17 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     balanced_cols = c("PeptideSequence", "PrecursorCharge", 
                       "FragmentIon", "ProductCharge")
     input = MSstatsConvert::MSstatsBalancedDesign(
-        input, balanced_cols, TRUE, TRUE, fix_missing)
+        input, balanced_cols, TRUE, TRUE, fix_missing,
+        anomaly_metrics = c("AnomalyScores"))
+
     input = data.table::as.data.table(unclass(input))
     data.table::setnames(input, colnames(input), toupper(colnames(input)))
     
     
     if (!is.numeric(input$INTENSITY)) {	
         suppressWarnings({
-            input$INTENSITY = as.numeric(as.character(input$INTENSITY))
+            data.table::set(input, j = "INTENSITY",
+                            value = as.numeric(as.character(input$INTENSITY)))
         })
     }
     
@@ -136,24 +212,26 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     cols = toupper(cols)
     cols = intersect(c(cols, "FRACTION", "TECHREPLICATE"),
                      colnames(input))
-    input = input[, cols, with = FALSE]
-    
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
-    input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
+    drop_cols = setdiff(colnames(input), cols)
+    for (col in drop_cols) data.table::set(input, j = col, value = NULL)
+
+    data.table::set(input, j = "PEPTIDE",
+                    value = paste(input$PEPTIDESEQUENCE,
+                                  input$PRECURSORCHARGE, sep = "_"))
+    data.table::set(input, j = "TRANSITION",
+                    value = paste(input$FRAGMENTION,
+                                  input$PRODUCTCHARGE, sep = "_"))
     
     if (data.table::uniqueN(input$ISOTOPELABELTYPE) > 2) {
-        getOption("MSstatsLog")("ERROR",  
-                                paste("There are more than two levels of labeling.",
-                                      "So far, only label-free or reference-labeled experiment are supported. - stop"))
+        getOption("MSstatsLog")(
+          "ERROR",  paste(
+            "There are more than two levels of labeling.",
+            "So far, only label-free or reference-labeled experiment are supported. - stop"))
         stop("Statistical tools in MSstats are only proper for label-free or with reference peptide experiments.")
     }
     
-    input$ISOTOPELABELTYPE = factor(input$ISOTOPELABELTYPE)
-    if (data.table::uniqueN(input$ISOTOPELABELTYPE) == 2) {
-        levels(input$ISOTOPELABELTYPE) = c("H", "L")
-    } else {
-        levels(input$ISOTOPELABELTYPE) = "L"
-    }
+    data.table::set(input, j = "ISOTOPELABELTYPE",
+                    value = .mapIsotopeLabelType(input$ISOTOPELABELTYPE))
     input
 }
 
@@ -169,14 +247,14 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
         data.table::setnames(
             input, "PEPTIDEMODIFIEDSEQUENCE", "PEPTIDESEQUENCE")
     }
-    input$PEPTIDE = paste(input$PEPTIDESEQUENCE, input$PRECURSORCHARGE, sep = "_")
-    input$TRANSITION = paste(input$FRAGMENTION, input$PRODUCTCHARGE, sep = "_")
-    input$ISOTOPELABELTYPE = factor(input$ISOTOPELABELTYPE)
-    if (data.table::uniqueN(input$ISOTOPELABELTYPE) == 2) {
-        levels(input$ISOTOPELABELTYPE) = c("H", "L")
-    } else {
-        levels(input$ISOTOPELABELTYPE) = "L"
-    }
+    data.table::set(input, j = "PEPTIDE",
+                    value = paste(input$PEPTIDESEQUENCE,
+                                  input$PRECURSORCHARGE, sep = "_"))
+    data.table::set(input, j = "TRANSITION",
+                    value = paste(input$FRAGMENTION,
+                                  input$PRODUCTCHARGE, sep = "_"))
+    data.table::set(input, j = "ISOTOPELABELTYPE",
+                    value = .mapIsotopeLabelType(input$ISOTOPELABELTYPE))
     input
 }
 
@@ -227,12 +305,19 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
         skip_absent = TRUE)
     
     input[, FEATURE := paste(PEPTIDE, TRANSITION, sep = "_")]
-    input[, GROUP := ifelse(LABEL == "L", GROUP_ORIGINAL, "0")]
-    input[, SUBJECT := ifelse(LABEL == "L", SUBJECT_ORIGINAL, "0")]
+    input[, GROUP := GROUP_ORIGINAL]
+    input[, SUBJECT := SUBJECT_ORIGINAL]
 
     cols = c("PROTEIN", "PEPTIDE", "TRANSITION", "FEATURE", "LABEL", 
-             "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP", 
-             "SUBJECT", "FRACTION", "INTENSITY")
+             "GROUP_ORIGINAL", "SUBJECT_ORIGINAL", "RUN", "GROUP",  
+             "SUBJECT", "FRACTION", "INTENSITY", "ANOMALYSCORES")
+    if ("TECHREPLICATE" %in% colnames(input)) {
+        cols = unique(c(cols, "TECHREPLICATE"))
+    }
+    if (!"ANOMALYSCORES" %in% colnames(input)) {
+        input[, ANOMALYSCORES := NA_real_]
+    }
+    
     input[!is.na(PROTEIN) & PROTEIN != "", cols, with = FALSE]
 }
 
@@ -247,8 +332,8 @@ setMethod(".checkDataValidity", "MSstatsValidated", .prepareForDataProcess)
     input[, PROTEIN := factor(PROTEIN)]
     input[, PEPTIDE := factor(PEPTIDE)]
     input[, TRANSITION := factor(TRANSITION)]
-    input = input[order(LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
-                        RUN, PROTEIN, PEPTIDE, TRANSITION), ]
+    data.table::setorder(input, LABEL, GROUP_ORIGINAL, SUBJECT_ORIGINAL,
+                         RUN, PROTEIN, PEPTIDE, TRANSITION)
     input[, GROUP := factor(GROUP)]
     input[, SUBJECT := factor(SUBJECT)]
     input[, FEATURE := factor(FEATURE)]

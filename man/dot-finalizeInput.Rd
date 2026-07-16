@@ -4,12 +4,12 @@
 \alias{.finalizeInput}
 \title{Add summary statistics to dataProcess output}
 \usage{
-.finalizeInput(input, summarized, method, impute, censored_symbol)
+.finalizeInput(input, predicted_survival, method, impute, censored_symbol)
 }
 \arguments{
 \item{input}{feature-level data}
 
-\item{summarized}{protein-level data (list)}
+\item{predicted_survival}{data.table of predicted survival values used for imputation}
 
 \item{method}{summary method}
 

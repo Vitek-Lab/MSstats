@@ -69,9 +69,9 @@ For Plotly: use this parameter to adjust the number of proteins to be displayed 
 
 \item{clustering}{Determines how to order proteins and comparisons. Hierarchical cluster analysis with Ward method(minimum variance) is performed. 'protein' means that protein dendrogram is computed and reordered based on protein means (the order of row is changed). 'comparison' means comparison dendrogram is computed and reordered based on comparison means (the order of comparison is changed). 'both' means to reorder both protein and comparison. Default is 'protein'.}
 
-\item{width}{width of the saved file. Default is 10.}
+\item{width}{width of the saved file in pixels. Default is 800.}
 
-\item{height}{height of the saved file. Default is 10.}
+\item{height}{height of the saved file in pixels. Default is 600.}
 
 \item{which.Comparison}{list of comparisons to draw plots. List can be labels of comparisons or order numbers of comparisons from levels(data$Label), such as levels(testResultMultiComparisons$ComparisonResult$Label). Default is "all", which generates all plots for each protein.}
 
