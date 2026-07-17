@@ -330,10 +330,11 @@ relevant publication(s):
     statistical model enhances detection of drug-protein interactions in
     chemoproteomics experiments.** *bioRxiv*. 2026.
     [DOI: 10.64898/2026.03.09.710598](https://doi.org/10.64898/2026.03.09.710598)
-
-MSstatsBioNet does not yet have a dedicated publication; see the
-[Bioconductor package page](https://bioconductor.org/packages/MSstatsBioNet)
-for details and how to cite the software directly.
+14. Wu A, Kohler D, Navada P, Robbins J, Boyle G, Boshart A, Karis K, Neefjes J, 
+    Konvalinka A, Sarthy J, Pino L, Gyori B, Vitek O. **MSstatsBioNet: Integrating 
+    Statistical Analyses with Prior Knowledge Biomolecular Networks for Quantitative
+    Proteomics and Phosphoproteomics.** *bioRxiv*. 2026.
+    [DOI: 10.64898/2026.07.09.737605](https://doi.org/10.64898/2026.07.09.737605)
 
 ## Funding
 
