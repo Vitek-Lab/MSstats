@@ -36,7 +36,7 @@ on its regular 6-month release cycle.
 - **9 packages** in the MSstats ecosystem, covering DDA/DIA/SRM, TMT, PTMs,
   LiP-MS, large-scale/out-of-memory data, network analysis, dose-response, and
   a no-code GUI
-- **13 peer-reviewed publications / preprints**, [~2,000+ citations](#citations)
+- **14 peer-reviewed publications / preprints**, [~2,000+ citations](#citations)
   combined (see [Citations](#citations))
 - **~6,000 monthly downloads** across the ecosystem (see
   [Download statistics](#download-statistics)), tracked automatically from
@@ -79,15 +79,12 @@ flowchart LR
 | **[MSstatsBig](https://bioconductor.org/packages/MSstatsBig)** ([GitHub](https://github.com/Vitek-Lab/MSstatsBig)) | Converters and tooling for processing larger-than-memory quantitative datasets. |
 | **[MSstatsShiny](https://bioconductor.org/packages/MSstatsShiny)** ([GitHub](https://github.com/Vitek-Lab/MSstatsShiny) · [web app](https://www.msstatsshiny.com)) | Point-and-click R-Shiny GUI integrating MSstats family of packages. |
 | **[MSstatsBioNet](https://bioconductor.org/packages/MSstatsBioNet)** ([GitHub](https://github.com/Vitek-Lab/MSstatsBioNet)) | Network analysis and enrichment of MSstats differential abundance results using prior-knowledge networks (e.g., INDRA). |
-| **[MSstatsResponse](https://bioconductor.org/packages/MSstatsResponse)** ([GitHub](https://github.com/Vitek-Lab/MSstatsResponse)) | Semi-parametric dose-response modeling for chemoproteomics experiments (drug-protein interaction / IC50 estimation). |
+| **[MSstatsResponse](https://bioconductor.org/packages/MSstatsResponse)** ([GitHub](https://github.com/Vitek-Lab/MSstatsResponse)) | Semi-parametric protein response modeling for dose-response chemoproteomics (drug-protein interaction / IC50 estimation) and protein turnover kinetics (synthesis/degradation curves and half-life estimation). |
 | **[MSstatsConvert](https://bioconductor.org/packages/MSstatsConvert)** ([GitHub](https://github.com/Vitek-Lab/MSstatsConvert)) | Shared converters that translate output from Skyline, MaxQuant, Proteome Discoverer, Spectronaut, DIA-NN, FragPipe, OpenSWATH, and more into MSstats format. |
 
-MSstatsResponse's semi-parametric curve-fitting approach to dose-response data
-generalizes beyond drug-protein interaction/IC50 estimation: the same concept
-applies to related experiment types such as Thermal Proteome Profiling (TPP)
-and protein turnover kinetics, where abundance is likewise modeled as a smooth
-function of a continuous variable (temperature or time) rather than a fixed
-curve shape.
+Note: MSstatsResponse is also extendable to other assay types that follow a
+monotonic curve shape. Support for Thermal Proteome Profiling (TPP)
+experiments is under development for the next Bioconductor release.
 
 ## Developers
 
@@ -267,74 +264,74 @@ for every package in the ecosystem.
 If you use MSstats or a package from the MSstats ecosystem, please cite the
 relevant publication(s):
 
-1. Oberg AL, Vitek O. **Statistical design of quantitative mass spectrometry-based
-   proteomic experiments.** *J Proteome Res*. 2009;8(5):2144-2156.
-   [DOI: 10.1021/pr8010099](https://doi.org/10.1021/pr8010099)
-2. Choi M, Chang CY, Clough T, Broudy D, Killeen T, MacLean B, Vitek O.
-   **MSstats: an R package for statistical analysis of quantitative mass
-   spectrometry-based proteomic experiments.** *Bioinformatics*. 2014;30(17):2524-2526.
-   [DOI: 10.1093/bioinformatics/btu305](https://doi.org/10.1093/bioinformatics/btu305)
-3. Tsai TH, Choi M, Banfai B, Liu Y, MacLean BX, Dunkley T, Vitek O.
-   **Selection of Features with Consistent Profiles Improves Relative Protein
-   Quantification in Mass Spectrometry Experiments.** *Mol Cell Proteomics*.
-   2020;19(6):944-959.
-   [DOI: 10.1074/mcp.RA119.001792](https://doi.org/10.1074/mcp.RA119.001792)
-4. Kohler D, Staniak M, Tsai TH, Huang T, Shulman N, Bernhardt OM, MacLean BX,
-   Nesvizhskii AI, Reiter L, Sabido E, Choi M, Vitek O. **MSstats Version 4.0:
-   Statistical Analyses of Quantitative Mass Spectrometry-Based Proteomic
-   Experiments with Chromatography-Based Quantification at Scale.**
-   *J Proteome Res*. 2023;22(5):1466-1482.
-   [DOI: 10.1021/acs.jproteome.2c00834](https://doi.org/10.1021/acs.jproteome.2c00834)
+1. Wu A, Kohler D, Navada P, Robbins J, Boyle G, Boshart A, Karis K, Neefjes J, 
+   Konvalinka A, Sarthy J, Pino L, Gyori B, Vitek O. **MSstatsBioNet: Integrating 
+   Statistical Analyses with Prior Knowledge Biomolecular Networks for Quantitative
+   Proteomics and Phosphoproteomics.** *bioRxiv*. 2026.
+   [DOI: 10.64898/2026.07.09.737605](https://doi.org/10.64898/2026.07.09.737605)
+2. Szvetecz S, Kohler D, Vitek O. **MSstatsResponse: Semi-parametric
+   statistical model enhances detection of drug-protein interactions in
+   chemoproteomics experiments.** *bioRxiv*. 2026.
+   [DOI: 10.64898/2026.03.09.710598](https://doi.org/10.64898/2026.03.09.710598)
+3. Kohler D, Dogu E, Bhattacharya M, Karayel O, Magana M, Wu A, Anania VG,
+   Vitek O. **Accounting for longitudinal peak quality metrics with MSstats+
+   enhances differential analysis in proteomic experiments with
+   data-independent acquisition** (introduces MSstats+). *bioRxiv*. 2025.
+   [DOI: 10.1101/2025.09.11.675573](https://doi.org/10.1101/2025.09.11.675573)
+4. Figueroa-Navedo AM, Kapre R, Gupta T, Xu Y, Phaneuf CG, Jean Beltran PM,
+   Xue L, Ivanov AR, Vitek O. **MSstatsTMT Improves Accuracy of Thermal
+   Proteome Profiling.** *Mol Cell Proteomics*. 2025;24(8):100999.
+   [DOI: 10.1016/j.mcpro.2025.100999](https://doi.org/10.1016/j.mcpro.2025.100999)
 5. Kohler D, Vitek O, et al. **An MSstats workflow for detecting differentially
    abundant proteins in large-scale data-independent acquisition mass
    spectrometry experiments with FragPipe processing.** *Nat Protoc*.
    2024;19:2915-2938.
    [DOI: 10.1038/s41596-024-01000-3](https://doi.org/10.1038/s41596-024-01000-3)
-6. Kohler D, Dogu E, Bhattacharya M, Karayel O, Magana M, Wu A, Anania VG,
-   Vitek O. **Accounting for longitudinal peak quality metrics with MSstats+
-   enhances differential analysis in proteomic experiments with
-   data-independent acquisition** (introduces MSstats+). *bioRxiv*. 2025.
-   [DOI: 10.1101/2025.09.11.675573](https://doi.org/10.1101/2025.09.11.675573)
-7. Huang T, Choi M, Tzouros M, Golling S, Pandya NJ, Banfai B, Dunkley T,
-   Vitek O. **MSstatsTMT: Statistical Detection of Differentially Abundant
-   Proteins in Experiments with Isobaric Labeling and Multiple Mixtures.**
-   *Mol Cell Proteomics*. 2020;19(10):1706-1723.
-   [DOI: 10.1074/mcp.RA120.002105](https://doi.org/10.1074/mcp.RA120.002105)
-8. Huang T, Staniak M, da Veiga Leprevost F, Figueroa-Navedo AM, Ivanov AR,
+6. Huang T, Staniak M, da Veiga Leprevost F, Figueroa-Navedo AM, Ivanov AR,
    Nesvizhskii AI, Choi M, Vitek O. **Statistical Detection of Differentially
    Abundant Proteins in Experiments with Repeated Measures Designs and
    Isobaric Labeling.** *J Proteome Res*. 2023;22(8):2641-2659.
    [DOI: 10.1021/acs.jproteome.3c00155](https://doi.org/10.1021/acs.jproteome.3c00155)
-9. Figueroa-Navedo AM, Kapre R, Gupta T, Xu Y, Phaneuf CG, Jean Beltran PM,
-   Xue L, Ivanov AR, Vitek O. **MSstatsTMT Improves Accuracy of Thermal
-   Proteome Profiling.** *Mol Cell Proteomics*. 2025;24(8):100999.
-   [DOI: 10.1016/j.mcpro.2025.100999](https://doi.org/10.1016/j.mcpro.2025.100999)
+7. Kohler D, Staniak M, Tsai TH, Huang T, Shulman N, Bernhardt OM, MacLean BX,
+   Nesvizhskii AI, Reiter L, Sabido E, Choi M, Vitek O. **MSstats Version 4.0:
+   Statistical Analyses of Quantitative Mass Spectrometry-Based Proteomic
+   Experiments with Chromatography-Based Quantification at Scale.**
+   *J Proteome Res*. 2023;22(5):1466-1482.
+   [DOI: 10.1021/acs.jproteome.2c00834](https://doi.org/10.1021/acs.jproteome.2c00834)
+8. Malinovska L, Cappelletti V, Kohler D, Piazza I, Tsai TH, Pepelnjak M,
+   Stalder P, Dörig C, Sesterhenn F, Elsässer F, Kralickova L, Beaton N,
+   Reiter L, de Souza N, Vitek O, Picotti P. **Proteome-wide structural
+   changes measured with limited proteolysis-mass spectrometry: an advanced
+   protocol for high-throughput applications** (introduces MSstatsLiP).
+   *Nat Protoc*. 2023;18(3):659-682.
+   [DOI: 10.1038/s41596-022-00771-x](https://doi.org/10.1038/s41596-022-00771-x)
+9. Kohler D, Kaza M, Pasi C, Huang T, Staniak M, Mohandas D, Sabido E, Choi M,
+   Vitek O. **MSstatsShiny: A GUI for Versatile, Scalable, and Reproducible
+   Statistical Analyses of Quantitative Proteomic Experiments.**
+   *J Proteome Res*. 2023;22(2):551-556.
+   [DOI: 10.1021/acs.jproteome.2c00603](https://doi.org/10.1021/acs.jproteome.2c00603)
 10. Kohler D, Tsai TH, Verschueren E, Huang T, Hinkle T, Phu L, Choi M, Vitek O.
     **MSstatsPTM: Statistical Relative Quantification of Posttranslational
     Modifications in Bottom-Up Mass Spectrometry-Based Proteomics.**
     *Mol Cell Proteomics*. 2022;22(1):100477.
     [DOI: 10.1016/j.mcpro.2022.100477](https://doi.org/10.1016/j.mcpro.2022.100477)
-11. Malinovska L, Cappelletti V, Kohler D, Piazza I, Tsai TH, Pepelnjak M,
-    Stalder P, Dörig C, Sesterhenn F, Elsässer F, Kralickova L, Beaton N,
-    Reiter L, de Souza N, Vitek O, Picotti P. **Proteome-wide structural
-    changes measured with limited proteolysis-mass spectrometry: an advanced
-    protocol for high-throughput applications** (introduces MSstatsLiP).
-    *Nat Protoc*. 2023;18(3):659-682.
-    [DOI: 10.1038/s41596-022-00771-x](https://doi.org/10.1038/s41596-022-00771-x)
-12. Kohler D, Kaza M, Pasi C, Huang T, Staniak M, Mohandas D, Sabido E, Choi M,
-    Vitek O. **MSstatsShiny: A GUI for Versatile, Scalable, and Reproducible
-    Statistical Analyses of Quantitative Proteomic Experiments.**
-    *J Proteome Res*. 2023;22(2):551-556.
-    [DOI: 10.1021/acs.jproteome.2c00603](https://doi.org/10.1021/acs.jproteome.2c00603)
-13. Szvetecz S, Kohler D, Vitek O. **MSstatsResponse: Semi-parametric
-    statistical model enhances detection of drug-protein interactions in
-    chemoproteomics experiments.** *bioRxiv*. 2026.
-    [DOI: 10.64898/2026.03.09.710598](https://doi.org/10.64898/2026.03.09.710598)
-14. Wu A, Kohler D, Navada P, Robbins J, Boyle G, Boshart A, Karis K, Neefjes J, 
-    Konvalinka A, Sarthy J, Pino L, Gyori B, Vitek O. **MSstatsBioNet: Integrating 
-    Statistical Analyses with Prior Knowledge Biomolecular Networks for Quantitative
-    Proteomics and Phosphoproteomics.** *bioRxiv*. 2026.
-    [DOI: 10.64898/2026.07.09.737605](https://doi.org/10.64898/2026.07.09.737605)
+11. Huang T, Choi M, Tzouros M, Golling S, Pandya NJ, Banfai B, Dunkley T,
+    Vitek O. **MSstatsTMT: Statistical Detection of Differentially Abundant
+    Proteins in Experiments with Isobaric Labeling and Multiple Mixtures.**
+    *Mol Cell Proteomics*. 2020;19(10):1706-1723.
+    [DOI: 10.1074/mcp.RA120.002105](https://doi.org/10.1074/mcp.RA120.002105)
+12. Tsai TH, Choi M, Banfai B, Liu Y, MacLean BX, Dunkley T, Vitek O.
+    **Selection of Features with Consistent Profiles Improves Relative Protein
+    Quantification in Mass Spectrometry Experiments.** *Mol Cell Proteomics*.
+    2020;19(6):944-959.
+    [DOI: 10.1074/mcp.RA119.001792](https://doi.org/10.1074/mcp.RA119.001792)
+13. Choi M, Chang CY, Clough T, Broudy D, Killeen T, MacLean B, Vitek O.
+    **MSstats: an R package for statistical analysis of quantitative mass
+    spectrometry-based proteomic experiments.** *Bioinformatics*. 2014;30(17):2524-2526.
+    [DOI: 10.1093/bioinformatics/btu305](https://doi.org/10.1093/bioinformatics/btu305)
+14. Oberg AL, Vitek O. **Statistical design of quantitative mass spectrometry-based
+    proteomic experiments.** *J Proteome Res*. 2009;8(5):2144-2156.
+    [DOI: 10.1021/pr8010099](https://doi.org/10.1021/pr8010099)
 
 ## Funding
 
