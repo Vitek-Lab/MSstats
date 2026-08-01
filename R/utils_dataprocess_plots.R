@@ -237,7 +237,7 @@
     RUN = ABUNDANCE = Name = NULL
     
     if (all_proteins) {
-        plot_title = "All proteins"
+        plot_title = "All"
     } else {
         plot_title = unique(input$PROTEIN)
     }
