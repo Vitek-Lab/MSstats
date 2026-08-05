@@ -1,18 +1,3 @@
-## ── Memory-monitoring helpers ─────────────────────────────────────────────────
-
-# RSS of the current process in MB.
-# On Linux reads /proc/self/status (VmRSS); elsewhere falls back to gc() counts.
-.current_rss_mb <- function() {
-    if (file.exists("/proc/self/status")) {
-        ln <- readLines("/proc/self/status", warn = FALSE)
-        m  <- grep("^VmRSS:", ln, value = TRUE)
-        if (length(m))
-            return(as.numeric(gsub("[^0-9]", "", m[1L])) / 1024)
-    }
-    g <- gc(reset = FALSE)
-    (g["Ncells", "used"] * 8L + g["Vcells", "used"] * 8L) / 1024^2
-}
-
 # Cross-platform peak-RSS reader. Reflects the true lifetime peak of the
 # calling process, regardless of when you call it — no polling required.
 # All three branches report OS-level peak resident/working-set memory,
