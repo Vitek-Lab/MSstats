@@ -290,8 +290,6 @@
                     result[[idx]][, FEATURE := droplevels(factor(as.character(FEATURE), levels = feature_levels))]
             }
         }
-        if (!is.null(result[[2L]]) && "cen" %in% colnames(result[[2L]]))
-            result[[2L]][, cen := as.integer(cen)]
         result
     }
 }
