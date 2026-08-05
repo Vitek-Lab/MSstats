@@ -67,22 +67,22 @@ for (i in seq_len(n_proteins)) {
   protein_level_matches[i] <- compare_df(result_1core[[i]][[1]], result_4core[[i]][[1]])
 }
 
-survival_data_matches <- logical(n_proteins)
+feature_level_data_matches <- logical(n_proteins)
 for (i in seq_len(n_proteins)) {
-  survival_data_matches[i] <- compare_df(result_1core[[i]][[2]], result_4core[[i]][[2]])
+  feature_level_data_matches[i] <- compare_df(result_1core[[i]][[2]], result_4core[[i]][[2]])
 }
 
 n_protein_level_match <- sum(protein_level_matches)
-n_survival_data_match <- sum(survival_data_matches)
+n_feature_level_data_match <- sum(feature_level_data_matches)
 
 cat(sprintf("Protein-level results matching: %d / %d\n", n_protein_level_match, n_proteins))
-cat(sprintf("Survival data matching:         %d / %d\n", n_survival_data_match, n_proteins))
+cat(sprintf("Feature_level data matching:         %d / %d\n", n_feature_level_data_match, n_proteins))
 
 stopifnot(
   "Protein-level results differ between 1 core and 4 cores" =
     n_protein_level_match == n_proteins,
-  "Survival data differs between 1 core and 4 cores" =
-    n_survival_data_match == n_proteins
+  "Feature_level data differs between 1 core and 4 cores" =
+    n_feature_level_data_match == n_proteins
 )
 
 cat("1-core and 4-core results are identical.\n")
