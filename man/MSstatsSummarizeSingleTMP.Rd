@@ -19,7 +19,7 @@ MSstatsSummarizeSingleTMP(
 
 \item{censored_symbol}{how censored values are encoded: 'NA', '0', or NULL for none}
 
-\item{remove50missing}{only for method = "TMP"; drops proteins missing >=50% per peptide in every run}
+\item{remove50missing}{only for method = "TMP"; drops proteins missing >=50\% per peptide in every run}
 
 \item{aft_iterations}{number of iterations for AFT model fitting}
 }

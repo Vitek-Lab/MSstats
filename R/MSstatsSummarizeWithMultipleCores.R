@@ -306,7 +306,7 @@
 #' @param method summarization method: "linear" or "TMP"
 #' @param impute only for method = "TMP"; imputes censored values via AFT model when TRUE
 #' @param censored_symbol how censored values are encoded: 'NA', '0', or NULL for none
-#' @param remove50missing only for method = "TMP"; drops proteins missing >=50% per peptide in every run
+#' @param remove50missing only for method = "TMP"; drops proteins missing >=50\% per peptide in every run
 #' @param equal_variance only for method = "linear"; assume equal variance among feature intensities
 #' @param numberOfCores number of cores for parallel processing (Linux/Mac only)
 #' @param aft_iterations number of AFT model iterations

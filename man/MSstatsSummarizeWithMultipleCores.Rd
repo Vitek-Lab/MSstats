@@ -28,7 +28,7 @@ MSstatsSummarizeWithMultipleCores(
 
 \item{censored_symbol}{how censored values are encoded: 'NA', '0', or NULL for none}
 
-\item{remove50missing}{only for method = "TMP"; drops proteins missing >=50% per peptide in every run}
+\item{remove50missing}{only for method = "TMP"; drops proteins missing >=50\% per peptide in every run}
 
 \item{equal_variance}{only for method = "linear"; assume equal variance among feature intensities}
 
