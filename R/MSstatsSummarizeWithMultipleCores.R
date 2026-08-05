@@ -312,290 +312,6 @@
 
 
 
-## ── Matrix-native TMP ─────────────────────────────────────────────────────────
-##
-## .summarize_protein_tmp_from_packed takes the packed double vector + meta list
-## directly and produces TMP results without ever building the full long-format
-## data.table or calling dcast.
-##
-## Compared with MSstatsSummarizeSingleTMP the hot path is:
-##   long-format: packed → long-DT (melt) → filter → AFT fit → dcast → TMP
-##   packed:      packed → FL×R matrix → mask → (AFT fit if needed) → t(mat) → TMP
-##
-## The dcast savings are most significant for high-feature proteins (>100
-## features) and large run counts (>50 runs), where the intermediate FL*R
-## data.table allocation dominates.
-## ─────────────────────────────────────────────────────────────────────────────
-
-
-#' Summarize a single protein with TMP directly from a packed double vector
-#'
-#' Bypasses the long-format \code{data.table} reconstruction and the
-#' \code{dcast} inside \code{.fitTukey}.  The FL×R packed matrices are
-#' operated on directly:
-#' \enumerate{
-#'   \item Row/column masking replaces the \code{n_obs}/\code{n_obs_run} filter.
-#'   \item AFT survival fitting uses a lazily-built minimal \code{data.table}
-#'     (constructed only when \code{impute=TRUE} and censored values are
-#'     present).
-#'   \item TMP is applied via a vectorized scatter into a
-#'     \code{(LABEL×RUN) × FEATURE} wide matrix followed by
-#'     \code{median_polish_summary} — no \code{dcast} round-trip.
-#' }
-#'
-#' @param packed double vector produced by \code{.pack_protein_slot}
-#' @param meta metadata list from \code{.pack_protein_slot}
-#' @param impute logical; impute censored values with AFT survival model
-#' @param censored_symbol \code{"0"}, \code{"NA"}, or \code{NULL}
-#' @param remove50missing logical; skip proteins where all runs are >50\%
-#'   missing
-#' @param aft_iterations integer; max AFT iterations
-#' @return \code{list(result_dt, survival_dt)} matching the format of
-#'   \code{MSstatsSummarizeSingleTMP}
-#' @keywords internal
-.summarize_protein_tmp_from_packed <- function(packed, meta,
-                                               impute, censored_symbol, remove50missing, aft_iterations = 90L)
-{
-    n_feature_labels <- meta$n_feature_labels
-    n_runs           <- meta$n_runs
-    matrix_len       <- n_feature_labels * n_runs
-    PROTEIN          <- meta$PROTEIN
-    feature_label_dt <- meta$feature_label_dt   # data.frame: FEATURE, LABEL, PEPTIDE
-    runs             <- meta$runs
-
-    # ── 1. Unpack matrices ─────────────────────────────────────────────────────
-    # Layout (see top-of-file comment block):
-    #   pos 1           : slot_index (skip)
-    #   pos 2..FL*R+1   : newABUNDANCE (FL × R, column-major)
-    #   pos FL*R+2..    : ABUNDANCE    (skip — not needed for TMP)
-    #   pos 2*FL*R+2..  : censored     (FL × R)
-    #   pos 3*FL*R+2..  : cen          (FL × R)
-    #   pos 4*FL*R+2..  : ANOMALYSCORES(skip — not needed for TMP)
-    #   then: n_obs(FL), n_obs_run(R), prop_features(R)
-    cursor <- 2L
-    new_abundance_mat <- matrix(packed[cursor:(cursor + matrix_len - 1L)], nrow = n_feature_labels, ncol = n_runs); cursor <- cursor + matrix_len
-    cursor            <- cursor + matrix_len                  # skip ABUNDANCE
-    censored_mat      <- matrix(packed[cursor:(cursor + matrix_len - 1L)], nrow = n_feature_labels, ncol = n_runs); cursor <- cursor + matrix_len
-    event_mat         <- matrix(packed[cursor:(cursor + matrix_len - 1L)], nrow = n_feature_labels, ncol = n_runs); cursor <- cursor + matrix_len
-    cursor            <- cursor + matrix_len                  # skip ANOMALYSCORES
-    n_obs_vec         <- packed[cursor:(cursor + n_feature_labels - 1L)]; cursor <- cursor + n_feature_labels
-    n_obs_run_vec     <- packed[cursor:(cursor + n_runs - 1L)]; cursor <- cursor + n_runs
-    prop_features_vec <- packed[cursor:(cursor + n_runs - 1L)]
-
-    # ── 2. Row/column masking (mirrors the n_obs / n_obs_run filter) ───────────
-    feature_is_kept <- !is.na(n_obs_vec)     & n_obs_vec     > 1
-    run_is_kept     <- !is.na(n_obs_run_vec) & n_obs_run_vec > 0
-
-    new_abundance_mat <- new_abundance_mat[feature_is_kept, run_is_kept, drop = FALSE]
-    censored_mat      <- censored_mat     [feature_is_kept, run_is_kept, drop = FALSE]
-    event_mat         <- event_mat        [feature_is_kept, run_is_kept, drop = FALSE]
-
-    feature_label_dt_kept   <- feature_label_dt[feature_is_kept, , drop = FALSE]
-    runs_kept               <- runs[run_is_kept]
-    prop_features_kept      <- prop_features_vec[run_is_kept]
-    n_feature_labels_kept   <- nrow(new_abundance_mat)
-    n_runs_kept             <- ncol(new_abundance_mat)
-
-    # ── 3. Empty-matrix early exit ─────────────────────────────────────────────
-    if (n_feature_labels_kept == 0L || n_runs_kept == 0L) {
-        msg <- paste("Can't summarize for protein", PROTEIN,
-                     "because all measurements are missing or censored.")
-        try(getOption("MSstatsMsg")("INFO", msg), silent = TRUE)
-        try(getOption("MSstatsLog")("INFO", msg), silent = TRUE)
-        return(list(NULL, NULL))
-    }
-
-    # ── 4. remove50missing check (independent of imputation) ──────────────────
-    if (remove50missing &&
-        all(prop_features_kept <= 0.5 | is.na(prop_features_kept))) {
-        msg <- paste("Can't summarize for protein", PROTEIN,
-                     "because all runs have more than 50% missing values and",
-                     "are removed with the option, remove50missing=TRUE.")
-        try(getOption("MSstatsMsg")("INFO", msg), silent = TRUE)
-        try(getOption("MSstatsLog")("INFO", msg), silent = TRUE)
-        return(list(NULL, NULL))
-    }
-
-    # ── 5. AFT survival imputation (lazy: only if any censored present) ────────
-    n_kept_rows <- n_feature_labels_kept * n_runs_kept
-    original_abundance_vec <- as.vector(new_abundance_mat)
-
-    survival_columns <- c("newABUNDANCE", "cen", "RUN", "FEATURE", "ref_covariate")
-    any_censored <- meta$has_censored && any(censored_mat > 0.5, na.rm = TRUE)
-
-    if (impute && any_censored && meta$has_cen) {
-        # Build minimal long-format DT — only columns needed by .fitSurvival
-        survival_dt <- data.table::data.table(
-            newABUNDANCE = original_abundance_vec,
-            cen          = as.vector(event_mat),
-            censored     = as.logical(as.vector(censored_mat) > 0.5),
-            FEATURE      = factor(rep(feature_label_dt_kept$FEATURE, times = n_runs_kept)),
-            RUN          = factor(rep(runs_kept,                    each  = n_feature_labels_kept)),
-            LABEL        = rep(as.character(feature_label_dt_kept$LABEL), times = n_runs_kept)
-        )
-        if (meta$add_ref_covariate) {
-            survival_dt[, ref_covariate := factor(
-                data.table::fifelse(LABEL == "L", as.character(RUN), "0"))]
-        }
-
-        fit_columns <- intersect(survival_columns, colnames(survival_dt))
-        fit_data <- if (meta$is_labeled_ref) {
-            survival_dt[LABEL != "H", fit_columns, with = FALSE]
-        } else {
-            survival_dt[, fit_columns, with = FALSE]
-        }
-
-        converged <- TRUE
-        survival_fit <- withCallingHandlers({
-            MSstats:::.fitSurvival(fit_data, aft_iterations)
-        }, warning = function(w) {
-            if (grepl("converge", conditionMessage(w), ignore.case = TRUE)) {
-                message("Convergence warning caught: ", conditionMessage(w))
-                converged <<- FALSE
-            }
-        })
-
-        predicted_values <- if (converged) {
-            predict(survival_fit, newdata = survival_dt)
-        } else {
-            rep(NA_real_, n_kept_rows)
-        }
-
-        should_impute <- if (meta$is_labeled_ref) {
-            survival_dt$censored & survival_dt$LABEL != "H"
-        } else {
-            survival_dt$censored
-        }
-
-        imputed_abundance_vec <- ifelse(should_impute, predicted_values, original_abundance_vec)
-        survival_dt[, predicted    := ifelse(should_impute, predicted_values, NA_real_)]
-        survival_dt[, newABUNDANCE := imputed_abundance_vec]
-        new_abundance_mat <- matrix(imputed_abundance_vec, nrow = n_feature_labels_kept, ncol = n_runs_kept)
-        survival_output   <- survival_dt[, intersect(c(survival_columns, "LABEL", "predicted"),
-                                                      colnames(survival_dt)), with = FALSE]
-
-    } else {
-        # No imputation: build survival DT from original values
-        survival_dt <- data.table::data.table(
-            newABUNDANCE = original_abundance_vec,
-            cen          = if (meta$has_cen) as.vector(event_mat)
-            else rep(NA_real_, n_kept_rows),
-            FEATURE      = rep(as.character(feature_label_dt_kept$FEATURE), times = n_runs_kept),
-            RUN          = rep(runs_kept,                                   each  = n_feature_labels_kept),
-            LABEL        = rep(as.character(feature_label_dt_kept$LABEL),   times = n_runs_kept),
-            predicted    = NA  # logical NA, matching MSstatsSummarizeSingleTMP's
-            # bare `survival[, predicted := NA]` in its
-            # equivalent non-imputed branch (dataProcess.R:586)
-        )
-        survival_output <- survival_dt[, intersect(c(survival_columns, "LABEL", "predicted"),
-                                                    colnames(survival_dt)), with = FALSE]
-    }
-
-    # ── 6. Post-imputation .isSummarizable check ───────────────────────────────
-    if (all(is.na(new_abundance_mat) | new_abundance_mat == 0)) {
-        msg <- paste("Can't summarize for protein", PROTEIN,
-                     "because all measurements are missing or censored.")
-        try(getOption("MSstatsMsg")("INFO", msg), silent = TRUE)
-        try(getOption("MSstatsLog")("INFO", msg), silent = TRUE)
-        return(list(NULL, NULL))
-    }
-
-    # ── 7. TMP via vectorized scatter into (LABEL×RUN) × FEATURE wide matrix ───
-    #
-    # Mirrors .fitTukey: dcast(LABEL + RUN ~ FEATURE, value.var="newABUNDANCE")
-    # Row order in wide_mat: (lbl1,run1),(lbl1,run2),...,(lbl2,run1),...
-    # where labels are sorted — matches dcast alphabetical ordering for
-    # character LABEL values.
-    if (n_feature_labels_kept == 1L) {
-        # ── Single (FEATURE, LABEL) row: skip TMP, use values directly ────────
-        if (meta$is_labeled_ref) {
-            is_heavy_row <- as.character(feature_label_dt_kept$LABEL) == "H"
-            is_light_row <- as.character(feature_label_dt_kept$LABEL) == "L"
-            if (any(is_heavy_row) && any(is_light_row)) {
-                heavy_values <- as.vector(new_abundance_mat[is_heavy_row, , drop = FALSE])
-                light_values <- as.vector(new_abundance_mat[is_light_row, , drop = FALSE])
-                heavy_median <- stats::median(heavy_values, na.rm = TRUE)
-                result <- data.table::data.table(
-                    Protein        = PROTEIN,
-                    LABEL          = "L",
-                    RUN            = runs_kept,
-                    LogIntensities = light_values - heavy_values + heavy_median
-                )
-            } else {
-                result <- data.table::data.table(
-                    Protein        = PROTEIN,
-                    LABEL          = as.character(feature_label_dt_kept$LABEL[1L]),
-                    RUN            = runs_kept,
-                    LogIntensities = as.vector(new_abundance_mat)
-                )
-            }
-        } else {
-            result <- data.table::data.table(
-                Protein        = PROTEIN,
-                LABEL          = rep(as.character(feature_label_dt_kept$LABEL), times = n_runs_kept),
-                RUN            = rep(runs_kept, each = n_feature_labels_kept),
-                LogIntensities = as.vector(new_abundance_mat)
-            )
-        }
-    } else {
-        # ── Multi-feature: scatter into wide matrix, apply TMP ─────────────────
-        unique_labels   <- sort(unique(as.character(feature_label_dt_kept$LABEL)))
-        unique_features <- sort(unique(as.character(feature_label_dt_kept$FEATURE)))
-        n_labels   <- length(unique_labels)
-        n_features <- length(unique_features)
-
-        label_idx_map   <- match(as.character(feature_label_dt_kept$LABEL),   unique_labels)
-        feature_idx_map <- match(as.character(feature_label_dt_kept$FEATURE), unique_features)
-
-        # Vectorized scatter: mat[fl, run] → wide[(lbl_idx-1)*n_runs_kept + run, feat_idx]
-        feature_idx_of_cell <- rep(seq_len(n_feature_labels_kept), times = n_runs_kept)
-        run_idx_of_cell     <- rep(seq_len(n_runs_kept),           each  = n_feature_labels_kept)
-        wide_mat_row <- (label_idx_map[feature_idx_of_cell] - 1L) * n_runs_kept + run_idx_of_cell
-        wide_mat_col <- feature_idx_map[feature_idx_of_cell]
-
-        wide_mat <- matrix(NA_real_, nrow = n_labels * n_runs_kept, ncol = n_features)
-        wide_mat[cbind(wide_mat_row, wide_mat_col)] <- as.vector(new_abundance_mat)
-
-        tmp_fitted_values <- MSstats:::median_polish_summary(wide_mat)
-
-        # Row → (LABEL, RUN) mapping: label index cycles every n_runs_kept rows
-        result_labels <- rep(unique_labels, each = n_runs_kept)
-        result_runs   <- rep(runs_kept,     times = n_labels)
-
-        if (meta$is_labeled_ref) {
-            heavy_label_idx <- match("H", unique_labels)
-            light_label_idx <- match("L", unique_labels)
-            if (!is.na(heavy_label_idx) && !is.na(light_label_idx)) {
-                heavy_rows   <- (heavy_label_idx - 1L) * n_runs_kept + seq_len(n_runs_kept)
-                light_rows   <- (light_label_idx - 1L) * n_runs_kept + seq_len(n_runs_kept)
-                heavy_median <- stats::median(tmp_fitted_values[heavy_rows], na.rm = TRUE)
-                result  <- data.table::data.table(
-                    Protein        = PROTEIN,
-                    LABEL          = "L",
-                    RUN            = runs_kept,
-                    LogIntensities = tmp_fitted_values[light_rows] - tmp_fitted_values[heavy_rows] + heavy_median
-                )
-            } else {
-                result <- data.table::data.table(
-                    Protein        = PROTEIN,
-                    LABEL          = result_labels,
-                    RUN            = result_runs,
-                    LogIntensities = tmp_fitted_values
-                )
-            }
-        } else {
-            result <- data.table::data.table(
-                Protein        = PROTEIN,
-                LABEL          = result_labels,
-                RUN            = result_runs,
-                LogIntensities = tmp_fitted_values
-            )
-        }
-    }
-
-    list(result, survival_output)
-}
-
 #' Build the per-record worker closure for
 #' \code{MSstatsSummarizeWithMultipleCores}
 #'
@@ -627,58 +343,46 @@
     equal_variance_  <- equal_variance
 
     function(record) {
-        packed <- record$packed
         meta   <- record$meta
+        protein_dt <- unpack_fn(record$packed, meta)
         result <- if (use_TMP_) {
-            .summarize_protein_tmp_from_packed(
-                packed, meta,
-                impute_, censored_symbol_,
+            MSstatsSummarizeSingleTMP(
+                protein_dt, impute_, censored_symbol_,
                 remove50missing_, aft_iterations_)
         } else {
-            protein_dt <- unpack_fn(packed, meta)
             MSstatsSummarizeSingleLinear(
                 protein_dt, impute_, censored_symbol_,
                 remove50missing_, aft_iterations_,
                 equal_variances = equal_variance_)
         }
-        # Normalize column types/levels at the worker boundary rather than
-        # inside .summarize_protein_tmp_from_packed/MSstatsSummarizeSingleLinear:
-        # those are shared with earlier packed-vector iterations and
-        # dataProcess.R respectively, and the TMP path in particular carries
-        # RUN as plain character (from meta$runs) and cen as double (from the
-        # packed matrix). Re-leveling against meta$runs (rather than a bare
-        # factor(RUN)) preserves the numeric run order that
-        # levels(input$RUN) already established upstream — a bare factor()
-        # call would instead re-sort alphabetically ("1","10","11","2",...
-        # for >=10 runs). as.character() first strips any existing level
-        # order before re-leveling, since
-        # .summarize_protein_tmp_from_packed's survival table (result[[2L]])
-        # already wraps RUN in a bare factor() for the imputed branch — that
-        # call has the exact same alphabetical-resort bug even though it
-        # looks pre-typed. droplevels() then matches
-        # MSstatsSummarizeSingleTMP/SingleCore, whose factor(RUN) only ever
-        # sees — and so only ever keeps — the runs present for that protein,
-        # since meta$runs carries every run across the whole input.
+        # Normalize column types/levels at the worker boundary. Both
+        # MSstatsSummarizeSingleTMP and MSstatsSummarizeSingleLinear call a
+        # bare factor(RUN)/factor(FEATURE) on their input. For
+        # MSstatsSummarizeWithSingleCore that's a no-op order-wise, since RUN
+        # and FEATURE arrive already factors there and bare factor() keeps
+        # existing levels. Here protein_dt comes from .unpack_protein_slot,
+        # which reconstructs RUN/FEATURE as plain character — so the bare
+        # factor() call inside those functions re-sorts alphabetically
+        # instead ("1","10","11","2",... for >=10 runs). Re-leveling against
+        # meta$runs restores the numeric run order that levels(input$RUN)
+        # established upstream; as.character() first strips the alphabetical
+        # level order factor() just introduced. droplevels() then matches
+        # SingleCore's factor(RUN), which only ever sees — and so only ever
+        # keeps — the runs present for that protein, since meta$runs carries
+        # every run across the whole input.
         #
-        # FEATURE gets the same treatment: .summarize_protein_tmp_from_packed's
-        # non-imputed survival branch leaves FEATURE as plain character (only
-        # the imputed branch wraps it in a bare factor()), so result[[2L]]$
-        # FEATURE isn't reliably a factor the way SingleCore's is (single_
-        # protein[, FEATURE := factor(FEATURE)] before survival is sliced off
-        # it).
-        #
-        # Deliberately NOT leveling against meta$feature_label_dt$FEATURE's
-        # existing row order here: that order comes from .pack_protein_slot's
-        # data.table::setorder(feature_label_dt, FEATURE, LABEL), and
-        # data.table sorts character columns in the C-locale (byte order:
-        # all uppercase before any lowercase) for platform-independence —
-        # whereas SingleCore's bare factor(FEATURE) goes through base R's
-        # factor()/sort(), which use the session's collation locale (e.g.
-        # en_US.UTF-8, where case is interleaved: "a" < "A" < "b" < "B"). Any
-        # FEATURE strings with mixed case (e.g. modification tags) sort
-        # differently between the two, so re-deriving the level order with a
-        # base R sort() reproduces SingleCore's order instead of inheriting
-        # data.table's.
+        # FEATURE is re-leveled with a fresh base R sort() rather than
+        # inheriting meta$feature_label_dt's existing row order: that order
+        # comes from .pack_protein_slot's data.table::setorder(feature_label_dt,
+        # FEATURE, LABEL), and data.table sorts character columns in the
+        # C-locale (byte order: all uppercase before any lowercase) for
+        # platform-independence — whereas SingleCore's bare factor(FEATURE)
+        # goes through base R's factor()/sort(), which use the session's
+        # collation locale (e.g. en_US.UTF-8, where case is interleaved:
+        # "a" < "A" < "b" < "B"). Any FEATURE strings with mixed case (e.g.
+        # modification tags) sort differently between the two, so
+        # re-deriving the level order with a base R sort() reproduces
+        # SingleCore's order instead of inheriting data.table's.
         feature_levels <- sort(unique(meta$feature_label_dt$FEATURE))
         for (idx in 1:2) {
             if (!is.null(result[[idx]])) {

@@ -2,7 +2,7 @@
 % Please edit documentation in R/MSstatsSummarizeWithMultipleCores.R
 \name{MSstatsSummarizeWithMultipleCores}
 \alias{MSstatsSummarizeWithMultipleCores}
-\title{Feature-level data summarization via socket-dispatched protein records (V6)}
+\title{Feature-level data summarization via socket-dispatched protein records}
 \usage{
 MSstatsSummarizeWithMultipleCores(
   input,
@@ -63,25 +63,27 @@ track progress. Only works for Linux & Mac OS. Default is 1.}
 workers.}
 }
 \value{
-A named list with one element per protein slot, identical in
-  structure to \code{MSstatsSummarizeWithMultipleCores}.
+A named list with one element per protein slot, keyed by protein
+  (or protein \eqn{\times} label) identifier.
 }
 \description{
-Fixes a hidden RAM cost in \code{MSstatsSummarizeWithMultipleCoresV5}: V5's
-worker closure captured \code{meta_list} — the metadata for \emph{every}
-protein — by reference, so each worker received and retained the full
-metadata set for the whole run regardless of how many proteins were
-actually assigned to it. Bounding the per-task \emph{packed-vector} payload
-(e.g. via \code{SnowfastParam(tasks = ...)}) did nothing to reduce that,
-since the metadata was baked into the closure once, not re-sliced per task.
+Fixes a hidden RAM cost present in an earlier iteration of this function,
+where the worker closure captured \code{meta_list} — the metadata for
+\emph{every} protein — by reference, so each worker received and retained
+the full metadata set for the whole run regardless of how many proteins
+were actually assigned to it. Bounding the per-task \emph{packed-vector}
+payload (e.g. via \code{SnowfastParam(tasks = ...)}) did nothing to reduce
+that, since the metadata was baked into the closure once, not re-sliced
+per task.
 }
 \details{
-V6 pairs each protein's packed double vector with only its own metadata
-into a single list element (\code{list(packed = ..., meta = ...)}) and
-dispatches that combined list through \code{bplapply}. \code{BiocParallel}
-then only serializes and sends the records actually assigned to a given
-task, so a worker never holds metadata for proteins outside its own
-task(s) — unlike V5, RAM scales with the batch actually being processed.
+This version pairs each protein's packed double vector with only its own
+metadata into a single list element (\code{list(packed = ..., meta = ...)})
+and dispatches that combined list through \code{bplapply}.
+\code{BiocParallel} then only serializes and sends the records actually
+assigned to a given task, so a worker never holds metadata for proteins
+outside its own task(s) — unlike that earlier iteration, RAM scales with
+the batch actually being processed.
 
 Progress is reported by turning on \code{SnowfastParam}'s built-in
 \code{progressbar}, not by having workers talk back to the parent.
