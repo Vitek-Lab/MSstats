@@ -281,15 +281,6 @@
                 remove50missing_, aft_iterations_,
                 equal_variances = equal_variance_)
         }
-        feature_levels <- sort(unique(meta$feature_label_dt$FEATURE))
-        for (idx in 1:2) {
-            if (!is.null(result[[idx]])) {
-                if ("RUN" %in% colnames(result[[idx]]))
-                    result[[idx]][, RUN := droplevels(factor(as.character(RUN), levels = meta$runs))]
-                if ("FEATURE" %in% colnames(result[[idx]]))
-                    result[[idx]][, FEATURE := droplevels(factor(as.character(FEATURE), levels = feature_levels))]
-            }
-        }
         result
     }
 }
@@ -331,7 +322,7 @@
 #' @importFrom matter SnowfastParam
 #' @importFrom BiocParallel bplapply bpstart bpstop bpisup bpnworkers bpprogressbar
 #' @importFrom data.table data.table fifelse setDTthreads
-#' @importFrom stats median predict
+#' @importFrom stats median
 #'
 #' @export
 MSstatsSummarizeWithMultipleCores <- function(
