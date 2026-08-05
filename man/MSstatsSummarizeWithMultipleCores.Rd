@@ -24,76 +24,31 @@ MSstatsSummarizeWithMultipleCores(
 
 \item{method}{summarization method: "linear" or "TMP"}
 
-\item{impute}{only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'.
-TRUE (default) imputes censored missing values using an Accelerated Failure
-Time model. FALSE excludes censored observations from summarization entirely,
-treating them as missing at random; no imputed values are introduced.
-Has no effect when censored_symbol = NULL, since no values are considered censored.}
+\item{impute}{only for method = "TMP"; imputes censored values via AFT model when TRUE}
 
-\item{censored_symbol}{Indicates how censored missing values are encoded in
-the 'Intensity' column. 'NA' (default) treats all NA intensities as
-left-censored (i.e., below the limit of detection). '0' treats zero
-intensities as left-censored; in this case NA intensities are assumed to be
-missing at random and are not censored. Skyline output should use '0'. NULL
-assumes that all missing values are missing at random — no values are treated
-as censored, and imputation is disabled (impute is ignored).}
+\item{censored_symbol}{how censored values are encoded: 'NA', '0', or NULL for none}
 
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins
-where every run has at least 50\% missing values for each peptide. FALSE is default.}
+\item{remove50missing}{only for method = "TMP"; drops proteins missing >=50% per peptide in every run}
 
-\item{equal_variance}{only for summaryMethod = "linear". Default is TRUE. 
-Logical variable for whether the model should account for heterogeneous variation 
-among intensities from different features. Default is TRUE, which assume equal
-variance among intensities from features. FALSE means that we cannot assume 
-equal variance among intensities from features, then we will account for
-heterogeneous variation from different features.}
+\item{equal_variance}{only for method = "linear"; assume equal variance among feature intensities}
 
-\item{numberOfCores}{Number of cores for parallel processing. When > 1, 
-a logfile named `MSstats_dataProcess_log_progress.log` is created to 
-track progress. Only works for Linux & Mac OS. Default is 1.}
+\item{numberOfCores}{number of cores for parallel processing (Linux/Mac only)}
 
-\item{max_proteins_per_worker}{integer; caps how many protein records
-(packed vector + its own metadata) are bundled into a single
-\code{bplapply} task sent to one worker. Translated into
-\code{SnowfastParam(tasks = ...)}: with \code{N} proteins this becomes
-\code{tasks = ceiling(N / max_proteins_per_worker)}. Only applied when
-\code{BPPARAM} is \code{NULL}; ignored if the caller supplies
-\code{BPPARAM} directly. Default \code{0} reproduces \code{tasks = 0}:
-\code{X} is divided as evenly as possible across \code{numberOfCores}
-workers.}
+\item{aft_iterations}{number of AFT model iterations}
+
+\item{verbose}{whether to print verbose output}
+
+\item{BPPARAM}{optional \code{BiocParallelParam} instance}
+
+\item{track_memory}{whether to report per-worker peak RSS memory usage}
+
+\item{max_proteins_per_worker}{caps protein records per \code{bplapply} task;
+0 uses BiocParallel's default split}
 }
 \value{
 A named list with one element per protein slot, keyed by protein
   (or protein \eqn{\times} label) identifier.
 }
 \description{
-Fixes a hidden RAM cost present in an earlier iteration of this function,
-where the worker closure captured \code{meta_list} — the metadata for
-\emph{every} protein — by reference, so each worker received and retained
-the full metadata set for the whole run regardless of how many proteins
-were actually assigned to it. Bounding the per-task \emph{packed-vector}
-payload (e.g. via \code{SnowfastParam(tasks = ...)}) did nothing to reduce
-that, since the metadata was baked into the closure once, not re-sliced
-per task.
-}
-\details{
-This version pairs each protein's packed double vector with only its own
-metadata into a single list element (\code{list(packed = ..., meta = ...)})
-and dispatches that combined list through \code{bplapply}.
-\code{BiocParallel} then only serializes and sends the records actually
-assigned to a given task, so a worker never holds metadata for proteins
-outside its own task(s) — unlike that earlier iteration, RAM scales with
-the batch actually being processed.
-
-Progress is reported by turning on \code{SnowfastParam}'s built-in
-\code{progressbar}, not by having workers talk back to the parent.
-\code{BiocParallel} already ticks that progress bar from inside the
-manager process itself, once per task result it collects — the same
-receive that would happen regardless, over the same single
-\code{bplapply} call. Workers never see the flag and send nothing extra
-because of it, so this adds no serialization and no IPC beyond what an
-unmonitored run already does. Reporting granularity therefore tracks
-however many tasks the run is already split into (see
-\code{max_proteins_per_worker} below): with the default \code{tasks = 0}
-that's one step per worker.
+Feature-level data summarization via socket-dispatched protein records
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/MSstatsSummarizeWithMultipleCores.R
 \name{.pack_protein_slot}
 \alias{.pack_protein_slot}
-\title{Build the packed double vector and lightweight metadata for one protein slot}
+\title{Pack one protein slot into a double vector plus metadata}
 \usage{
 .pack_protein_slot(protein_dt, slot_index, all_runs)
 }
 \arguments{
-\item{protein_dt}{data.table rows belonging to one protein (or protein × label) slot}
+\item{protein_dt}{data.table rows for one protein (or protein x label) slot}
 
 \item{slot_index}{integer position of this slot in the global protein list}
 
@@ -17,6 +17,6 @@
 list with elements \code{packed} (double vector) and \code{meta} (list)
 }
 \description{
-Build the packed double vector and lightweight metadata for one protein slot
+Pack one protein slot into a double vector plus metadata
 }
 \keyword{internal}

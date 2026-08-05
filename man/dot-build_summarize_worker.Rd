@@ -2,8 +2,7 @@
 % Please edit documentation in R/MSstatsSummarizeWithMultipleCores.R
 \name{.build_summarize_worker}
 \alias{.build_summarize_worker}
-\title{Build the per-record worker closure for
-\code{MSstatsSummarizeWithMultipleCores}}
+\title{Build the per-record worker closure for \code{MSstatsSummarizeWithMultipleCores}}
 \usage{
 .build_summarize_worker(
   use_TMP,
@@ -15,18 +14,7 @@
 )
 }
 \description{
-Defined at package top level — not nested via \code{local()} inside
-\code{MSstatsSummarizeWithMultipleCores} — so the returned closure's
-enclosing environment chain is this factory's own (small) call frame plus
-the package namespace. \code{BiocParallel}/\code{matter} serialize a
-closure's entire enclosing environment chain to ship it to each socket
-worker, not just the variables the closure body actually references. A
-closure built via \code{local()} inside
-\code{MSstatsSummarizeWithMultipleCores} would have that function's own
-evaluation frame in its chain — which holds \code{input},
-\code{protein_records}, and other run-scale objects — so every worker
-would receive and retain a serialized copy of them even though
-\code{.worker} never touches them. Building the closure here instead keeps
-its captured state to only the scalar run parameters.
+Defined at package top level so the closure only captures the scalar run
+parameters, not the caller's run-scale objects.
 }
 \keyword{internal}
