@@ -15,30 +15,53 @@
 
 # Cross-platform peak-RSS reader. Reflects the true lifetime peak of the
 # calling process, regardless of when you call it — no polling required.
+# All three branches report OS-level peak resident/working-set memory,
+# so figures are comparable across platforms.
 .peak_rss_mb <- function() {
-    if (file.exists("/proc/self/status")) {
-        # Linux: VmHWM = kernel-maintained peak resident set size
-        ln <- grep("^VmHWM:", readLines("/proc/self/status"), value = TRUE)
-        if (length(ln)) return(as.numeric(sub("\\D+(\\d+).*", "\\1", ln)) / 1024)
-    }
-    # macOS (also works as a Linux fallback): POSIX getrusage() ru_maxrss
-    # is likewise a lifetime high-water mark, just different units per OS.
-    if (!exists(".rusage_maxrss_mb_impl", mode = "function")) {
-        Rcpp::cppFunction(
-            depends  = "Rcpp",
-            includes = "#include <sys/resource.h>",
-            code = "
-        double rusage_maxrss_mb_impl() {
-          struct rusage ru; getrusage(RUSAGE_SELF, &ru);
-        #ifdef __APPLE__
-          return (double) ru.ru_maxrss / (1024.0*1024.0); // bytes -> MB
-        #else
-          return (double) ru.ru_maxrss / 1024.0;           // KB -> MB
-        #endif
+  if (.Platform$OS.type == "windows") {
+    if (!exists(".peakRSS_windows_impl", mode = "function")) {
+      Rcpp::cppFunction(
+        depends  = "Rcpp",
+        includes = c(
+          "#include <windows.h>",
+          "#include <psapi.h>"),
+        code = "
+        double peakRSS_windows_impl() {
+          PROCESS_MEMORY_COUNTERS pmc;
+          if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+            return (double) pmc.PeakWorkingSetSize / (1024.0*1024.0); // bytes -> MB
+          }
+          return NA_REAL;
         }")
-        assign(".rusage_maxrss_mb_impl", rusage_maxrss_mb_impl, envir = .GlobalEnv)
+      assign(".peakRSS_windows_impl", peakRSS_windows_impl, envir = .GlobalEnv)
     }
-    .rusage_maxrss_mb_impl()
+    return(.peakRSS_windows_impl())
+  }
+  
+  if (file.exists("/proc/self/status")) {
+    # Linux: VmHWM = kernel-maintained peak resident set size
+    ln <- grep("^VmHWM:", readLines("/proc/self/status"), value = TRUE)
+    if (length(ln)) return(as.numeric(sub("\\D+(\\d+).*", "\\1", ln)) / 1024)
+  }
+  
+  # macOS (also works as a Linux fallback): POSIX getrusage() ru_maxrss
+  # is likewise a lifetime high-water mark, just different units per OS.
+  if (!exists(".rusage_maxrss_mb_impl", mode = "function")) {
+    Rcpp::cppFunction(
+      depends  = "Rcpp",
+      includes = "#include <sys/resource.h>",
+      code = "
+      double rusage_maxrss_mb_impl() {
+        struct rusage ru; getrusage(RUSAGE_SELF, &ru);
+      #ifdef __APPLE__
+        return (double) ru.ru_maxrss / (1024.0*1024.0); // bytes -> MB
+      #else
+        return (double) ru.ru_maxrss / 1024.0;           // KB -> MB
+      #endif
+      }")
+    assign(".rusage_maxrss_mb_impl", rusage_maxrss_mb_impl, envir = .GlobalEnv)
+  }
+  .rusage_maxrss_mb_impl()
 }
 
 # Print a formatted memory report to stderr via message().
