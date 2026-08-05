@@ -1,45 +1,9 @@
 .peak_rss_mb <- function() {
-  if (.Platform$OS.type == "windows") {
-    if (!exists(".peakRSS_windows_impl", mode = "function")) {
-      Rcpp::cppFunction(
-        depends  = "Rcpp",
-        includes = c(
-          "#include <windows.h>",
-          "#include <psapi.h>"),
-        code = "
-        double peakRSS_windows_impl() {
-          PROCESS_MEMORY_COUNTERS pmc;
-          if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-            return (double) pmc.PeakWorkingSetSize / (1024.0*1024.0);
-          }
-          return NA_REAL;
-        }")
-      assign(".peakRSS_windows_impl", peakRSS_windows_impl, envir = .GlobalEnv)
-    }
-    return(.peakRSS_windows_impl())
-  }
-
-  if (file.exists("/proc/self/status")) {
+  if (.Platform$OS.type != "windows" && file.exists("/proc/self/status")) {
     ln <- grep("^VmHWM:", readLines("/proc/self/status"), value = TRUE)
     if (length(ln)) return(as.numeric(sub("\\D+(\\d+).*", "\\1", ln)) / 1024)
   }
-
-  if (!exists(".rusage_maxrss_mb_impl", mode = "function")) {
-    Rcpp::cppFunction(
-      depends  = "Rcpp",
-      includes = "#include <sys/resource.h>",
-      code = "
-      double rusage_maxrss_mb_impl() {
-        struct rusage ru; getrusage(RUSAGE_SELF, &ru);
-      #ifdef __APPLE__
-        return (double) ru.ru_maxrss / (1024.0*1024.0);
-      #else
-        return (double) ru.ru_maxrss / 1024.0;
-      #endif
-      }")
-    assign(".rusage_maxrss_mb_impl", rusage_maxrss_mb_impl, envir = .GlobalEnv)
-  }
-  .rusage_maxrss_mb_impl()
+  peak_rss_mb()
 }
 
 .print_memory_report <- function(function_name, checkpoints, worker_peak_mb = NULL,
