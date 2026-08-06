@@ -277,15 +277,18 @@
 #' @param verbose whether to print verbose output
 #' @param BPPARAM optional \code{BiocParallelParam} instance
 #' @param track_memory whether to report per-worker peak RSS memory usage
-#' @param max_proteins_per_worker caps how many proteins are packed, dispatched,
-#'   and collected per outer batch (a separate \code{bplapply} call per batch),
-#'   bounding parent-process memory; 0 processes all proteins in a single batch
+#' @param max_proteins_per_worker how many protein records are packed into a
+#'   single dispatched \code{bpiterate} job; a throughput knob (fewer, larger
+#'   jobs cut per-job socket overhead) rather than a memory cap -- parent
+#'   memory is bounded by \code{bpnworkers(BPPARAM)} in-flight jobs regardless
+#'   of this value, since records are packed lazily as workers ask for more
+#'   work. 0 (default) packs one protein per job.
 #'
 #' @return A named list with one element per protein slot, keyed by protein
 #'   (or protein \eqn{\times} label) identifier.
 #'
 #' @importFrom matter SnowfastParam
-#' @importFrom BiocParallel bplapply bpstart bpstop bpisup bpnworkers bpprogressbar
+#' @importFrom BiocParallel bplapply bpiterate bpstart bpstop bpisup bpnworkers bpprogressbar
 #' @importFrom data.table data.table fifelse setDTthreads
 #' @importFrom stats median
 #'
@@ -324,28 +327,36 @@ MSstatsSummarizeWithMultipleCores <- function(
     all_runs <- if (is.factor(input$RUN)) levels(input$RUN) else
         as.character(sort(unique(input$RUN)))
 
-    ## Batching happens here, at the R level, rather than via BPPARAM's
-    ## `tasks` argument: bplapply() always pre-allocates a full-length
-    ## (length(X)) result list and keeps its full input list alive for the
-    ## whole call, regardless of how many tasks it is split into (see
-    ## BiocParallel:::.lapplyReducer / .bploop_lapply_iter). So relying on
-    ## `tasks` to cap per-worker memory has no effect on parent peak RSS;
-    ## only packing/dispatching/discarding one batch at a time does.
-    batch_size <- if (max_proteins_per_worker > 0L)
-        min(max_proteins_per_worker * numberOfCores, num_proteins) else num_proteins
-    batch_starts <- seq(1L, num_proteins, by = batch_size)
+    ## bpiterate() uses the same continuous, capacity-bounded dispatch loop as
+    ## bplapply() (BiocParallel:::.bploop_impl): at most bpnworkers(BPPARAM)
+    ## jobs are ever in flight, and a free worker is refilled the instant it
+    ## finishes -- a slow protein only stalls the worker that drew it, not its
+    ## siblings. Calling bplapply() repeatedly over fixed-size batches (the
+    ## previous approach here) does not have that property: it introduces a
+    ## barrier at every batch boundary where idle workers wait for the whole
+    ## batch, including any straggler, before the next batch is dispatched.
+    ## Feeding bpiterate() packed records lazily -- one bundle at a time,
+    ## built only when a worker asks for more work -- also means the packed
+    ## payload for all num_proteins proteins and the collected result list
+    ## are never both fully resident in the parent at once, unlike calling
+    ## bplapply(protein_records, ...) on an eagerly-packed input list (see
+    ## BiocParallel:::.lapplyReducer, which pre-allocates a length(X)-sized
+    ## result list up front regardless of task granularity).
+    bundle_size <- if (max_proteins_per_worker > 0L) max_proteins_per_worker else 1L
+    n_bundles   <- ceiling(num_proteins / bundle_size)
 
     getOption("MSstatsLog")("INFO",
                             paste0("Summarizing ", num_proteins, " proteins × ",
-                                   length(all_runs), " runs in ",
-                                   length(batch_starts), " batch(es) of up to ",
-                                   batch_size, " protein(s) each"))
+                                   length(all_runs), " runs via ", n_bundles,
+                                   " job(s) of up to ", bundle_size,
+                                   " protein(s) each"))
 
     use_TMP <- identical(method, "TMP")
 
     worker_fn <- .build_summarize_worker(
         use_TMP, impute, censored_symbol, remove50missing,
         aft_iterations, equal_variance)
+    bundle_worker_fn <- function(bundle) lapply(bundle, worker_fn)
 
     if (is.null(BPPARAM)) {
         BPPARAM <- matter::SnowfastParam(
@@ -369,23 +380,23 @@ MSstatsSummarizeWithMultipleCores <- function(
         .warmup_worker, BPPARAM = BPPARAM)
     BiocParallel::bpprogressbar(BPPARAM) <- show_progress
 
-    results <- vector("list", num_proteins)
-    for (batch_start in batch_starts) {
-        batch_end <- min(batch_start + batch_size - 1L, num_proteins)
-        batch_idx <- batch_start:batch_end
-
-        batch_records <- vector("list", length(batch_idx))
-        for (i in seq_along(batch_idx)) {
-            slot_index <- batch_idx[i]
-            batch_records[[i]] <- .pack_protein_slot(
+    next_slot <- 0L
+    pack_next_bundle <- function() {
+        if (next_slot >= num_proteins) return(NULL)
+        bundle_end <- min(next_slot + bundle_size, num_proteins)
+        bundle <- vector("list", bundle_end - next_slot)
+        for (i in seq_along(bundle)) {
+            slot_index <- next_slot + i
+            bundle[[i]] <- .pack_protein_slot(
                 input[protein_indices[[slot_index]], ], slot_index, all_runs)
         }
-
-        batch_results <- BiocParallel::bplapply(
-            batch_records, worker_fn, BPPARAM = BPPARAM)
-        results[batch_idx] <- batch_results
-        rm(batch_records, batch_results)
+        next_slot <<- bundle_end
+        bundle
     }
+
+    results_by_bundle <- BiocParallel::bpiterate(
+        pack_next_bundle, bundle_worker_fn, BPPARAM = BPPARAM)
+    results <- unlist(results_by_bundle, recursive = FALSE)
     names(results) <- protein_ids
 
     worker_peaks <- NULL
