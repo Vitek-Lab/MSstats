@@ -277,8 +277,9 @@
 #' @param verbose whether to print verbose output
 #' @param BPPARAM optional \code{BiocParallelParam} instance
 #' @param track_memory whether to report per-worker peak RSS memory usage
-#' @param max_proteins_per_worker caps protein records per \code{bplapply} task;
-#'   0 uses BiocParallel's default split, default is 50.
+#' @param max_proteins_per_worker caps how many proteins are packed, dispatched,
+#'   and collected per outer batch (a separate \code{bplapply} call per batch),
+#'   bounding parent-process memory; 0 processes all proteins in a single batch
 #'
 #' @return A named list with one element per protein slot, keyed by protein
 #'   (or protein \eqn{\times} label) identifier.
@@ -323,22 +324,22 @@ MSstatsSummarizeWithMultipleCores <- function(
     all_runs <- if (is.factor(input$RUN)) levels(input$RUN) else
         as.character(sort(unique(input$RUN)))
 
-    getOption("MSstatsLog")("INFO",
-                            paste0("Packing ", num_proteins, " proteins × ",
-                                   length(all_runs), " runs into per-protein records"))
+    ## Batching happens here, at the R level, rather than via BPPARAM's
+    ## `tasks` argument: bplapply() always pre-allocates a full-length
+    ## (length(X)) result list and keeps its full input list alive for the
+    ## whole call, regardless of how many tasks it is split into (see
+    ## BiocParallel:::.lapplyReducer / .bploop_lapply_iter). So relying on
+    ## `tasks` to cap per-worker memory has no effect on parent peak RSS;
+    ## only packing/dispatching/discarding one batch at a time does.
+    batch_size <- if (max_proteins_per_worker > 0L)
+        min(max_proteins_per_worker, num_proteins) else num_proteins
+    batch_starts <- seq(1L, num_proteins, by = batch_size)
 
-    protein_records <- vector("list", num_proteins)
-    for (slot_index in seq_len(num_proteins)) {
-        protein_records[[slot_index]] <- .pack_protein_slot(
-            input[protein_indices[[slot_index]], ], slot_index, all_runs)
-    }
-
-    payload_mb <- sum(vapply(protein_records,
-                             function(r) length(r$packed), integer(1))) * 8 / 1024^2
     getOption("MSstatsLog")("INFO",
-                            paste0("Dispatching via sockets (",
-                                   format(round(payload_mb, 1)),
-                                   " MB total packed payload; metadata sharded per task)"))
+                            paste0("Summarizing ", num_proteins, " proteins × ",
+                                   length(all_runs), " runs in ",
+                                   length(batch_starts), " batch(es) of up to ",
+                                   batch_size, " protein(s) each"))
 
     use_TMP <- identical(method, "TMP")
 
@@ -347,19 +348,9 @@ MSstatsSummarizeWithMultipleCores <- function(
         aft_iterations, equal_variance)
 
     if (is.null(BPPARAM)) {
-        tasks <- if (max_proteins_per_worker > 0L) {
-            as.integer(ceiling(num_proteins / max_proteins_per_worker))
-        } else {
-            0L
-        }
-        getOption("MSstatsLog")("INFO",
-                                paste0("Dispatching as ",
-                                       if (tasks > 0L) tasks else numberOfCores,
-                                       " task(s) (max_proteins_per_worker = ",
-                                       max_proteins_per_worker, ")"))
         BPPARAM <- matter::SnowfastParam(
             workers       = numberOfCores,
-            tasks         = tasks,
+            tasks         = 0L,
             progressbar   = TRUE,
             force.GC      = TRUE,
             stop.on.error = FALSE)
@@ -378,7 +369,23 @@ MSstatsSummarizeWithMultipleCores <- function(
         .warmup_worker, BPPARAM = BPPARAM)
     BiocParallel::bpprogressbar(BPPARAM) <- show_progress
 
-    results <- BiocParallel::bplapply(protein_records, worker_fn, BPPARAM = BPPARAM)
+    results <- vector("list", num_proteins)
+    for (batch_start in batch_starts) {
+        batch_end <- min(batch_start + batch_size - 1L, num_proteins)
+        batch_idx <- batch_start:batch_end
+
+        batch_records <- vector("list", length(batch_idx))
+        for (i in seq_along(batch_idx)) {
+            slot_index <- batch_idx[i]
+            batch_records[[i]] <- .pack_protein_slot(
+                input[protein_indices[[slot_index]], ], slot_index, all_runs)
+        }
+
+        batch_results <- BiocParallel::bplapply(
+            batch_records, worker_fn, BPPARAM = BPPARAM)
+        results[batch_idx] <- batch_results
+        rm(batch_records, batch_results)
+    }
     names(results) <- protein_ids
 
     worker_peaks <- NULL
