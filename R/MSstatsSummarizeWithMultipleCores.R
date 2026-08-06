@@ -249,6 +249,21 @@
     }
 }
 
+#' Build the per-bundle worker closure for \code{MSstatsSummarizeWithMultipleCores}
+#'
+#' Defined at package top level, like \code{.build_summarize_worker}, so the
+#' closure captures only \code{worker_fn} -- not the caller's run-scale
+#' objects (e.g. \code{input}). A closure defined inline inside
+#' \code{MSstatsSummarizeWithMultipleCores} would instead capture that
+#' function's entire call frame, and \code{bpiterate} would re-serialize all
+#' of it (including \code{input}) every time \code{FUN} is shipped to a
+#' worker.
+#'
+#' @keywords internal
+.build_bundle_worker <- function(worker_fn) {
+    function(bundle) lapply(bundle, worker_fn)
+}
+
 #' Per-worker peak-RSS query task for \code{MSstatsSummarizeWithMultipleCores}
 #'
 #' @keywords internal
@@ -356,7 +371,7 @@ MSstatsSummarizeWithMultipleCores <- function(
     worker_fn <- .build_summarize_worker(
         use_TMP, impute, censored_symbol, remove50missing,
         aft_iterations, equal_variance)
-    bundle_worker_fn <- function(bundle) lapply(bundle, worker_fn)
+    bundle_worker_fn <- .build_bundle_worker(worker_fn)
 
     if (is.null(BPPARAM)) {
         BPPARAM <- matter::SnowfastParam(

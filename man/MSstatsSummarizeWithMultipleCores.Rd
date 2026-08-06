@@ -42,8 +42,12 @@ MSstatsSummarizeWithMultipleCores(
 
 \item{track_memory}{whether to report per-worker peak RSS memory usage}
 
-\item{max_proteins_per_worker}{caps protein records per \code{bplapply} task;
-0 uses BiocParallel's default split, default is 50.}
+\item{max_proteins_per_worker}{how many protein records are packed into a
+single dispatched \code{bpiterate} job; a throughput knob (fewer, larger
+jobs cut per-job socket overhead) rather than a memory cap -- parent
+memory is bounded by \code{bpnworkers(BPPARAM)} in-flight jobs regardless
+of this value, since records are packed lazily as workers ask for more
+work. 0 (default) packs one protein per job.}
 }
 \value{
 A named list with one element per protein slot, keyed by protein
