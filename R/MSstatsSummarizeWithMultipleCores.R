@@ -278,7 +278,7 @@
 #' @param BPPARAM optional \code{BiocParallelParam} instance
 #' @param track_memory whether to report per-worker peak RSS memory usage
 #' @param max_proteins_per_worker caps protein records per \code{bplapply} task;
-#'   0 uses BiocParallel's default split
+#'   0 uses BiocParallel's default split, default is 50.
 #'
 #' @return A named list with one element per protein slot, keyed by protein
 #'   (or protein \eqn{\times} label) identifier.
@@ -301,7 +301,7 @@ MSstatsSummarizeWithMultipleCores <- function(
         verbose        = FALSE,
         BPPARAM        = NULL,
         track_memory   = FALSE,
-        max_proteins_per_worker = 0L
+        max_proteins_per_worker = 50L
 ) {
     if (numberOfCores <= 1L && is.null(BPPARAM)) {
         return(MSstatsSummarizeWithSingleCore(

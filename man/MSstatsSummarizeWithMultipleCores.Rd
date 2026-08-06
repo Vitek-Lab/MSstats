@@ -16,7 +16,7 @@ MSstatsSummarizeWithMultipleCores(
   verbose = FALSE,
   BPPARAM = NULL,
   track_memory = FALSE,
-  max_proteins_per_worker = 0L
+  max_proteins_per_worker = 50L
 )
 }
 \arguments{
@@ -43,7 +43,7 @@ MSstatsSummarizeWithMultipleCores(
 \item{track_memory}{whether to report per-worker peak RSS memory usage}
 
 \item{max_proteins_per_worker}{caps protein records per \code{bplapply} task;
-0 uses BiocParallel's default split}
+0 uses BiocParallel's default split, default is 50.}
 }
 \value{
 A named list with one element per protein slot, keyed by protein
