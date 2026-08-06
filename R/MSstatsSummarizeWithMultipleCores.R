@@ -332,7 +332,7 @@ MSstatsSummarizeWithMultipleCores <- function(
     ## `tasks` to cap per-worker memory has no effect on parent peak RSS;
     ## only packing/dispatching/discarding one batch at a time does.
     batch_size <- if (max_proteins_per_worker > 0L)
-        min(max_proteins_per_worker, num_proteins) else num_proteins
+        min(max_proteins_per_worker * numberOfCores, num_proteins) else num_proteins
     batch_starts <- seq(1L, num_proteins, by = batch_size)
 
     getOption("MSstatsLog")("INFO",
