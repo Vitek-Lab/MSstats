@@ -1,38 +1,51 @@
 #!/bin/bash
 #SBATCH --job-name=msstats_benchmark_job_updated
-#SBATCH --chdir=/work/VitekLab/Projects/Benchmarking/
+#SBATCH --chdir=/projects/VitekLab/Projects/Benchmarking/benchmark
 #SBATCH --output=job_output.txt
 #SBATCH --error=job_error.txt
-#SBATCH --open-mode=append
-#SBATCH --time=01:00:00         # Set the maximum run time
-#SBATCH --ntasks=1              # Number of tasks (one process)
-#SBATCH --cpus-per-task=8      # Use 8 CPU cores for the task
-#SBATCH --mem=256G              # Request 256GB of memory
-#SBATCH --partition=short       # Use the 'short' partition (or change as needed)
-
-module load R-geospatial
-
-module load gcc/11.1.0
-module load cmake/3.23.2
-
-export LC_ALL=C
-export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.2-geospatial
-
-
-mkdir -p $R_LIBS_USER
+#SBATCH --time=01:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=128G
+#SBATCH --partition=short
 
 module load R
-Rscript -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org'); \
-remotes::install_github('Vitek-Lab/MSstats', ref = 'devel', lib = Sys.getenv('R_LIBS_USER')); \
-remotes::install_github('Vitek-Lab/MSstatsConvert', ref = 'master', lib = Sys.getenv('R_LIBS_USER')); \
-install.packages(c('dplyr', 'stringr', 'ggplot2'), lib = Sys.getenv('R_LIBS_USER'), repos = 'https://cloud.r-project.org')"
+module load cmake/3.30.2
 
-R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R")
+export LC_ALL=C
+export R_LIBS_USER=/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4
+mkdir -p $R_LIBS_USER
+
+mkdir -p $HOME/lib_fix
+ln -sf /shared/EL9/explorer/R/4.4.1/lib64/R/lib/libRlapack.so $HOME/lib_fix/libRlapack.so.3
+
+export LD_LIBRARY_PATH=$HOME/lib_fix:/shared/EL9/explorer/R/4.4.1/lib64/R/lib:/usr/lib64:$LD_LIBRARY_PATH
+
+Rscript -e '
+.libPaths("/home/raina.ans/R/x86_64-pc-linux-gnu-library/4.4")
+Sys.unsetenv("R_LIBS")
+cat(".libPaths():\n"); print(.libPaths())
+
+if (!requireNamespace("remotes", quietly = TRUE))
+    install.packages("remotes", repos = "https://cloud.r-project.org")
+
+install.packages("nloptr", type = "source", repos = "https://cloud.r-project.org")
+
+for (pkg in c("dplyr", "stringr", "ggplot2")) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+        install.packages(pkg, repos = "https://cloud.r-project.org")
+    }
+}
+BiocManager::install(c("MSstatsConvert", "preprocessCore"), force = TRUE)
+remotes::install_github("Vitek-Lab/MSstats", ref = "devel", force = TRUE)
+'
+
+R_SCRIPTS=("benchmark_Dowell2021-HEqe408_LFQ.R" "benchmark_Puyvelde2022-HYE5600735_LFQ.R" "benchmark_Metamorpheus.R" )
 
 for script in "${R_SCRIPTS[@]}"; do
-    echo "Executing script: $script" >> job_output.txt  
-    Rscript "$script" >> job_output.txt 2>> job_error.txt
-    wait  
-    echo "Finished executing script: $script" >> job_output.txt  
+    echo "Executing script: $script" >> job_output.txt
+    stdbuf -oL -eL Rscript "$script" >> job_output.txt 2>> job_error.txt
+    wait
+    echo "Finished executing script: $script" >> job_output.txt
     echo -e "\n\n"
 done
