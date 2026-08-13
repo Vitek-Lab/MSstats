@@ -6,8 +6,22 @@
   peak_rss_mb()
 }
 
+## Resident set size *right now*, as opposed to .peak_rss_mb()'s high-water
+## mark. Both are needed to attribute a peak: the high-water mark only ever
+## rises and cannot say *when* it rose, so a single reading of it at the end
+## of a call tells you nothing about which stage was responsible.
+## Linux only (/proc); NA elsewhere, which .print_memory_report renders "n/a".
+.current_rss_mb <- function() {
+  if (.Platform$OS.type != "windows" && file.exists("/proc/self/status")) {
+    ln <- grep("^VmRSS:", readLines("/proc/self/status"), value = TRUE)
+    if (length(ln)) return(as.numeric(sub("\\D+(\\d+).*", "\\1", ln)) / 1024)
+  }
+  NA_real_
+}
+
 .print_memory_report <- function(function_name, checkpoints, worker_peak_mb = NULL,
-                                 elapsed = NULL) {
+                                 elapsed = NULL, peak_on_entry = NA_real_,
+                                 peak_at_exit = NA_real_) {
     rule_width <- 65L
     rule <- strrep("─", rule_width)
     format_mb    <- function(x) if (is.na(x)) "    n/a" else sprintf("%7.1f", x)
@@ -36,6 +50,24 @@
             lines <- c(lines, "",
                        sprintf("  Worker RSS  min / mean / max :  %.1f / %.1f / %.1f MB",
                                min(observed_peaks), mean(observed_peaks), max(observed_peaks)))
+        }
+    }
+    ## Split the process-lifetime high-water mark into "already spent before we
+    ## were called" vs "added here". Without this the peak is unattributable:
+    ## work done before this call (e.g. reading the input) is indistinguishable
+    ## from work done inside it.
+    if (!is.na(peak_on_entry) || !is.na(peak_at_exit)) {
+        lines <- c(lines, "",
+                   sprintf("  Process peak RSS  on entry / at exit :  %.1f / %.1f MB",
+                           peak_on_entry, peak_at_exit))
+        if (!is.na(peak_on_entry) && !is.na(peak_at_exit)) {
+            added <- peak_at_exit - peak_on_entry
+            lines <- c(lines,
+                       sprintf("    %.1f MB of that peak predates this call", peak_on_entry),
+                       if (added > 0)
+                           sprintf("    %.1f MB was added during summarization", added)
+                       else
+                           "    peak was NOT set by this call")
         }
     }
     if (!is.null(elapsed))
@@ -330,6 +362,18 @@ MSstatsSummarizeWithMultipleCores <- function(
 
     start_time <- proc.time()[["elapsed"]]
     memory_checkpoints <- list()
+    peak_on_entry <- NA_real_
+    if (track_memory) {
+        peak_on_entry <- .peak_rss_mb()
+        memory_checkpoints[["on entry"]] <- .current_rss_mb()
+        ## object.size() walks character columns -- roughly 0.7 s per GB -- so
+        ## this is gated on track_memory rather than logged unconditionally.
+        getOption("MSstatsLog")("INFO", paste0(
+            "Input feature-level data: ", format(nrow(input), big.mark = ","),
+            " rows x ", ncol(input), " columns, ",
+            round(as.numeric(utils::object.size(input)) / 1024^3, 2),
+            " GB in memory"))
+    }
 
     is_labeled_reference <- "is_labeled_ref" %in% colnames(input) &&
         any(input$is_labeled_ref, na.rm = TRUE)
@@ -341,6 +385,9 @@ MSstatsSummarizeWithMultipleCores <- function(
 
     all_runs <- if (is.factor(input$RUN)) levels(input$RUN) else
         as.character(sort(unique(input$RUN)))
+
+    if (track_memory)
+        memory_checkpoints[["after protein index"]] <- .current_rss_mb()
 
     ## bpiterate() uses the same continuous, capacity-bounded dispatch loop as
     ## bplapply() (BiocParallel:::.bploop_impl): at most bpnworkers(BPPARAM)
@@ -395,6 +442,9 @@ MSstatsSummarizeWithMultipleCores <- function(
         .warmup_worker, BPPARAM = BPPARAM)
     BiocParallel::bpprogressbar(BPPARAM) <- show_progress
 
+    if (track_memory)
+        memory_checkpoints[["after cluster start"]] <- .current_rss_mb()
+
     next_slot <- 0L
     pack_next_bundle <- function() {
         if (next_slot >= num_proteins) return(NULL)
@@ -411,8 +461,15 @@ MSstatsSummarizeWithMultipleCores <- function(
 
     results_by_bundle <- BiocParallel::bpiterate(
         pack_next_bundle, bundle_worker_fn, BPPARAM = BPPARAM)
+    if (track_memory)
+        memory_checkpoints[["after dispatch"]] <- .current_rss_mb()
+
     results <- unlist(results_by_bundle, recursive = FALSE)
+    rm(results_by_bundle)
     names(results) <- protein_ids
+
+    if (track_memory)
+        memory_checkpoints[["after assembly"]] <- .current_rss_mb()
 
     worker_peaks <- NULL
     if (track_memory) {
@@ -421,12 +478,14 @@ MSstatsSummarizeWithMultipleCores <- function(
             seq_len(BiocParallel::bpnworkers(BPPARAM)),
             .report_worker_peak, BPPARAM = BPPARAM)
         BiocParallel::bpprogressbar(BPPARAM) <- show_progress
-        memory_checkpoints[["parent peak (main)"]] <- .peak_rss_mb()
+        memory_checkpoints[["after worker poll"]] <- .current_rss_mb()
         worker_peak_mb <- vapply(worker_peaks, function(x) x$peak_mb, numeric(1L))
         .print_memory_report(
             "MSstatsSummarizeWithMultipleCores",
             memory_checkpoints, worker_peak_mb,
-            elapsed = proc.time()[["elapsed"]] - start_time)
+            elapsed = proc.time()[["elapsed"]] - start_time,
+            peak_on_entry = peak_on_entry,
+            peak_at_exit = .peak_rss_mb())
     }
 
     getOption("MSstatsLog")("INFO", "Summarization complete.")
