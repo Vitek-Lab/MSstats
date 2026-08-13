@@ -257,17 +257,45 @@
 #' @param convergence_tolerance stop once the change in log-likelihood
 #' between iterations falls below this (matches the default
 #' \code{rel.tolerance} in \code{survival::survreg.control}).
+#' @param use_jacobi_preconditioner if \code{TRUE}, precondition every
+#' conjugate-gradient solve with the inverse of the current information
+#' matrix's own diagonal (see \code{.cgSolve}'s
+#' \code{use_jacobi_preconditioner}). This is what \code{aft_solver =
+#' "pcg"} enables, versus plain conjugate gradient for \code{"cg"}.
+#' @param verbose if \code{TRUE}, \code{message()} a line per
+#' Newton-Raphson iteration - conjugate-gradient iterations used, whether
+#' the Gauss-Newton fallback (see below) was needed, elapsed time, and the
+#' resulting log-likelihood - plus a one-line summary once fitting
+#' finishes. Meant for evaluating how solver choice and problem size
+#' trade off against iteration count and wall time, not for routine use
+#' (this fits one protein at a time, so it is easy to generate a line per
+#' protein across a whole \code{dataProcess()} run).
 #'
-#' @return a fitted model of class \code{"survreg"}.
+#' @return a fitted model of class \code{"survreg"}, with one added field:
+#' \code{cg_diagnostics}, a data.frame with one row per Newton-Raphson
+#' iteration recording the conjugate-gradient iteration counts and timing
+#' described above (populated regardless of \code{verbose}, so it can be
+#' inspected/aggregated programmatically after the fact).
 #'
 #' @importFrom stats model.frame model.matrix model.response lm.fit sd
 #' @keywords internal
 .fitSurvivalCG = function(input, aft_iterations,
-                           convergence_tolerance = 1e-9) {
+                           convergence_tolerance = 1e-9,
+                           use_jacobi_preconditioner = FALSE,
+                           verbose = FALSE) {
     model_frame = model.frame(.buildAFTFormula(input), data = input)
     model_terms = attr(model_frame, "terms")
     design_matrix = model.matrix(model_terms, model_frame)
     number_of_coefficients = ncol(design_matrix)
+    number_of_parameters = number_of_coefficients + 1
+    number_of_observations = nrow(design_matrix)
+
+    if (verbose) {
+        message(sprintf(
+            "[AFT-CG] starting fit: %d observations, %d parameters, preconditioner = %s",
+            number_of_observations, number_of_parameters,
+            if (use_jacobi_preconditioner) "jacobi" else "none"))
+    }
 
     response = model.response(model_frame)
     observed_value = response[, 1]
@@ -333,21 +361,43 @@
         crossprod(per_observation_gradient_contributions)
     }
 
-    solve_newton_step = function(information_matrix, derivatives, gradient) {
-        information_matrix_is_not_positive_definite = FALSE
-        step = withCallingHandlers(
-            .cgSolve(information_matrix, gradient),
+    # A "not positive definite" result is expected, handled control flow
+    # here (the Gauss-Newton fallback below exists for exactly that case),
+    # so its warning is muffled; a genuine "did not converge within
+    # max_iterations" is not expected/handled, so that warning still
+    # propagates normally.
+    cg_solve_muffling_pd_warning = function(...) {
+        withCallingHandlers(
+            .cgSolve(...),
             warning = function(w) {
                 if (grepl("not positive definite", conditionMessage(w))) {
-                    information_matrix_is_not_positive_definite <<- TRUE
+                    invokeRestart("muffleWarning")
                 }
-                invokeRestart("muffleWarning")
             })
-        if (information_matrix_is_not_positive_definite) {
-            step = .cgSolve(build_gauss_newton_approximation(derivatives),
-                            gradient)
+    }
+
+    # Returns the Newton step, plus how much conjugate-gradient work it
+    # took to get there - primary_iterations/fallback_iterations and
+    # used_fallback are the numbers verbose logging (below) reports, so a
+    # caller can see how solver choice and problem size trade off against
+    # iteration count.
+    solve_newton_step = function(information_matrix, derivatives, gradient) {
+        primary_solve = cg_solve_muffling_pd_warning(
+            information_matrix, gradient,
+            use_jacobi_preconditioner = use_jacobi_preconditioner)
+        if (primary_solve$positive_definite) {
+            list(step = primary_solve$solution,
+                primary_iterations = primary_solve$iterations,
+                used_fallback = FALSE, fallback_iterations = 0L)
+        } else {
+            fallback_solve = .cgSolve(
+                build_gauss_newton_approximation(derivatives), gradient,
+                use_jacobi_preconditioner = use_jacobi_preconditioner)
+            list(step = fallback_solve$solution,
+                primary_iterations = primary_solve$iterations,
+                used_fallback = TRUE,
+                fallback_iterations = fallback_solve$iterations)
         }
-        step
     }
 
     current_fit =
@@ -355,18 +405,38 @@
     current_log_likelihood = current_fit$log_likelihood
     number_of_iterations_used = 0
     converged = FALSE
+    cg_diagnostics = vector("list", aft_iterations)
 
     for (iteration in seq_len(aft_iterations)) {
         number_of_iterations_used = iteration
+        iteration_start_time = Sys.time()
+
         gradient = build_gradient(current_fit)
         information_matrix = build_information_matrix(current_fit)
         newton_step =
             solve_newton_step(information_matrix, current_fit, gradient)
 
+        elapsed_seconds =
+            as.numeric(Sys.time() - iteration_start_time, units = "secs")
+        cg_diagnostics[[iteration]] = data.frame(
+            newton_iteration = iteration,
+            cg_iterations = newton_step$primary_iterations +
+                newton_step$fallback_iterations,
+            used_gauss_newton_fallback = newton_step$used_fallback,
+            elapsed_seconds = elapsed_seconds)
+        if (verbose) {
+            message(sprintf(
+                "[AFT-CG] newton iter %d: cg iterations = %d%s, %.4f sec",
+                iteration,
+                newton_step$primary_iterations + newton_step$fallback_iterations,
+                if (newton_step$used_fallback) " (Gauss-Newton fallback used)" else "",
+                elapsed_seconds))
+        }
+
         candidate_coefficients =
-            coefficients + newton_step[seq_len(number_of_coefficients)]
+            coefficients + newton_step$step[seq_len(number_of_coefficients)]
         candidate_log_scale =
-            log_scale + newton_step[number_of_coefficients + 1]
+            log_scale + newton_step$step[number_of_coefficients + 1]
 
         # Step-halving: if the Newton step overshoots (a non-finite or
         # decreasing log-likelihood), back the trial point off toward the
@@ -426,6 +496,17 @@
                 "converge")
     }
 
+    cg_diagnostics = do.call(
+        rbind, cg_diagnostics[seq_len(number_of_iterations_used)])
+
+    if (verbose) {
+        message(sprintf(
+            paste0("[AFT-CG] finished: %d newton iterations, ",
+                   "%d total cg iterations, %.4f sec total, converged = %s"),
+            number_of_iterations_used, sum(cg_diagnostics$cg_iterations),
+            sum(cg_diagnostics$elapsed_seconds), converged))
+    }
+
     final_information_matrix = build_information_matrix(current_fit)
     variance_covariance_matrix = tryCatch(
         solve(final_information_matrix),
@@ -444,10 +525,42 @@
         xlevels = lapply(model_frame[is_factor_column], levels),
         dist = "gaussian",
         iter = number_of_iterations_used,
-        loglik = current_log_likelihood
+        loglik = current_log_likelihood,
+        cg_diagnostics = cg_diagnostics
     )
     class(fit) = "survreg"
     fit
+}
+
+#' Fit the AFT imputation model with the requested solver
+#'
+#' Shared dispatch used by both \code{MSstatsSummarizeSingleLinear} and
+#' \code{MSstatsSummarizeSingleTMP} so the \code{aft_solver}/
+#' \code{aft_verbose} logic lives in one place instead of being duplicated
+#' at both call sites.
+#'
+#' @param input data.table, the same shape \code{.fitSurvival} expects.
+#' @param aft_iterations maximum number of iterations for AFT model fitting.
+#' @param aft_solver "cholesky" (default, via \code{survival::survreg}),
+#' "cg" (conjugate gradient), or "pcg" (conjugate gradient with a
+#' Jacobi/inverse-diagonal preconditioner).
+#' @param aft_verbose passed through to \code{.fitSurvivalCG}'s
+#' \code{verbose} when \code{aft_solver} is "cg" or "pcg"; has no effect
+#' for "cholesky".
+#'
+#' @return a fitted model of class \code{"survreg"}.
+#'
+#' @keywords internal
+.fitAFTModel = function(input, aft_iterations, aft_solver = "cholesky",
+                         aft_verbose = FALSE) {
+    if (aft_solver == "pcg") {
+        .fitSurvivalCG(input, aft_iterations,
+                      use_jacobi_preconditioner = TRUE, verbose = aft_verbose)
+    } else if (aft_solver == "cg") {
+        .fitSurvivalCG(input, aft_iterations, verbose = aft_verbose)
+    } else {
+        .fitSurvival(input, aft_iterations)
+    }
 }
 
 #' Get predicted values from a survival model

@@ -26,7 +26,8 @@ dataProcess(
   log_file_path = NULL,
   numberOfCores = 1,
   aft_iterations = 90,
-  aft_solver = "cholesky"
+  aft_solver = "cholesky",
+  aft_verbose = FALSE
 )
 }
 \arguments{
@@ -127,7 +128,16 @@ track progress. Only works for Linux & Mac OS. Default is 1.}
 model's Newton-Raphson step: "cholesky" (default) delegates to
 \code{survival::survreg}, which solves it via Cholesky factorization.
 "cg" solves the same Newton step with a vendored conjugate-gradient
-routine instead - an experimental alternative, currently opt-in only.}
+routine instead; "pcg" is the same conjugate-gradient routine with a
+Jacobi (inverse-diagonal) preconditioner, which can reduce the number
+of conjugate-gradient iterations needed. "cg"/"pcg" are experimental
+alternatives, currently opt-in only.}
+
+\item{aft_verbose}{If \code{TRUE} and \code{aft_solver} is "cg" or
+"pcg", \code{message()} per-Newton-iteration conjugate-gradient
+iteration counts and timing for every protein fit - useful for
+evaluating solver time complexity, but produces one block of output
+per protein, so leave at the default \code{FALSE} for routine runs.}
 }
 \value{
 A list containing:

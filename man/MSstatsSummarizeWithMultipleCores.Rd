@@ -13,7 +13,8 @@ MSstatsSummarizeWithMultipleCores(
   equal_variance,
   numberOfCores = 1,
   aft_iterations = 90,
-  aft_solver = "cholesky"
+  aft_solver = "cholesky",
+  aft_verbose = FALSE
 )
 }
 \arguments{
@@ -53,7 +54,12 @@ track progress. Only works for Linux & Mac OS. Default is 1.}
 
 \item{aft_solver}{Which linear solve to use for the AFT imputation
 model's Newton-Raphson step: "cholesky" (default, via
-\code{survival::survreg}) or "cg" (conjugate gradient).}
+\code{survival::survreg}), "cg" (conjugate gradient), or "pcg"
+(conjugate gradient with a Jacobi/inverse-diagonal preconditioner).}
+
+\item{aft_verbose}{If \code{TRUE} and \code{aft_solver} is "cg" or
+"pcg", log per-Newton-iteration conjugate-gradient diagnostics for
+every protein fit. See \code{.fitSurvivalCG}'s \code{verbose}.}
 }
 \value{
 list of length one with run-level data.
