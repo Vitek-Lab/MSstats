@@ -5,7 +5,13 @@
 \title{Fit a Gaussian, left-censored AFT model with a conjugate-gradient
 Newton step}
 \usage{
-.fitSurvivalCG(input, aft_iterations, convergence_tolerance = 1e-09)
+.fitSurvivalCG(
+  input,
+  aft_iterations,
+  convergence_tolerance = 1e-09,
+  use_jacobi_preconditioner = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{input}{data.table, the same shape \code{.fitSurvival} expects.}
@@ -15,9 +21,28 @@ Newton step}
 \item{convergence_tolerance}{stop once the change in log-likelihood
 between iterations falls below this (matches the default
 \code{rel.tolerance} in \code{survival::survreg.control}).}
+
+\item{use_jacobi_preconditioner}{if \code{TRUE}, precondition every
+conjugate-gradient solve with the inverse of the current information
+matrix's own diagonal (see \code{.cgSolve}'s
+\code{use_jacobi_preconditioner}). This is what \code{aft_solver =
+"pcg"} enables, versus plain conjugate gradient for \code{"cg"}.}
+
+\item{verbose}{if \code{TRUE}, \code{message()} a line per
+Newton-Raphson iteration - conjugate-gradient iterations used, whether
+the Gauss-Newton fallback (see below) was needed, elapsed time, and the
+resulting log-likelihood - plus a one-line summary once fitting
+finishes. Meant for evaluating how solver choice and problem size
+trade off against iteration count and wall time, not for routine use
+(this fits one protein at a time, so it is easy to generate a line per
+protein across a whole \code{dataProcess()} run).}
 }
 \value{
-a fitted model of class \code{"survreg"}.
+a fitted model of class \code{"survreg"}, with one added field:
+\code{cg_diagnostics}, a data.frame with one row per Newton-Raphson
+iteration recording the conjugate-gradient iteration counts and timing
+described above (populated regardless of \code{verbose}, so it can be
+inspected/aggregated programmatically after the fact).
 }
 \description{
 An alternative to \code{.fitSurvival} for exactly the same imputation

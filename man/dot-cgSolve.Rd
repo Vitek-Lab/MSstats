@@ -10,7 +10,8 @@ gradient}
   right_hand_side,
   initial_guess = NULL,
   relative_tolerance = 1e-08,
-  max_iterations = 10 * nrow(coefficient_matrix)
+  max_iterations = 10 * nrow(coefficient_matrix),
+  use_jacobi_preconditioner = FALSE
 )
 }
 \arguments{
@@ -24,24 +25,42 @@ gradient/score vector from a Newton step.}
 to the zero vector.}
 
 \item{relative_tolerance}{how small the residual needs to shrink,
-relative to the size of \code{right_hand_side}, before iteration stops.}
+relative to the size of \code{right_hand_side}, before iteration stops.
+Always judged on the true (unpreconditioned) residual, so this means the
+same thing whether or not \code{use_jacobi_preconditioner} is set.}
 
 \item{max_iterations}{how many conjugate-gradient steps to try before
 giving up. In exact arithmetic, conjugate gradient converges within
 \code{nrow(coefficient_matrix)} steps, but rounding error erodes that
 guarantee as the system grows, so the default allows for several times
 that many steps.}
+
+\item{use_jacobi_preconditioner}{if \code{TRUE}, precondition with the
+inverse of \code{coefficient_matrix}'s own diagonal - cheap to apply,
+and often enough to cut down the number of iterations needed when the
+diagonal dominates (as it typically does for an AFT information matrix,
+where each parameter's own curvature tends to be much larger than its
+cross-terms with the other parameters). Defaults to \code{FALSE}, which
+reduces exactly to plain (unpreconditioned) conjugate gradient.}
 }
 \value{
-numeric vector solving (approximately)
-\code{coefficient_matrix \%*\% solution = right_hand_side}.
+a list with: \code{solution}, the numeric vector solving
+(approximately) \code{coefficient_matrix \%*\% solution =
+right_hand_side}; \code{iterations}, how many conjugate-gradient steps
+were actually taken; \code{converged}, whether the residual tolerance
+was met; and \code{positive_definite}, whether \code{coefficient_matrix}
+behaved as positive definite throughout (a caller can fall back to a
+different matrix, e.g. a Gauss-Newton approximation, when this is
+\code{FALSE}).
 }
 \description{
 A minimal, single right-hand-side conjugate gradient solver, used as the
 Newton-step linear solve in \code{.fitSurvivalCG}. Modeled on
 \code{lfe::cgsolve}, stripped down to a single dense matrix and a single
 right-hand-side vector (no multi-column batching, no \code{Matrix}-package
-or operator/closure dispatch, no preconditioning - none of which are
-needed for the small, dense AFT information matrices this is used on).
+or operator/closure dispatch - neither is needed for the small, dense AFT
+information matrices this is used on). Optionally applies a Jacobi
+(inverse-diagonal) preconditioner, which \code{lfe::cgsolve} does not
+support at all.
 }
 \keyword{internal}

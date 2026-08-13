@@ -66,7 +66,15 @@
 #' model's Newton-Raphson step: "cholesky" (default) delegates to
 #' \code{survival::survreg}, which solves it via Cholesky factorization.
 #' "cg" solves the same Newton step with a vendored conjugate-gradient
-#' routine instead - an experimental alternative, currently opt-in only.
+#' routine instead; "pcg" is the same conjugate-gradient routine with a
+#' Jacobi (inverse-diagonal) preconditioner, which can reduce the number
+#' of conjugate-gradient iterations needed. "cg"/"pcg" are experimental
+#' alternatives, currently opt-in only.
+#' @param aft_verbose If \code{TRUE} and \code{aft_solver} is "cg" or
+#' "pcg", \code{message()} per-Newton-iteration conjugate-gradient
+#' iteration counts and timing for every protein fit - useful for
+#' evaluating solver time complexity, but produces one block of output
+#' per protein, so leave at the default \code{FALSE} for routine runs.
 #' @inheritParams .documentFunction
 #' 
 #' @importFrom utils sessionInfo
@@ -135,7 +143,8 @@ dataProcess = function(
     equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
     remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    numberOfCores = 1, aft_iterations=90, aft_solver = "cholesky"
+    numberOfCores = 1, aft_iterations=90, aft_solver = "cholesky",
+    aft_verbose = FALSE
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path,
@@ -172,7 +181,7 @@ dataProcess = function(
                                            MBimpute, censoredInt,
                                            remove50missing, equalFeatureVar,
                                            numberOfCores, aft_iterations,
-                                           aft_solver),
+                                           aft_solver, aft_verbose),
                           error = function(e) {
                               print(e)
                               NULL
@@ -218,7 +227,7 @@ dataProcess = function(
 #' 
 MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
                             remove50missing, equal_variance, aft_iterations = 90,
-                            aft_solver = "cholesky") {
+                            aft_solver = "cholesky", aft_verbose = FALSE) {
 
 
     is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
@@ -235,7 +244,8 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
             single_protein = input[protein_indices[[protein_id]],]
             summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
                 single_protein, impute, censored_symbol, remove50missing,
-                aft_iterations, aft_solver = aft_solver)
+                aft_iterations, aft_solver = aft_solver,
+                aft_verbose = aft_verbose)
             setTxtProgressBar(pb, protein_id)
         }
         close(pb)
@@ -245,7 +255,8 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
             single_protein = input[protein_indices[[protein_id]],]
             summarized_result = MSstatsSummarizeSingleLinear(
                 single_protein, impute, censored_symbol,
-              remove50missing, aft_iterations, aft_solver = aft_solver)
+              remove50missing, aft_iterations, aft_solver = aft_solver,
+              aft_verbose = aft_verbose)
 
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
@@ -265,7 +276,11 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' @param equal_variances if TRUE, observation are assumed to be homoskedastic
 #' @param aft_solver Which linear solve to use for the AFT imputation
 #' model's Newton-Raphson step: "cholesky" (default, via
-#' \code{survival::survreg}) or "cg" (conjugate gradient).
+#' \code{survival::survreg}), "cg" (conjugate gradient), or "pcg"
+#' (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).
+#' @param aft_verbose If \code{TRUE} and \code{aft_solver} is "cg" or
+#' "pcg", log per-Newton-iteration conjugate-gradient diagnostics for
+#' every protein fit. See \code{.fitSurvivalCG}'s \code{verbose}.
 #'
 #' @return list with protein-level data
 #'
@@ -297,7 +312,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
                                         remove50missing,
                                         aft_iterations = 90,
                                         equal_variances = TRUE,
-                                        aft_solver = "cholesky") {
+                                        aft_solver = "cholesky",
+                                        aft_verbose = FALSE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
 
     cols = intersect(
@@ -326,11 +342,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         } else {
             single_protein[, cols, with = FALSE]
         }
-        survival_fit = if (aft_solver == "cg") {
-            .fitSurvivalCG(fit_data, aft_iterations)
-        } else {
-            .fitSurvival(fit_data, aft_iterations)
-        }
+        survival_fit = .fitAFTModel(fit_data, aft_iterations, aft_solver,
+                                    aft_verbose)
         sigma2 = survival_fit$scale^2
 
         single_protein[, c("predicted", "imputation_var") := {
@@ -453,7 +466,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                      remove50missing, aft_iterations = 90,
-                                     aft_solver = "cholesky") {
+                                     aft_solver = "cholesky",
+                                     aft_verbose = FALSE) {
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
@@ -480,11 +494,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
 
         # Try to fit survival model and catch convergence warnings
         survival_fit = withCallingHandlers({
-            if (aft_solver == "cg") {
-                .fitSurvivalCG(fit_data, aft_iterations)
-            } else {
-                .fitSurvival(fit_data, aft_iterations)
-            }
+            .fitAFTModel(fit_data, aft_iterations, aft_solver, aft_verbose)
         }, warning = function(w) {
             if (grepl("converge", conditionMessage(w), ignore.case = TRUE)) {
                 message("Convergence warning caught: ", conditionMessage(w))

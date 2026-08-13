@@ -12,7 +12,8 @@ MSstatsSummarizeWithSingleCore(
   remove50missing,
   equal_variance,
   aft_iterations = 90,
-  aft_solver = "cholesky"
+  aft_solver = "cholesky",
+  aft_verbose = FALSE
 )
 }
 \arguments{

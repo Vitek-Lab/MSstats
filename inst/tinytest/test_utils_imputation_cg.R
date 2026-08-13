@@ -85,9 +85,11 @@ make_noisy_censored_input <- function(seed, is_labeled) {
     dt
 }
 
-check_solvers_agree <- function(input, tolerance, label) {
+check_solvers_agree <- function(input, tolerance, label,
+                                use_jacobi_preconditioner = FALSE) {
     fit_cholesky <- MSstats:::.fitSurvival(input, 90)
-    fit_cg <- MSstats:::.fitSurvivalCG(input, 90)
+    fit_cg <- MSstats:::.fitSurvivalCG(
+        input, 90, use_jacobi_preconditioner = use_jacobi_preconditioner)
 
     matched_names <- names(fit_cholesky$coefficients)
     expect_equal(
@@ -124,4 +126,66 @@ check_solvers_agree(
 check_solvers_agree(
     make_noisy_censored_input(seed = 2, is_labeled = FALSE),
     tolerance = 1e-4, label = "unlabeled, noisy, censored"
+)
+
+# --- the Jacobi-preconditioned solver (aft_solver = "pcg") agrees too -----
+
+check_solvers_agree(
+    make_noisy_censored_input(seed = 1, is_labeled = TRUE),
+    tolerance = 1e-4, label = "labeled, noisy, censored, jacobi-preconditioned",
+    use_jacobi_preconditioner = TRUE
+)
+check_solvers_agree(
+    make_noisy_censored_input(seed = 2, is_labeled = FALSE),
+    tolerance = 1e-4, label = "unlabeled, noisy, censored, jacobi-preconditioned",
+    use_jacobi_preconditioner = TRUE
+)
+
+# --- .fitAFTModel() dispatches to the right solver -------------------------
+
+noisy_input <- make_noisy_censored_input(seed = 3, is_labeled = FALSE)
+
+expect_inherits(
+    MSstats:::.fitAFTModel(noisy_input, 90, "cholesky"), "survreg",
+    info = ".fitAFTModel(aft_solver = 'cholesky') should return a survreg fit"
+)
+expect_true(
+    is.null(MSstats:::.fitAFTModel(noisy_input, 90, "cholesky")$cg_diagnostics),
+    info = "the cholesky path should not attach cg_diagnostics"
+)
+expect_false(
+    is.null(MSstats:::.fitAFTModel(noisy_input, 90, "cg")$cg_diagnostics),
+    info = ".fitAFTModel(aft_solver = 'cg') should attach cg_diagnostics"
+)
+expect_false(
+    is.null(MSstats:::.fitAFTModel(noisy_input, 90, "pcg")$cg_diagnostics),
+    info = ".fitAFTModel(aft_solver = 'pcg') should attach cg_diagnostics"
+)
+
+# --- verbose = TRUE logs per-iteration diagnostics, FALSE stays silent -----
+
+expect_silent(
+    MSstats:::.fitSurvivalCG(noisy_input, 90, verbose = FALSE)
+)
+expect_message(
+    MSstats:::.fitSurvivalCG(noisy_input, 90, verbose = TRUE),
+    pattern = "\\[AFT-CG\\] starting fit",
+    info = "verbose = TRUE should report the problem size at the start of the fit"
+)
+expect_message(
+    MSstats:::.fitSurvivalCG(noisy_input, 90, verbose = TRUE),
+    pattern = "\\[AFT-CG\\] finished",
+    info = "verbose = TRUE should report a summary once fitting finishes"
+)
+
+# --- cg_diagnostics has one row per Newton iteration actually taken -------
+
+fit_with_diagnostics <- MSstats:::.fitSurvivalCG(noisy_input, 90)
+expect_equal(
+    nrow(fit_with_diagnostics$cg_diagnostics), fit_with_diagnostics$iter,
+    info = "cg_diagnostics should have one row per Newton-Raphson iteration taken"
+)
+expect_true(
+    all(fit_with_diagnostics$cg_diagnostics$cg_iterations >= 0),
+    info = "cg_iterations should be a non-negative count for every Newton iteration"
 )
