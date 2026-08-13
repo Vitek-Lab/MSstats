@@ -62,6 +62,11 @@
 #' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS. Default is 1.
 #' @param aft_iterations Number of iterations for AFT model fitting. Default is 90.
+#' @param aft_solver Which linear solve to use for the AFT imputation
+#' model's Newton-Raphson step: "cholesky" (default) delegates to
+#' \code{survival::survreg}, which solves it via Cholesky factorization.
+#' "cg" solves the same Newton step with a vendored conjugate-gradient
+#' routine instead - an experimental alternative, currently opt-in only.
 #' @inheritParams .documentFunction
 #' 
 #' @importFrom utils sessionInfo
@@ -130,7 +135,7 @@ dataProcess = function(
     equalFeatureVar = TRUE, censoredInt = "NA", MBimpute = TRUE, 
     remove50missing = FALSE, fix_missing = NULL, maxQuantileforCensored = 0.999, 
     use_log_file = TRUE, append = FALSE, verbose = TRUE, log_file_path = NULL,
-    numberOfCores = 1, aft_iterations=90
+    numberOfCores = 1, aft_iterations=90, aft_solver = "cholesky"
 ) {
     MSstatsConvert::MSstatsLogsSettings(use_log_file, append, verbose, 
                                         log_file_path,
@@ -164,9 +169,10 @@ dataProcess = function(
     input = MSstatsPrepareForSummarization(input, summaryMethod, MBimpute, censoredInt,
                                            remove_uninformative_feature_outlier)
     summarized = tryCatch(MSstatsSummarizeWithMultipleCores(input, summaryMethod,
-                                           MBimpute, censoredInt, 
-                                           remove50missing, equalFeatureVar, 
-                                           numberOfCores, aft_iterations),
+                                           MBimpute, censoredInt,
+                                           remove50missing, equalFeatureVar,
+                                           numberOfCores, aft_iterations,
+                                           aft_solver),
                           error = function(e) {
                               print(e)
                               NULL
@@ -209,14 +215,17 @@ dataProcess = function(
 #' a logfile named `MSstats_dataProcess_log_progress.log` is created to 
 #' track progress. Only works for Linux & Mac OS. Default is 1.
 #' @param aft_iterations Number of iterations for AFT model fitting. Default is 90.
-#' 
+#' @param aft_solver Which linear solve to use for the AFT imputation
+#' model's Newton-Raphson step: "cholesky" (default, via
+#' \code{survival::survreg}) or "cg" (conjugate gradient).
+#'
 #' @importFrom parallel makeCluster parLapply stopCluster clusterExport
-#' 
+#'
 #' @return list of length one with run-level data.
-#' 
+#'
 MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_symbol,
                               remove50missing, equal_variance, numberOfCores = 1,
-                              aft_iterations = 90) {
+                              aft_iterations = 90, aft_solver = "cholesky") {
     if (numberOfCores > 1) {
         is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
         if (is_labeled_reference) {
@@ -229,48 +238,51 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
         cl = parallel::makeCluster(numberOfCores)
         getOption("MSstatsLog")("INFO",
                                 "Starting the cluster setup for summarization")
-        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP", 
+        parallel::clusterExport(cl, c("MSstatsSummarizeSingleTMP",
                                       "MSstatsSummarizeSingleLinear",
                                       "input", "impute", "censored_symbol",
-                                      "remove50missing", "protein_indices", 
-                                      "equal_variance", "aft_iterations"), 
+                                      "remove50missing", "protein_indices",
+                                      "equal_variance", "aft_iterations",
+                                      "aft_solver"),
                                 envir = function_environment)
-        cat(paste0("Number of proteins to process: ", num_proteins), 
+        cat(paste0("Number of proteins to process: ", num_proteins),
             sep = "\n", file = "MSstats_dataProcess_log_progress.log")
         if (method == "TMP") {
             summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
                 if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
+                    cat("Finished processing an additional 100 proteins",
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
                 single_protein = input[protein_indices[[i]],]
                 MSstatsSummarizeSingleTMP(
                     single_protein, impute, censored_symbol, remove50missing,
-                    aft_iterations)
+                    aft_iterations, aft_solver = aft_solver)
             })
         } else {
             summarized_results = parallel::parLapply(cl, seq_len(num_proteins), function(i) {
                 if (i %% 100 == 0) {
-                    cat("Finished processing an additional 100 proteins", 
+                    cat("Finished processing an additional 100 proteins",
                         sep = "\n", file = "MSstats_dataProcess_log_progress.log", append = TRUE)
                 }
                 single_protein = input[protein_indices[[i]],]
                 MSstatsSummarizeSingleLinear(
                     single_protein,
-                    impute, 
-                    censored_symbol, 
+                    impute,
+                    censored_symbol,
                     remove50missing,
-                    aft_iterations)
+                    aft_iterations,
+                    aft_solver = aft_solver)
             })
         }
         parallel::stopCluster(cl)
         return(summarized_results)
     } else {
-        return(MSstatsSummarizeWithSingleCore(input, method, impute, 
-                                              censored_symbol, 
-                                              remove50missing, 
+        return(MSstatsSummarizeWithSingleCore(input, method, impute,
+                                              censored_symbol,
+                                              remove50missing,
                                               equal_variance,
-                                              aft_iterations))
+                                              aft_iterations,
+                                              aft_solver))
     }
 }
 
@@ -304,7 +316,8 @@ MSstatsSummarizeWithMultipleCores = function(input, method, impute, censored_sym
 #' head(summarized[[1]][[1]]) # run-level summary
 #' 
 MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
-                            remove50missing, equal_variance, aft_iterations = 90) {
+                            remove50missing, equal_variance, aft_iterations = 90,
+                            aft_solver = "cholesky") {
 
 
     is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
@@ -320,8 +333,8 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
         for (protein_id in seq_len(num_proteins)) {
             single_protein = input[protein_indices[[protein_id]],]
             summarized_results[[protein_id]] = MSstatsSummarizeSingleTMP(
-                single_protein, impute, censored_symbol, remove50missing, 
-                aft_iterations)
+                single_protein, impute, censored_symbol, remove50missing,
+                aft_iterations, aft_solver = aft_solver)
             setTxtProgressBar(pb, protein_id)
         }
         close(pb)
@@ -330,8 +343,8 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
         for (protein_id in seq_len(num_proteins)) {
             single_protein = input[protein_indices[[protein_id]],]
             summarized_result = MSstatsSummarizeSingleLinear(
-                single_protein, impute, censored_symbol, 
-              remove50missing, aft_iterations)
+                single_protein, impute, censored_symbol,
+              remove50missing, aft_iterations, aft_solver = aft_solver)
 
             summarized_results[[protein_id]] = summarized_result
             setTxtProgressBar(pb, protein_id)
@@ -349,9 +362,12 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' @param remove50missing if TRUE, proteins with more than 50\% missing values in each run are removed
 #' @param aft_iterations number of iterations for AFT model fitting
 #' @param equal_variances if TRUE, observation are assumed to be homoskedastic
-#' 
+#' @param aft_solver Which linear solve to use for the AFT imputation
+#' model's Newton-Raphson step: "cholesky" (default, via
+#' \code{survival::survreg}) or "cg" (conjugate gradient).
+#'
 #' @return list with protein-level data
-#' 
+#'
 #' @importFrom stats xtabs
 #' 
 #' @export
@@ -379,7 +395,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
                                         censored_symbol,
                                         remove50missing,
                                         aft_iterations = 90,
-                                        equal_variances = TRUE) {
+                                        equal_variances = TRUE,
+                                        aft_solver = "cholesky") {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
 
     cols = intersect(
@@ -408,7 +425,11 @@ MSstatsSummarizeSingleLinear = function(single_protein,
         } else {
             single_protein[, cols, with = FALSE]
         }
-        survival_fit = .fitSurvival(fit_data, aft_iterations)
+        survival_fit = if (aft_solver == "cg") {
+            .fitSurvivalCG(fit_data, aft_iterations)
+        } else {
+            .fitSurvival(fit_data, aft_iterations)
+        }
         sigma2 = survival_fit$scale^2
 
         single_protein[, c("predicted", "imputation_var") := {
@@ -530,7 +551,8 @@ MSstatsSummarizeSingleLinear = function(single_protein,
 #' head(single_protein_summary[[1]])
 #' 
 MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
-                                     remove50missing, aft_iterations = 90) {
+                                     remove50missing, aft_iterations = 90,
+                                     aft_solver = "cholesky") {
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
@@ -557,7 +579,11 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
 
         # Try to fit survival model and catch convergence warnings
         survival_fit = withCallingHandlers({
-            .fitSurvival(fit_data, aft_iterations)
+            if (aft_solver == "cg") {
+                .fitSurvivalCG(fit_data, aft_iterations)
+            } else {
+                .fitSurvival(fit_data, aft_iterations)
+            }
         }, warning = function(w) {
             if (grepl("converge", conditionMessage(w), ignore.case = TRUE)) {
                 message("Convergence warning caught: ", conditionMessage(w))

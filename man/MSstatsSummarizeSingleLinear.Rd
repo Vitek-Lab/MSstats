@@ -10,7 +10,8 @@ MSstatsSummarizeSingleLinear(
   censored_symbol,
   remove50missing,
   aft_iterations = 90,
-  equal_variances = TRUE
+  equal_variances = TRUE,
+  aft_solver = "cholesky"
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ MSstatsSummarizeSingleLinear(
 \item{aft_iterations}{number of iterations for AFT model fitting}
 
 \item{equal_variances}{if TRUE, observation are assumed to be homoskedastic}
+
+\item{aft_solver}{Which linear solve to use for the AFT imputation
+model's Newton-Raphson step: "cholesky" (default, via
+\code{survival::survreg}) or "cg" (conjugate gradient).}
 }
 \value{
 list with protein-level data

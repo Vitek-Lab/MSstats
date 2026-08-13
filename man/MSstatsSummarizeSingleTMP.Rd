@@ -9,7 +9,8 @@ MSstatsSummarizeSingleTMP(
   impute,
   censored_symbol,
   remove50missing,
-  aft_iterations = 90
+  aft_iterations = 90,
+  aft_solver = "cholesky"
 )
 }
 \arguments{
@@ -33,6 +34,10 @@ as censored, and imputation is disabled (impute is ignored).}
 where every run has at least 50\% missing values for each peptide. FALSE is default.}
 
 \item{aft_iterations}{number of iterations for AFT model fitting}
+
+\item{aft_solver}{Which linear solve to use for the AFT imputation
+model's Newton-Raphson step: "cholesky" (default, via
+\code{survival::survreg}) or "cg" (conjugate gradient).}
 }
 \value{
 list of two data.tables: one with fitted survival model,
