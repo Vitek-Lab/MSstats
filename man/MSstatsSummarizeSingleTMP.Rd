@@ -9,7 +9,8 @@ MSstatsSummarizeSingleTMP(
   impute,
   censored_symbol,
   remove50missing,
-  aft_iterations = 90
+  aft_iterations = 90,
+  aft_solver = "cholesky"
 )
 }
 \arguments{

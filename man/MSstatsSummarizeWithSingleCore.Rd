@@ -11,7 +11,8 @@ MSstatsSummarizeWithSingleCore(
   censored_symbol,
   remove50missing,
   equal_variance,
-  aft_iterations = 90
+  aft_iterations = 90,
+  aft_solver = "cholesky"
 )
 }
 \arguments{

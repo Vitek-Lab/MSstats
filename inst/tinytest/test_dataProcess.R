@@ -423,3 +423,75 @@ expect_true(
     length(l_cens_pred) > 0 && all(is.finite(l_cens_pred)),
     info = "MSstatsSummarizeSingleTMP SRM: censored L rows must receive a finite imputed predicted value"
 )
+
+# --- Same SRM imputation, but via aft_solver = "cg" ------------------------
+# Same invariants must hold (H never imputed, L gets a finite prediction),
+# and the imputed values themselves should closely match the default
+# aft_solver = "cholesky" path, since both solve the same Newton step.
+#
+# make_srm_impute_input()'s uncensored values are an exactly noise-free
+# linear function of RUN, which makes the Gaussian scale MLE degenerate
+# (unbounded as residuals -> 0). That's fine for the qualitative H/L
+# invariant checks above, but not a meaningful numeric comparison between
+# solvers, so a little jitter is added here to make the fit well-posed.
+
+make_srm_impute_input_with_noise <- function(seed) {
+    input <- make_srm_impute_input()
+    set.seed(seed)
+    input[cen == 1L,
+          newABUNDANCE := newABUNDANCE + rnorm(.N, sd = 0.01)]
+    input
+}
+
+result_srm_imp_chol_noisy <- MSstatsSummarizeSingleTMP(
+    make_srm_impute_input_with_noise(seed = 1),
+    impute          = TRUE,
+    censored_symbol = "NA",
+    remove50missing = FALSE,
+    aft_iterations  = 90,
+    aft_solver      = "cholesky"
+)
+result_srm_imp_cg <- MSstatsSummarizeSingleTMP(
+    make_srm_impute_input_with_noise(seed = 1),
+    impute          = TRUE,
+    censored_symbol = "NA",
+    remove50missing = FALSE,
+    aft_iterations  = 90,
+    aft_solver      = "cg"
+)
+
+survival_srm_chol_noisy <- result_srm_imp_chol_noisy[[2]]
+survival_srm_cg <- result_srm_imp_cg[[2]]
+
+h_cens_pred_cg <- survival_srm_cg[
+    as.character(FEATURE) == "F1" &
+    as.character(LABEL)   == "H" &
+    as.character(RUN)     == "R1",
+    predicted
+]
+expect_true(
+    length(h_cens_pred_cg) > 0 && all(is.na(h_cens_pred_cg)),
+    info = "MSstatsSummarizeSingleTMP SRM (aft_solver = cg): censored H rows must NOT receive an imputed predicted value"
+)
+
+l_cens_pred_cg <- survival_srm_cg[
+    as.character(FEATURE) == "F1" &
+    as.character(LABEL)   == "L" &
+    as.character(RUN)     == "R2",
+    predicted
+]
+l_cens_pred_chol_noisy <- survival_srm_chol_noisy[
+    as.character(FEATURE) == "F1" &
+    as.character(LABEL)   == "L" &
+    as.character(RUN)     == "R2",
+    predicted
+]
+expect_true(
+    length(l_cens_pred_cg) > 0 && all(is.finite(l_cens_pred_cg)),
+    info = "MSstatsSummarizeSingleTMP SRM (aft_solver = cg): censored L rows must receive a finite imputed predicted value"
+)
+expect_equal(
+    l_cens_pred_cg, l_cens_pred_chol_noisy, tolerance = 1e-4,
+    check.attributes = FALSE,
+    info = "MSstatsSummarizeSingleTMP SRM: aft_solver = cg should closely match aft_solver = cholesky"
+)

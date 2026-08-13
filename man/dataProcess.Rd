@@ -25,7 +25,8 @@ dataProcess(
   verbose = TRUE,
   log_file_path = NULL,
   numberOfCores = 1,
-  aft_iterations = 90
+  aft_iterations = 90,
+  aft_solver = "cholesky"
 )
 }
 \arguments{
@@ -121,6 +122,12 @@ a logfile named `MSstats_dataProcess_log_progress.log` is created to
 track progress. Only works for Linux & Mac OS. Default is 1.}
 
 \item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
+
+\item{aft_solver}{Which linear solve to use for the AFT imputation
+model's Newton-Raphson step: "cholesky" (default) delegates to
+\code{survival::survreg}, which solves it via Cholesky factorization.
+"cg" solves the same Newton step with a vendored conjugate-gradient
+routine instead - an experimental alternative, currently opt-in only.}
 }
 \value{
 A list containing:
