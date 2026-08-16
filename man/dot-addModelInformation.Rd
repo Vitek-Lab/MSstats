@@ -4,10 +4,13 @@
 \alias{.addModelInformation}
 \title{Add model information}
 \usage{
-.addModelInformation(input)
+.addModelInformation(input, method = "highQuality")
 }
 \arguments{
 \item{input}{data.table}
+
+\item{method}{"highQuality" or "highQuality-lsqr", see
+\code{.selectHighQualityFeatures}}
 }
 \value{
 data.table
