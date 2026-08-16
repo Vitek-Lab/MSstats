@@ -40,3 +40,26 @@ prepared = MSstatsPrepareForSummarization(selected, "TMP", TRUE, "NA", FALSE)
 summarized = MSstatsSummarizeWithSingleCore(prepared, "TMP", TRUE, "NA", FALSE, TRUE, 90)
 output = MSstatsSummarizationOutput(prepared, summarized, processed, "TMP", TRUE, "NA")
 expect_true(nrow(output$ProteinLevelData) > 0)
+
+# Test 7: method = "highQuality-lsqr" flags feature quality and outliers ----
+# (LSQR-based robust fit in place of "highQuality"'s MASS::rlm/QR-based one)
+input_hq_lsqr = MSstatsSelectFeatures(data.table::copy(raw_input), "highQuality-lsqr",
+                                      min_feature_count = 2)
+expect_true(all(c("feature_quality", "is_outlier") %in% colnames(input_hq_lsqr)))
+expect_true(all(input_hq_lsqr$feature_quality %in% c("Informative", "Noisy", "Uninformative")))
+expect_true(is.logical(input_hq_lsqr$is_outlier))
+expect_equal(nrow(input_hq_lsqr), nrow(raw_input))
+
+# The two fitting methods should agree closely (not necessarily bit-identical,
+# given different IRLS numerics) on the same real fixture.
+expect_equal(mean(input_hq$feature_quality == input_hq_lsqr$feature_quality), 1)
+expect_equal(mean(input_hq$is_outlier == input_hq_lsqr$is_outlier), 1)
+
+# Test 8: full pipeline still summarizes with highQuality-lsqr selection ----
+selected_lsqr = MSstatsSelectFeatures(data.table::copy(raw_input), "highQuality-lsqr")
+processed_lsqr = getProcessed(selected_lsqr)
+prepared_lsqr = MSstatsPrepareForSummarization(selected_lsqr, "TMP", TRUE, "NA", FALSE)
+summarized_lsqr = MSstatsSummarizeWithSingleCore(prepared_lsqr, "TMP", TRUE, "NA", FALSE, TRUE, 90)
+output_lsqr = MSstatsSummarizationOutput(prepared_lsqr, summarized_lsqr, processed_lsqr,
+                                        "TMP", TRUE, "NA")
+expect_true(nrow(output_lsqr$ProteinLevelData) > 0)

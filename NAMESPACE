@@ -63,7 +63,10 @@ importFrom(BiocParallel,
   bpstart,
   bpstop
 )
-importFrom(MASS,rlm)
+importFrom(MASS,
+  psi.huber,
+  rlm
+)
 importFrom(MSstatsConvert,
   DIANNtoMSstatsFormat,
   DIAUmpiretoMSstatsFormat,
@@ -147,6 +150,7 @@ importFrom(stats,
   lm,
   lm.fit,
   loess,
+  mad,
   median,
   model.frame,
   model.matrix,

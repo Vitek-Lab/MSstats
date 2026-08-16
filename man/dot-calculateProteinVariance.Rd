@@ -4,10 +4,14 @@
 \alias{.calculateProteinVariance}
 \title{Calculate protein variances}
 \usage{
-.calculateProteinVariance(input)
+.calculateProteinVariance(input, method = "highQuality")
 }
 \arguments{
 \item{input}{data.table}
+
+\item{method}{"highQuality" (default, \code{MASS::rlm}/QR-based robust
+fit via \code{.fitHuber}) or "highQuality-lsqr" (matrix-free LSQR-based
+robust fit via \code{.fitHuberLSQR})}
 }
 \value{
 list of residuals, degress of freedom and variances
