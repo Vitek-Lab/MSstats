@@ -6,6 +6,35 @@
   peak_rss_mb()
 }
 
+#' Reset the process peak-RSS high-water mark to the current RSS
+#'
+#' The kernel-tracked peak RSS (\code{VmHWM} on Linux, \code{ru_maxrss} on
+#' macOS/BSD, \code{PeakWorkingSetSize} on Windows) is a running maximum
+#' since process start. Without a reset, an earlier one-off allocation in the
+#' same R session (e.g. reading an 8 GB CSV) inflates every peak-memory
+#' measurement taken afterwards even if that memory has since been freed,
+#' making it useless as a baseline for benchmarking this function's own
+#' memory use.
+#'
+#' Linux only: writing \code{"5"} to \code{/proc/self/clear_refs} resets
+#' \code{VmHWM} to the current RSS (kernel >= 4.0). macOS and Windows have no
+#' equivalent public facility to reset their peak-RSS counters, so this is a
+#' no-op there, and \code{track_memory} reports on those platforms may still
+#' include memory used before this function was entered.
+#'
+#' @return invisible \code{TRUE} if the peak was reset, \code{FALSE} otherwise
+#' @keywords internal
+.reset_peak_rss <- function() {
+    if (Sys.info()[["sysname"]] == "Linux" && file.exists("/proc/self/clear_refs")) {
+        reset_ok <- tryCatch({
+            cat("5", file = "/proc/self/clear_refs")
+            TRUE
+        }, error = function(e) FALSE, warning = function(w) FALSE)
+        return(invisible(reset_ok))
+    }
+    invisible(FALSE)
+}
+
 .print_memory_report <- function(function_name, checkpoints, worker_peak_mb = NULL,
                                  elapsed = NULL) {
     rule_width <- 65L
@@ -276,7 +305,14 @@
 #' @param aft_iterations number of AFT model iterations
 #' @param verbose whether to print verbose output
 #' @param BPPARAM optional \code{BiocParallelParam} instance
-#' @param track_memory whether to report per-worker peak RSS memory usage
+#' @param track_memory whether to report per-worker peak RSS memory usage.
+#'   On Linux, the process peak RSS is reset on entry (via
+#'   \code{/proc/self/clear_refs}) so the reported baseline reflects memory
+#'   at function entry rather than a historical high-water mark inflated by
+#'   earlier operations in the session (e.g. reading a large input file).
+#'   This reset is Linux-only; on macOS and Windows there is no supported
+#'   facility to reset the peak-RSS counter, so reports there may still
+#'   include memory used before this function was entered.
 #' @param max_proteins_per_worker caps protein records per \code{bplapply} task;
 #'   0 uses BiocParallel's default split, default is 50.
 #'
@@ -311,6 +347,18 @@ MSstatsSummarizeWithMultipleCores <- function(
 
     start_time <- proc.time()[["elapsed"]]
     memory_checkpoints <- list()
+
+    if (track_memory) {
+        peak_reset <- .reset_peak_rss()
+        if (!peak_reset) {
+            getOption("MSstatsLog")("INFO",
+                paste0("Peak RSS reset on entry is only supported on Linux ",
+                       "(via /proc/self/clear_refs); on this platform, the ",
+                       "peak-memory report below may include usage from ",
+                       "before this function was entered."))
+        }
+        memory_checkpoints[["baseline (peak reset on entry)"]] <- .peak_rss_mb()
+    }
 
     is_labeled_reference <- "is_labeled_ref" %in% colnames(input) &&
         any(input$is_labeled_ref, na.rm = TRUE)
