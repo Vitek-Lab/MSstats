@@ -40,7 +40,11 @@
 #' graph in Profile Plot and QC plot. Default is 4.
 #' @param text.angle angle of labels represented each condition at the top
 #' of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
-#' Default is 0.
+#' Default is 0. This affects the ggplot2 (PDF) output only: text rotation is 
+#' not carried through to the Plotly output by \code{ggplotly}, so it has no 
+#' effect when \code{isPlotly = TRUE}. Setting a non-zero value also disables 
+#' the automatic condition label layout described in 
+#' \code{condition.label.adjust}.
 #' @param legend.size size of feature legend (transition-level or peptide-level)
 #' above graph in Profile Plot. Default is 7.
 #' @param dot.size.profile size of dots in profile plot. Default is 2.
@@ -73,6 +77,26 @@
 #'  The command address can help to specify where to store the file as well as 
 #'  how to modify the beginning of the file name. 
 #'  If address=FALSE, plot will be not saved as pdf file but showed in window.
+#' @param legend.position position of the feature legend in Profile Plot: "top" 
+#' (default), "bottom", "left", "right", or "none" to hide it. Honoured in both 
+#' the ggplot2 (PDF) and the Plotly output.
+#' @param legend.ncol number of columns in the feature legend of Profile Plot. 
+#' Default is NULL, which uses three columns.
+#' @param max.legend.entries maximum number of features drawn in the Profile Plot 
+#' feature legend. Default is 30. A protein with more features than this is drawn 
+#' without the feature legend, and the feature count is appended to the plot 
+#' title, for example "P12345 (149 features; legend omitted)", so that the 
+#' omission is visible rather than silent. Use \code{Inf} to always draw the 
+#' legend. \code{featureName = "NA"} still suppresses the legend outright. 
+#' Note that on the Plotly path \code{ggplotly} truncates long legends before 
+#' this limit is reached, so there the title note rather than the limit is what 
+#' reports the omission.
+#' @param condition.label.adjust TRUE (default) lays out the condition labels of 
+#' Profile Plot and QC Plot automatically. When a condition name is wider than 
+#' the horizontal space available to it, the condition is drawn as a facet strip 
+#' and the name is wrapped to fit, rather than being printed inside the panel 
+#' where it would overlap its neighbours. Plots whose condition labels already 
+#' fit are left unchanged. FALSE reproduces the previous layout exactly.
 #' 
 #' @details
 #' \itemize{
@@ -114,7 +138,13 @@ dataProcessPlots = function(
   text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
   dot.size.condition = 3, width = 800, height = 600, which.Protein = "all",
   originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-  remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE
+  remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE,
+  # max.legend.entries = 30 is calibrated, not arbitrary; the evidence and the
+  # open argument for raising it are recorded at the cap in .makeProfilePlot()
+  # (R/utils_dataprocess_plots.R). Keep the three defaults here in step with the
+  # copies on .plotProfile() and .makeProfilePlot().
+  legend.position = "top", legend.ncol = NULL, max.legend.entries = 30,
+  condition.label.adjust = TRUE
 ) {
   PROTEIN = Protein = NULL
   
@@ -144,7 +174,9 @@ dataProcessPlots = function(
       plots <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
                            x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                            dot.size.profile, width, height, which.Protein, originalPlot, 
-                           summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
+                           summaryPlot, remove_uninformative_feature_outlier, address, isPlotly,
+                           legend.position, legend.ncol, max.legend.entries,
+                           condition.label.adjust)
       plotly_plots = list()
       if(isPlotly) {
           og_plotly_plot = NULL
@@ -152,7 +184,8 @@ dataProcessPlots = function(
           if("original_plot" %in% names(plots)) {
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
-                  og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"),
+                                                        legend_position = legend.position)
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
                   og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
@@ -166,7 +199,8 @@ dataProcessPlots = function(
           if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
-                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"),
+                                                        legend_position = legend.position)
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
@@ -187,7 +221,7 @@ dataProcessPlots = function(
   else if (type == "QCPLOT") {
       plots <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
                       text.size, text.angle, legend.size, dot.size.profile, width, height,
-                      which.Protein, address, isPlotly)
+                      which.Protein, address, isPlotly, condition.label.adjust)
       plotly_plots <- vector("list", length(plots))
       if(isPlotly) {
           for(i in seq_along(plots)) {
@@ -233,7 +267,9 @@ dataProcessPlots = function(
 .plotProfile = function(
   processed, summarized, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
   text.size, text.angle, legend.size, dot.size.profile, width, height, proteins, 
-  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address, isPlotly
+  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address, isPlotly,
+  legend.position = "top", legend.ncol = NULL, max.legend.entries = 30,
+  condition.label.adjust = TRUE
 ) {
   ABUNDANCE = PROTEIN = feature_quality = is_outlier = Protein = GROUP = NULL
   SUBJECT = LABEL = RUN = xtabs = PEPTIDE = FEATURE = NULL
@@ -349,7 +385,9 @@ dataProcessPlots = function(
                                       text.size, text.angle, 
                                       legend.size, dot.size.profile, 
                                       ss, s, cumGroupAxis, yaxis.name,
-                                      lineNameAxis, groupNametemp, dot_colors)
+                                      lineNameAxis, groupNametemp, dot_colors,
+                                      legend.position, legend.ncol, max.legend.entries,
+                                      width, condition.label.adjust)
       
       setTxtProgressBar(pb, i)
       print(profile_plot)
@@ -403,17 +441,23 @@ dataProcessPlots = function(
       quant$analysis = "Run summary"
       quant$newABUNDANCE = quant$ABUNDANCE
       single_protein$analysis = "Processed feature-level data"
+      # GROUP is carried through so the summary plot can facet on condition when
+      # .layoutConditionLabels() asks for it; quant is built per RUN and has no
+      # GROUP of its own, so it is mapped back through the run/condition table.
+      quant[, GROUP := tempGroupName$GROUP[match(RUN, tempGroupName$RUN)]]
       combined = rbind(single_protein[
         , 
-        list(PROTEIN, PEPTIDE, TRANSITION, FEATURE, LABEL,
+        list(PROTEIN, PEPTIDE, TRANSITION, FEATURE, LABEL, GROUP,
              RUN, ABUNDANCE, newABUNDANCE,FRACTION, censored, analysis)], quant,fill=TRUE)
+      combined$GROUP = factor(combined$GROUP, levels = level.group)
       combined$analysis = factor(combined$analysis)
       combined$FEATURE = factor(combined$FEATURE)
       combined$RUN = as.numeric(combined$RUN)
       profile_plot = .makeSummaryProfilePlot(
         combined, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
-        yaxis.name, lineNameAxis, groupNametemp
+        yaxis.name, lineNameAxis, groupNametemp, legend.position,
+        width, condition.label.adjust
       )
       print(profile_plot)
       setTxtProgressBar(pb, i)
@@ -437,7 +481,8 @@ dataProcessPlots = function(
 #' @importFrom utils setTxtProgressBar
 .plotQC = function(
   processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
-  text.angle, legend.size, dot.size.profile, width, height, protein, address, isPlotly
+  text.angle, legend.size, dot.size.profile, width, height, protein, address, isPlotly,
+  condition.label.adjust = TRUE
 ) {
   GROUP = SUBJECT = RUN = LABEL = PROTEIN = NULL
   
@@ -491,7 +536,7 @@ dataProcessPlots = function(
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
-                          yaxis.name)
+                          yaxis.name, width, condition.label.adjust)
     print(qc_plot)
     plots[[1]] = qc_plot
   } 
@@ -514,7 +559,7 @@ dataProcessPlots = function(
       qc_plot = .makeQCPlot(single_protein, FALSE, y.limdown, y.limup, 
                             x.axis.size, y.axis.size, text.size, text.angle, 
                             legend.size, label.color, cumGroupAxis, groupName,
-                            lineNameAxis, yaxis.name)
+                            lineNameAxis, yaxis.name, width, condition.label.adjust)
       print(qc_plot)
       plots[[i+1]] = qc_plot # to accomodate all proteins
       setTxtProgressBar(pb, i)
@@ -617,36 +662,38 @@ dataProcessPlots = function(
 
 #' converter for plots from ggplot to plotly
 #' @noRd
-.convertGgplot2Plotly = function(plot, tips = "all") {
-    converted_plot <- ggplotly(plot,tooltip = tips)
-    converted_plot <- plotly::layout(
-            converted_plot,
-            width = 800,   # Set the width of the chart in pixels
-            height = 600,  # Set the height of the chart in pixels
-            title = list(
-                font = list(
-                    size = 18
-                )
-            ),
-            xaxis = list(
-                titlefont = list(
-                    size = 15  # Set the font size for the x-axis label
-                )
-            ),
-            legend = list(
-                x = 0,     # Set the x position of the legend
-                y = -0.25,    # Set the y position of the legend (negative value to move below the plot)
-                orientation = "h",  # Horizontal orientation
-                font = list(
-                    size = 12  # Set the font size for legend item labels
-                ),
-                title = list(
-                    font = list(
-                        size = 12  # Set the font size for the legend title
-                    )
-                )
+.convertGgplot2Plotly = function(plot, tips = "all", legend_position = NULL) {
+    # width/height belong to ggplotly(); passing them to layout() is deprecated.
+    converted_plot <- ggplotly(plot, tooltip = tips, width = 800, height = 600)
+    args <- list(
+        converted_plot,
+        title = list(
+            font = list(
+                size = 18
             )
-        ) 
+        ),
+        xaxis = list(
+            titlefont = list(
+                size = 15  # Set the font size for the x-axis label
+            )
+        )
+    )
+    if (is.null(legend_position)) {
+        # Historical placement, kept for callers that do not opt in so their
+        # output is unchanged.
+        args$legend <- list(
+            x = 0,
+            y = -0.25,
+            orientation = "h",
+            font = list(size = 12),
+            title = list(font = list(size = 12))
+        )
+    } else {
+        # ggplotly() already translates theme(legend.position); overriding it
+        # here would undo that. Only honour an explicit request to hide it.
+        args$showlegend <- !identical(as.character(legend_position), "none")
+    }
+    converted_plot <- do.call(plotly::layout, args)
     converted_plot
 }
 

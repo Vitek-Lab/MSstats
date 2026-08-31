@@ -2,6 +2,15 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.21.1 (2026-08-30)}{
+    \itemize{
+        \item \strong{Profile plots}: Proteins with many features no longer lose the data panel to an oversized feature legend. Past \code{max.legend.entries} (default 30) the feature legend is omitted and the feature count is appended to the plot title, so the omission is stated rather than silent. Previously a 149-feature protein rendered as a full page of legend with no plot on it at all, and on the Plotly path the legend was silently truncated to roughly ten entries.
+        \item \strong{Profile plots}: New \code{legend.position} and \code{legend.ncol} arguments to \code{dataProcessPlots} reposition and resize the feature legend. \code{legend.position} is honoured in the Plotly output as well as the PDF output.
+        \item \strong{Profile and QC plots}: Condition labels no longer overlap when condition names are long. Where a name is wider than the space available to it, the condition is drawn as a facet strip with the name wrapped to fit, instead of being printed inside the panel. Plots whose labels already fit render identically to before. Set \code{condition.label.adjust = FALSE} to restore the previous layout in all cases.
+        \item \strong{Note}: \code{text.angle} affects the ggplot2 (PDF) output only. Text rotation is not carried through by \code{ggplotly}, so it has never had an effect when \code{isPlotly = TRUE}.
+    }
+}
+
 \section{Version 4.20.0 (2026-04-23)}{
     \itemize{
         \item \strong{Protein turnover analysis}: Added support for multi-label summarization, enabling experiments that use multiple isotope labels to quantify protein synthesis and degradation rates. Each isotope label is now summarized independently, giving more accurate per-label abundance estimates.
