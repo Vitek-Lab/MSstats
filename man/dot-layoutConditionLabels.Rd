@@ -10,7 +10,8 @@
   width,
   text.size,
   text.angle,
-  condition.label.adjust = TRUE
+  condition.label.adjust = TRUE,
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -30,6 +31,13 @@ given half the room they really have.}
 \item{text.angle}{angle of the condition labels}
 
 \item{condition.label.adjust}{if FALSE, keep the in-panel layout unchanged}
+
+\item{isPlotly}{TRUE when the plot is bound for `ggplotly()`. The canvas is
+the same number, but not the same size: on the pdf device `width` is points
+at 72dpi, while plotly treats it as CSS pixels at 96dpi, which is a quarter
+less room. Measuring both at 72dpi under-triggers the facet layout in the
+browser -- an 8-condition SILAC design scores 0.80 on the pdf geometry and
+1.11 on the real one, so it stayed in-panel and the labels collided.}
 }
 \value{
 list with `use_facets`, and when that is TRUE the `wrap_chars`

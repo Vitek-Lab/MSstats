@@ -174,3 +174,53 @@ expect_true(has_geom(build_profile(srm_long, "IDHC",
                                    condition.label.adjust = FALSE), "GeomText"))
 
 grDevices::dev.off()
+
+# Device geometry -------------------------------------------------------------
+#
+# `width` is the same number but not the same size on the two paths: the pdf
+# device reads 800 as points at 72dpi (11.1in), plotly as CSS pixels at 96dpi
+# (8.3in). Measuring the browser at 72dpi under-reports crowding by a quarter,
+# which let an 8-condition SILAC design render with colliding labels in
+# MSstatsShiny while scoring as comfortable.
+silac = c("0hr", "1hr", "4hr", "12hrs", "24hrs", "48hrs", "96hrs", "168hrs")
+
+# Test 31: on the pdf geometry that design genuinely fits, so it stays in-panel
+expect_false(MSstats:::.layoutConditionLabels(mk_group_name(silac), 2, 800, 4, 0,
+                                              TRUE, FALSE)$use_facets)
+
+# Test 32: on the plotly geometry it does not fit, and must switch to facets
+expect_true(MSstats:::.layoutConditionLabels(mk_group_name(silac), 2, 800, 4, 0,
+                                             TRUE, TRUE)$use_facets)
+
+# Test 33: the plotly path is never less aggressive than the pdf path
+expect_true(all(vapply(c(400, 800, 1200), function(w) {
+    pdf_facets = MSstats:::.layoutConditionLabels(mk_group_name(silac), 2, w, 4, 0,
+                                                  TRUE, FALSE)$use_facets
+    plotly_facets = MSstats:::.layoutConditionLabels(mk_group_name(silac), 2, w, 4, 0,
+                                                     TRUE, TRUE)$use_facets
+    plotly_facets >= pdf_facets
+}, logical(1))))
+
+# Test 34: a protein absent from some condition/label cells must still render.
+# facet_grid(space = "free_x") computes a non-finite panel width for an empty
+# panel on a discrete x scale, which fails in grid with "non-finite location
+# and/or size for viewport" -- it took a real QC plot in MSstatsShiny to surface.
+tp_names = c("0hr", "1hr", "4hr", "12hrs", "24hrs", "48hrs", "96hrs", "168hrs")
+sparse_raw = SRMRawData[as.integer(as.character(SRMRawData$Condition)) <= 8, ]
+sparse_raw$Condition = tp_names[as.integer(as.character(sparse_raw$Condition))]
+first_protein = as.character(unique(sparse_raw$ProteinName))[1]
+sparse_raw = sparse_raw[!(as.character(sparse_raw$ProteinName) == first_protein &
+                          sparse_raw$Condition %in% c("96hrs", "168hrs")), ]
+sparse_quant = dataProcess(sparse_raw, use_log_file = FALSE)
+grDevices::pdf(NULL)
+expect_silent_plot = function(type) {
+    res = try(suppressWarnings(dataProcessPlots(
+        sparse_quant, type = type, which.Protein = first_protein,
+        address = FALSE, isPlotly = TRUE)), silent = TRUE)
+    !inherits(res, "try-error")
+}
+expect_true(expect_silent_plot("QCPlot"))
+
+# Test 35: and the same on the profile plot
+expect_true(expect_silent_plot("ProfilePlot"))
+grDevices::dev.off()

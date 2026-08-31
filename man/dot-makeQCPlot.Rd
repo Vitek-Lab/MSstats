@@ -20,7 +20,8 @@
   lineNameAxis,
   yaxis.name,
   width = 800,
-  condition.label.adjust = TRUE
+  condition.label.adjust = TRUE,
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -55,6 +56,17 @@ the horizontal space available to it, the condition is drawn as a facet strip
 and the name is wrapped to fit, rather than being printed inside the panel 
 where it would overlap its neighbours. Plots whose condition labels already 
 fit are left unchanged. FALSE reproduces the previous layout exactly.}
+
+\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
+as PDF files
+Default folder is the current working directory. 
+The other assigned folder has to be existed under the current working directory.
+ An output pdf file is automatically created with the default name of 
+ "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv". 
+ The command address can help to specify where to store the file as well as 
+ how to modify the beginning of the file name. 
+ If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 \description{
 To illustrate the quantitative data after data-preprocessing and 

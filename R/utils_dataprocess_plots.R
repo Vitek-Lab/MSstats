@@ -66,13 +66,19 @@
 #' @param text.size size of the condition labels
 #' @param text.angle angle of the condition labels
 #' @param condition.label.adjust if FALSE, keep the in-panel layout unchanged
+#' @param isPlotly TRUE when the plot is bound for `ggplotly()`. The canvas is
+#'   the same number, but not the same size: on the pdf device `width` is points
+#'   at 72dpi, while plotly treats it as CSS pixels at 96dpi, which is a quarter
+#'   less room. Measuring both at 72dpi under-triggers the facet layout in the
+#'   browser -- an 8-condition SILAC design scores 0.80 on the pdf geometry and
+#'   1.11 on the real one, so it stayed in-panel and the labels collided.
 #'
 #' @return list with `use_facets`, and when that is TRUE the `wrap_chars`
 #'   width to wrap strip labels at and the `strip_size` to draw them at
 #' @keywords internal
 .layoutConditionLabels = function(
     groupName, n_facets, width, text.size, text.angle,
-    condition.label.adjust = TRUE
+    condition.label.adjust = TRUE, isPlotly = FALSE
 ) {
     inline = list(use_facets = FALSE, wrap_chars = NA_integer_,
                   strip_size = NA_real_)
@@ -88,10 +94,12 @@
     if (n_conditions < 2L || !is.numeric(width) || width <= 0) {
         return(inline)
     }
-    # Horizontal room per condition. The canvas is width/72 inches (savePlot()
-    # converts the same way); ~1.1in of it goes to the y-axis title, tick labels
-    # and margins, and what is left is split across the facets.
-    panel_in = (width / 72 - 1.1) / max(n_facets, 1L)
+    # Horizontal room per condition. On the pdf device the canvas is width/72
+    # inches (savePlot() converts the same way); plotly reads the same number as
+    # CSS pixels at 96dpi. ~1.1in of it goes to the y-axis title, tick labels and
+    # margins, and what is left is split across the facets.
+    dpi = if (isTRUE(isPlotly)) 96 else 72
+    panel_in = (width / dpi - 1.1) / max(n_facets, 1L)
     slot_in = panel_in / n_conditions
     if (slot_in <= 0) {
         return(inline)
@@ -180,7 +188,13 @@
     # The dashed separators and the in-panel names are exactly what the facet
     # replaces, so both are dropped rather than drawn twice.
     list(
-        facet = facet_grid(LABEL ~ GROUP, scales = "free_x", space = "free_x",
+        # scales = "free_x" gives each condition its own run axis. space =
+        # "free_x" would also size panels by run count, but it computes a
+        # non-finite panel width when a protein is absent from a condition and
+        # the x scale is discrete (the QC plot), so grid fails with
+        # "non-finite location and/or size for viewport". Equal-width panels
+        # cost nothing here and cannot produce that.
+        facet = facet_grid(LABEL ~ GROUP, scales = "free_x",
                            labeller = labeller(GROUP = function(x)
                                .wrapConditionLabels(x, layout$wrap_chars))),
         vline = NULL,
@@ -201,7 +215,7 @@
     y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
     ss, s, cumGroupAxis, yaxis.name, lineNameAxis, groupNametemp, dot_colors,
     legend.position = "top", legend.ncol = NULL, max.legend.entries = 30,
-    width = 800, condition.label.adjust = TRUE
+    width = 800, condition.label.adjust = TRUE, isPlotly = FALSE
 ) {
     RUN = ABUNDANCE = Name = NULL
     
@@ -254,7 +268,8 @@
     
     cond_specs = .conditionLayoutSpecs(
         .layoutConditionLabels(groupNametemp, length(unique(input$LABEL)), width,
-                               text.size, text.angle, condition.label.adjust),
+                               text.size, text.angle, condition.label.adjust,
+                               isPlotly),
         groupNametemp, lineNameAxis, text.size, text.angle, x.axis.size)
     
     profile_plot = ggplot(data = input, aes(x = .data$RUN, y = .data$newABUNDANCE,
@@ -359,13 +374,14 @@
     input, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
     yaxis.name, lineNameAxis, groupNametemp, legend.position = "top",
-    width = 800, condition.label.adjust = TRUE
+    width = 800, condition.label.adjust = TRUE, isPlotly = FALSE
 ) {
     RUN = ABUNDANCE = Name = NULL
     
     cond_specs = .conditionLayoutSpecs(
         .layoutConditionLabels(groupNametemp, length(unique(input$LABEL)), width,
-                               text.size, text.angle, condition.label.adjust),
+                               text.size, text.angle, condition.label.adjust,
+                               isPlotly),
         groupNametemp, lineNameAxis, text.size, text.angle, x.axis.size)
     
     num_features = data.table::uniqueN(input$FEATURE)
@@ -444,13 +460,15 @@
 .makeQCPlot = function(
     input, all_proteins, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
-    lineNameAxis, yaxis.name, width = 800, condition.label.adjust = TRUE
+    lineNameAxis, yaxis.name, width = 800, condition.label.adjust = TRUE,
+    isPlotly = FALSE
 ) { 
     RUN = ABUNDANCE = Name = NULL
     
     cond_specs = .conditionLayoutSpecs(
         .layoutConditionLabels(groupName, length(unique(input$LABEL)), width,
-                               text.size, text.angle, condition.label.adjust),
+                               text.size, text.angle, condition.label.adjust,
+                               isPlotly),
         groupName, lineNameAxis, text.size, text.angle, x.axis.size)
     
     if (all_proteins) {

@@ -387,7 +387,7 @@ dataProcessPlots = function(
                                       ss, s, cumGroupAxis, yaxis.name,
                                       lineNameAxis, groupNametemp, dot_colors,
                                       legend.position, legend.ncol, max.legend.entries,
-                                      width, condition.label.adjust)
+                                      width, condition.label.adjust, isPlotly)
       
       setTxtProgressBar(pb, i)
       print(profile_plot)
@@ -457,7 +457,7 @@ dataProcessPlots = function(
         combined, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
         yaxis.name, lineNameAxis, groupNametemp, legend.position,
-        width, condition.label.adjust
+        width, condition.label.adjust, isPlotly
       )
       print(profile_plot)
       setTxtProgressBar(pb, i)
@@ -536,7 +536,7 @@ dataProcessPlots = function(
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
-                          yaxis.name, width, condition.label.adjust)
+                          yaxis.name, width, condition.label.adjust, isPlotly)
     print(qc_plot)
     plots[[1]] = qc_plot
   } 
@@ -559,7 +559,8 @@ dataProcessPlots = function(
       qc_plot = .makeQCPlot(single_protein, FALSE, y.limdown, y.limup, 
                             x.axis.size, y.axis.size, text.size, text.angle, 
                             legend.size, label.color, cumGroupAxis, groupName,
-                            lineNameAxis, yaxis.name, width, condition.label.adjust)
+                            lineNameAxis, yaxis.name, width, condition.label.adjust,
+                            isPlotly)
       print(qc_plot)
       plots[[i+1]] = qc_plot # to accomodate all proteins
       setTxtProgressBar(pb, i)
