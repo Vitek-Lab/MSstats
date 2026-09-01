@@ -18,6 +18,7 @@
 #'
 #' @return maximum RAM used, in MB
 #' @keywords internal
+#' @noRd
 .max_rss_mb <- function() {
   if (.Platform$OS.type != "windows" && file.exists("/proc/self/status")) {
     ln <- grep("^VmHWM:", readLines("/proc/self/status"), value = TRUE)
@@ -45,6 +46,7 @@
 #' @return invisible \code{TRUE} if the high-water mark was reset,
 #'   \code{FALSE} otherwise
 #' @keywords internal
+#' @noRd
 .reset_max_rss <- function() {
     if (Sys.info()[["sysname"]] == "Linux" && file.exists("/proc/self/clear_refs")) {
         reset_ok <- tryCatch({
@@ -102,6 +104,7 @@
 #' @param all_runs character vector of all run names in global order
 #' @return list with elements \code{packed} (double vector) and \code{meta} (list)
 #' @keywords internal
+#' @noRd
 .pack_protein_slot <- function(protein_dt, slot_index, all_runs) {
 
     n_runs <- length(all_runs)
@@ -200,6 +203,7 @@
 #' @return data.table compatible with \code{MSstatsSummarizeSingleTMP} /
 #'   \code{MSstatsSummarizeSingleLinear}
 #' @keywords internal
+#' @noRd
 .unpack_protein_slot <- function(packed, meta) {
 
     n_feature_labels <- meta$n_feature_labels
@@ -271,6 +275,7 @@
 #' parameters, not the caller's run-scale objects.
 #'
 #' @keywords internal
+#' @noRd
 .build_summarize_worker <- function(
         use_TMP, impute, censored_symbol, remove50missing,
         aft_iterations, equal_variance
