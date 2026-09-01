@@ -18,7 +18,10 @@
   cumGroupAxis,
   groupName,
   lineNameAxis,
-  yaxis.name
+  yaxis.name,
+  width = 800,
+  condition.label.adjust = TRUE,
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -36,10 +39,34 @@ graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
 of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
-Default is 0.}
+Default is 0. This affects the ggplot2 (PDF) output only: text rotation is 
+not carried through to the Plotly output by \code{ggplotly}, so it has no 
+effect when \code{isPlotly = TRUE}. Setting a non-zero value also disables 
+the automatic condition label layout described in 
+\code{condition.label.adjust}.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}
+
+\item{width}{width of the saved file in pixels. Default is 800 pixels.}
+
+\item{condition.label.adjust}{TRUE (default) lays out the condition labels of 
+Profile Plot and QC Plot automatically. When a condition name is wider than 
+the horizontal space available to it, the condition is drawn as a facet strip 
+and the name is wrapped to fit, rather than being printed inside the panel 
+where it would overlap its neighbours. Plots whose condition labels already 
+fit are left unchanged. FALSE reproduces the previous layout exactly.}
+
+\item{isPlotly}{Parameter to use Plotly or ggplot2. If set to TRUE, MSstats 
+will save Plotly plots as HTML files. If set to FALSE MSstats will save ggplot2 plots
+as PDF files
+Default folder is the current working directory. 
+The other assigned folder has to be existed under the current working directory.
+ An output pdf file is automatically created with the default name of 
+ "ProfilePlot.pdf" or "QCplot.pdf" or "ConditionPlot.pdf" or "ConditionPlot_value.csv". 
+ The command address can help to specify where to store the file as well as 
+ how to modify the beginning of the file name. 
+ If address=FALSE, plot will be not saved as pdf file but showed in window.}
 }
 \description{
 To illustrate the quantitative data after data-preprocessing and 

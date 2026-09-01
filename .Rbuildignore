@@ -7,3 +7,4 @@
 appspec.yml
 ^\.positai$
 ^\.claude$
+^plan$
