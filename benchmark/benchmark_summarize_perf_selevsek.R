@@ -5,7 +5,10 @@ library(MSstats)
 #   - 4 cores should reduce wall time by at least 25% vs. 1 core
 #   - peak RSS per worker should stay under ~1GB (see the memory report below)
 
-input <- data.table::fread("/projects/VitekLab/Data/MS/selevsek/before_summarization.csv")
+northeastern_high_performance_cluster_file_path <-
+  "/projects/VitekLab/Data/MS/selevsek/before_summarization.csv"
+
+input <- data.table::fread(northeastern_high_performance_cluster_file_path)
 
 cat("=== MSstatsSummarizeWithMultipleCores performance check ===\n")
 cat("Expectation: >=25% reduction in wall time on 4 cores vs. 1 core.\n")

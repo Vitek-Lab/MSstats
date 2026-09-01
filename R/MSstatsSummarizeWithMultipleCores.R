@@ -1,4 +1,24 @@
-.peak_rss_mb <- function() {
+#' Maximum RAM (in MB) this R process has ever used
+#'
+#' There are two paths:
+#'
+#' \enumerate{
+#'   \item \strong{Linux} (non-Windows and \code{/proc/self/status} exists):
+#'     read the number Linux itself keeps. \code{/proc/self/status} is a
+#'     plain-text file of \code{Key: value} lines describing this process; the
+#'     line \code{VmHWM:} holds the maximum RAM ever used, in kB. Preferred
+#'     because \code{/proc/self/clear_refs} (see \code{\link{.reset_max_rss}})
+#'     can reset it, so the reading reflects only recent work. The function 
+#'     pulls the number out of a line that looks like 
+#'     \code{"VmHWM:   123456 kB"}.
+#'   \item \strong{Everything else} (macOS, Windows, or Linux without
+#'     \code{/proc}): fall back to the compiled \code{peak_rss_mb()} in
+#'     \code{src/peak_rss.cpp}, which asks the operating system directly.
+#' }
+#'
+#' @return maximum RAM used, in MB
+#' @keywords internal
+.max_rss_mb <- function() {
   if (.Platform$OS.type != "windows" && file.exists("/proc/self/status")) {
     ln <- grep("^VmHWM:", readLines("/proc/self/status"), value = TRUE)
     if (length(ln)) return(as.numeric(sub("\\D+(\\d+).*", "\\1", ln)) / 1024)
@@ -6,25 +26,26 @@
   peak_rss_mb()
 }
 
-#' Reset the process peak-RSS high-water mark to the current RSS
+#' Reset the process maximum-RSS high-water mark to the current RSS
 #'
-#' The kernel-tracked peak RSS (\code{VmHWM} on Linux, \code{ru_maxrss} on
+#' The kernel-tracked maximum RSS (\code{VmHWM} on Linux, \code{ru_maxrss} on
 #' macOS/BSD, \code{PeakWorkingSetSize} on Windows) is a running maximum
 #' since process start. Without a reset, an earlier one-off allocation in the
-#' same R session (e.g. reading an 8 GB CSV) inflates every peak-memory
+#' same R session (e.g. reading an 8 GB CSV) inflates every maximum-memory
 #' measurement taken afterwards even if that memory has since been freed,
 #' making it useless as a baseline for benchmarking this function's own
 #' memory use.
 #'
 #' Linux only: writing \code{"5"} to \code{/proc/self/clear_refs} resets
 #' \code{VmHWM} to the current RSS (kernel >= 4.0). macOS and Windows have no
-#' equivalent public facility to reset their peak-RSS counters, so this is a
+#' equivalent public facility to reset their maximum-RSS counters, so this is a
 #' no-op there, and \code{track_memory} reports on those platforms may still
 #' include memory used before this function was entered.
 #'
-#' @return invisible \code{TRUE} if the peak was reset, \code{FALSE} otherwise
+#' @return invisible \code{TRUE} if the high-water mark was reset,
+#'   \code{FALSE} otherwise
 #' @keywords internal
-.reset_peak_rss <- function() {
+.reset_max_rss <- function() {
     if (Sys.info()[["sysname"]] == "Linux" && file.exists("/proc/self/clear_refs")) {
         reset_ok <- tryCatch({
             cat("5", file = "/proc/self/clear_refs")
@@ -35,7 +56,7 @@
     invisible(FALSE)
 }
 
-.print_memory_report <- function(function_name, checkpoints, worker_peak_mb = NULL,
+.print_memory_report <- function(function_name, checkpoints, worker_max_rss_mb = NULL,
                                  elapsed = NULL) {
     rule_width <- 65L
     rule <- strrep("─", rule_width)
@@ -59,12 +80,13 @@
                            format_delta(checkpoint_value, previous_value)))
         previous_value <- checkpoint_value
     }
-    if (!is.null(worker_peak_mb)) {
-        observed_peaks <- worker_peak_mb[!is.na(worker_peak_mb)]
-        if (length(observed_peaks)) {
+    if (!is.null(worker_max_rss_mb)) {
+        observed_max_memory <- worker_max_rss_mb[!is.na(worker_max_rss_mb)]
+        if (length(observed_max_memory)) {
             lines <- c(lines, "",
                        sprintf("  Worker RSS  min / mean / max :  %.1f / %.1f / %.1f MB",
-                               min(observed_peaks), mean(observed_peaks), max(observed_peaks)))
+                               min(observed_max_memory), mean(observed_max_memory),
+                               max(observed_max_memory)))
         }
     }
     if (!is.null(elapsed))
@@ -278,12 +300,12 @@
     }
 }
 
-#' Per-worker peak-RSS query task for \code{MSstatsSummarizeWithMultipleCores}
+#' Per-worker maximum-RSS query task for \code{MSstatsSummarizeWithMultipleCores}
 #'
 #' @keywords internal
 #' @noRd
-.report_worker_peak <- function(i) {
-    list(worker = i, pid = Sys.getpid(), peak_mb = .peak_rss_mb())
+.report_worker_max_rss <- function(i) {
+    list(worker = i, pid = Sys.getpid(), max_rss_mb = .max_rss_mb())
 }
 
 .warmup_worker <- function(i) {
@@ -305,13 +327,13 @@
 #' @param aft_iterations number of AFT model iterations
 #' @param verbose whether to print verbose output
 #' @param BPPARAM optional \code{BiocParallelParam} instance
-#' @param track_memory whether to report per-worker peak RSS memory usage.
-#'   On Linux, the process peak RSS is reset on entry (via
+#' @param track_memory whether to report per-worker maximum RSS memory usage.
+#'   On Linux, the process maximum RSS is reset on entry (via
 #'   \code{/proc/self/clear_refs}) so the reported baseline reflects memory
 #'   at function entry rather than a historical high-water mark inflated by
 #'   earlier operations in the session (e.g. reading a large input file).
 #'   This reset is Linux-only; on macOS and Windows there is no supported
-#'   facility to reset the peak-RSS counter, so reports there may still
+#'   facility to reset the maximum-RSS counter, so reports there may still
 #'   include memory used before this function was entered.
 #' @param max_proteins_per_worker caps protein records per \code{bplapply} task;
 #'   0 uses BiocParallel's default split, default is 50.
@@ -349,15 +371,15 @@ MSstatsSummarizeWithMultipleCores <- function(
     memory_checkpoints <- list()
 
     if (track_memory) {
-        peak_reset <- .reset_peak_rss()
-        if (!peak_reset) {
+        max_rss_reset <- .reset_max_rss()
+        if (!max_rss_reset) {
             getOption("MSstatsLog")("INFO",
-                paste0("Peak RSS reset on entry is only supported on Linux ",
+                paste0("Maximum RSS reset on entry is only supported on Linux ",
                        "(via /proc/self/clear_refs); on this platform, the ",
-                       "peak-memory report below may include usage from ",
+                       "maximum-memory report below may include usage from ",
                        "before this function was entered."))
         }
-        memory_checkpoints[["baseline (peak reset on entry)"]] <- .peak_rss_mb()
+        memory_checkpoints[["baseline (max RSS reset on entry)"]] <- .max_rss_mb()
     }
 
     is_labeled_reference <- "is_labeled_ref" %in% colnames(input) &&
@@ -429,18 +451,18 @@ MSstatsSummarizeWithMultipleCores <- function(
     results <- BiocParallel::bplapply(protein_records, worker_fn, BPPARAM = BPPARAM)
     names(results) <- protein_ids
 
-    worker_peaks <- NULL
+    worker_max_rss <- NULL
     if (track_memory) {
         BiocParallel::bpprogressbar(BPPARAM) <- FALSE
-        worker_peaks <- BiocParallel::bplapply(
+        worker_max_rss <- BiocParallel::bplapply(
             seq_len(BiocParallel::bpnworkers(BPPARAM)),
-            .report_worker_peak, BPPARAM = BPPARAM)
+            .report_worker_max_rss, BPPARAM = BPPARAM)
         BiocParallel::bpprogressbar(BPPARAM) <- show_progress
-        memory_checkpoints[["parent peak (main)"]] <- .peak_rss_mb()
-        worker_peak_mb <- vapply(worker_peaks, function(x) x$peak_mb, numeric(1L))
+        memory_checkpoints[["parent maximum (main)"]] <- .max_rss_mb()
+        worker_max_rss_mb <- vapply(worker_max_rss, function(x) x$max_rss_mb, numeric(1L))
         .print_memory_report(
             "MSstatsSummarizeWithMultipleCores",
-            memory_checkpoints, worker_peak_mb,
+            memory_checkpoints, worker_max_rss_mb,
             elapsed = proc.time()[["elapsed"]] - start_time)
     }
 

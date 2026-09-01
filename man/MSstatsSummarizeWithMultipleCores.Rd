@@ -40,7 +40,14 @@ MSstatsSummarizeWithMultipleCores(
 
 \item{BPPARAM}{optional \code{BiocParallelParam} instance}
 
-\item{track_memory}{whether to report per-worker peak RSS memory usage}
+\item{track_memory}{whether to report per-worker maximum RSS memory usage.
+On Linux, the process maximum RSS is reset on entry (via
+\code{/proc/self/clear_refs}) so the reported baseline reflects memory
+at function entry rather than a historical high-water mark inflated by
+earlier operations in the session (e.g. reading a large input file).
+This reset is Linux-only; on macOS and Windows there is no supported
+facility to reset the maximum-RSS counter, so reports there may still
+include memory used before this function was entered.}
 
 \item{max_proteins_per_worker}{caps protein records per \code{bplapply} task;
 0 uses BiocParallel's default split, default is 50.}
