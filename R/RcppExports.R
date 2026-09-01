@@ -17,3 +17,7 @@ median_polish_summary <- function(x, eps = 0.01, maxiter = 10L) {
     .Call(`_MSstats_median_polish_summary`, x, eps, maxiter)
 }
 
+peak_rss_mb <- function() {
+    .Call(`_MSstats_peak_rss_mb`)
+}
+

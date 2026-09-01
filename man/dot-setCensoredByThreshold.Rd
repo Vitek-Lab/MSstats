@@ -13,7 +13,7 @@ possible values for left-censored data as the `time` input to the Surv function.
 
 \item{censored_symbol}{censoredInt parameter to `dataProcess`}
 
-\item{remove50missing}{if TRUE, features with at least 50% missing values
+\item{remove50missing}{if TRUE, features with at least 50\% missing values
 will be removed}
 }
 \description{

@@ -67,12 +67,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// peak_rss_mb
+double peak_rss_mb();
+RcppExport SEXP _MSstats_peak_rss_mb() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(peak_rss_mb());
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_MSstats_get_estimable_fixed_random", (DL_FUNC) &_MSstats_get_estimable_fixed_random, 2},
     {"_MSstats_make_contrast_run_quant", (DL_FUNC) &_MSstats_make_contrast_run_quant, 6},
     {"_MSstats_get_linear_summary", (DL_FUNC) &_MSstats_get_linear_summary, 5},
     {"_MSstats_median_polish_summary", (DL_FUNC) &_MSstats_median_polish_summary, 3},
+    {"_MSstats_peak_rss_mb", (DL_FUNC) &_MSstats_peak_rss_mb, 0},
     {NULL, NULL, 0}
 };
 

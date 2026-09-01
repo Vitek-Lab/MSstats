@@ -9,7 +9,7 @@
 \arguments{
 \item{input}{data.table}
 
-\item{remove50missing}{if TRUE, proteins with more than 50% missing values
+\item{remove50missing}{if TRUE, proteins with more than 50\% missing values
 in all runs will not be summarized}
 }
 \value{

@@ -84,7 +84,7 @@ MSstatsHandleMissing = function(input, summary_method, impute,
 #' possible values for left-censored data as the `time` input to the Surv function.
 #' @param input `data.table` in MSstats format
 #' @param censored_symbol censoredInt parameter to `dataProcess`
-#' @param remove50missing if TRUE, features with at least 50% missing values
+#' @param remove50missing if TRUE, features with at least 50\% missing values
 #' will be removed
 #' @keywords internal
 .setCensoredByThreshold = function(input, censored_symbol, remove50missing) {

@@ -19,29 +19,13 @@ MSstatsSummarizeWithSingleCore(
 
 \item{method}{summarization method: "linear" or "TMP"}
 
-\item{impute}{only for summaryMethod = "TMP" and censored_symbol = 'NA' or '0'.
-TRUE (default) imputes censored missing values using an Accelerated Failure
-Time model. FALSE excludes censored observations from summarization entirely,
-treating them as missing at random; no imputed values are introduced.
-Has no effect when censored_symbol = NULL, since no values are considered censored.}
+\item{impute}{only for method = "TMP"; imputes censored values via AFT model when TRUE}
 
-\item{censored_symbol}{Indicates how censored missing values are encoded in
-the 'Intensity' column. 'NA' (default) treats all NA intensities as
-left-censored (i.e., below the limit of detection). '0' treats zero
-intensities as left-censored; in this case NA intensities are assumed to be
-missing at random and are not censored. Skyline output should use '0'. NULL
-assumes that all missing values are missing at random — no values are treated
-as censored, and imputation is disabled (impute is ignored).}
+\item{censored_symbol}{how censored values are encoded: 'NA', '0', or NULL for none}
 
-\item{remove50missing}{only for summaryMethod = "TMP". TRUE removes the proteins
-where every run has at least 50\% missing values for each peptide. FALSE is default.}
+\item{remove50missing}{only for method = "TMP"; drops proteins missing >=50\% per peptide in every run}
 
-\item{equal_variance}{only for summaryMethod = "linear". Default is TRUE. 
-Logical variable for whether the model should account for heterogeneous variation 
-among intensities from different features. Default is TRUE, which assume equal
-variance among intensities from features. FALSE means that we cannot assume 
-equal variance among intensities from features, then we will account for
-heterogeneous variation from different features.}
+\item{equal_variance}{only for method = "linear"; assume equal variance among feature intensities}
 
 \item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
 }

@@ -1,6 +1,6 @@
 #' Check if a protein can be summarized with TMP
 #' @param input data.table
-#' @param remove50missing if TRUE, proteins with more than 50% missing values
+#' @param remove50missing if TRUE, proteins with more than 50\% missing values
 #' in all runs will not be summarized
 #' @return data.table
 #' @keywords internal 
