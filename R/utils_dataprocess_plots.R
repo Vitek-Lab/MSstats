@@ -99,7 +99,10 @@
 #' @return integer, at least 1
 #' @keywords internal
 .conditionSlotChars = function(n_conditions, n_facets, width, text.size) {
-    if (!is.numeric(width) || width <= 0 || n_conditions < 1L) {
+    if (!is.numeric(width) || length(width) != 1L || is.na(width) ||
+        width <= 0 || n_conditions < 1L) {
+        return(.Machine$integer.max)
+    }
         return(.Machine$integer.max)
     }
     # ~1.1in of the canvas goes to the y-axis title, tick labels and margins;
