@@ -73,6 +73,14 @@
 #'  The command address can help to specify where to store the file as well as 
 #'  how to modify the beginning of the file name. 
 #'  If address=FALSE, plot will be not saved as pdf file but showed in window.
+#' @param legend.position position of the feature legend in the Plotly output of
+#' Profile Plot and QC Plot: "right" (default), "left", "top", "bottom", or "none"
+#' to hide it. A side-mounted legend is scrollable in Plotly, so a protein with many
+#' features can no longer cover the plot. Only affects \code{isPlotly = TRUE}; the
+#' ggplot2 (PDF) output keeps its legend above the graph.
+#' @param width.plotly width in pixels of the Plotly output. Default is 1400, which
+#' matches the container MSstatsShiny reserves for these plots. Only affects
+#' \code{isPlotly = TRUE}; the PDF output is sized by \code{width}.
 #' 
 #' @details
 #' \itemize{
@@ -114,7 +122,8 @@ dataProcessPlots = function(
   text.size = 4, text.angle = 0, legend.size = 7, dot.size.profile = 2,
   dot.size.condition = 3, width = 800, height = 600, which.Protein = "all",
   originalPlot = TRUE, summaryPlot = TRUE, save_condition_plot_result = FALSE,
-  remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE
+  remove_uninformative_feature_outlier = FALSE, address = "", isPlotly = FALSE,
+  legend.position = "right", width.plotly = 1400
 ) {
   PROTEIN = Protein = NULL
   
@@ -144,7 +153,8 @@ dataProcessPlots = function(
       plots <- .plotProfile(processed, summarized, featureName, ylimUp, ylimDown,
                            x.axis.size, y.axis.size, text.size, text.angle, legend.size, 
                            dot.size.profile, width, height, which.Protein, originalPlot, 
-                           summaryPlot, remove_uninformative_feature_outlier, address, isPlotly)
+                           summaryPlot, remove_uninformative_feature_outlier, address, isPlotly,
+                           width.plotly)
       plotly_plots = list()
       if(isPlotly) {
           og_plotly_plot = NULL
@@ -152,10 +162,13 @@ dataProcessPlots = function(
           if("original_plot" %in% names(plots)) {
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
-                  og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  og_plotly_plot <- .convertGgplot2Plotly(plot_i, tips = c("FEATURE","RUN","newABUNDANCE"),
+                                                          legend_position = legend.position,
+                                                          width = width.plotly, height = height)
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
                   og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
+                  og_plotly_plot = .fixConditionLabelHoverPlotly(og_plotly_plot, plot_i)
 
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
@@ -166,10 +179,13 @@ dataProcessPlots = function(
           if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
-                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i, tips = c("FEATURE","RUN","newABUNDANCE"),
+                                                          legend_position = legend.position,
+                                                          width = width.plotly, height = height)
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
+                  summ_plotly_plot = .fixConditionLabelHoverPlotly(summ_plotly_plot, plot_i)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
@@ -187,13 +203,15 @@ dataProcessPlots = function(
   else if (type == "QCPLOT") {
       plots <- .plotQC(processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
                       text.size, text.angle, legend.size, dot.size.profile, width, height,
-                      which.Protein, address, isPlotly)
+                      which.Protein, address, isPlotly, width.plotly)
       plotly_plots <- vector("list", length(plots))
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convertGgplot2Plotly(plot)
+              plotly_plot <- .convertGgplot2Plotly(plot, legend_position = legend.position,
+                                                    width = width.plotly, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
+              plotly_plot = .fixConditionLabelHoverPlotly(plotly_plot, plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
             if(address != FALSE) {
@@ -213,7 +231,8 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convertGgplot2Plotly(plot)
+              plotly_plot <- .convertGgplot2Plotly(plot, legend_position = legend.position,
+                                                    width = width.plotly, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
@@ -233,7 +252,8 @@ dataProcessPlots = function(
 .plotProfile = function(
   processed, summarized, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, 
   text.size, text.angle, legend.size, dot.size.profile, width, height, proteins, 
-  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address, isPlotly
+  originalPlot, summaryPlot, remove_uninformative_feature_outlier, address, isPlotly,
+  width.plotly = 1400
 ) {
   ABUNDANCE = PROTEIN = feature_quality = is_outlier = Protein = GROUP = NULL
   SUBJECT = LABEL = RUN = xtabs = PEPTIDE = FEATURE = NULL
@@ -283,9 +303,20 @@ dataProcessPlots = function(
   y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
   y.limdown = ifelse(is.numeric(ylimDown), ylimDown, -1)
   
+  # Fit the condition names to the room each condition actually gets. Labels
+  # that already fit come back untouched; the rest are shortened, shrunk and
+  # wrapped, and any extra lines are paid for with headroom above the data.
+  n_facets = data.table::uniqueN(processed$LABEL)
+  condition.layout = .layoutConditionLabels(
+    levels(tempGroupName$GROUP), n_facets,
+    if (isPlotly) width.plotly else width, text.size, text.angle)
+  if (!is.numeric(ylimUp)) {
+    y.limup = y.limup + (condition.layout$n_lines - 1) * 0.9
+  }
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
-                         ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
-                         Name = levels(tempGroupName$GROUP))
+                         ABUNDANCE = rep(y.limup - 0.5, length(groupAxis)),
+                         Name = levels(tempGroupName$GROUP),
+                         Label = condition.layout$labels)
 
   
   if ("is_labeled_ref" %in% colnames(processed)) {
@@ -349,7 +380,8 @@ dataProcessPlots = function(
                                       text.size, text.angle, 
                                       legend.size, dot.size.profile, 
                                       ss, s, cumGroupAxis, yaxis.name,
-                                      lineNameAxis, groupNametemp, dot_colors)
+                                      lineNameAxis, groupNametemp, dot_colors,
+                                      condition.layout)
       
       setTxtProgressBar(pb, i)
       print(profile_plot)
@@ -413,7 +445,7 @@ dataProcessPlots = function(
       profile_plot = .makeSummaryProfilePlot(
         combined, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
-        yaxis.name, lineNameAxis, groupNametemp
+        yaxis.name, lineNameAxis, groupNametemp, condition.layout
       )
       print(profile_plot)
       setTxtProgressBar(pb, i)
@@ -437,7 +469,8 @@ dataProcessPlots = function(
 #' @importFrom utils setTxtProgressBar
 .plotQC = function(
   processed, featureName, ylimUp, ylimDown, x.axis.size, y.axis.size, text.size, 
-  text.angle, legend.size, dot.size.profile, width, height, protein, address, isPlotly
+  text.angle, legend.size, dot.size.profile, width, height, protein, address, isPlotly,
+  width.plotly = 1400
 ) {
   GROUP = SUBJECT = RUN = LABEL = PROTEIN = NULL
   
@@ -479,9 +512,17 @@ dataProcessPlots = function(
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
   lineNameAxis = cumGroupAxis[-nlevels(tempGroupName$GROUP)]
+  n_facets = data.table::uniqueN(processed$LABEL)
+  condition.layout = .layoutConditionLabels(
+    levels(tempGroupName$GROUP), n_facets,
+    if (isPlotly) width.plotly else width, text.size, text.angle)
+  if (!is.numeric(ylimUp)) {
+    y.limup = y.limup + (condition.layout$n_lines - 1) * 0.9
+  }
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
-                         ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
-                         Name = levels(tempGroupName$GROUP))
+                         ABUNDANCE = rep(y.limup - 0.5, length(groupAxis)),
+                         Name = levels(tempGroupName$GROUP),
+                         Label = condition.layout$labels)
   if (!isPlotly) {
       savePlot(address, "QCPlot", width, height)
   }
@@ -491,7 +532,7 @@ dataProcessPlots = function(
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
-                          yaxis.name)
+                          yaxis.name, condition.layout)
     print(qc_plot)
     plots[[1]] = qc_plot
   } 
@@ -514,7 +555,7 @@ dataProcessPlots = function(
       qc_plot = .makeQCPlot(single_protein, FALSE, y.limdown, y.limup, 
                             x.axis.size, y.axis.size, text.size, text.angle, 
                             legend.size, label.color, cumGroupAxis, groupName,
-                            lineNameAxis, yaxis.name)
+                            lineNameAxis, yaxis.name, condition.layout)
       print(qc_plot)
       plots[[i+1]] = qc_plot # to accomodate all proteins
       setTxtProgressBar(pb, i)
@@ -615,14 +656,57 @@ dataProcessPlots = function(
   }
 }
 
-#' converter for plots from ggplot to plotly
+#' restore the untruncated condition name in the Plotly hover
+#'
+#' `.layoutConditionLabels()` may have shortened what is drawn in the panel. The
+#' condition labels arrive as a single text-mode trace, so the full names can be
+#' put back on hover without disturbing the drawn text.
+#' @param plot converted plotly plot
+#' @param ggplot_obj the ggplot it was converted from, carrying the drawn
+#'   `Label` and the untruncated `Name` on its condition label layer
 #' @noRd
-.convertGgplot2Plotly = function(plot, tips = "all") {
-    converted_plot <- ggplotly(plot,tooltip = tips)
+.fixConditionLabelHoverPlotly = function(plot, ggplot_obj) {
+    full_names = NULL
+    for (layer in ggplot_obj$layers) {
+        if (all(c("Name", "Label") %in% colnames(layer$data))) {
+            full_names = as.character(layer$data$Name)
+            break
+        }
+    }
+    if (is.null(full_names)) {
+        return(plot)
+    }
+    for (i in seq_along(plot$x$data)) {
+        trace = plot$x$data[[i]]
+        if (identical(trace$mode, "text") &&
+            length(trace$text) == length(full_names)) {
+            plot$x$data[[i]]$hovertext = full_names
+        }
+    }
+    plot
+}
+
+#' converter for plots from ggplot to plotly
+#'
+#' `ggplotly()` reserves the legend band from the ggplot theme, so the theme has
+#' to agree with the `layout()` override below. Leaving the theme at "top" while
+#' moving the legend to the side leaves a dead band across the top and squeezes
+#' the panel into the lower-left corner.
+#'
+#' The legend is mounted on the side rather than below the panel because plotly
+#' scrolls an over-tall vertical legend instead of growing it. A protein with
+#' hundreds of features can then no longer cover the plot, and no entries are
+#' dropped.
+#' @noRd
+.convertGgplot2Plotly = function(plot, tips = "all", legend_position = "right",
+                                 width = 1400, height = 600) {
+    plot = plot + theme(legend.position = legend_position)
+    converted_plot <- ggplotly(plot, tooltip = tips, width = width,
+                               height = height)
     converted_plot <- plotly::layout(
             converted_plot,
-            width = 800,   # Set the width of the chart in pixels
-            height = 600,  # Set the height of the chart in pixels
+            # Room for the title, which the top-mounted legend used to sit on.
+            margin = list(t = 60),
             title = list(
                 font = list(
                     size = 18
@@ -634,11 +718,12 @@ dataProcessPlots = function(
                 )
             ),
             legend = list(
-                x = 0,     # Set the x position of the legend
-                y = -0.25,    # Set the y position of the legend (negative value to move below the plot)
-                orientation = "h",  # Horizontal orientation
+                x = 1.02,           # Just outside the panel on the right
+                y = 1,
+                xanchor = "left",
+                orientation = "v",  # Vertical, so plotly makes it scrollable
                 font = list(
-                    size = 12  # Set the font size for legend item labels
+                    size = 10  # Set the font size for legend item labels
                 ),
                 title = list(
                     font = list(
@@ -684,16 +769,20 @@ dataProcessPlots = function(
     first_false_index <- which(df$legend_entries == "FALSE")[1]
     first_true_index <- which(df$legend_entries == "TRUE")[1]
 
-    # Update plot data for the first occurrence of "FALSE"
+    # Pin the two shape entries above the feature list. The feature legend
+    # scrolls once a protein has more features than fit, and these two are the
+    # key to reading the plot -- left at the default rank they end up below the
+    # fold. Lower legendrank sorts first; plotly's default is 1000.
     if (!is.na(first_false_index)) {
         plot$x$data[[first_false_index]]$name <- "Detected data"
         plot$x$data[[first_false_index]]$showlegend <- TRUE
+        plot$x$data[[first_false_index]]$legendrank <- 1
     }
 
-    # Update plot data for the first occurrence of "TRUE"
     if (!is.na(first_true_index)) {
         plot$x$data[[first_true_index]]$name <- "Censored missing data"
         plot$x$data[[first_true_index]]$showlegend <- TRUE
+        plot$x$data[[first_true_index]]$legendrank <- 2
     }
     plot
 }
