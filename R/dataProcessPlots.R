@@ -75,9 +75,12 @@
 #'  If address=FALSE, plot will be not saved as pdf file but showed in window.
 #' @param legend.position position of the feature legend in the Plotly output of
 #' Profile Plot and QC Plot: "right" (default), "left", "top", "bottom", or "none"
-#' to hide it. A side-mounted legend is scrollable in Plotly, so a protein with many
-#' features can no longer cover the plot. Only affects \code{isPlotly = TRUE}; the
-#' ggplot2 (PDF) output keeps its legend above the graph.
+#' to hide it. Only affects \code{isPlotly = TRUE}; the ggplot2 (PDF) output keeps
+#' its legend above the graph. Note that only the side placements ("right" and
+#' "left") are scrollable in Plotly, which is what stops a protein with many
+#' features from covering the plot. A horizontal legend grows instead of
+#' scrolling, so "top" and "bottom" can still crowd the panel on feature-rich
+#' proteins.
 #' @param width.plotly width in pixels of the Plotly output. Default is 1400, which
 #' matches the container MSstatsShiny reserves for these plots. Only affects
 #' \code{isPlotly = TRUE}; the PDF output is sized by \code{width}.
@@ -135,6 +138,9 @@ dataProcessPlots = function(
   
   checkmate::assertChoice(type, c("PROFILEPLOT", "QCPLOT", "CONDITIONPLOT"),
                           .var.name = "type")
+  checkmate::assertChoice(legend.position,
+                          c("right", "left", "top", "bottom", "none"),
+                          .var.name = "legend.position")
   if (as.character(address) == "FALSE") {
     if (which.Protein == "all") {
       stop("** Cannnot generate all plots in a screen. Please set one protein at a time.")
@@ -173,6 +179,8 @@ dataProcessPlots = function(
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
                   }
+                  og_plotly_plot = .applyLegendPositionPlotly(og_plotly_plot,
+                                                              legend.position)
                   plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
           }
@@ -189,6 +197,8 @@ dataProcessPlots = function(
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
+                  summ_plotly_plot = .applyLegendPositionPlotly(summ_plotly_plot,
+                                                                legend.position)
                   plotly_plots = c(plotly_plots, list(summ_plotly_plot))
               }
           }
@@ -212,6 +222,7 @@ dataProcessPlots = function(
                                                     width = width.plotly, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
               plotly_plot = .fixConditionLabelHoverPlotly(plotly_plot, plot)
+              plotly_plot = .applyLegendPositionPlotly(plotly_plot, legend.position)
               plotly_plots[[i]] = list(plotly_plot)
           }
             if(address != FALSE) {
@@ -234,6 +245,7 @@ dataProcessPlots = function(
               plotly_plot <- .convertGgplot2Plotly(plot, legend_position = legend.position,
                                                     width = width.plotly, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
+              plotly_plot = .applyLegendPositionPlotly(plotly_plot, legend.position)
               plotly_plots[[i]] = list(plotly_plot)
           }
           if(address != FALSE) {
@@ -688,51 +700,88 @@ dataProcessPlots = function(
 
 #' converter for plots from ggplot to plotly
 #'
-#' `ggplotly()` reserves the legend band from the ggplot theme, so the theme has
-#' to agree with the `layout()` override below. Leaving the theme at "top" while
-#' moving the legend to the side leaves a dead band across the top and squeezes
-#' the panel into the lower-left corner.
-#'
-#' The legend is mounted on the side rather than below the panel because plotly
-#' scrolls an over-tall vertical legend instead of growing it. A protein with
-#' hundreds of features can then no longer cover the plot, and no entries are
-#' dropped.
+#' `ggplotly()` reserves the legend band from the ggplot theme, so the theme is
+#' set to the requested position here and the matching plotly placement is
+#' applied by `.applyLegendPositionPlotly()` once post-processing is done. The
+#' two have to agree: a theme saying "top" under a legend drawn on the right
+#' leaves a dead band across the top and squeezes the panel into the corner.
 #' @noRd
 .convertGgplot2Plotly = function(plot, tips = "all", legend_position = "right",
                                  width = 1400, height = 600) {
     plot = plot + theme(legend.position = legend_position)
     converted_plot <- ggplotly(plot, tooltip = tips, width = width,
                                height = height)
-    converted_plot <- plotly::layout(
-            converted_plot,
-            # Room for the title, which the top-mounted legend used to sit on.
-            margin = list(t = 60),
-            title = list(
-                font = list(
-                    size = 18
-                )
-            ),
-            xaxis = list(
-                titlefont = list(
-                    size = 15  # Set the font size for the x-axis label
-                )
-            ),
-            legend = list(
-                x = 1.02,           # Just outside the panel on the right
-                y = 1,
-                xanchor = "left",
-                orientation = "v",  # Vertical, so plotly makes it scrollable
-                font = list(
-                    size = 10  # Set the font size for legend item labels
-                ),
-                title = list(
-                    font = list(
-                        size = 12  # Set the font size for the legend title
-                    )
-                )
+    plotly::layout(
+        converted_plot,
+        title = list(
+            font = list(
+                size = 18
             )
-        ) 
-    converted_plot
+        ),
+        xaxis = list(
+            titlefont = list(
+                size = 15  # Set the font size for the x-axis label
+            )
+        )
+    )
+}
+
+
+#' place the legend, after every other post-processing step has run
+#'
+#' Applied last on purpose. The `.fix*Plotly()` helpers rewrite `showlegend` on
+#' individual traces -- `.fixCensoredPointsLegendProfilePlotsPlotly()` turns the
+#' detected and censored entries back on -- so anything deciding whether the
+#' legend is drawn has to run after them or be undone by them.
+#'
+#' Only the vertical placements get plotly's scrolling behaviour, which is what
+#' keeps a legend with hundreds of features from covering the plot. A horizontal
+#' legend grows instead of scrolling, so "top" and "bottom" reintroduce that on
+#' feature-rich proteins. They are offered because they are sometimes what a
+#' caller wants, not because they are equivalent to the side placements.
+#'
+#' @param plot converted plotly plot
+#' @param legend_position one of "right", "left", "top", "bottom", "none"
+#' @noRd
+.applyLegendPositionPlotly = function(plot, legend_position = "right") {
+    legend_position = match.arg(as.character(legend_position),
+                                c("right", "left", "top", "bottom", "none"))
+    if (legend_position == "none") {
+        # layout$showlegend alone is enough for plotly.js today, but it leaves
+        # traces marked visible under a layout that says otherwise. Clear both
+        # so the request does not depend on which one plotly happens to honour.
+        for (i in seq_along(plot$x$data)) {
+            plot$x$data[[i]]$showlegend <- FALSE
+        }
+        return(plotly::layout(plot, showlegend = FALSE,
+                              margin = list(t = 60)))
+    }
+    spec = switch(
+        legend_position,
+        right = list(
+            legend = list(x = 1.02, y = 1, xanchor = "left", yanchor = "top",
+                          orientation = "v"),
+            margin = list(t = 60)),
+        left = list(
+            legend = list(x = -0.08, y = 1, xanchor = "right", yanchor = "top",
+                          orientation = "v"),
+            # The y-axis title and tick labels already occupy the left edge, so
+            # the legend needs margin of its own to sit outside them.
+            margin = list(t = 60, l = 240)),
+        top = list(
+            legend = list(x = 0, y = 1.03, xanchor = "left", yanchor = "bottom",
+                          orientation = "h"),
+            # Deep enough for the title and a wrapped horizontal legend under it.
+            margin = list(t = 130)),
+        bottom = list(
+            legend = list(x = 0, y = -0.18, xanchor = "left", yanchor = "top",
+                          orientation = "h"),
+            margin = list(t = 60, b = 130))
+    )
+    spec$legend$font = list(size = 10)
+    spec$legend$title = list(font = list(size = 12))
+    plotly::layout(plot, showlegend = TRUE, legend = spec$legend,
+                   margin = spec$margin)
 }
 
 .retainCensoredDataPoints = function(plot) {

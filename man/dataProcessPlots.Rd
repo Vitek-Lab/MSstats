@@ -120,9 +120,12 @@ The other assigned folder has to be existed under the current working directory.
 
 \item{legend.position}{position of the feature legend in the Plotly output of
 Profile Plot and QC Plot: "right" (default), "left", "top", "bottom", or "none"
-to hide it. A side-mounted legend is scrollable in Plotly, so a protein with many
-features can no longer cover the plot. Only affects \code{isPlotly = TRUE}; the
-ggplot2 (PDF) output keeps its legend above the graph.}
+to hide it. Only affects \code{isPlotly = TRUE}; the ggplot2 (PDF) output keeps
+its legend above the graph. Note that only the side placements ("right" and
+"left") are scrollable in Plotly, which is what stops a protein with many
+features from covering the plot. A horizontal legend grows instead of
+scrolling, so "top" and "bottom" can still crowd the panel on feature-rich
+proteins.}
 
 \item{width.plotly}{width in pixels of the Plotly output. Default is 1400, which
 matches the container MSstatsShiny reserves for these plots. Only affects
