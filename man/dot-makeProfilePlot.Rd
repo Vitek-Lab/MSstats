@@ -22,7 +22,8 @@
   yaxis.name,
   lineNameAxis,
   groupNametemp,
-  dot_colors
+  dot_colors,
+  condition.layout = NULL
 )
 }
 \arguments{

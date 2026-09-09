@@ -18,7 +18,8 @@
   cumGroupAxis,
   yaxis.name,
   lineNameAxis,
-  groupNametemp
+  groupNametemp,
+  condition.layout = NULL
 )
 }
 \arguments{

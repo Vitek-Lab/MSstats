@@ -2,6 +2,14 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.22.0 (in development)}{
+    \itemize{
+        \item \strong{Profile and QC plots}: Condition names no longer overlap each other. When a name is wider than the horizontal room its condition is given, the stem shared by every condition is moved to the x-axis title, the label font is reduced, and the remainder is wrapped. Plots whose condition labels already fit are unchanged. In the Plotly output the untruncated name is available on hover.
+        \item \strong{Profile and QC plots}: In the Plotly output the feature legend is now mounted beside the plot rather than above it, where Plotly makes an over-tall legend scrollable. Proteins with many features no longer have the legend cover the plot, and legend entries are no longer silently dropped. The new \code{legend.position} argument of \code{dataProcessPlots} repositions or hides it, and \code{width.plotly} sets the width of the Plotly canvas.
+        \item \strong{Bug fix}: \code{dataProcessPlots} ignored \code{width} and \code{height} when \code{isPlotly = TRUE}, always producing an 800x600 plot.
+    }
+}
+
 \section{Version 4.20.0 (2026-04-23)}{
     \itemize{
         \item \strong{Protein turnover analysis}: Added support for multi-label summarization, enabling experiments that use multiple isotope labels to quantify protein synthesis and degradation rates. Each isotope label is now summarized independently, giving more accurate per-label abundance estimates.
