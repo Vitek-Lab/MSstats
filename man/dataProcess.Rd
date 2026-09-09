@@ -29,7 +29,7 @@ dataProcess(
 )
 }
 \arguments{
-\item{raw}{name of the raw (input) data set.}
+\item{raw}{a data.frame of feature-level intensities in MSstats long format.}
 
 \item{logTrans}{base of logarithm transformation: 2 (default) or 10.}
 
@@ -123,7 +123,7 @@ track progress. Only works for Linux & Mac OS. Default is 1.}
 \item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
 }
 \value{
-A list containing:
+A list of three elements:
 \describe{
   \item{FeatureLevelData}{A data frame with feature-level information after processing. Columns include:
     \describe{
@@ -142,23 +142,32 @@ A list containing:
       \item{ABUNDANCE}{Processed abundance or intensity value after log-transformation and normalization.}
       \item{newABUNDANCE}{The ABUNDANCE column but includes imputed missing values. It is the column that is used for protein summarization.}
       \item{predicted}{Predicted intensity values for censored data, typically derived from a statistical model.}
+      \item{remove}{Logical indicator of whether the feature was excluded from run-level summarization by feature selection. Present only when featureSubset = "topN" (the default) or "top3".}
     }
+    Two further columns are present only when featureSubset = "highQuality":
+    \code{feature_quality} ("Informative" or "Uninformative") and
+    \code{is_outlier} (logical). A logical \code{is_labeled_ref} column is present
+    for label-based experiments that contain a heavy reference and are normalized
+    with "equalizeMedians".
   }
   \item{ProteinLevelData}{A data frame with run-level summarized information for each protein. Columns include:
     \describe{
       \item{RUN}{Identifier for the specific MS run.}
       \item{Protein}{Identifier for the protein.}
+      \item{LABEL}{Specifies the isotopic labeling of the summarized peptides: "L" for light-labeled, "H" for heavy-labeled.}
       \item{LogIntensities}{Log-transformed intensities for the protein in each run.}
       \item{originalRUN}{Original run identifier before any processing.}
       \item{GROUP}{Experimental group identifier.}
       \item{SUBJECT}{Subject identifier within the experimental group.}
       \item{TotalGroupMeasurements}{Total number of feature measurements for the protein in the given group.}
-      \item{NumMeasuredFeatures}{Number of features measured for the protein in the given run.}
-      \item{MissingPercentage}{Percentage of missing feature values for the protein in the given run.}
+      \item{NumMeasuredFeature}{Number of features measured for the protein in the given run.}
+      \item{MissingPercentage}{Percentage (between 0 and 1) of missing feature values for the protein in the given run.}
       \item{more50missing}{Logical indicator of whether more than 50 percent of the features values are missing for the protein in the given run.}
       \item{NumImputedFeature}{Number of features for which values were imputed due to missing or censored data for the protein in the given run.}
     }
   }
+  \item{SummaryMethod}{A character string recording the summarization method that
+    was used, i.e. the value of \code{summaryMethod}: "TMP" or "linear".}
 }
 }
 \description{

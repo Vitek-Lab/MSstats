@@ -33,21 +33,22 @@
 #'       \item{pvalue}{The p-value for the statistical test of the comparison. Applicable if degrees of freedom is greater than 0}
 #'       \item{adj.pvalue}{The adjusted p-value using the Benjamini-Hochberg method for controlling the false discovery rate.}
 #'       \item{issue}{Any issues encountered during the comparison.  NA indicates no issues. "oneConditionMissing" occurs when data for one of the conditions being compared is entirely missing for a particular protein.}
-#'       \item{MissingPercentage}{The percentage of missing features for a given protein across all runs. This column is included only if missing values were imputed.}
-#'       \item{ImputationPercentage}{The percentage of features that were imputed for a given protein across all runs. This column is included only if missing values were imputed.}
+#'       \item{MissingPercentage}{The percentage (between 0 and 1) of missing features for a given protein across all runs. This column is included only if missing values were imputed.}
+#'       \item{ImputationPercentage}{The percentage (between 0 and 1) of features that were imputed for a given protein across all runs. This column is included only if missing values were imputed.}
 #'     }
 #'   }
 #'   \item{ModelQC}{A `data.frame` containing quality control data used to fit models for group comparison. The columns include:
 #'     \describe{
 #'       \item{RUN}{Identifier for the specific MS run.}
 #'       \item{Protein}{Identifier for the protein.}
+#'       \item{LABEL}{Specifies the isotopic labeling of the summarized peptides: "L" for light-labeled, "H" for heavy-labeled.}
 #'       \item{ABUNDANCE}{Summarized intensity for the protein in a given run.}
 #'       \item{originalRUN}{Original run identifier before any processing.}
 #'       \item{GROUP}{Experimental group identifier.}
 #'       \item{SUBJECT}{Subject identifier within the experimental group.}
 #'       \item{TotalGroupMeasurements}{Total number of feature measurements for the protein in the given group.}
-#'       \item{NumMeasuredFeatures}{Number of features measured for the protein in the given run.}
-#'       \item{MissingPercentage}{Percentage of missing feature values for the protein in the given run.}
+#'       \item{NumMeasuredFeature}{Number of features measured for the protein in the given run.}
+#'       \item{MissingPercentage}{Percentage (between 0 and 1) of missing feature values for the protein in the given run.}
 #'       \item{more50missing}{Logical indicator of whether more than 50 percent of the features values are missing for the protein in the given run.}
 #'       \item{NumImputedFeature}{Number of features for which values were imputed due to missing or censored data for the protein in the given run.}
 #'       \item{residuals}{Contains the differences between the observed values and the values predicted by the fitted model. }
