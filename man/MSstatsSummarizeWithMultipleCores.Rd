@@ -13,6 +13,8 @@ MSstatsSummarizeWithMultipleCores(
   equal_variance,
   numberOfCores = 1L,
   aft_iterations = 90L,
+  aft_solver = "cholesky",
+  aft_verbose = FALSE,
   verbose = FALSE,
   BPPARAM = NULL,
   track_memory = FALSE,
