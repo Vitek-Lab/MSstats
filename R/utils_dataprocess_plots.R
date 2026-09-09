@@ -103,8 +103,6 @@
         width <= 0 || n_conditions < 1L) {
         return(.Machine$integer.max)
     }
-        return(.Machine$integer.max)
-    }
     # ~1.1in of the canvas goes to the y-axis title, tick labels and margins;
     # what is left is split across the facets and then across the conditions.
     panel_in = (width / 96 - 1.1) / max(n_facets, 1L)
