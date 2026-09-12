@@ -73,7 +73,6 @@
     residual_size = sum(residual * residual)
     residual_dot_preconditioned_residual =
         sum(residual * preconditioned_residual)
-    smallest_residual_size_seen = residual_size
 
     # Stop once the residual has shrunk far enough, relative to the size of
     # the right-hand side (falling back to an absolute scale when that size
@@ -109,19 +108,6 @@
         solution = solution + step_length * search_direction
         residual = residual - step_length * matrix_times_search_direction
         new_residual_size = sum(residual * residual)
-        smallest_residual_size_seen =
-            min(smallest_residual_size_seen, new_residual_size)
-
-        # If the residual has grown far past its best value so far, the
-        # iteration is diverging (e.g. because coefficient_matrix is
-        # ill-conditioned) - give up and return what we have rather than
-        # loop until max_iterations.
-        if (iteration > 10 &&
-            new_residual_size > 1e4 * smallest_residual_size_seen) {
-            warning(".cgSolve: residual is diverging; returning the best ",
-                    "iterate found so far")
-            break
-        }
 
         # Choose the next search direction so it doesn't undo the progress
         # made by earlier directions.

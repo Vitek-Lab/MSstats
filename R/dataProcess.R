@@ -487,7 +487,6 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
         # Flag to track convergence warning
         converged = TRUE
         convergence_messages = character(0)
-        diverging_warnings = 0L
 
         fit_data = if (is_labeled_reference) {
             single_protein[(!is_labeled_ref), cols, with = FALSE]
@@ -500,9 +499,6 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
             .fitAFTModel(fit_data, aft_iterations, aft_solver, aft_verbose)
         }, warning = function(w) {
             warning_message = conditionMessage(w)
-            if (grepl("residual is diverging", warning_message, fixed = TRUE)) {
-                diverging_warnings <<- diverging_warnings + 1L
-            }
             if (grepl("converge", warning_message, ignore.case = TRUE)) {
                 convergence_messages <<- c(convergence_messages,
                                            warning_message)
@@ -512,14 +508,6 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
 
         protein_name = as.character(unique(single_protein$PROTEIN))[1]
         log_fun = getOption("MSstatsLog")
-        if (diverging_warnings > 0L) {
-            msg = paste0("DIVERGING RESIDUAL for protein: ", protein_name,
-                         " (", diverging_warnings, " warning(s))")
-            message(msg)
-            if (is.function(log_fun)) {
-                log_fun("INFO", msg)
-            }
-        }
         if (!converged) {
             msg = paste0("CONVERGENCE WARNING for protein: ", protein_name,
                          " (", length(convergence_messages),
