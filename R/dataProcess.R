@@ -70,9 +70,10 @@
 #' Jacobi (inverse-diagonal) preconditioner, which can reduce the number
 #' of conjugate-gradient iterations needed. "cg"/"pcg" are experimental
 #' alternatives, currently opt-in only.
-#' @param aft_verbose If \code{TRUE} and \code{aft_solver} is "cg" or
-#' "pcg", \code{message()} per-Newton-iteration conjugate-gradient
-#' iteration counts and timing for every protein fit - useful for
+#' @param aft_verbose If \code{TRUE}, \code{message()} diagnostics for
+#' every protein fit: problem size and elapsed fitting time for all
+#' solvers, plus per-Newton-iteration conjugate-gradient iteration counts
+#' and timing when \code{aft_solver} is "cg" or "pcg" - useful for
 #' evaluating solver time complexity, but produces one block of output
 #' per protein, so leave at the default \code{FALSE} for routine runs.
 #' @inheritParams .documentFunction
@@ -278,9 +279,9 @@ MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol
 #' model's Newton-Raphson step: "cholesky" (default, via
 #' \code{survival::survreg}), "cg" (conjugate gradient), or "pcg"
 #' (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).
-#' @param aft_verbose If \code{TRUE} and \code{aft_solver} is "cg" or
-#' "pcg", log per-Newton-iteration conjugate-gradient diagnostics for
-#' every protein fit. See \code{.fitSurvivalCG}'s \code{verbose}.
+#' @param aft_verbose If \code{TRUE}, log AFT fitting diagnostics for
+#' every protein fit. See \code{.fitSurvival}'s and
+#' \code{.fitSurvivalCG}'s \code{verbose}.
 #'
 #' @return list with protein-level data
 #'

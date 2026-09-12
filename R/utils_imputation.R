@@ -54,13 +54,39 @@
     }
 }
 
+#' @param input data.table with the columns \code{.buildAFTFormula} needs.
+#' @param aft_iterations maximum number of iterations for AFT model fitting.
+#' @param verbose if \code{TRUE}, \code{message()} the problem size
+#' (observations and parameters) before fitting and the wall time the fit
+#' took afterwards, mirroring what \code{.fitSurvivalCG}'s \code{verbose}
+#' reports. Meant for comparing solvers, not for routine use (this fits
+#' one protein at a time).
+#'
+#' @importFrom stats model.frame model.matrix
 #' @importFrom survival survreg
 #' @keywords internal
-.fitSurvival = function(input, aft_iterations) {
+.fitSurvival = function(input, aft_iterations, verbose = FALSE) {
     # TODO: set.seed here?
     set.seed(100)
-    fit = survreg(.buildAFTFormula(input), data = input, dist = "gaussian",
+    aft_formula = .buildAFTFormula(input)
+    if (verbose) {
+        # survreg builds these internally; rebuilding them here is only
+        # worth the extra work when the counts are actually reported.
+        model_frame = model.frame(aft_formula, data = input)
+        design_matrix = model.matrix(attr(model_frame, "terms"), model_frame)
+        message(sprintf(
+            "[AFT-Cholesky] starting fit: %d observations, %d parameters",
+            nrow(design_matrix), ncol(design_matrix) + 1))
+    }
+    fit_start_time = Sys.time()
+    fit = survreg(aft_formula, data = input, dist = "gaussian",
                   control = list(maxiter = aft_iterations))
+    if (verbose) {
+        message(sprintf(
+            "[AFT-Cholesky] finished: %d iterations, %.4f sec",
+            fit$iter[length(fit$iter)],
+            as.numeric(Sys.time() - fit_start_time, units = "secs")))
+    }
     fit$y = NULL
     fit$linear.predictors = NULL
     fit
@@ -544,9 +570,9 @@
 #' @param aft_solver "cholesky" (default, via \code{survival::survreg}),
 #' "cg" (conjugate gradient), or "pcg" (conjugate gradient with a
 #' Jacobi/inverse-diagonal preconditioner).
-#' @param aft_verbose passed through to \code{.fitSurvivalCG}'s
-#' \code{verbose} when \code{aft_solver} is "cg" or "pcg"; has no effect
-#' for "cholesky".
+#' @param aft_verbose passed through to the chosen solver's
+#' \code{verbose}: \code{.fitSurvivalCG}'s for "cg"/"pcg",
+#' \code{.fitSurvival}'s for "cholesky".
 #'
 #' @return a fitted model of class \code{"survreg"}.
 #'
@@ -559,7 +585,7 @@
     } else if (aft_solver == "cg") {
         .fitSurvivalCG(input, aft_iterations, verbose = aft_verbose)
     } else {
-        .fitSurvival(input, aft_iterations)
+        .fitSurvival(input, aft_iterations, verbose = aft_verbose)
     }
 }
 
