@@ -279,7 +279,11 @@
 #' result is used.
 #'
 #' @param input data.table, the same shape \code{.fitSurvival} expects.
-#' @param aft_iterations maximum number of Newton-Raphson iterations.
+#' @param aft_iterations maximum number of log-likelihood evaluations the
+#' fit may spend. Newton-Raphson iterations and the step-halvings used to
+#' recover from an overshooting step share this one budget; once it is
+#' exhausted fitting stops and the last accepted coefficients and scale
+#' are returned (with a non-convergence warning), rather than failing.
 #' @param convergence_tolerance stop once the change in log-likelihood
 #' between iterations falls below this (matches the default
 #' \code{rel.tolerance} in \code{survival::survreg.control}).
@@ -431,9 +435,13 @@
     current_log_likelihood = current_fit$log_likelihood
     number_of_iterations_used = 0
     converged = FALSE
+    iterations_remaining = aft_iterations
     cg_diagnostics = vector("list", aft_iterations)
 
-    for (iteration in seq_len(aft_iterations)) {
+    iteration = 0
+    while (iterations_remaining > 0) {
+        iteration = iteration + 1
+        iterations_remaining = iterations_remaining - 1
         number_of_iterations_used = iteration
         iteration_start_time = Sys.time()
 
@@ -470,20 +478,16 @@
         # strategy (survreg6.c) rather than simply rejecting the step
         # outright.
         number_of_halvings = 0
-        halving_exhausted = FALSE
         repeat {
             candidate_fit = evaluate_log_likelihood_and_derivatives(
                 candidate_coefficients, candidate_log_scale)
             candidate_improves = is_finite_fit(candidate_fit) &&
                 candidate_fit$log_likelihood >= current_log_likelihood
-            if (candidate_improves) {
+            if (candidate_improves || iterations_remaining <= 0) {
                 break
             }
+            iterations_remaining = iterations_remaining - 1
             number_of_halvings = number_of_halvings + 1
-            if (number_of_halvings > 30) {
-                halving_exhausted = TRUE
-                break
-            }
             if (number_of_halvings == 1 &&
                 (log_scale - candidate_log_scale) > 1.1) {
                 # a single huge drop in scale is the most common cause of
@@ -496,7 +500,7 @@
             candidate_log_scale = (candidate_log_scale + 2 * log_scale) / 3
         }
 
-        if (halving_exhausted) {
+        if (!candidate_improves) {
             break
         }
 
@@ -518,8 +522,9 @@
     }
 
     if (!converged) {
-        warning("AFT model (CG solver) ran out of iterations and did not ",
-                "converge")
+        warning("AFT model (CG solver) used its full iteration budget ",
+                "without converging; returning the last accepted ",
+                "coefficients")
     }
 
     cg_diagnostics = do.call(
