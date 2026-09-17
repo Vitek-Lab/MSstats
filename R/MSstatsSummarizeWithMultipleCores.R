@@ -316,9 +316,11 @@
     list(worker = i, pid = Sys.getpid(), max_rss_mb = .max_rss_mb())
 }
 
+#' @importFrom RhpcBLASctl blas_set_num_threads
 .warmup_worker <- function(i) {
     library(MSstats, quietly = TRUE, warn.conflicts = FALSE)
     data.table::setDTthreads(1)
+    RhpcBLASctl::blas_set_num_threads(1)
     NULL
 }
 

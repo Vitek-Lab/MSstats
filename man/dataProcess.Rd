@@ -133,9 +133,10 @@ Jacobi (inverse-diagonal) preconditioner, which can reduce the number
 of conjugate-gradient iterations needed. "cg"/"pcg" are experimental
 alternatives, currently opt-in only.}
 
-\item{aft_verbose}{If \code{TRUE} and \code{aft_solver} is "cg" or
-"pcg", \code{message()} per-Newton-iteration conjugate-gradient
-iteration counts and timing for every protein fit - useful for
+\item{aft_verbose}{If \code{TRUE}, \code{message()} diagnostics for
+every protein fit: problem size and elapsed fitting time for all
+solvers, plus per-Newton-iteration conjugate-gradient iteration counts
+and timing when \code{aft_solver} is "cg" or "pcg" - useful for
 evaluating solver time complexity, but produces one block of output
 per protein, so leave at the default \code{FALSE} for routine runs.}
 }

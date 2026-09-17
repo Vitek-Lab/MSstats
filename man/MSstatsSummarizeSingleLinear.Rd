@@ -33,9 +33,9 @@ model's Newton-Raphson step: "cholesky" (default, via
 \code{survival::survreg}), "cg" (conjugate gradient), or "pcg"
 (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).}
 
-\item{aft_verbose}{If \code{TRUE} and \code{aft_solver} is "cg" or
-"pcg", log per-Newton-iteration conjugate-gradient diagnostics for
-every protein fit. See \code{.fitSurvivalCG}'s \code{verbose}.}
+\item{aft_verbose}{If \code{TRUE}, log AFT fitting diagnostics for
+every protein fit. See \code{.fitSurvival}'s and
+\code{.fitSurvivalCG}'s \code{verbose}.}
 }
 \value{
 list with protein-level data

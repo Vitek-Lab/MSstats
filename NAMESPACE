@@ -55,101 +55,124 @@ import(data.table)
 import(ggplot2)
 import(limma)
 import(lme4)
-importFrom(BiocParallel,bpisup)
-importFrom(BiocParallel,bplapply)
-importFrom(BiocParallel,bpnworkers)
-importFrom(BiocParallel,bpprogressbar)
-importFrom(BiocParallel,bpstart)
-importFrom(BiocParallel,bpstop)
+importFrom(BiocParallel,
+  bpisup,
+  bplapply,
+  bpnworkers,
+  bpprogressbar,
+  bpstart,
+  bpstop
+)
 importFrom(MASS,rlm)
-importFrom(MSstatsConvert,DIANNtoMSstatsFormat)
-importFrom(MSstatsConvert,DIAUmpiretoMSstatsFormat)
-importFrom(MSstatsConvert,FragPipetoMSstatsFormat)
-importFrom(MSstatsConvert,MSstatsBalancedDesign)
-importFrom(MSstatsConvert,MSstatsClean)
-importFrom(MSstatsConvert,MSstatsImport)
-importFrom(MSstatsConvert,MSstatsLogsSettings)
-importFrom(MSstatsConvert,MSstatsMakeAnnotation)
-importFrom(MSstatsConvert,MSstatsPreprocess)
-importFrom(MSstatsConvert,MZMinetoMSstatsFormat)
-importFrom(MSstatsConvert,MaxQtoMSstatsFormat)
-importFrom(MSstatsConvert,OpenMStoMSstatsFormat)
-importFrom(MSstatsConvert,OpenSWATHtoMSstatsFormat)
-importFrom(MSstatsConvert,PDtoMSstatsFormat)
-importFrom(MSstatsConvert,ProgenesistoMSstatsFormat)
-importFrom(MSstatsConvert,SkylinetoMSstatsFormat)
-importFrom(MSstatsConvert,SpectronauttoMSstatsFormat)
+importFrom(MSstatsConvert,
+  DIANNtoMSstatsFormat,
+  DIAUmpiretoMSstatsFormat,
+  FragPipetoMSstatsFormat,
+  MSstatsBalancedDesign,
+  MSstatsClean,
+  MSstatsImport,
+  MSstatsLogsSettings,
+  MSstatsMakeAnnotation,
+  MSstatsPreprocess,
+  MZMinetoMSstatsFormat,
+  MaxQtoMSstatsFormat,
+  OpenMStoMSstatsFormat,
+  OpenSWATHtoMSstatsFormat,
+  PDtoMSstatsFormat,
+  ProgenesistoMSstatsFormat,
+  SkylinetoMSstatsFormat,
+  SpectronauttoMSstatsFormat
+)
 importFrom(Rcpp,sourceCpp)
-importFrom(data.table,as.data.table)
-importFrom(data.table,data.table)
-importFrom(data.table,fifelse)
-importFrom(data.table,melt)
-importFrom(data.table,rbindlist)
-importFrom(data.table,setDT)
-importFrom(data.table,setDTthreads)
-importFrom(data.table,uniqueN)
+importFrom(RhpcBLASctl,blas_set_num_threads)
+importFrom(data.table,
+  as.data.table,
+  data.table,
+  fifelse,
+  melt,
+  rbindlist,
+  setDT,
+  setDTthreads,
+  uniqueN
+)
 importFrom(ggrepel,geom_text_repel)
 importFrom(gplots,heatmap.2)
-importFrom(grDevices,dev.off)
-importFrom(grDevices,hcl)
-importFrom(grDevices,pdf)
-importFrom(graphics,axis)
-importFrom(graphics,image)
-importFrom(graphics,legend)
-importFrom(graphics,mtext)
-importFrom(graphics,par)
-importFrom(graphics,plot)
-importFrom(graphics,plot.new)
-importFrom(graphics,title)
-importFrom(htmltools,div)
-importFrom(htmltools,save_html)
-importFrom(htmltools,tagList)
+importFrom(grDevices,
+  dev.off,
+  hcl,
+  pdf
+)
+importFrom(graphics,
+  axis,
+  image,
+  legend,
+  mtext,
+  par,
+  plot,
+  plot.new,
+  title
+)
+importFrom(htmltools,
+  div,
+  save_html,
+  tagList
+)
 importFrom(limma,squeezeVar)
 importFrom(lme4,lmer)
 importFrom(marray,maPalette)
 importFrom(matter,SnowfastParam)
 importFrom(methods,is)
-importFrom(parallel,clusterExport)
-importFrom(parallel,makeCluster)
-importFrom(parallel,parLapply)
-importFrom(parallel,stopCluster)
-importFrom(plotly,add_trace)
-importFrom(plotly,ggplotly)
-importFrom(plotly,layout)
-importFrom(plotly,plot_ly)
-importFrom(plotly,style)
-importFrom(plotly,subplot)
+importFrom(parallel,
+  clusterExport,
+  makeCluster,
+  parLapply,
+  stopCluster
+)
+importFrom(plotly,
+  add_trace,
+  ggplotly,
+  layout,
+  plot_ly,
+  style,
+  subplot
+)
 importFrom(preprocessCore,normalize.quantiles)
 importFrom(rlang,.data)
-importFrom(stats,dist)
-importFrom(stats,dnorm)
-importFrom(stats,fitted)
-importFrom(stats,formula)
-importFrom(stats,hclust)
-importFrom(stats,lm)
-importFrom(stats,lm.fit)
-importFrom(stats,loess)
-importFrom(stats,median)
-importFrom(stats,model.frame)
-importFrom(stats,model.matrix)
-importFrom(stats,model.response)
-importFrom(stats,na.omit)
-importFrom(stats,p.adjust)
-importFrom(stats,pnorm)
-importFrom(stats,predict)
-importFrom(stats,qbinom)
-importFrom(stats,qnorm)
-importFrom(stats,qt)
-importFrom(stats,quantile)
-importFrom(stats,resid)
-importFrom(stats,residuals)
-importFrom(stats,sd)
-importFrom(stats,vcov)
-importFrom(stats,xtabs)
-importFrom(survival,Surv)
-importFrom(survival,survreg)
-importFrom(utils,combn)
-importFrom(utils,sessionInfo)
-importFrom(utils,setTxtProgressBar)
-importFrom(utils,txtProgressBar)
+importFrom(stats,
+  dist,
+  dnorm,
+  fitted,
+  formula,
+  hclust,
+  lm,
+  lm.fit,
+  loess,
+  median,
+  model.frame,
+  model.matrix,
+  model.response,
+  na.omit,
+  p.adjust,
+  pnorm,
+  predict,
+  qbinom,
+  qnorm,
+  qt,
+  quantile,
+  resid,
+  residuals,
+  sd,
+  vcov,
+  xtabs
+)
+importFrom(survival,
+  Surv,
+  survreg
+)
+importFrom(utils,
+  combn,
+  sessionInfo,
+  setTxtProgressBar,
+  txtProgressBar
+)
 useDynLib(MSstats, .registration=TRUE)

@@ -20,9 +20,9 @@
 "cg" (conjugate gradient), or "pcg" (conjugate gradient with a
 Jacobi/inverse-diagonal preconditioner).}
 
-\item{aft_verbose}{passed through to \code{.fitSurvivalCG}'s
-\code{verbose} when \code{aft_solver} is "cg" or "pcg"; has no effect
-for "cholesky".}
+\item{aft_verbose}{passed through to the chosen solver's
+\code{verbose}: \code{.fitSurvivalCG}'s for "cg"/"pcg",
+\code{.fitSurvival}'s for "cholesky".}
 }
 \value{
 a fitted model of class \code{"survreg"}.

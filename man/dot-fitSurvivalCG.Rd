@@ -16,7 +16,11 @@ Newton step}
 \arguments{
 \item{input}{data.table, the same shape \code{.fitSurvival} expects.}
 
-\item{aft_iterations}{maximum number of Newton-Raphson iterations.}
+\item{aft_iterations}{maximum number of log-likelihood evaluations the
+fit may spend. Newton-Raphson iterations and the step-halvings used to
+recover from an overshooting step share this one budget; once it is
+exhausted fitting stops and the last accepted coefficients and scale
+are returned (with a non-convergence warning), rather than failing.}
 
 \item{convergence_tolerance}{stop once the change in log-likelihood
 between iterations falls below this (matches the default
