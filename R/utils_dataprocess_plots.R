@@ -35,16 +35,14 @@
 
 #' Drop the prefix that every condition name shares
 #'
-#' Condition names in real designs are usually built from a common stem plus a
-#' distinguishing tail -- "Cyno_Colon_Timepoint_0hr", "Cyno_Colon_Timepoint_12hrs".
-#' Only the tail identifies the block, but the shared stem is what consumes the
-#' horizontal room, so it is dropped from the in-panel label and reported once in
-#' the x-axis title instead. No information is lost from the static image.
+#' Only the tail of "Study_Tissue_Timepoint_0hr" identifies the block, but the
+#' shared stem is what consumes the horizontal room. The Plotly hover carries
+#' the untruncated name.
 #'
 #' @param names character, condition names in plotting order
 #' @return list with `labels` (shortened) and `prefix` (what was removed, "" when
 #'   nothing is shared)
-#' @keywords internal
+#' @noRd
 .stripCommonAffix = function(names) {
     names = as.character(names)
     unchanged = list(labels = names, prefix = "")
@@ -78,11 +76,6 @@
 
 #' Number of characters that fit in one condition's slot
 #'
-#' Conditions tile the panel evenly, so each name gets `panel_width /
-#' n_conditions` of room no matter how many runs it covers -- which is why
-#' crowding is a function of name length and condition count, and never of the
-#' number of samples per condition.
-#'
 #' Width is estimated from `nchar` rather than measured. `grid::stringWidth()` is
 #' exact but needs an open graphics device, which is not available while the plot
 #' is being built; measuring would make the layout device-dependent and this
@@ -97,7 +90,7 @@
 #' @param width width of the canvas in pixels, read as CSS pixels at 96dpi
 #' @param text.size size of the condition labels
 #' @return integer, at least 1
-#' @keywords internal
+#' @noRd
 .conditionSlotChars = function(n_conditions, n_facets, width, text.size) {
     if (!is.numeric(width) || length(width) != 1L || is.na(width) ||
         width <= 0 || n_conditions < 1L) {
@@ -106,9 +99,8 @@
     # ~1.1in of the canvas goes to the y-axis title, tick labels and margins;
     # what is left is split across the facets and then across the conditions.
     panel_in = (width / 96 - 1.1) / max(n_facets, 1L)
-    # Only fill part of the slot: a label that fills it exactly touches its
-    # neighbours, and the first and last labels overhang the panel edge because
-    # they are centred on their block.
+    # Only fill part of the slot: a label filling it exactly touches its
+    # neighbours, and the end labels overhang the panel edge.
     slot_in = 0.85 * panel_in / n_conditions
     char_in = text.size * ggplot2::.pt * 0.53 / 72
     if (slot_in <= 0 || char_in <= 0) {
@@ -118,19 +110,44 @@
 }
 
 
+#' Shorten a string to `chars`, keeping both ends
+#'
+#' A head-only truncation is what makes two conditions sharing a stem render as
+#' the same label, so the identifying tail is kept too.
+#'
+#' @param x character(1)
+#' @param chars maximum characters to return
+#' @return character(1), `x` unchanged when it already fits
+#' @noRd
+.ellipsize = function(x, chars) {
+    if (nchar(x) <= chars) {
+        return(x)
+    }
+    if (chars <= 3L) {
+        return(substr(x, 1L, max(1L, chars)))
+    }
+    keep = chars - 3L
+    head_n = keep %/% 2L
+    tail_n = keep - head_n
+    paste0(substr(x, 1L, head_n), "...",
+           substr(x, nchar(x) - tail_n + 1L, nchar(x)))
+}
+
+
 #' Wrap condition names onto several lines so they fit their slot
 #'
-#' Used only for what `.stripCommonAffix()` and shrinking the font cannot fix.
 #' `strwrap()` breaks only at whitespace and condition names are usually
 #' underscore-delimited, so separators are turned into break opportunities here.
-#' A single token wider than the slot cannot be broken and is truncated; the
-#' untruncated name stays available in the Plotly hover.
+#' A single token wider than the slot cannot be broken and is shortened. Past
+#' `max_lines` the remainder is folded into the last line rather than spilling
+#' down the axis.
 #'
 #' @param names character, condition names
 #' @param chars maximum characters per line
+#' @param max_lines maximum lines a single label may occupy
 #' @return character, `names` unchanged when they all already fit
-#' @keywords internal
-.wrapConditionLabels = function(names, chars) {
+#' @noRd
+.wrapConditionLabels = function(names, chars, max_lines = 3L) {
     names = as.character(names)
     if (all(nchar(names) <= chars)) {
         return(names)
@@ -141,13 +158,8 @@
         if (length(tokens) == 0L) {
             tokens = name
         }
-        tokens = vapply(tokens, function(token) {
-            if (nchar(token) > chars) {
-                paste0(substr(token, 1L, max(1L, chars - 3L)), "...")
-            } else {
-                token
-            }
-        }, character(1), USE.NAMES = FALSE)
+        tokens = vapply(tokens, .ellipsize, character(1), chars = chars,
+                        USE.NAMES = FALSE)
         lines = character(0)
         current = ""
         for (token in tokens) {
@@ -159,7 +171,13 @@
                 current = candidate
             }
         }
-        paste(c(lines, current), collapse = "\n")
+        lines = c(lines, current)
+        if (length(lines) > max_lines) {
+            kept = lines[seq_len(max_lines - 1L)]
+            rest = paste(lines[max_lines:length(lines)], collapse = "")
+            lines = c(kept, .ellipsize(rest, chars))
+        }
+        paste(lines, collapse = "\n")
     }, character(1), USE.NAMES = FALSE)
 }
 
@@ -172,20 +190,12 @@
 #'
 #' @inheritParams .conditionSlotChars
 #' @param names character, condition names in plotting order
-#' @param text.angle angle of the labels. A non-zero value is a deliberate choice
-#'   by the caller, so the layout is left alone. Note that rotation is not carried
-#'   through by `ggplotly()`, so it does not help the MSstatsShiny output.
-#' @return list with `labels`, the `size` to draw them at, the `n_lines` they
-#'   occupy, and the `xaxis` title to use
-#' @keywords internal
-.layoutConditionLabels = function(names, n_facets, width, text.size,
-                                  text.angle = 0) {
+#' @return list with `labels`, the `size` to draw them at, and the `n_lines`
+#'   they occupy
+#' @noRd
+.layoutConditionLabels = function(names, n_facets, width, text.size) {
     labels = as.character(names)
-    unchanged = list(labels = labels, size = text.size, n_lines = 1L,
-                     xaxis = "MS runs")
-    if (!isTRUE(all.equal(as.numeric(text.angle), 0))) {
-        return(unchanged)
-    }
+    unchanged = list(labels = labels, size = text.size, n_lines = 1L)
     n_conditions = length(labels)
     if (n_conditions < 2L) {
         return(unchanged)
@@ -194,11 +204,9 @@
         .conditionSlotChars(n_conditions, n_facets, width, text.size)) {
         return(unchanged)
     }
-    xaxis = "MS runs"
     stripped = .stripCommonAffix(labels)
     if (nzchar(stripped$prefix)) {
         labels = stripped$labels
-        xaxis = paste0("MS runs   (conditions: ", stripped$prefix, "*)")
     }
     # Shrink before wrapping: one legible line beats two cramped ones. The floor
     # is where shrinking stops buying fit and starts buying illegibility.
@@ -210,26 +218,21 @@
         }
         size = size - 0.25
     }
-    labels = .wrapConditionLabels(labels, chars)
+    wrapped = .wrapConditionLabels(labels, chars)
+    # A shortening that collapses two conditions onto one string is worse than
+    # a crowded axis, so the full names are kept instead.
+    if (anyDuplicated(wrapped) == 0L) {
+        labels = wrapped
+    }
     list(labels = labels, size = size,
-         n_lines = max(lengths(strsplit(labels, "\n", fixed = TRUE))),
-         xaxis = xaxis)
+         n_lines = max(lengths(strsplit(labels, "\n", fixed = TRUE))))
 }
 
 
-#' Accessors for the condition label layout
-#'
-#' The builders are also called with `condition.layout = NULL` (nothing computed
-#' a layout), in which case they fall back to the historical behaviour.
+#' Font size the condition labels were laid out for, or the caller's
 #' @param layout result of `.layoutConditionLabels()`, or NULL
-#' @keywords internal
-.conditionXlab = function(layout) {
-    if (is.null(layout$xaxis)) "MS runs" else layout$xaxis
-}
-
-#' @rdname dot-conditionXlab
 #' @param text.size size to fall back to
-#' @keywords internal
+#' @noRd
 .conditionTextSize = function(layout, text.size) {
     if (is.null(layout$size)) text.size else layout$size
 }
@@ -238,7 +241,7 @@
 #' @inheritParams dataProcessPlots
 #' @param input data.table
 #' @param is_censored TRUE if censored values were imputed
-#' @keywords internal
+#' @noRd
 .makeProfilePlot = function(
     input, is_censored, featureName, y.limdown, y.limup, x.axis.size, 
     y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
@@ -295,7 +298,7 @@
     
     profile_plot = profile_plot + scale_linetype_manual(values = ss, guide = "none") 
     profile_plot = profile_plot +
-        scale_x_continuous(.conditionXlab(condition.layout), breaks = cumGroupAxis) +
+        scale_x_continuous("MS runs", breaks = cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey", linetype = "longdash") +
         labs(title = unique(input$PROTEIN)) +
@@ -349,7 +352,7 @@
 #' Make summary profile plot
 #' @inheritParams dataProcessPlots
 #' @inheritParams .makeProfilePlot
-#' @keywords internal
+#' @noRd
 .makeSummaryProfilePlot = function(
     input, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
@@ -397,7 +400,7 @@
         scale_size_manual(values = c(1.7, 2), guide = "none") +
         scale_linetype_manual(values = c(rep(1, times = num_features - 1), 2), 
                               guide = "none") +
-        scale_x_continuous(.conditionXlab(condition.layout), breaks = cumGroupAxis) +
+        scale_x_continuous("MS runs", breaks = cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_vline(xintercept = lineNameAxis + 0.5, 
                    colour = "grey", linetype = "longdash") +
@@ -432,7 +435,7 @@
 #' @inherit dataProcessPlots
 #' @param input data.table
 #' @param all_proteins character vector of protein names
-#' @keywords internal
+#' @noRd
 .makeQCPlot = function(
     input, all_proteins, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
@@ -451,7 +454,7 @@
         geom_boxplot(aes(fill = .data$LABEL), outlier.shape = 1,
                      outlier.size = 1.5) +
         scale_fill_manual(values = label.color, guide = "none") +
-        scale_x_discrete(.conditionXlab(condition.layout), breaks = cumGroupAxis) +
+        scale_x_discrete("MS runs", breaks = cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey",
                    linetype = "longdash") +

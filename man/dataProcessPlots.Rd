@@ -27,9 +27,7 @@ dataProcessPlots(
   save_condition_plot_result = FALSE,
   remove_uninformative_feature_outlier = FALSE,
   address = "",
-  isPlotly = FALSE,
-  legend.position = "right",
-  width.plotly = 1400
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -72,7 +70,11 @@ graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
 of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
-Default is 0.}
+Default is 0. In Profile Plot and QC plot the rotation applies to the
+ggplot2/PDF output only: \code{ggplotly()} does not carry the rotation of
+the condition labels through, so \code{isPlotly = TRUE} draws them
+horizontally and fits them to the available room instead. Condition plot
+rotates its x-axis labels in both outputs.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}
@@ -81,9 +83,13 @@ above graph in Profile Plot. Default is 7.}
 
 \item{dot.size.condition}{size of dots in condition plot. Default is 3.}
 
-\item{width}{width of the saved file in pixels. Default is 800 pixels.}
+\item{width}{width of the saved PDF file in pixels, converted at 72 pixels
+per inch, so the default 800 is an 11.1 inch page. Does not affect the Plotly
+output, whose canvas is fixed at the width MSstatsShiny reserves for these
+plots.}
 
-\item{height}{height of the saved file in pixels. Default is 600 pixels.}
+\item{height}{height of the saved file in pixels. Default is 600 pixels.
+Applies to both the PDF and the Plotly output.}
 
 \item{which.Protein}{Protein list to draw plots. List can be names of Proteins
 or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).
@@ -117,19 +123,6 @@ The other assigned folder has to be existed under the current working directory.
  The command address can help to specify where to store the file as well as 
  how to modify the beginning of the file name. 
  If address=FALSE, plot will be not saved as pdf file but showed in window.}
-
-\item{legend.position}{position of the feature legend in the Plotly output of
-Profile Plot and QC Plot: "right" (default), "left", "top", "bottom", or "none"
-to hide it. Only affects \code{isPlotly = TRUE}; the ggplot2 (PDF) output keeps
-its legend above the graph. Note that only the side placements ("right" and
-"left") are scrollable in Plotly, which is what stops a protein with many
-features from covering the plot. A horizontal legend grows instead of
-scrolling, so "top" and "bottom" can still crowd the panel on feature-rich
-proteins.}
-
-\item{width.plotly}{width in pixels of the Plotly output. Default is 1400, which
-matches the container MSstatsShiny reserves for these plots. Only affects
-\code{isPlotly = TRUE}; the PDF output is sized by \code{width}.}
 }
 \description{
 To illustrate the quantitative data after data-preprocessing and 
