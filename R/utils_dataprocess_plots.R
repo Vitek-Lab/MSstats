@@ -33,15 +33,220 @@
 }
 
 
+#' Drop the prefix that every condition name shares
+#'
+#' Only the tail of "Study_Tissue_Timepoint_0hr" identifies the block, but the
+#' shared stem is what consumes the horizontal room. The Plotly hover carries
+#' the untruncated name.
+#'
+#' @param names character, condition names in plotting order
+#' @return list with `labels` (shortened) and `prefix` (what was removed, "" when
+#'   nothing is shared)
+#' @noRd
+.stripCommonAffix = function(names) {
+    names = as.character(names)
+    unchanged = list(labels = names, prefix = "")
+    if (length(unique(names)) < 2L) {
+        return(unchanged)
+    }
+    # Split after each separator so the separator stays with the token it follows
+    # and the pieces can simply be pasted back together.
+    tokens = strsplit(names, "(?<=[_.[:space:]-])", perl = TRUE)
+    n_shared = 0L
+    repeat {
+        # Never consume a name entirely; a condition with no label left would be
+        # indistinguishable from its neighbours.
+        nth = vapply(tokens, function(x) {
+            if (length(x) > n_shared + 1L) x[n_shared + 1L] else NA_character_
+        }, character(1))
+        if (anyNA(nth) || length(unique(nth)) != 1L) {
+            break
+        }
+        n_shared = n_shared + 1L
+    }
+    if (n_shared == 0L) {
+        return(unchanged)
+    }
+    list(labels = vapply(tokens, function(x) {
+             paste(x[-seq_len(n_shared)], collapse = "")
+         }, character(1)),
+         prefix = paste(tokens[[1]][seq_len(n_shared)], collapse = ""))
+}
+
+
+#' Number of characters that fit in one condition's slot
+#'
+#' Width is estimated from `nchar` rather than measured. `grid::stringWidth()` is
+#' exact but needs an open graphics device, which is not available while the plot
+#' is being built; measuring would make the layout device-dependent and this
+#' function untestable. 0.53 em per character is calibrated against
+#' `graphics::strwidth()` and lands within ~7%.
+#'
+#' @param n_conditions number of conditions
+#' @param n_facets number of facet panels actually drawn. Pass
+#'   `length(unique(input$LABEL))`, not `nlevels()`: LABEL is a factor over the
+#'   whole table, so `nlevels()` reports 2 for a protein carrying only one label
+#'   while `facet_grid()` draws a single panel.
+#' @param width width of the canvas in pixels, read as CSS pixels at 96dpi
+#' @param text.size size of the condition labels
+#' @return integer, at least 1
+#' @noRd
+.conditionSlotChars = function(n_conditions, n_facets, width, text.size) {
+    if (!is.numeric(width) || length(width) != 1L || is.na(width) ||
+        width <= 0 || n_conditions < 1L) {
+        return(.Machine$integer.max)
+    }
+    # ~1.1in of the canvas goes to the y-axis title, tick labels and margins;
+    # what is left is split across the facets and then across the conditions.
+    panel_in = (width / 96 - 1.1) / max(n_facets, 1L)
+    # Only fill part of the slot: a label filling it exactly touches its
+    # neighbours, and the end labels overhang the panel edge.
+    slot_in = 0.85 * panel_in / n_conditions
+    char_in = text.size * ggplot2::.pt * 0.53 / 72
+    if (slot_in <= 0 || char_in <= 0) {
+        return(1L)
+    }
+    max(1L, as.integer(floor(slot_in / char_in)))
+}
+
+
+#' Shorten a string to `chars`, keeping both ends
+#'
+#' A head-only truncation is what makes two conditions sharing a stem render as
+#' the same label, so the identifying tail is kept too.
+#'
+#' @param x character(1)
+#' @param chars maximum characters to return
+#' @return character(1), `x` unchanged when it already fits
+#' @noRd
+.ellipsize = function(x, chars) {
+    if (nchar(x) <= chars) {
+        return(x)
+    }
+    if (chars <= 3L) {
+        return(substr(x, 1L, max(1L, chars)))
+    }
+    keep = chars - 3L
+    head_n = keep %/% 2L
+    tail_n = keep - head_n
+    paste0(substr(x, 1L, head_n), "...",
+           substr(x, nchar(x) - tail_n + 1L, nchar(x)))
+}
+
+
+#' Wrap condition names onto several lines so they fit their slot
+#'
+#' `strwrap()` breaks only at whitespace and condition names are usually
+#' underscore-delimited, so separators are turned into break opportunities here.
+#' A single token wider than the slot cannot be broken and is shortened. Past
+#' `max_lines` the remainder is folded into the last line rather than spilling
+#' down the axis.
+#'
+#' @param names character, condition names
+#' @param chars maximum characters per line
+#' @param max_lines maximum lines a single label may occupy
+#' @return character, `names` unchanged when they all already fit
+#' @noRd
+.wrapConditionLabels = function(names, chars, max_lines = 3L) {
+    names = as.character(names)
+    if (all(nchar(names) <= chars)) {
+        return(names)
+    }
+    vapply(names, function(name) {
+        tokens = regmatches(name, gregexpr("[^_.[:space:]-]+[_.[:space:]-]*",
+                                           name))[[1]]
+        if (length(tokens) == 0L) {
+            tokens = name
+        }
+        tokens = vapply(tokens, .ellipsize, character(1), chars = chars,
+                        USE.NAMES = FALSE)
+        lines = character(0)
+        current = ""
+        for (token in tokens) {
+            candidate = paste0(current, token)
+            if (nchar(trimws(candidate)) > chars && nzchar(current)) {
+                lines = c(lines, current)
+                current = token
+            } else {
+                current = candidate
+            }
+        }
+        lines = c(lines, current)
+        if (length(lines) > max_lines) {
+            kept = lines[seq_len(max_lines - 1L)]
+            rest = paste(lines[max_lines:length(lines)], collapse = "")
+            lines = c(kept, .ellipsize(rest, chars))
+        }
+        paste(lines, collapse = "\n")
+    }, character(1), USE.NAMES = FALSE)
+}
+
+
+#' Lay out condition labels so they do not overlap
+#'
+#' Applies the three mitigations in order of how much they cost the reader:
+#' drop the shared stem, then shrink the font, then wrap. Each is a no-op when
+#' the labels already fit, so a plot that renders correctly today is unchanged.
+#'
+#' @inheritParams .conditionSlotChars
+#' @param names character, condition names in plotting order
+#' @return list with `labels`, the `size` to draw them at, and the `n_lines`
+#'   they occupy
+#' @noRd
+.layoutConditionLabels = function(names, n_facets, width, text.size) {
+    labels = as.character(names)
+    unchanged = list(labels = labels, size = text.size, n_lines = 1L)
+    n_conditions = length(labels)
+    if (n_conditions < 2L) {
+        return(unchanged)
+    }
+    if (max(nchar(labels)) <=
+        .conditionSlotChars(n_conditions, n_facets, width, text.size)) {
+        return(unchanged)
+    }
+    stripped = .stripCommonAffix(labels)
+    if (nzchar(stripped$prefix)) {
+        labels = stripped$labels
+    }
+    # Shrink before wrapping: one legible line beats two cramped ones. The floor
+    # is where shrinking stops buying fit and starts buying illegibility.
+    size = text.size
+    repeat {
+        chars = .conditionSlotChars(n_conditions, n_facets, width, size)
+        if (max(nchar(labels)) <= chars || size <= 2.5) {
+            break
+        }
+        size = size - 0.25
+    }
+    wrapped = .wrapConditionLabels(labels, chars)
+    # A shortening that collapses two conditions onto one string is worse than
+    # a crowded axis, so the full names are kept instead.
+    if (anyDuplicated(wrapped) == 0L) {
+        labels = wrapped
+    }
+    list(labels = labels, size = size,
+         n_lines = max(lengths(strsplit(labels, "\n", fixed = TRUE))))
+}
+
+
+#' Font size the condition labels were laid out for, or the caller's
+#' @param layout result of `.layoutConditionLabels()`, or NULL
+#' @param text.size size to fall back to
+#' @noRd
+.conditionTextSize = function(layout, text.size) {
+    if (is.null(layout$size)) text.size else layout$size
+}
+
 #' Create profile plot
 #' @inheritParams dataProcessPlots
 #' @param input data.table
 #' @param is_censored TRUE if censored values were imputed
-#' @keywords internal
+#' @noRd
 .makeProfilePlot = function(
     input, is_censored, featureName, y.limdown, y.limup, x.axis.size, 
     y.axis.size, text.size, text.angle, legend.size, dot.size.profile, 
-    ss, s, cumGroupAxis, yaxis.name, lineNameAxis, groupNametemp, dot_colors
+    ss, s, cumGroupAxis, yaxis.name, lineNameAxis, groupNametemp, dot_colors,
+    condition.layout = NULL
 ) {
     RUN = ABUNDANCE = Name = NULL
     
@@ -93,13 +298,14 @@
     
     profile_plot = profile_plot + scale_linetype_manual(values = ss, guide = "none") 
     profile_plot = profile_plot +
-        scale_x_continuous('MS runs', breaks = cumGroupAxis) +
+        scale_x_continuous("MS runs", breaks = cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey", linetype = "longdash") +
         labs(title = unique(input$PROTEIN)) +
-        geom_text(data = groupNametemp, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Name), 
-                  size = text.size, 
+        geom_text(data = groupNametemp, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Label), 
+                  size = .conditionTextSize(condition.layout, text.size), 
                   angle = text.angle, 
+                  vjust = 1,
                   color = "black") +
         theme_msstats("PROFILEPLOT", x.axis.size, y.axis.size, legend.size)
     
@@ -146,11 +352,11 @@
 #' Make summary profile plot
 #' @inheritParams dataProcessPlots
 #' @inheritParams .makeProfilePlot
-#' @keywords internal
+#' @noRd
 .makeSummaryProfilePlot = function(
     input, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
-    yaxis.name, lineNameAxis, groupNametemp
+    yaxis.name, lineNameAxis, groupNametemp, condition.layout = NULL
 ) {
     RUN = ABUNDANCE = Name = NULL
     
@@ -198,9 +404,10 @@
         geom_vline(xintercept = lineNameAxis + 0.5, 
                    colour = "grey", linetype = "longdash") +
         labs(title = unique(input$PROTEIN)) +
-        geom_text(data = groupNametemp, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Name), 
-                  size = text.size, 
+        geom_text(data = groupNametemp, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Label), 
+                  size = .conditionTextSize(condition.layout, text.size), 
                   angle = text.angle, 
+                  vjust = 1,
                   color = "black") +
         theme_msstats("PROFILEPLOT", x.axis.size, y.axis.size, 
                       legend.size, legend.title = element_blank())
@@ -227,11 +434,11 @@
 #' @inherit dataProcessPlots
 #' @param input data.table
 #' @param all_proteins character vector of protein names
-#' @keywords internal
+#' @noRd
 .makeQCPlot = function(
     input, all_proteins, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
-    lineNameAxis, yaxis.name
+    lineNameAxis, yaxis.name, condition.layout = NULL
 ) { 
     RUN = ABUNDANCE = Name = NULL
     
@@ -251,8 +458,9 @@
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey",
                    linetype = "longdash") +
         labs(title  =  plot_title) +
-        geom_text(data = groupName, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Name),
-                  size = text.size, angle = text.angle, color = "black") +
+        geom_text(data = groupName, aes(x = .data$RUN, y = .data$ABUNDANCE, label = .data$Label),
+                  size = .conditionTextSize(condition.layout, text.size),
+                  angle = text.angle, vjust = 1, color = "black") +
         theme_msstats("QCPLOT", x.axis.size, y.axis.size,
                       legend_size = NULL)
     
