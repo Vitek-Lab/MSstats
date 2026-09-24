@@ -391,7 +391,8 @@ dataProcessPlots = function(
         Protein == all_proteins[i],
         list(PROTEIN = unique(Protein), PEPTIDE = "Run summary",
              TRANSITION = "Run summary", FEATURE = "Run summary",
-             LABEL = raw_label_map[LABEL], RUN = RUN,
+             LABEL = if("LABEL" %in% names(.SD)) raw_label_map[LABEL] else "Endogenous", 
+             RUN = RUN,
              ABUNDANCE = LogIntensities, FRACTION = 1, 
              UPPERBOUND = if("Variance" %in% names(.SD)) LogIntensities + 1.96 * sqrt(Variance) else NA_real_, # 95% confidence interval
              LOWERBOUND = if("Variance" %in% names(.SD)) LogIntensities - 1.96 * sqrt(Variance) else NA_real_
