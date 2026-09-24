@@ -157,8 +157,7 @@
     num_features = data.table::uniqueN(input$FEATURE)
     profile_plot = ggplot(data = input, 
                           aes(x = .data$RUN, y = .data$newABUNDANCE, 
-                                     color = .data$analysis, linetype = .data$FEATURE, 
-                                     size = .data$analysis)) +
+                                     color = .data$analysis, linetype = .data$FEATURE)) +
         facet_grid(~LABEL) +
         geom_line(linewidth = 0.5)
     
