@@ -11,9 +11,15 @@
 #' support at all.
 #'
 #' Iteration always starts from the zero vector and stops once the true
-#' (unpreconditioned) residual has shrunk to \code{1e-8} of the size of
-#' \code{right_hand_side}, so the tolerance means the same thing whether or
-#' not \code{use_jacobi_preconditioner} is set. In exact arithmetic,
+#' (unpreconditioned) residual is below
+#' \code{1e-8 * max(norm(right_hand_side), 1)} - relative for large
+#' right-hand sides, absolute (\code{1e-8}) for small ones - so the
+#' tolerance means the same thing whether or not
+#' \code{use_jacobi_preconditioner} is set. The absolute floor is
+#' intentional: the caller (\code{.fitSurvivalCG}) passes a gradient, so a
+#' right-hand side this small means the Newton iteration has already
+#' converged, and \code{.fitSurvivalCG} judges convergence by the change in
+#' log-likelihood rather than by the step returned here. In exact arithmetic,
 #' conjugate gradient converges within \code{nrow(coefficient_matrix)}
 #' steps, but rounding error erodes that guarantee as the system grows, so
 #' up to \code{10 * nrow(coefficient_matrix)} steps are allowed.
