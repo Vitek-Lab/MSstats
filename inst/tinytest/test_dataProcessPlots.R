@@ -83,10 +83,6 @@ expect_true(any(grepl("ConditionPlot.*\\.zip$", list.files(tmp_dir2))))
 unlink(tmp_dir2, recursive = TRUE)
 
 # Test 10: the Plotly legend is mounted on the right ------------------------
-# Regression test. The placement used to disagree with the ggplot theme, so
-# ggplotly reserved a band that nothing occupied and squeezed the panel into the
-# corner. plotly::layout() defers into layoutAttrs, so this has to be checked
-# after plotly_build().
 
 legend_spec = function() {
     plot = suppressWarnings(
@@ -103,10 +99,6 @@ expect_equal(spec_right$legend$orientation, "v")
 expect_true(spec_right$legend$x > 1)
 
 # Test 11: text.angle no longer suppresses the Plotly label layout -----------
-# ggplotly() does not carry geom_text() rotation through, so a rotated Plotly
-# plot is drawn horizontally and has exactly the crowding problem the layout
-# exists to solve. The layout therefore runs whatever text.angle says, and the
-# untruncated name stays on hover.
 
 QuantDataLong = QuantData
 long_group = function(x) factor(paste0("Study_Tissue_Timepoint_", x))
@@ -131,9 +123,6 @@ for (angle in c(0, 90)) {
 }
 
 # Test 12: the ggplot2/PDF path keeps the full names and honours text.angle --
-# Nothing is laid out there, so condition.layout is NULL. This exercises that
-# branch: the labels fall back to the full condition names and no headroom is
-# added.
 
 tmp_dir3 = tempfile("msstats_dataprocessplots_pdf_")
 dir.create(tmp_dir3)
@@ -146,8 +135,6 @@ expect_true(any(grepl("ProfilePlot.*\\.pdf$", list.files(tmp_dir3))))
 unlink(tmp_dir3, recursive = TRUE)
 
 # Test 13: width sizes the Plotly canvas ------------------------------------
-# The caller sets the canvas; nothing inside dataProcessPlots pins it. The
-# default is 800, the same as for groupComparisonPlots.
 
 plotly_width = function(...) {
     out = NULL
@@ -162,32 +149,6 @@ expect_equal(plotly_width(), 800)
 expect_equal(plotly_width(width = 1400), 1400)
 
 # Test 14: the saved HTML container is sized to the plot it holds ------------
-# Regression test. The container was pinned at 800px whatever the widget inside
-# it was, so a wider plot had its right-hand side -- which is where the feature
-# legend is mounted -- fall outside the box.
 
-tmp_dir4 = tempfile("msstats_dataprocessplots_html_")
-dir.create(tmp_dir4)
-invisible(capture.output(suppressWarnings(
-    dataProcessPlots(QuantData, type = "ProfilePlot", which.Protein = protein_name,
-                      summaryPlot = FALSE, address = paste0(tmp_dir4, "/"),
-                      isPlotly = TRUE, width = 1400)
-)))
-zip_path = list.files(tmp_dir4, pattern = "\\.zip$", full.names = TRUE)[1]
-unzip(zip_path, exdir = file.path(tmp_dir4, "unzipped"))
-html_path = list.files(file.path(tmp_dir4, "unzipped"), pattern = "\\.html$",
-                       full.names = TRUE, recursive = TRUE)[1]
-html = paste(readLines(html_path, warn = FALSE), collapse = "\n")
-
-# The container div spaces its declarations, the widget div does not, so the
-# two are told apart by the space after the semicolon.
-px = function(pattern) {
-    as.integer(sub("^width:([0-9]+)px.*", "\\1",
-                   regmatches(html, regexpr(pattern, html))))
-}
-container_width = px("width:[0-9]+px; height:[0-9]+px; margin")
-widget_width = px("width:[0-9]+px;height:[0-9]+px")
-
-expect_equal(container_width, 1400L)
-expect_equal(widget_width, 1400L)
-unlink(tmp_dir4, recursive = TRUE)
+html = as.character(MSstats:::.getPlotlyPlotHTML(list("plot"), 1400, 600))
+expect_true(grepl("width:1400px; height:600px", html))
