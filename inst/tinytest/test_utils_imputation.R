@@ -34,7 +34,7 @@ make_survival_input <- function(number_of_features, number_of_runs, is_labeled,
     input
 }
 
-make_underdetermined_labeled_input <- function() {
+make_labeled_input_with_too_few_observations <- function() {
     input <- data.table::data.table(
         FEATURE      = factor(c(paste0("F", 1:8), "F1")),
         RUN          = factor(c(rep_len(paste0("R", 1:3), 8), "R1")),
@@ -52,18 +52,18 @@ predictor_cases <- list(
         input = make_survival_input(number_of_features = 1, number_of_runs = 3,
                                     is_labeled = TRUE, number_of_replicates = 3),
         has_reference_covariate = TRUE, has_feature = FALSE),
-    "labeled multi-feature well-determined" = list(
+    "labeled multi-feature, enough observations" = list(
         input = make_survival_input(number_of_features = 3, number_of_runs = 4,
                                     is_labeled = TRUE),
         has_reference_covariate = TRUE, has_feature = TRUE),
-    "labeled underdetermined" = list(
-        input = make_underdetermined_labeled_input(),
+    "labeled multi-feature, too few observations" = list(
+        input = make_labeled_input_with_too_few_observations(),
         has_reference_covariate = TRUE, has_feature = FALSE),
     "unlabeled single-feature" = list(
         input = make_survival_input(number_of_features = 1, number_of_runs = 5,
                                     is_labeled = FALSE, number_of_replicates = 3),
         has_reference_covariate = FALSE, has_feature = FALSE),
-    "unlabeled multi-feature well-determined" = list(
+    "unlabeled multi-feature, enough observations" = list(
         input = make_survival_input(number_of_features = 3, number_of_runs = 5,
                                     is_labeled = FALSE),
         has_reference_covariate = FALSE, has_feature = TRUE)
@@ -142,7 +142,6 @@ for (input_name in names(noisy_inputs)) {
 }
 
 noisy_input <- make_noisy_censored_input(is_labeled = FALSE, seed = 3)
-
 fit_cholesky <- MSstats:::.fitAFTModel(noisy_input, number_of_iterations,
                                        "cholesky")
 expect_inherits(
@@ -175,6 +174,7 @@ expect_message(
     pattern = "\\[AFT-CG\\] finished",
     info = "verbose = TRUE should report a summary once fitting finishes"
 )
+
 
 fit_with_diagnostics <- MSstats:::.fitSurvivalCG(noisy_input,
                                                  number_of_iterations)
