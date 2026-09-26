@@ -413,6 +413,99 @@
 #' needs, so it is a drop-in replacement anywhere \code{.fitSurvival}'s
 #' result is used.
 #'
+#' @section Maximum likelihood estimation:
+#' \strong{The model.} Each row i has a log-intensity \code{y_i}, a row
+#' \code{x_i} of \code{design_matrix}, and linear predictor
+#' \code{mu_i = x_i' beta}. The Gaussian AFT model says
+#' \preformatted{
+#'     y_i = mu_i + sigma * eps_i,    eps_i ~ N(0, 1)
+#' }
+#' so each true log-intensity is normally distributed around its
+#' prediction with a common standard deviation \code{sigma} (the fitted
+#' \code{scale}). The unknowns are \code{theta = (beta, log sigma)};
+#' \code{sigma} is estimated on the log scale so that Newton steps are
+#' unconstrained and can never produce a negative standard deviation.
+#' Write \code{z_i = (y_i - mu_i) / sigma} for the standardized distance
+#' from the prediction, \code{phi} for the standard normal density
+#' (\code{dnorm}), and \code{Phi} for its CDF (\code{pnorm}).
+#'
+#' \strong{The objective: density for observed rows, CDF for censored
+#' rows.} Maximum likelihood picks the \code{theta} under which the data we
+#' saw were most probable. What we "saw" differs by row type
+#' (\code{exact_indicator}):
+#' \itemize{
+#'   \item An \emph{observed} (exact) row has a known value, so it
+#'   contributes the normal density evaluated at that value:
+#'   \code{L_i = (1 / sigma) phi(z_i)}.
+#'   \item A \emph{censored} row is one whose intensity fell below the
+#'   detection limit. Its true value is unknown; all we know is that it lies
+#'   somewhere below the threshold \code{c_i} (which
+#'   \code{.setCensoredByThreshold} has substituted in as \code{y_i}). The
+#'   honest contribution is therefore the total probability of landing
+#'   anywhere below that threshold - the normal CDF:
+#'   \code{L_i = P(Y_i <= c_i) = Phi((c_i - mu_i) / sigma)}.
+#' }
+#' Taking logs and summing over rows gives the objective that is maximized:
+#' \preformatted{
+#'     l(theta) = sum_{observed} [ log phi(z_i) - log sigma ]
+#'              + sum_{censored} log Phi(z_i)
+#' }
+#' (the first sum is, up to a constant, ordinary least squares; the second
+#' is what pulls \code{mu_i} and \code{sigma} toward values that make the
+#' censored rows plausibly low). If a censored row's \code{mu_i} is well
+#' above its threshold, \code{Phi(z_i)} is tiny and \code{l} is heavily
+#' penalized - so the fit, and the imputed values later predicted from it,
+#' respect the information that those rows were below the limit, rather
+#' than ignoring them or treating the threshold as an exact value.
+#'
+#' \strong{Setting the derivatives to zero.} The maximum is where the score
+#' (gradient of \code{l}) is zero. By the chain rule through
+#' \code{mu_i = x_i' beta}, each row only needs its derivatives with respect
+#' to \code{mu_i} and \code{log sigma} (computed by
+#' \code{.aftGaussianDerivatives}):
+#' \preformatted{
+#'     observed:  d l_i / d mu_i = z_i / sigma
+#'     censored:  d l_i / d mu_i = -phi(z_i) / (sigma Phi(z_i))
+#' }
+#' The observed term is the usual least-squares residual pull; the censored
+#' term (an inverse Mills ratio) always pushes \code{mu_i} down, strongly
+#' when the prediction sits above the threshold and negligibly when it is
+#' already well below. These assemble into the score
+#' (\code{.buildAFTGradient}), with \code{d} the vector of
+#' \code{d l_i / d mu_i}:
+#' \preformatted{
+#'     U(theta) = [ X' d                         ]   (gradient wrt beta)
+#'                [ sum_i d l_i / d log sigma    ]   (gradient wrt log sigma)
+#' }
+#' There is no closed-form root because of the \code{Phi} terms, so the
+#' root is found iteratively.
+#'
+#' \strong{Newton-Raphson.} Expanding the score to first order around the
+#' current guess, \code{U(theta + step) ~ U(theta) - I(theta) step}, and
+#' setting it to zero gives the Newton step
+#' \preformatted{
+#'     I(theta) step = U(theta),    theta_new = theta + step
+#' }
+#' where \code{I = -d^2 l / d theta d theta'} is the observed information
+#' matrix (\code{.buildAFTInformationMatrix}), with blocks
+#' \preformatted{
+#'     I = - [ X' W X        X' v   ]    W = diag(d^2 l_i / d mu_i^2)
+#'           [ v' X      sum_i s_i  ]    v_i = d^2 l_i / d mu_i d log sigma
+#'                                       s_i = d^2 l_i / d (log sigma)^2
+#' }
+#' This linear system is the part solved by \code{.cgSolve} (see its
+#' documentation for the conjugate-gradient math). Starting values come
+#' from ordinary least squares that ignores censoring. If a step fails to
+#' increase \code{l} (or produces non-finite values), the candidate is
+#' pulled toward the current guess, \code{(candidate + 2 * current) / 3},
+#' cutting the step to a third each time until \code{l} improves; if \code{I} is not positive definite (so the
+#' Newton direction might not point uphill), the Gauss-Newton matrix
+#' \code{sum_i g_i g_i'} of per-row score contributions is used instead,
+#' which is positive semi-definite by construction. Iteration stops when \code{l} changes by less than
+#' \code{convergence_tolerance}, and the inverse of the final information
+#' matrix is returned as the coefficient variance-covariance matrix, as
+#' \code{survreg} does.
+#'
 #' @param input data.table, the same shape \code{.fitSurvival} expects.
 #' @param aft_iterations maximum number of log-likelihood evaluations the
 #' fit may spend. Newton-Raphson iterations and the step-halvings used to
