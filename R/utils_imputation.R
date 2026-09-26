@@ -469,8 +469,8 @@
     }
 
     if (!converged) {
-        warning("AFT model (CG solver) used its full iteration budget ",
-                "without converging; returning the last accepted ",
+        warning("AFT model (CG solver) did not converge within its ",
+                "iteration budget; returning the last accepted ",
                 "coefficients")
     }
 
