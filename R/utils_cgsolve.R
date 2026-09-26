@@ -63,10 +63,6 @@
         identity
     }
 
-    # The residual measures how far the current guess is from solving the
-    # system. Conjugate gradient starts out searching in the
-    # preconditioner-adjusted residual direction (with no preconditioner,
-    # this is just the residual itself).
     residual = right_hand_side - drop(coefficient_matrix %*% solution)
     preconditioned_residual = apply_preconditioner(residual)
     search_direction = preconditioned_residual
@@ -74,9 +70,6 @@
     residual_dot_preconditioned_residual =
         sum(residual * preconditioned_residual)
 
-    # Stop once the residual has shrunk far enough, relative to the size of
-    # the right-hand side (falling back to an absolute scale when that size
-    # is tiny).
     convergence_threshold =
         (relative_tolerance * max(sqrt(sum(right_hand_side^2)), 1))^2
 
@@ -88,9 +81,6 @@
             break
         }
         iterations_used = iteration
-
-        # How far moving along the search direction changes things, as
-        # measured through the matrix itself.
         matrix_times_search_direction =
             drop(coefficient_matrix %*% search_direction)
         curvature = sum(search_direction * matrix_times_search_direction)
@@ -102,15 +92,11 @@
             break
         }
 
-        # Move as far as possible along the search direction without
-        # overshooting the solution, then see how much residual remains.
         step_length = residual_dot_preconditioned_residual / curvature
         solution = solution + step_length * search_direction
         residual = residual - step_length * matrix_times_search_direction
         new_residual_size = sum(residual * residual)
 
-        # Choose the next search direction so it doesn't undo the progress
-        # made by earlier directions.
         new_preconditioned_residual = apply_preconditioner(residual)
         new_residual_dot_preconditioned_residual =
             sum(residual * new_preconditioned_residual)

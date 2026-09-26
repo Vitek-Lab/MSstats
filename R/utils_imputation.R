@@ -31,8 +31,6 @@
     n_runs = data.table::uniqueN(input[missingness_filter, RUN])
     is_labeled = data.table::uniqueN(input$LABEL) > 1
 
-    # With too few uncensored observations, there isn't enough information
-    # left to also estimate a separate effect per feature.
     not_enough_data_for_feature_effect = n_total < n_features + n_runs - 1
 
     if (is_labeled) {
@@ -68,12 +66,9 @@
 #' @keywords internal
 #' @noRd
 .fitSurvival = function(input, aft_iterations, verbose = FALSE) {
-    # TODO: set.seed here?
     set.seed(100)
     aft_formula = .buildAFTFormula(input)
     if (verbose) {
-        # survreg builds these internally; rebuilding them here is only
-        # worth the extra work when the counts are actually reported.
         model_frame = model.frame(aft_formula, data = input)
         design_matrix = model.matrix(attr(model_frame, "terms"), model_frame)
         message(sprintf(
@@ -137,9 +132,6 @@
                                     observed_value, exact_indicator) {
     scale = exp(log_scale)
     inverse_scale_squared = 1 / scale^2
-
-    # How far the observation sits from its predicted value, in raw units
-    # and in standard deviations.
     distance_from_prediction = observed_value - linear_predictor
     standardized_distance = distance_from_prediction / scale
 
@@ -148,10 +140,6 @@
         pnorm(standardized_distance)
     is_exact_observation = (exact_indicator == 1)
 
-    # --- exact (uncensored) observations --------------------------------
-    # log-likelihood contribution is log(density) - log(scale); what
-    # follows is that expression's derivatives wrt linear_predictor and
-    # log_scale.
     exact_log_likelihood =
         log(density_at_standardized_distance) - log_scale
     exact_gradient_wrt_linear_predictor = standardized_distance / scale
@@ -173,11 +161,6 @@
     exact_gradient_wrt_log_scale =
         exact_gradient_wrt_log_scale_before_adjustment - 1
 
-    # Guard against the density underflowing to exactly zero (only
-    # happens for astronomically large |standardized_distance|, e.g. from
-    # a wild early Newton guess). Any reasonable derivative works here,
-    # since the collapsed log-likelihood itself is what triggers
-    # step-halving.
     exact_density_underflowed = density_at_standardized_distance <= 0
     exact_log_likelihood =
         ifelse(exact_density_underflowed, -200, exact_log_likelihood)
@@ -195,10 +178,6 @@
         exact_density_underflowed, 0,
         exact_second_derivative_wrt_log_scale)
 
-    # --- left-censored observations (true value <= the recorded ceiling) -
-    # log-likelihood contribution is log(Phi(standardized_distance));
-    # "censoring_hazard" plays the same role for these rows that the
-    # density itself plays above.
     censored_log_likelihood =
         log(cumulative_probability_at_standardized_distance)
     censoring_hazard = density_at_standardized_distance /
@@ -221,9 +200,6 @@
         distance_from_prediction^2 * censored_log_density_curvature -
         censored_gradient_wrt_log_scale * (1 + censored_gradient_wrt_log_scale)
 
-    # Same underflow guard as above, triggered when the cumulative
-    # probability collapses to zero (standardized_distance very
-    # negative).
     censored_probability_underflowed =
         cumulative_probability_at_standardized_distance <= 0
     censored_log_likelihood = ifelse(
@@ -335,12 +311,6 @@
     observed_value = response[, 1]
     exact_indicator = response[, 2]
 
-    # Initial guess: an ordinary least-squares fit for the regression
-    # coefficients (treating the detection-limit ceiling already
-    # substituted into censored rows as if it were observed), and the
-    # residual standard deviation for the scale parameter. A
-    # rank-deficient design leaves some coefficients unidentified
-    # (reported as NA by lm.fit); start those at zero.
     initial_fit = lm.fit(design_matrix, observed_value)
     coefficients = initial_fit$coefficients
     coefficients[!is.finite(coefficients)] = 0
@@ -361,8 +331,6 @@
     }
 
     build_information_matrix = function(derivatives) {
-        # Regression block: -t(X) %*% diag(second_derivative) %*% X,
-        # computed without forming the diagonal matrix explicitly.
         regression_block = -crossprod(
             design_matrix,
             design_matrix * derivatives$second_derivative_wrt_linear_predictor)
@@ -381,13 +349,6 @@
             all(is.finite(derivatives$second_derivative_wrt_log_scale))
     }
 
-    # A Newton step away from the optimum, the exact information matrix
-    # is not guaranteed to be positive definite. survival::survreg falls
-    # back, in that situation, to the sum of the outer products of each
-    # observation's own contribution to the gradient - always positive
-    # semi-definite by construction, and equal to the exact information
-    # matrix in expectation (this is the classic Gauss-Newton / BHHH
-    # approximation). Mirror that fallback here.
     build_gauss_newton_approximation = function(derivatives) {
         per_observation_gradient_contributions = cbind(
             design_matrix * derivatives$gradient_wrt_linear_predictor,
@@ -395,11 +356,6 @@
         crossprod(per_observation_gradient_contributions)
     }
 
-    # A "not positive definite" result is expected, handled control flow
-    # here (the Gauss-Newton fallback below exists for exactly that case),
-    # so its warning is muffled; a genuine "did not converge within
-    # max_iterations" is not expected/handled, so that warning still
-    # propagates normally.
     cg_solve_muffling_pd_warning = function(...) {
         withCallingHandlers(
             .cgSolve(...),
@@ -410,11 +366,6 @@
             })
     }
 
-    # Returns the Newton step, plus how much conjugate-gradient work it
-    # took to get there - primary_iterations/fallback_iterations and
-    # used_fallback are the numbers verbose logging (below) reports, so a
-    # caller can see how solver choice and problem size trade off against
-    # iteration count.
     solve_newton_step = function(information_matrix, derivatives, gradient) {
         primary_solve = cg_solve_muffling_pd_warning(
             information_matrix, gradient,
@@ -476,11 +427,6 @@
         candidate_log_scale =
             log_scale + newton_step$step[number_of_coefficients + 1]
 
-        # Step-halving: if the Newton step overshoots (a non-finite or
-        # decreasing log-likelihood), back the trial point off toward the
-        # last accepted one, mirroring survival::survreg's own recovery
-        # strategy (survreg6.c) rather than simply rejecting the step
-        # outright.
         number_of_halvings = 0
         repeat {
             candidate_fit = evaluate_log_likelihood_and_derivatives(
@@ -494,9 +440,6 @@
             number_of_halvings = number_of_halvings + 1
             if (number_of_halvings == 1 &&
                 (log_scale - candidate_log_scale) > 1.1) {
-                # a single huge drop in scale is the most common cause of
-                # a bad trial; keep the first back-off from cutting scale
-                # by more than a factor of exp(1.1), same as survreg6.c
                 candidate_log_scale = log_scale - 1.1
             }
             candidate_coefficients =
