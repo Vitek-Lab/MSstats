@@ -457,6 +457,42 @@ for (solver in setdiff(aft_solvers, "cholesky")) {
 }
 
 srm_input <- make_srm_imputation_input_with_noise(seed = 1)
+
+# A non-converged AFT fit should be reported once, as the combined
+# per-protein message, not additionally as the solver's raw warning, and
+# must not be used for imputation. aft_iterations = 2 is the smallest
+# budget that leaves every solver unconverged on this input (survreg
+# does not warn at maxiter = 1 here).
+for (solver in aft_solvers) {
+    raw_warnings <- character(0)
+    convergence_messages <- character(0)
+    unconverged_summary <- withCallingHandlers(
+        MSstatsSummarizeSingleTMP(srm_input, impute = TRUE,
+                                  censored_symbol = "NA",
+                                  remove50missing = FALSE,
+                                  aft_iterations = 2, aft_solver = solver),
+        warning = function(w) {
+            raw_warnings <<- c(raw_warnings, conditionMessage(w))
+            invokeRestart("muffleWarning")
+        },
+        message = function(m) {
+            convergence_messages <<- c(convergence_messages,
+                                       conditionMessage(m))
+            invokeRestart("muffleMessage")
+        })
+    expect_equal(
+        sum(grepl("CONVERGENCE WARNING", convergence_messages)), 1L,
+        info = sprintf("MSstatsSummarizeSingleTMP (aft_solver = %s): a non-converged fit should emit one combined convergence message", solver)
+    )
+    expect_false(
+        any(grepl("converge", raw_warnings, ignore.case = TRUE)),
+        info = sprintf("MSstatsSummarizeSingleTMP (aft_solver = %s): the solver's raw convergence warning should be muffled", solver)
+    )
+    expect_true(
+        all(is.na(unconverged_summary[[2]]$predicted)),
+        info = sprintf("MSstatsSummarizeSingleTMP (aft_solver = %s): a non-converged fit should not be used for imputation", solver)
+    )
+}
 expect_error(
     get_censored_row_predictions(srm_input, "cgp"),
     pattern = "aft_solver",

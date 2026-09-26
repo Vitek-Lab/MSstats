@@ -502,10 +502,11 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
             .fitAFTModel(fit_data, aft_iterations, aft_solver, aft_verbose)
         }, warning = function(w) {
             warning_message = conditionMessage(w)
-            if (grepl("converge", warning_message, ignore.case = TRUE)) {
+            if (grepl("converg", warning_message, ignore.case = TRUE)) {
                 convergence_messages <<- c(convergence_messages,
                                            warning_message)
                 converged <<- FALSE
+                invokeRestart("muffleWarning")
             }
         })
 
