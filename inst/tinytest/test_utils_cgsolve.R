@@ -1,90 +1,108 @@
-make_random_spd_matrix <- function(size, seed, ridge = 0.01) {
+make_random_solvable_matrix <- function(size, seed, diagonal_boost = 0.01) {
+    # Builds a random symmetric positive-definite matrix
     set.seed(seed)
-    random_factor <- matrix(rnorm(size * size), size, size)
-    random_factor %*% t(random_factor) + diag(size) * ridge
+    random_matrix <- matrix(rnorm(size * size), size, size)
+    random_matrix %*% t(random_matrix) + diag(size) * diagonal_boost
 }
 
 for (size in c(2, 5, 10, 30, 80)) {
-    coefficient_matrix <- make_random_spd_matrix(size, seed = size)
+    coefficient_matrix <- make_random_solvable_matrix(size, seed = size)
     set.seed(size + 1000)
     right_hand_side <- rnorm(size)
 
-    cg_result <- MSstats:::.cgSolve(coefficient_matrix, right_hand_side)
+    iterative_result <- MSstats:::.cgSolve(coefficient_matrix, right_hand_side)
     exact_solution <- solve(coefficient_matrix, right_hand_side)
 
     expect_equal(
-        cg_result$solution, exact_solution, tolerance = 1e-6,
-        info = paste0(".cgSolve should match solve() on a random SPD ",
-                      "system of size ", size)
+        iterative_result$solution, exact_solution, tolerance = 1e-6,
+        info = paste0(".cgSolve should give the same answer as solve() on a ",
+                      "random solvable symmetric system of size ", size)
     )
     expect_true(
-        cg_result$converged && cg_result$positive_definite,
-        info = paste0("A well-conditioned SPD system of size ", size,
-                      " should report converged/positive_definite = TRUE")
+        iterative_result$converged && iterative_result$positive_definite,
+        info = paste0("A well-behaved symmetric system of size ", size,
+                      " should report converged = TRUE and ",
+                      "positive_definite = TRUE")
     )
     expect_true(
-        cg_result$iterations >= 1 && cg_result$iterations <= size * 10,
-        info = "iterations should be a small positive count, not the default cap"
+        iterative_result$iterations >= 1 &&
+            iterative_result$iterations <= size * 10,
+        info = paste("The number of steps taken should be at least one and",
+                     "should not go over the maximum allowed")
     )
 }
 
-near_singular_matrix <- make_random_spd_matrix(10, seed = 42)
-near_singular_matrix[1, ] <- 0
-near_singular_matrix[, 1] <- 0
+make_random_unsolvable_matrix <- function(size, seed) {
+    unsolvable_matrix <- make_random_solvable_matrix(size, seed)
+    unsolvable_matrix[1, ] <- 0
+    unsolvable_matrix[, 1] <- 0
+    unsolvable_matrix
+}
+
+unsolvable_matrix <- make_random_unsolvable_matrix(10, seed = 42)
 set.seed(43)
 right_hand_side <- rnorm(10)
 
 expect_warning(
-    singular_result <- MSstats:::.cgSolve(near_singular_matrix, right_hand_side),
-    info = paste("A singular coefficient_matrix should warn rather than",
-                "error or hang")
+    unsolvable_result <- MSstats:::.cgSolve(unsolvable_matrix, right_hand_side),
+    info = paste("An unsolvable matrix should produce a warning rather than",
+                 "an error or an endless loop")
 )
 expect_true(
-    all(is.finite(singular_result$solution)),
-    info = "A singular system should still return a finite (partial) solution"
+    all(is.finite(unsolvable_result$solution)),
+    info = paste("An unsolvable system should still return a partial answer",
+                 "made of ordinary finite numbers")
 )
 expect_false(
-    singular_result$converged && singular_result$positive_definite,
-    info = paste("A singular coefficient_matrix should signal trouble via",
-                "converged = FALSE and/or positive_definite = FALSE")
+    unsolvable_result$converged && unsolvable_result$positive_definite,
+    info = paste("An unsolvable matrix should be flagged by reporting",
+                 "converged = FALSE, positive_definite = FALSE, or both")
 )
 
-make_diagonally_dominant_matrix <- function(size, seed) {
+make_large_diagonal_matrix <- function(size, seed) {
     set.seed(seed)
-    matrix_off_diagonal <- matrix(runif(size * size, -0.1, 0.1), size, size)
-    matrix_off_diagonal <- (matrix_off_diagonal + t(matrix_off_diagonal)) / 2
-    diag(matrix_off_diagonal) <- 0
-    diag(size) * runif(size, 5, 10) + matrix_off_diagonal
+    small_off_diagonal_entries <-
+        matrix(runif(size * size, -0.1, 0.1), size, size)
+    small_off_diagonal_entries <-
+        (small_off_diagonal_entries + t(small_off_diagonal_entries)) / 2
+    diag(small_off_diagonal_entries) <- 0
+    diag(size) * runif(size, 5, 10) + small_off_diagonal_entries
 }
 
-dominant_matrix <- make_diagonally_dominant_matrix(40, seed = 11)
+large_diagonal_matrix <- make_large_diagonal_matrix(40, seed = 11)
 set.seed(12)
-dominant_rhs <- rnorm(40)
-exact_dominant_answer <- solve(dominant_matrix, dominant_rhs)
+large_diagonal_right_hand_side <- rnorm(40)
+large_diagonal_exact_solution <-
+    solve(large_diagonal_matrix, large_diagonal_right_hand_side)
 
-plain_cg_result <- MSstats:::.cgSolve(dominant_matrix, dominant_rhs)
-preconditioned_result <- MSstats:::.cgSolve(
-    dominant_matrix, dominant_rhs, use_jacobi_preconditioner = TRUE)
+result_without_scaling <- MSstats:::.cgSolve(
+    large_diagonal_matrix, large_diagonal_right_hand_side)
+result_with_scaling <- MSstats:::.cgSolve(
+    large_diagonal_matrix, large_diagonal_right_hand_side,
+    use_jacobi_preconditioner = TRUE)
 
 expect_equal(
-    preconditioned_result$solution, exact_dominant_answer, tolerance = 1e-6,
-    info = "Preconditioned CG should still match solve() on a diagonally dominant system"
+    result_with_scaling$solution, large_diagonal_exact_solution,
+    tolerance = 1e-6,
+    info = paste("With diagonal scaling turned on, .cgSolve should still",
+                 "give the same answer as solve()")
 )
 expect_true(
-    preconditioned_result$iterations <= plain_cg_result$iterations,
-    info = paste("Jacobi preconditioning should not need more iterations",
-                "than plain CG on a diagonally dominant system (plain =",
-                plain_cg_result$iterations, ", preconditioned =",
-                preconditioned_result$iterations, ")")
+    result_with_scaling$iterations <= result_without_scaling$iterations,
+    info = paste("Diagonal scaling should not need more steps than",
+                 "no scaling when the diagonal entries are large (without",
+                 "scaling =", result_without_scaling$iterations,
+                 ", with scaling =", result_with_scaling$iterations, ")")
 )
 
-degenerate_diagonal_matrix <- make_random_spd_matrix(8, seed = 55)
-degenerate_diagonal_matrix[3, 3] <- 0
+zero_diagonal_matrix <- make_random_solvable_matrix(8, seed = 55)
+zero_diagonal_matrix[3, 3] <- 0
 set.seed(56)
-degenerate_rhs <- rnorm(8)
+zero_diagonal_right_hand_side <- rnorm(8)
 expect_true(
     all(is.finite(suppressWarnings(MSstats:::.cgSolve(
-        degenerate_diagonal_matrix, degenerate_rhs,
+        zero_diagonal_matrix, zero_diagonal_right_hand_side,
         use_jacobi_preconditioner = TRUE))$solution)),
-    info = "A zero diagonal entry should not produce a non-finite preconditioned solution"
+    info = paste("A zero on the diagonal should not cause diagonal scaling",
+                 "to return infinite or missing values")
 )
