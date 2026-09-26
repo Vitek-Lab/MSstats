@@ -347,19 +347,14 @@ expect_equal(
     )
 )
 
-# MSstatsSummarizeSingleTMP: SRM imputation — H rows must NOT be imputed ------
-# For SRM experiments, H is the normalization reference and must never be
-# imputed. Only censored L rows (is_labeled_ref=FALSE) should receive a
-# predicted value from the survival model.
-
-make_srm_impute_input <- function() {
-    runs   <- paste0("R", 1:4)
-    levels_rc <- c("0", runs)
-    f1 <- data.table::data.table(
+make_srm_imputation_input <- function() {
+    run_names <- paste0("R", 1:4)
+    reference_covariate_levels <- c("0", run_names)
+    feature_one_rows <- data.table::data.table(
         PROTEIN  = "P1",
         FEATURE  = "F1",
         LABEL    = c("H","H","H","H", "L","L","L","L"),
-        RUN      = c(runs, runs),
+        RUN      = c(run_names, run_names),
         # F1-H-R1 censored (H reference — must NOT be imputed)
         # F1-L-R2 censored (light peptide — MUST be imputed)
         newABUNDANCE = c(NA,   10.5, 11.0, 11.5,  14.0, NA,   15.0, 15.5),
@@ -367,120 +362,96 @@ make_srm_impute_input <- function() {
         cen          = c(0L,   1L,   1L,   1L,     1L,   0L,   1L,   1L),
         is_labeled_ref = c(TRUE,TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,FALSE)
     )
-    f2 <- data.table::data.table(
+    feature_two_rows <- data.table::data.table(
         PROTEIN  = "P1",
         FEATURE  = "F2",
         LABEL    = c("H","H","H","H", "L","L","L","L"),
-        RUN      = c(runs, runs),
+        RUN      = c(run_names, run_names),
         newABUNDANCE = c(10.0,10.5,11.0,11.5, 14.0,14.5,15.0,15.5),
         censored     = rep(FALSE, 8),
         cen          = rep(1L, 8),
         is_labeled_ref = c(TRUE,TRUE,TRUE,TRUE, FALSE,FALSE,FALSE,FALSE)
     )
-    dt <- data.table::rbindlist(list(f1, f2))
-    dt[, ref_covariate := factor(
+    srm_input <- data.table::rbindlist(list(feature_one_rows, feature_two_rows))
+    srm_input[, ref_covariate := factor(
         ifelse(is_labeled_ref == FALSE, as.character(RUN), "0"),
-        levels = levels_rc
+        levels = reference_covariate_levels
     )]
-    dt[, FEATURE   := factor(FEATURE)]
-    dt[, RUN       := factor(RUN)]
-    dt[, n_obs     := 4L]
-    dt[, n_obs_run := 2L]
-    dt[, ANOMALYSCORES := NA_real_]
-    dt
+    srm_input[, FEATURE   := factor(FEATURE)]
+    srm_input[, RUN       := factor(RUN)]
+    srm_input[, n_obs     := 4L]
+    srm_input[, n_obs_run := 2L]
+    srm_input[, ANOMALYSCORES := NA_real_]
+    srm_input
 }
 
-result_srm_imp <- MSstatsSummarizeSingleTMP(
-    make_srm_impute_input(),
-    impute          = TRUE,
-    censored_symbol = "NA",
-    remove50missing = FALSE,
-    aft_iterations  = 90
-)
-
-survival_srm <- result_srm_imp[[2]]
-
-# Censored H reference row: predicted must remain NA (not imputed)
-h_cens_pred <- survival_srm[
-    as.character(FEATURE) == "F1" &
-    as.character(LABEL)   == "H" &
-    as.character(RUN)     == "R1",
-    predicted
-]
-expect_true(
-    length(h_cens_pred) > 0 && all(is.na(h_cens_pred)),
-    info = "MSstatsSummarizeSingleTMP SRM: censored H rows must NOT receive an imputed predicted value"
-)
-
-# Censored L row: predicted must be a finite imputed value
-l_cens_pred <- survival_srm[
-    as.character(FEATURE) == "F1" &
-    as.character(LABEL)   == "L" &
-    as.character(RUN)     == "R2",
-    predicted
-]
-expect_true(
-    length(l_cens_pred) > 0 && all(is.finite(l_cens_pred)),
-    info = "MSstatsSummarizeSingleTMP SRM: censored L rows must receive a finite imputed predicted value"
-)
-
-make_srm_impute_input_with_noise <- function(seed) {
-    input <- make_srm_impute_input()
+make_srm_imputation_input_with_noise <- function(seed) {
+    input <- make_srm_imputation_input()
     set.seed(seed)
     input[cen == 1L,
           newABUNDANCE := newABUNDANCE + rnorm(.N, sd = 0.01)]
     input
 }
 
-result_srm_imp_chol_noisy <- MSstatsSummarizeSingleTMP(
-    make_srm_impute_input_with_noise(seed = 1),
-    impute          = TRUE,
-    censored_symbol = "NA",
-    remove50missing = FALSE,
-    aft_iterations  = 90,
-    aft_solver      = "cholesky"
-)
-result_srm_imp_cg <- MSstatsSummarizeSingleTMP(
-    make_srm_impute_input_with_noise(seed = 1),
-    impute          = TRUE,
-    censored_symbol = "NA",
-    remove50missing = FALSE,
-    aft_iterations  = 90,
-    aft_solver      = "cg"
+get_censored_row_predictions <- function(input, aft_solver) {
+    survival_predictions <- MSstatsSummarizeSingleTMP(
+        input,
+        impute          = TRUE,
+        censored_symbol = "NA",
+        remove50missing = FALSE,
+        aft_iterations  = 90,
+        aft_solver      = aft_solver
+    )[[2]]
+    get_feature_one_prediction <- function(label, run) {
+        survival_predictions[
+            as.character(FEATURE) == "F1" &
+            as.character(LABEL)   == label &
+            as.character(RUN)     == run,
+            predicted
+        ]
+    }
+    list(
+        censored_heavy = get_feature_one_prediction("H", "R1"),
+        censored_light = get_feature_one_prediction("L", "R2")
+    )
+}
+
+expect_heavy_not_imputed_and_light_imputed <- function(predictions,
+                                                       description) {
+    expect_true(
+        length(predictions$censored_heavy) > 0 &&
+            all(is.na(predictions$censored_heavy)),
+        info = sprintf("MSstatsSummarizeSingleTMP SRM (%s): censored H rows must NOT receive an imputed predicted value", description)
+    )
+    expect_true(
+        length(predictions$censored_light) > 0 &&
+            all(is.finite(predictions$censored_light)),
+        info = sprintf("MSstatsSummarizeSingleTMP SRM (%s): censored L rows must receive a finite imputed predicted value", description)
+    )
+}
+
+aft_solvers <- c("cholesky", "cg", "pcg")
+noisy_input_predictions_by_solver <- lapply(
+    setNames(nm = aft_solvers),
+    function(solver) {
+        get_censored_row_predictions(
+            make_srm_imputation_input_with_noise(seed = 1), solver
+        )
+    }
 )
 
-survival_srm_chol_noisy <- result_srm_imp_chol_noisy[[2]]
-survival_srm_cg <- result_srm_imp_cg[[2]]
+for (solver in aft_solvers) {
+    expect_heavy_not_imputed_and_light_imputed(
+        noisy_input_predictions_by_solver[[solver]],
+        sprintf("aft_solver = %s", solver)
+    )
+}
 
-h_cens_pred_cg <- survival_srm_cg[
-    as.character(FEATURE) == "F1" &
-    as.character(LABEL)   == "H" &
-    as.character(RUN)     == "R1",
-    predicted
-]
-expect_true(
-    length(h_cens_pred_cg) > 0 && all(is.na(h_cens_pred_cg)),
-    info = "MSstatsSummarizeSingleTMP SRM (aft_solver = cg): censored H rows must NOT receive an imputed predicted value"
-)
-
-l_cens_pred_cg <- survival_srm_cg[
-    as.character(FEATURE) == "F1" &
-    as.character(LABEL)   == "L" &
-    as.character(RUN)     == "R2",
-    predicted
-]
-l_cens_pred_chol_noisy <- survival_srm_chol_noisy[
-    as.character(FEATURE) == "F1" &
-    as.character(LABEL)   == "L" &
-    as.character(RUN)     == "R2",
-    predicted
-]
-expect_true(
-    length(l_cens_pred_cg) > 0 && all(is.finite(l_cens_pred_cg)),
-    info = "MSstatsSummarizeSingleTMP SRM (aft_solver = cg): censored L rows must receive a finite imputed predicted value"
-)
-expect_equal(
-    l_cens_pred_cg, l_cens_pred_chol_noisy, tolerance = 1e-4,
-    check.attributes = FALSE,
-    info = "MSstatsSummarizeSingleTMP SRM: aft_solver = cg should closely match aft_solver = cholesky"
-)
+for (solver in setdiff(aft_solvers, "cholesky")) {
+    expect_equal(
+        noisy_input_predictions_by_solver[[solver]]$censored_light,
+        noisy_input_predictions_by_solver[["cholesky"]]$censored_light,
+        tolerance = 1e-6, check.attributes = FALSE,
+        info = sprintf("MSstatsSummarizeSingleTMP SRM: aft_solver = %s should closely match aft_solver = cholesky", solver)
+    )
+}
