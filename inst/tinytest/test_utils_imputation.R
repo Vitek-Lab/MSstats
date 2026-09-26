@@ -160,6 +160,11 @@ for (aft_solver in c("cg", "pcg")) {
                       "') should attach cg_diagnostics")
     )
 }
+expect_error(
+    MSstats:::.fitAFTModel(noisy_input, number_of_iterations, "cgp"),
+    pattern = "aft_solver",
+    info = ".fitAFTModel should reject an unsupported aft_solver instead of falling back to Cholesky"
+)
 
 expect_silent(
     MSstats:::.fitSurvivalCG(noisy_input, number_of_iterations, verbose = FALSE)

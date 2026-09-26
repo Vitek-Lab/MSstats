@@ -589,6 +589,7 @@
 #' @noRd
 .fitAFTModel = function(input, aft_iterations, aft_solver = "cholesky",
                          aft_verbose = FALSE) {
+    .checkAFTSolver(aft_solver)
     if (aft_solver == "pcg") {
         .fitSurvivalCG(input, aft_iterations,
                       use_jacobi_preconditioner = TRUE, verbose = aft_verbose)

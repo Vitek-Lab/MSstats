@@ -30,6 +30,16 @@ MSstatsSummarizeWithSingleCore(
 \item{equal_variance}{only for method = "linear"; assume equal variance among feature intensities}
 
 \item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
+
+\item{aft_solver}{only used when impute = TRUE; linear solve
+used in the AFT imputation model's Newton-Raphson step: "cholesky"
+(default, via \code{survival::survreg}), "cg" (conjugate gradient), or
+"pcg" (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).
+"cg"/"pcg" are experimental.}
+
+\item{aft_verbose}{if \code{TRUE}, \code{message()} AFT fitting diagnostics
+(problem size, elapsed time, and for "cg"/"pcg" per-Newton-iteration
+conjugate-gradient counts) for every protein fit. Default \code{FALSE}.}
 }
 \value{
 list of length one with run-level data.

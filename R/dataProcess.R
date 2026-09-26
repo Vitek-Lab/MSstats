@@ -158,6 +158,7 @@ dataProcess = function(
         list(method = summaryMethod, equal_var = equalFeatureVar),
         list(symbol = censoredInt, MB = MBimpute),
         colnames(raw))
+    .checkAFTSolver(aft_solver)
     
     peptides_dict = makePeptidesDictionary(as.data.table(unclass(raw)), normalization)
     input = MSstatsPrepareForDataProcess(raw, logTrans, fix_missing)
@@ -229,7 +230,7 @@ dataProcess = function(
 MSstatsSummarizeWithSingleCore = function(input, method, impute, censored_symbol,
                             remove50missing, equal_variance, aft_iterations = 90,
                             aft_solver = "cholesky", aft_verbose = FALSE) {
-
+    .checkAFTSolver(aft_solver)
 
     is_labeled_reference = "is_labeled_ref" %in% colnames(input) && any(input$is_labeled_ref, na.rm = TRUE)
     if (is_labeled_reference) {
@@ -316,6 +317,7 @@ MSstatsSummarizeSingleLinear = function(single_protein,
                                         aft_solver = "cholesky",
                                         aft_verbose = FALSE) {
     ABUNDANCE = RUN = FEATURE = PROTEIN = LogIntensities = NULL
+    .checkAFTSolver(aft_solver)
 
     cols = intersect(
       colnames(single_protein),
@@ -471,6 +473,7 @@ MSstatsSummarizeSingleTMP = function(single_protein, impute, censored_symbol,
                                      aft_verbose = FALSE) {
     newABUNDANCE = n_obs = n_obs_run = RUN = FEATURE = LABEL = NULL
     predicted = censored = NULL
+    .checkAFTSolver(aft_solver)
     cols = intersect(colnames(single_protein), c("newABUNDANCE", "cen", "RUN",
                                                  "FEATURE", "ref_covariate"))
     is_labeled_reference = "is_labeled_ref" %in% colnames(single_protein) &&

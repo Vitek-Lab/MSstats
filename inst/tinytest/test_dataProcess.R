@@ -455,3 +455,36 @@ for (solver in setdiff(aft_solvers, "cholesky")) {
         info = sprintf("MSstatsSummarizeSingleTMP SRM: aft_solver = %s should closely match aft_solver = cholesky", solver)
     )
 }
+
+srm_input <- make_srm_imputation_input_with_noise(seed = 1)
+expect_error(
+    get_censored_row_predictions(srm_input, "cgp"),
+    pattern = "aft_solver",
+    info = "MSstatsSummarizeSingleTMP should reject an unsupported aft_solver"
+)
+expect_error(
+    MSstatsSummarizeSingleLinear(srm_input, impute = TRUE,
+                                 censored_symbol = "NA",
+                                 remove50missing = FALSE,
+                                 aft_solver = "cgp"),
+    pattern = "aft_solver",
+    info = "MSstatsSummarizeSingleLinear should reject an unsupported aft_solver"
+)
+expect_error(
+    MSstatsSummarizeWithSingleCore(srm_input, "TMP", TRUE, "NA", FALSE, TRUE,
+                                   aft_solver = "cgp"),
+    pattern = "aft_solver",
+    info = "MSstatsSummarizeWithSingleCore should reject an unsupported aft_solver"
+)
+expect_error(
+    MSstatsSummarizeWithMultipleCores(srm_input, "TMP", TRUE, "NA", FALSE,
+                                      TRUE, aft_solver = "cgp"),
+    pattern = "aft_solver",
+    info = "MSstatsSummarizeWithMultipleCores should reject an unsupported aft_solver"
+)
+expect_error(
+    dataProcess(DDARawData, aft_solver = "cgp", use_log_file = FALSE,
+                verbose = FALSE),
+    pattern = "aft_solver",
+    info = "dataProcess should reject an unsupported aft_solver before summarization"
+)

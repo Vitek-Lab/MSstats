@@ -335,6 +335,14 @@
 #' @param equal_variance only for method = "linear"; assume equal variance among feature intensities
 #' @param numberOfCores number of cores for parallel processing (Linux/Mac only)
 #' @param aft_iterations number of AFT model iterations
+#' @param aft_solver only used when impute = TRUE; linear solve
+#'   used in the AFT imputation model's Newton-Raphson step: "cholesky"
+#'   (default, via \code{survival::survreg}), "cg" (conjugate gradient), or
+#'   "pcg" (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).
+#'   "cg"/"pcg" are experimental.
+#' @param aft_verbose if \code{TRUE}, \code{message()} AFT fitting diagnostics
+#'   (problem size, elapsed time, and for "cg"/"pcg" per-Newton-iteration
+#'   conjugate-gradient counts) for every protein fit. Default \code{FALSE}.
 #' @param verbose whether to print verbose output
 #' @param BPPARAM optional \code{BiocParallelParam} instance
 #' @param track_memory whether to report per-worker maximum RSS memory usage.
@@ -373,6 +381,7 @@ MSstatsSummarizeWithMultipleCores <- function(
         track_memory   = FALSE,
         max_proteins_per_worker = 50L
 ) {
+    .checkAFTSolver(aft_solver)
     if (numberOfCores <= 1L && is.null(BPPARAM)) {
         return(MSstatsSummarizeWithSingleCore(
             input, method, impute, censored_symbol,
