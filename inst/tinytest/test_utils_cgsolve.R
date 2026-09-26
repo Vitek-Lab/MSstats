@@ -1,7 +1,3 @@
-# Tests for .cgSolve(), the vendored conjugate-gradient linear solver used
-# as the Newton-step solve in .fitSurvivalCG(). Returns a list:
-# solution/iterations/converged/positive_definite.
-
 make_random_spd_matrix <- function(size, seed, ridge = 0.01) {
     set.seed(seed)
     random_factor <- matrix(rnorm(size * size), size, size)
@@ -32,8 +28,6 @@ for (size in c(2, 5, 10, 30, 80)) {
     )
 }
 
-# --- near-singular system: still returns a finite result, with a warning ---
-
 near_singular_matrix <- make_random_spd_matrix(10, seed = 42)
 near_singular_matrix[1, ] <- 0
 near_singular_matrix[, 1] <- 0
@@ -55,8 +49,6 @@ expect_false(
                 "converged = FALSE and/or positive_definite = FALSE")
 )
 
-# --- an initial guess that is already the solution converges immediately ---
-
 exact_matrix <- make_random_spd_matrix(6, seed = 7)
 set.seed(8)
 exact_rhs <- rnorm(6)
@@ -72,8 +64,6 @@ expect_equal(
     result_from_exact_start$iterations, 0,
     info = "Starting from the exact solution should take zero iterations"
 )
-
-# --- relative_tolerance controls how tightly the system is solved ---
 
 loose_matrix <- make_random_spd_matrix(20, seed = 99)
 set.seed(100)
@@ -91,11 +81,6 @@ expect_true(
     tight_error < loose_error,
     info = "A tighter relative_tolerance should produce a more accurate solution"
 )
-
-# --- Jacobi preconditioner: same answer, fewer or equal iterations --------
-# on a diagonally-dominant system (where a diagonal preconditioner is most
-# effective), preconditioned CG should converge in no more iterations than
-# plain CG, and to the same solution.
 
 make_diagonally_dominant_matrix <- function(size, seed) {
     set.seed(seed)
@@ -126,8 +111,6 @@ expect_true(
                 preconditioned_result$iterations, ")")
 )
 
-# A degenerate (all-zero) diagonal entry should not blow up the
-# preconditioner (falls back to an identity-like scale of 1 for that entry).
 degenerate_diagonal_matrix <- make_random_spd_matrix(8, seed = 55)
 degenerate_diagonal_matrix[3, 3] <- 0
 set.seed(56)

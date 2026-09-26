@@ -43,6 +43,7 @@
 #' \code{FALSE}).
 #'
 #' @keywords internal
+#' @noRd
 .cgSolve = function(coefficient_matrix, right_hand_side, initial_guess = NULL,
                      relative_tolerance = 1e-8,
                      max_iterations = 10 * nrow(coefficient_matrix),

@@ -1,15 +1,3 @@
-# Tests that .fitSurvivalCG() - the conjugate-gradient alternative to
-# .fitSurvival() - fits the same model, and agrees numerically with it.
-#
-# The scenarios below reuse the noiseless fixtures from
-# test_utils_imputation.R purely to check that .fitSurvivalCG() selects the
-# same predictors as .fitSurvival() (via the shared .buildAFTFormula()).
-# For numeric agreement on the fitted values themselves, a Gaussian AFT
-# model needs actual residual variation to estimate - a noiseless design
-# has a degenerate (unbounded) scale MLE, so a second set of fixtures below
-# adds realistic noise and left-censoring before comparing coefficients,
-# scale, and predictions.
-
 make_surv_labeled_single <- function() {
     runs <- paste0("R", 1:3)
     dt <- data.table::rbindlist(list(
@@ -46,8 +34,6 @@ make_surv_unlabeled_multi_welldetermined <- function() {
     dt
 }
 
-# --- .fitSurvivalCG() selects the same predictors as .fitSurvival() -------
-
 coef_names <- function(fit) names(coef(fit))
 
 for (make_input in list(make_surv_labeled_single,
@@ -60,8 +46,6 @@ for (make_input in list(make_surv_labeled_single,
         info = ".fitSurvivalCG must select the same predictors as .fitSurvival"
     )
 }
-
-# --- numeric agreement on realistic (noisy, censored) data ----------------
 
 make_noisy_censored_input <- function(seed, is_labeled) {
     set.seed(seed)
@@ -128,8 +112,6 @@ check_solvers_agree(
     tolerance = 1e-4, label = "unlabeled, noisy, censored"
 )
 
-# --- the Jacobi-preconditioned solver (aft_solver = "pcg") agrees too -----
-
 check_solvers_agree(
     make_noisy_censored_input(seed = 1, is_labeled = TRUE),
     tolerance = 1e-4, label = "labeled, noisy, censored, jacobi-preconditioned",
@@ -140,8 +122,6 @@ check_solvers_agree(
     tolerance = 1e-4, label = "unlabeled, noisy, censored, jacobi-preconditioned",
     use_jacobi_preconditioner = TRUE
 )
-
-# --- .fitAFTModel() dispatches to the right solver -------------------------
 
 noisy_input <- make_noisy_censored_input(seed = 3, is_labeled = FALSE)
 
@@ -161,8 +141,6 @@ expect_false(
     is.null(MSstats:::.fitAFTModel(noisy_input, 90, "pcg")$cg_diagnostics),
     info = ".fitAFTModel(aft_solver = 'pcg') should attach cg_diagnostics"
 )
-
-# --- verbose = TRUE logs per-iteration diagnostics, FALSE stays silent -----
 
 expect_silent(
     MSstats:::.fitSurvivalCG(noisy_input, 90, verbose = FALSE)

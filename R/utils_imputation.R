@@ -21,6 +21,7 @@
 #' @importFrom data.table uniqueN
 #' @importFrom survival Surv
 #' @keywords internal
+#' @noRd
 .buildAFTFormula = function(input) {
     FEATURE = RUN = NULL
 
@@ -65,6 +66,7 @@
 #' @importFrom stats model.frame model.matrix
 #' @importFrom survival survreg
 #' @keywords internal
+#' @noRd
 .fitSurvival = function(input, aft_iterations, verbose = FALSE) {
     # TODO: set.seed here?
     set.seed(100)
@@ -130,6 +132,7 @@
 #'
 #' @importFrom stats dnorm pnorm
 #' @keywords internal
+#' @noRd
 .aftGaussianDerivatives = function(linear_predictor, log_scale,
                                     observed_value, exact_indicator) {
     scale = exp(log_scale)
@@ -309,6 +312,7 @@
 #'
 #' @importFrom stats model.frame model.matrix model.response lm.fit sd
 #' @keywords internal
+#' @noRd
 .fitSurvivalCG = function(input, aft_iterations,
                            convergence_tolerance = 1e-9,
                            use_jacobi_preconditioner = FALSE,
@@ -582,6 +586,7 @@
 #' @return a fitted model of class \code{"survreg"}.
 #'
 #' @keywords internal
+#' @noRd
 .fitAFTModel = function(input, aft_iterations, aft_solver = "cholesky",
                          aft_verbose = FALSE) {
     if (aft_solver == "pcg") {

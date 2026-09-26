@@ -424,17 +424,6 @@ expect_true(
     info = "MSstatsSummarizeSingleTMP SRM: censored L rows must receive a finite imputed predicted value"
 )
 
-# --- Same SRM imputation, but via aft_solver = "cg" ------------------------
-# Same invariants must hold (H never imputed, L gets a finite prediction),
-# and the imputed values themselves should closely match the default
-# aft_solver = "cholesky" path, since both solve the same Newton step.
-#
-# make_srm_impute_input()'s uncensored values are an exactly noise-free
-# linear function of RUN, which makes the Gaussian scale MLE degenerate
-# (unbounded as residuals -> 0). That's fine for the qualitative H/L
-# invariant checks above, but not a meaningful numeric comparison between
-# solvers, so a little jitter is added here to make the fit well-posed.
-
 make_srm_impute_input_with_noise <- function(seed) {
     input <- make_srm_impute_input()
     set.seed(seed)
