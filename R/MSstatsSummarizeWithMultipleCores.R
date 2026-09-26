@@ -278,7 +278,7 @@
 #' @noRd
 .build_summarize_worker <- function(
         use_TMP, impute, censored_symbol, remove50missing,
-        aft_iterations, equal_variance
+        aft_iterations, equal_variance, aft_solver, aft_verbose
 ) {
     unpack_fn        <- .unpack_protein_slot
     use_TMP_         <- use_TMP
@@ -287,6 +287,8 @@
     remove50missing_ <- remove50missing
     aft_iterations_  <- aft_iterations
     equal_variance_  <- equal_variance
+    aft_solver_ <- aft_solver
+    aft_verbose_ <- aft_verbose
 
     function(record) {
         meta   <- record$meta
@@ -294,12 +296,13 @@
         result <- if (use_TMP_) {
             MSstatsSummarizeSingleTMP(
                 protein_dt, impute_, censored_symbol_,
-                remove50missing_, aft_iterations_)
+                remove50missing_, aft_iterations_, aft_solver_, aft_verbose_)
         } else {
             MSstatsSummarizeSingleLinear(
                 protein_dt, impute_, censored_symbol_,
                 remove50missing_, aft_iterations_,
-                equal_variances = equal_variance_)
+                equal_variances = equal_variance_, 
+                aft_solver = aft_solver_, aft_verbose = aft_verbose_)
         }
         result
     }
@@ -313,9 +316,11 @@
     list(worker = i, pid = Sys.getpid(), max_rss_mb = .max_rss_mb())
 }
 
+#' @importFrom RhpcBLASctl blas_set_num_threads
 .warmup_worker <- function(i) {
     library(MSstats, quietly = TRUE, warn.conflicts = FALSE)
     data.table::setDTthreads(1)
+    RhpcBLASctl::blas_set_num_threads(1)
     NULL
 }
 
@@ -330,6 +335,14 @@
 #' @param equal_variance only for method = "linear"; assume equal variance among feature intensities
 #' @param numberOfCores number of cores for parallel processing (Linux/Mac only)
 #' @param aft_iterations number of AFT model iterations
+#' @param aft_solver only used when impute = TRUE; linear solve
+#'   used in the AFT imputation model's Newton-Raphson step: "cholesky"
+#'   (default, via \code{survival::survreg}), "cg" (conjugate gradient), or
+#'   "pcg" (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).
+#'   "cg"/"pcg" are experimental.
+#' @param aft_verbose if \code{TRUE}, \code{message()} AFT fitting diagnostics
+#'   (problem size, elapsed time, and for "cg"/"pcg" per-Newton-iteration
+#'   conjugate-gradient counts) for every protein fit. Default \code{FALSE}.
 #' @param verbose whether to print verbose output
 #' @param BPPARAM optional \code{BiocParallelParam} instance
 #' @param track_memory whether to report per-worker maximum RSS memory usage.
@@ -361,15 +374,18 @@ MSstatsSummarizeWithMultipleCores <- function(
         equal_variance,
         numberOfCores  = 1L,
         aft_iterations = 90L,
+        aft_solver = "cholesky", 
+        aft_verbose = FALSE,
         verbose        = FALSE,
         BPPARAM        = NULL,
         track_memory   = FALSE,
         max_proteins_per_worker = 50L
 ) {
+    .checkAFTSolver(aft_solver)
     if (numberOfCores <= 1L && is.null(BPPARAM)) {
         return(MSstatsSummarizeWithSingleCore(
             input, method, impute, censored_symbol,
-            remove50missing, equal_variance, aft_iterations))
+            remove50missing, equal_variance, aft_iterations, aft_solver, aft_verbose))
     }
 
     start_time <- proc.time()[["elapsed"]]
@@ -419,7 +435,7 @@ MSstatsSummarizeWithMultipleCores <- function(
 
     worker_fn <- .build_summarize_worker(
         use_TMP, impute, censored_symbol, remove50missing,
-        aft_iterations, equal_variance)
+        aft_iterations, equal_variance, aft_solver, aft_verbose)
 
     if (is.null(BPPARAM)) {
         tasks <- if (max_proteins_per_worker > 0L) {

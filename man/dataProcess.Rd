@@ -25,7 +25,9 @@ dataProcess(
   verbose = TRUE,
   log_file_path = NULL,
   numberOfCores = 1,
-  aft_iterations = 90
+  aft_iterations = 90,
+  aft_solver = "cholesky",
+  aft_verbose = FALSE
 )
 }
 \arguments{
@@ -121,6 +123,22 @@ a logfile named `MSstats_dataProcess_log_progress.log` is created to
 track progress. Only works for Linux & Mac OS. Default is 1.}
 
 \item{aft_iterations}{Number of iterations for AFT model fitting. Default is 90.}
+
+\item{aft_solver}{Which linear solve to use for the AFT imputation
+model's Newton-Raphson step: "cholesky" (default) delegates to
+\code{survival::survreg}, which solves it via Cholesky factorization.
+"cg" solves the same Newton step with a vendored conjugate-gradient
+routine instead; "pcg" is the same conjugate-gradient routine with a
+Jacobi (inverse-diagonal) preconditioner, which can reduce the number
+of conjugate-gradient iterations needed. "cg"/"pcg" are experimental
+alternatives, currently opt-in only.}
+
+\item{aft_verbose}{If \code{TRUE}, \code{message()} diagnostics for
+every protein fit: problem size and elapsed fitting time for all
+solvers, plus per-Newton-iteration conjugate-gradient iteration counts
+and timing when \code{aft_solver} is "cg" or "pcg" - useful for
+evaluating solver time complexity, but produces one block of output
+per protein, so leave at the default \code{FALSE} for routine runs.}
 }
 \value{
 A list of three elements:

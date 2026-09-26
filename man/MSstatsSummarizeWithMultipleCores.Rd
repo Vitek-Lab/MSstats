@@ -13,6 +13,8 @@ MSstatsSummarizeWithMultipleCores(
   equal_variance,
   numberOfCores = 1L,
   aft_iterations = 90L,
+  aft_solver = "cholesky",
+  aft_verbose = FALSE,
   verbose = FALSE,
   BPPARAM = NULL,
   track_memory = FALSE,
@@ -35,6 +37,16 @@ MSstatsSummarizeWithMultipleCores(
 \item{numberOfCores}{number of cores for parallel processing (Linux/Mac only)}
 
 \item{aft_iterations}{number of AFT model iterations}
+
+\item{aft_solver}{only used when impute = TRUE; linear solve
+used in the AFT imputation model's Newton-Raphson step: "cholesky"
+(default, via \code{survival::survreg}), "cg" (conjugate gradient), or
+"pcg" (conjugate gradient with a Jacobi/inverse-diagonal preconditioner).
+"cg"/"pcg" are experimental.}
+
+\item{aft_verbose}{if \code{TRUE}, \code{message()} AFT fitting diagnostics
+(problem size, elapsed time, and for "cg"/"pcg" per-Newton-iteration
+conjugate-gradient counts) for every protein fit. Default \code{FALSE}.}
 
 \item{verbose}{whether to print verbose output}
 

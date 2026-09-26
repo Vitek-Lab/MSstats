@@ -40,7 +40,8 @@ Imports:
     parallel,
     rlang,
     matter,
-    BiocParallel
+    BiocParallel,
+    RhpcBLASctl
 Suggests: 
     BiocStyle,
     knitr,
@@ -62,4 +63,4 @@ Packaged: 2017-10-20 02:13:12 UTC; meenachoi
 LinkingTo: 
     Rcpp,
     RcppArmadillo
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
