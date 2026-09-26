@@ -241,6 +241,162 @@
     )
 }
 
+#' Evaluate the Gaussian AFT log-likelihood and derivatives at a
+#' parameter guess
+#'
+#' Thin wrapper around \code{.aftGaussianDerivatives} that forms the
+#' linear predictor from \code{design_matrix} and \code{coefficients}.
+#'
+#' @param design_matrix model matrix of the AFT fit.
+#' @param coefficients current regression coefficients.
+#' @param log_scale current log of the scale parameter.
+#' @param observed_value observed (or censoring-threshold) values.
+#' @param exact_indicator \code{1} for exact rows, \code{0} for
+#' left-censored rows.
+#'
+#' @return the list returned by \code{.aftGaussianDerivatives}.
+#'
+#' @keywords internal
+#' @noRd
+.evaluateAFTLogLikelihood = function(design_matrix, coefficients,
+                                     log_scale, observed_value,
+                                     exact_indicator) {
+    .aftGaussianDerivatives(
+        drop(design_matrix %*% coefficients), log_scale,
+        observed_value, exact_indicator)
+}
+
+#' Assemble the AFT score vector
+#'
+#' @param design_matrix model matrix of the AFT fit.
+#' @param derivatives output of \code{.aftGaussianDerivatives}.
+#'
+#' @return gradient of the log-likelihood with respect to the regression
+#' coefficients followed by the log scale.
+#'
+#' @keywords internal
+#' @noRd
+.buildAFTGradient = function(design_matrix, derivatives) {
+    c(as.vector(crossprod(
+          design_matrix, derivatives$gradient_wrt_linear_predictor)),
+      sum(derivatives$gradient_wrt_log_scale))
+}
+
+#' Assemble the AFT observed information matrix
+#'
+#' @param design_matrix model matrix of the AFT fit.
+#' @param derivatives output of \code{.aftGaussianDerivatives}.
+#'
+#' @return negative Hessian of the log-likelihood over the regression
+#' coefficients and the log scale.
+#'
+#' @keywords internal
+#' @noRd
+.buildAFTInformationMatrix = function(design_matrix, derivatives) {
+    regression_block = -crossprod(
+        design_matrix,
+        design_matrix * derivatives$second_derivative_wrt_linear_predictor)
+    cross_block = -as.vector(
+        crossprod(design_matrix, derivatives$cross_derivative))
+    scale_block = -sum(derivatives$second_derivative_wrt_log_scale)
+    rbind(cbind(regression_block, cross_block),
+          c(cross_block, scale_block))
+}
+
+#' Check that an AFT log-likelihood evaluation is finite
+#'
+#' @param derivatives output of \code{.aftGaussianDerivatives}.
+#'
+#' @return \code{TRUE} if the log-likelihood and all first/second
+#' derivatives used by the Newton step are finite.
+#'
+#' @keywords internal
+#' @noRd
+.isFiniteAFTFit = function(derivatives) {
+    is.finite(derivatives$log_likelihood) &&
+        all(is.finite(derivatives$gradient_wrt_linear_predictor)) &&
+        all(is.finite(derivatives$gradient_wrt_log_scale)) &&
+        all(is.finite(derivatives$second_derivative_wrt_linear_predictor)) &&
+        all(is.finite(derivatives$second_derivative_wrt_log_scale))
+}
+
+#' Gauss-Newton (outer-product-of-gradients) approximation to the AFT
+#' information matrix
+#'
+#' Always positive semi-definite, so it is used as a fallback when the
+#' observed information matrix is not positive definite.
+#'
+#' @param design_matrix model matrix of the AFT fit.
+#' @param derivatives output of \code{.aftGaussianDerivatives}.
+#'
+#' @return crossproduct of the per-observation gradient contributions.
+#'
+#' @keywords internal
+#' @noRd
+.buildGaussNewtonApproximation = function(design_matrix, derivatives) {
+    per_observation_gradient_contributions = cbind(
+        design_matrix * derivatives$gradient_wrt_linear_predictor,
+        derivatives$gradient_wrt_log_scale)
+    crossprod(per_observation_gradient_contributions)
+}
+
+#' Run \code{.cgSolve} with its "not positive definite" warning muffled
+#'
+#' @param ... passed to \code{.cgSolve}.
+#'
+#' @return the output of \code{.cgSolve}.
+#'
+#' @keywords internal
+#' @noRd
+.cgSolveMufflingPDWarning = function(...) {
+    withCallingHandlers(
+        .cgSolve(...),
+        warning = function(w) {
+            if (grepl("not positive definite", conditionMessage(w))) {
+                invokeRestart("muffleWarning")
+            }
+        })
+}
+
+#' Solve for one AFT Newton-Raphson step with conjugate gradient
+#'
+#' Solves \code{information_matrix \%*\% step = gradient}; if the
+#' information matrix turns out not to be positive definite, re-solves
+#' against the Gauss-Newton approximation instead.
+#'
+#' @param design_matrix model matrix of the AFT fit.
+#' @param information_matrix output of \code{.buildAFTInformationMatrix}.
+#' @param derivatives output of \code{.aftGaussianDerivatives}.
+#' @param gradient output of \code{.buildAFTGradient}.
+#' @param use_jacobi_preconditioner passed to \code{.cgSolve}.
+#'
+#' @return a list with the \code{step}, \code{primary_iterations},
+#' \code{used_fallback}, and \code{fallback_iterations}.
+#'
+#' @keywords internal
+#' @noRd
+.solveAFTNewtonStep = function(design_matrix, information_matrix,
+                               derivatives, gradient,
+                               use_jacobi_preconditioner) {
+    primary_solve = .cgSolveMufflingPDWarning(
+        information_matrix, gradient,
+        use_jacobi_preconditioner = use_jacobi_preconditioner)
+    if (primary_solve$positive_definite) {
+        list(step = primary_solve$solution,
+            primary_iterations = primary_solve$iterations,
+            used_fallback = FALSE, fallback_iterations = 0L)
+    } else {
+        fallback_solve = .cgSolve(
+            .buildGaussNewtonApproximation(design_matrix, derivatives),
+            gradient,
+            use_jacobi_preconditioner = use_jacobi_preconditioner)
+        list(step = fallback_solve$solution,
+            primary_iterations = primary_solve$iterations,
+            used_fallback = TRUE,
+            fallback_iterations = fallback_solve$iterations)
+    }
+}
+
 #' Fit a Gaussian, left-censored AFT model with a conjugate-gradient
 #' Newton step
 #'
@@ -317,76 +473,9 @@
     residual_standard_deviation = sd(initial_fit$residuals)
     log_scale = log(max(residual_standard_deviation, 1e-4))
 
-    evaluate_log_likelihood_and_derivatives = function(coefficients,
-                                                        log_scale) {
-        .aftGaussianDerivatives(
-            drop(design_matrix %*% coefficients), log_scale,
-            observed_value, exact_indicator)
-    }
-
-    build_gradient = function(derivatives) {
-        c(as.vector(crossprod(
-              design_matrix, derivatives$gradient_wrt_linear_predictor)),
-          sum(derivatives$gradient_wrt_log_scale))
-    }
-
-    build_information_matrix = function(derivatives) {
-        regression_block = -crossprod(
-            design_matrix,
-            design_matrix * derivatives$second_derivative_wrt_linear_predictor)
-        cross_block = -as.vector(
-            crossprod(design_matrix, derivatives$cross_derivative))
-        scale_block = -sum(derivatives$second_derivative_wrt_log_scale)
-        rbind(cbind(regression_block, cross_block),
-              c(cross_block, scale_block))
-    }
-
-    is_finite_fit = function(derivatives) {
-        is.finite(derivatives$log_likelihood) &&
-            all(is.finite(derivatives$gradient_wrt_linear_predictor)) &&
-            all(is.finite(derivatives$gradient_wrt_log_scale)) &&
-            all(is.finite(derivatives$second_derivative_wrt_linear_predictor)) &&
-            all(is.finite(derivatives$second_derivative_wrt_log_scale))
-    }
-
-    build_gauss_newton_approximation = function(derivatives) {
-        per_observation_gradient_contributions = cbind(
-            design_matrix * derivatives$gradient_wrt_linear_predictor,
-            derivatives$gradient_wrt_log_scale)
-        crossprod(per_observation_gradient_contributions)
-    }
-
-    cg_solve_muffling_pd_warning = function(...) {
-        withCallingHandlers(
-            .cgSolve(...),
-            warning = function(w) {
-                if (grepl("not positive definite", conditionMessage(w))) {
-                    invokeRestart("muffleWarning")
-                }
-            })
-    }
-
-    solve_newton_step = function(information_matrix, derivatives, gradient) {
-        primary_solve = cg_solve_muffling_pd_warning(
-            information_matrix, gradient,
-            use_jacobi_preconditioner = use_jacobi_preconditioner)
-        if (primary_solve$positive_definite) {
-            list(step = primary_solve$solution,
-                primary_iterations = primary_solve$iterations,
-                used_fallback = FALSE, fallback_iterations = 0L)
-        } else {
-            fallback_solve = .cgSolve(
-                build_gauss_newton_approximation(derivatives), gradient,
-                use_jacobi_preconditioner = use_jacobi_preconditioner)
-            list(step = fallback_solve$solution,
-                primary_iterations = primary_solve$iterations,
-                used_fallback = TRUE,
-                fallback_iterations = fallback_solve$iterations)
-        }
-    }
-
     current_fit =
-        evaluate_log_likelihood_and_derivatives(coefficients, log_scale)
+        .evaluateAFTLogLikelihood(design_matrix, coefficients, log_scale,
+                                  observed_value, exact_indicator)
     current_log_likelihood = current_fit$log_likelihood
     number_of_iterations_used = 0
     converged = FALSE
@@ -400,10 +489,12 @@
         number_of_iterations_used = iteration
         iteration_start_time = Sys.time()
 
-        gradient = build_gradient(current_fit)
-        information_matrix = build_information_matrix(current_fit)
-        newton_step =
-            solve_newton_step(information_matrix, current_fit, gradient)
+        gradient = .buildAFTGradient(design_matrix, current_fit)
+        information_matrix =
+            .buildAFTInformationMatrix(design_matrix, current_fit)
+        newton_step = .solveAFTNewtonStep(
+            design_matrix, information_matrix, current_fit, gradient,
+            use_jacobi_preconditioner)
 
         elapsed_seconds =
             as.numeric(Sys.time() - iteration_start_time, units = "secs")
@@ -429,9 +520,10 @@
 
         number_of_halvings = 0
         repeat {
-            candidate_fit = evaluate_log_likelihood_and_derivatives(
-                candidate_coefficients, candidate_log_scale)
-            candidate_improves = is_finite_fit(candidate_fit) &&
+            candidate_fit = .evaluateAFTLogLikelihood(
+                design_matrix, candidate_coefficients, candidate_log_scale,
+                observed_value, exact_indicator)
+            candidate_improves = .isFiniteAFTFit(candidate_fit) &&
                 candidate_fit$log_likelihood >= current_log_likelihood
             if (candidate_improves || iterations_remaining <= 0) {
                 break
@@ -485,7 +577,8 @@
             sum(cg_diagnostics$elapsed_seconds), converged))
     }
 
-    final_information_matrix = build_information_matrix(current_fit)
+    final_information_matrix =
+        .buildAFTInformationMatrix(design_matrix, current_fit)
     variance_covariance_matrix = tryCatch(
         solve(final_information_matrix),
         error = function(e) MASS::ginv(final_information_matrix))
