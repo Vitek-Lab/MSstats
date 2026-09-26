@@ -168,33 +168,40 @@
 #' \code{positive_definite = FALSE}.
 #'
 #' @section Computational cost:
-#' \strong{Cost per solve is k matrix-vector products.} Each iteration
-#' does exactly one product \code{A p} plus a fixed number of length-n dot
-#' products and vector updates (O(n)). Over k iterations the total is
+#' In this section, n is the number of entries in
+#' \code{coefficient_matrix} - for m unknowns, \code{n = m^2} - not the
+#' number of unknowns used in the sections above.
+#'
+#' \strong{A solve costs O(k * n): linear in the size of the matrix.} Each
+#' iteration does exactly one product \code{A p}. Computing
+#' \code{coefficient_matrix \%*\% search_direction} visits every entry of
+#' \code{A} once (one multiply and one add each), so it costs O(n). The
+#' rest of the iteration is a fixed number of length-m dot products and
+#' vector updates, O(m) = O(sqrt(n)), which the product dominates. Over k
+#' iterations the total is
 #' \preformatted{
-#'     O(k * (cost of one A p  +  n))
+#'     O(k * (n + m)) = O(k * n)
 #' }
-#' Nothing here factorizes \code{A} (a Cholesky factorization costs
-#' O(n^3)) or builds any matrix; \code{A} is only ever multiplied by a
-#' vector. When a product \code{A p} costs O(n) - proportional to the
-#' number of nonzero entries of \code{A} - a full solve costs O(k * n):
-#' linear in the problem size for a fixed number of iterations.
+#' \code{A} is never factorized or modified; it is only ever read, once per
+#' iteration. By comparison, a Cholesky factorization costs O(m^3) =
+#' O(n^1.5) regardless of how quickly the problem could converge, so CG
+#' wins whenever k is small relative to m.
 #'
 #' \strong{k stays small on MSstats data.} Section 6 above shows k is
-#' governed by the number of eigenvalue clusters, not by n. The AFT
-#' information matrix is dominated by its diagonal (each parameter's own
-#' curvature is much larger than its cross-terms), so Jacobi
-#' preconditioning pulls most of the spectrum of \code{M^-1 A} to 1, with
-#' only a few outlying eigenvalues. For example, in a simulated
-#' 12-feature x 10-run protein (n = 22 unknowns, 20\% censored), 14 of the
+#' governed by the number of eigenvalue clusters, not by the number of
+#' unknowns. The AFT information matrix is dominated by its diagonal (each
+#' parameter's own curvature is much larger than its cross-terms), so
+#' Jacobi preconditioning pulls most of the spectrum of \code{M^-1 A} to
+#' 1, with only a few outlying eigenvalues. For example, in a simulated
+#' 12-feature x 10-run protein (m = 22 unknowns, 20\% censored), 14 of the
 #' 22 preconditioned eigenvalues lie in [0.9, 1.1], the condition number
 #' drops from about 234 to about 103, and CG reaches tolerance in 12
 #' iterations instead of 16. Because the bulk cluster is handled in a few
 #' steps, and the remaining iterations are spent on the few outliers, k
-#' grows much more slowly than n.
+#' grows much more slowly than m.
 #'
-#' \strong{Symmetry and sparsity: only the upper-right block carries real
-#' work.} For the \code{~ FEATURE + RUN} model, every row of the design
+#' \strong{Symmetry and sparsity: the real work is in the upper-right
+#' block.} For the \code{~ FEATURE + RUN} model, every row of the design
 #' matrix \code{X} has exactly one feature indicator and one run indicator.
 #' In \code{A = -X' W X} (plus the log-scale row and column), this means:
 #' \itemize{
@@ -213,25 +220,22 @@
 #'     A = [ D_F   C  ]        A p = [ D_F p_F + C  p_R ]
 #'         [ C'   D_R ]              [ C' p_F + D_R p_R ]
 #' }
-#' with \code{D_F} and \code{D_R} diagonal: two elementwise scalings plus
-#' one pass over \code{C}, used once as-is and once transposed. The
-#' nonzero count is about \code{F + R + 2 * (number of feature/run cells)},
-#' i.e. proportional to the number of observations, rather than the
-#' \code{n^2} entries of a dense matrix. Equivalently,
-#' \code{A p = -X' (w * (X p))} can be computed without forming \code{A}
-#' at all, in time proportional to the nonzeros of \code{X} (a few per
-#' row).
+#' with \code{D_F} and \code{D_R} diagonal. The only real computation in
+#' each product is two elementwise scalings plus one pass over \code{C},
+#' used once as-is and once transposed. Everything else in the n entries is
+#' either zero or a mirror image of \code{C}, so the number of distinct
+#' nonzero values is about \code{F + R + (number of feature/run cells)},
+#' well below n. The dense product still visits all n entries, which is
+#' what the O(k * n) bound counts. A product written against this
+#' structure could skip the zeros and reuse \code{C} for both halves, but
+#' at per-protein sizes the dense product is already cheap.
 #'
-#' \strong{What this implementation actually does.} The product is
-#' currently written as a dense \code{coefficient_matrix \%*\%
-#' search_direction}, which multiplies every entry, including the zero
-#' off-diagonal blocks and the redundant lower-left block. As written,
-#' each iteration therefore costs O(n^2) and a solve costs O(k * n^2).
-#' This is still cheaper than an O(n^3) factorization, and it is
-#' negligible at per-protein sizes. The O(k * n) cost described above
-#' requires replacing that product with one that uses the structure -
-#' either a sparse/symmetric matrix class or the factored form
-#' \code{-X' (w * (X p))}.
+#' The same structure is why the Jacobi preconditioner works well here.
+#' The diagonal blocks are exactly diagonal, so scaling by \code{diag(A)}
+#' turns them into identity blocks, and the preconditioned matrix is the
+#' identity plus only the scaled \code{C} coupling (and the border). Its
+#' eigenvalues therefore sit near 1, spread only as far as that coupling
+#' pushes them - the clustering that keeps k small.
 #'
 #' @param coefficient_matrix symmetric positive (semi-)definite matrix,
 #' e.g. the Hessian/information matrix from a Newton step.
