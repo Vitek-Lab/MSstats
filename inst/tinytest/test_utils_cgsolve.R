@@ -49,39 +49,6 @@ expect_false(
                 "converged = FALSE and/or positive_definite = FALSE")
 )
 
-exact_matrix <- make_random_spd_matrix(6, seed = 7)
-set.seed(8)
-exact_rhs <- rnorm(6)
-exact_answer <- solve(exact_matrix, exact_rhs)
-
-result_from_exact_start <- MSstats:::.cgSolve(
-    exact_matrix, exact_rhs, initial_guess = exact_answer)
-expect_equal(
-    result_from_exact_start$solution, exact_answer, tolerance = 1e-8,
-    info = "Starting from the exact solution should return it unchanged"
-)
-expect_equal(
-    result_from_exact_start$iterations, 0,
-    info = "Starting from the exact solution should take zero iterations"
-)
-
-loose_matrix <- make_random_spd_matrix(20, seed = 99)
-set.seed(100)
-loose_rhs <- rnorm(20)
-exact_loose_answer <- solve(loose_matrix, loose_rhs)
-
-loose_result <- MSstats:::.cgSolve(
-    loose_matrix, loose_rhs, relative_tolerance = 1e-2)
-tight_result <- MSstats:::.cgSolve(
-    loose_matrix, loose_rhs, relative_tolerance = 1e-10)
-
-loose_error <- max(abs(loose_result$solution - exact_loose_answer))
-tight_error <- max(abs(tight_result$solution - exact_loose_answer))
-expect_true(
-    tight_error < loose_error,
-    info = "A tighter relative_tolerance should produce a more accurate solution"
-)
-
 make_diagonally_dominant_matrix <- function(size, seed) {
     set.seed(seed)
     matrix_off_diagonal <- matrix(runif(size * size, -0.1, 0.1), size, size)

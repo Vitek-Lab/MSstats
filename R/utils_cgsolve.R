@@ -10,21 +10,18 @@
 #' (inverse-diagonal) preconditioner, which \code{lfe::cgsolve} does not
 #' support at all.
 #'
+#' Iteration always starts from the zero vector and stops once the true
+#' (unpreconditioned) residual has shrunk to \code{1e-8} of the size of
+#' \code{right_hand_side}, so the tolerance means the same thing whether or
+#' not \code{use_jacobi_preconditioner} is set. In exact arithmetic,
+#' conjugate gradient converges within \code{nrow(coefficient_matrix)}
+#' steps, but rounding error erodes that guarantee as the system grows, so
+#' up to \code{10 * nrow(coefficient_matrix)} steps are allowed.
+#'
 #' @param coefficient_matrix symmetric positive (semi-)definite matrix,
 #' e.g. the Hessian/information matrix from a Newton step.
 #' @param right_hand_side vector the system is solved against, e.g. the
 #' gradient/score vector from a Newton step.
-#' @param initial_guess optional starting point for the iteration. Defaults
-#' to the zero vector.
-#' @param relative_tolerance how small the residual needs to shrink,
-#' relative to the size of \code{right_hand_side}, before iteration stops.
-#' Always judged on the true (unpreconditioned) residual, so this means the
-#' same thing whether or not \code{use_jacobi_preconditioner} is set.
-#' @param max_iterations how many conjugate-gradient steps to try before
-#' giving up. In exact arithmetic, conjugate gradient converges within
-#' \code{nrow(coefficient_matrix)} steps, but rounding error erodes that
-#' guarantee as the system grows, so the default allows for several times
-#' that many steps.
 #' @param use_jacobi_preconditioner if \code{TRUE}, precondition with the
 #' inverse of \code{coefficient_matrix}'s own diagonal - cheap to apply,
 #' and often enough to cut down the number of iterations needed when the
@@ -44,16 +41,12 @@
 #'
 #' @keywords internal
 #' @noRd
-.cgSolve = function(coefficient_matrix, right_hand_side, initial_guess = NULL,
-                     relative_tolerance = 1e-8,
-                     max_iterations = 10 * nrow(coefficient_matrix),
+.cgSolve = function(coefficient_matrix, right_hand_side,
                      use_jacobi_preconditioner = FALSE) {
     number_of_unknowns = nrow(coefficient_matrix)
-    solution = if (is.null(initial_guess)) {
-        rep(0, number_of_unknowns)
-    } else {
-        initial_guess
-    }
+    relative_tolerance = 1e-8
+    max_iterations = 10 * number_of_unknowns
+    solution = rep(0, number_of_unknowns)
 
     apply_preconditioner = if (use_jacobi_preconditioner) {
         diagonal = diag(coefficient_matrix)
