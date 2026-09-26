@@ -1,8 +1,3 @@
-# Width of the Plotly canvas in CSS pixels, matching the container MSstatsShiny
-# reserves for these plots. The saved PDF is sized separately, by `width`.
-PLOTLY_CANVAS_WIDTH = 1400
-
-
 #' Visualization for explanatory data analysis
 #' 
 #' @description To illustrate the quantitative data after data-preprocessing and 
@@ -54,10 +49,10 @@ PLOTLY_CANVAS_WIDTH = 1400
 #' above graph in Profile Plot. Default is 7.
 #' @param dot.size.profile size of dots in profile plot. Default is 2.
 #' @param dot.size.condition size of dots in condition plot. Default is 3.
-#' @param width width of the saved PDF file in pixels, converted at 72 pixels
-#' per inch, so the default 800 is an 11.1 inch page. Does not affect the Plotly
-#' output, whose canvas is fixed at the width MSstatsShiny reserves for these
-#' plots.
+#' @param width width of the plot in pixels. Default is 800 pixels. For the saved
+#' PDF it is converted at 72 pixels per inch, so the default 800 is an 11.1 inch
+#' page. For the Plotly output it is the width of the canvas, and it also sets
+#' how much room the condition labels in Profile Plot and QC plot are fitted to.
 #' @param height height of the saved file in pixels. Default is 600 pixels.
 #' Applies to both the PDF and the Plotly output.
 #' @param which.Protein Protein list to draw plots. List can be names of Proteins
@@ -166,7 +161,7 @@ dataProcessPlots = function(
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
                   og_plotly_plot <- .convertGgplot2Plotly(plot_i, tips = c("FEATURE","RUN","newABUNDANCE"),
-                                                          width = PLOTLY_CANVAS_WIDTH, height = height)
+                                                          width = width, height = height)
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
                   og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
@@ -183,7 +178,7 @@ dataProcessPlots = function(
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
                   summ_plotly_plot <- .convertGgplot2Plotly(plot_i, tips = c("FEATURE","RUN","newABUNDANCE"),
-                                                          width = PLOTLY_CANVAS_WIDTH, height = height)
+                                                          width = width, height = height)
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
@@ -197,7 +192,7 @@ dataProcessPlots = function(
           }
           
           if(address != FALSE) {
-              .savePlotlyPlotHTML(plotly_plots,address,"ProfilePlot" ,PLOTLY_CANVAS_WIDTH, height)
+              .savePlotlyPlotHTML(plotly_plots,address,"ProfilePlot" ,width, height)
           }
           plotly_plots
       }
@@ -211,14 +206,14 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convertGgplot2Plotly(plot, width = PLOTLY_CANVAS_WIDTH, height = height)
+              plotly_plot <- .convertGgplot2Plotly(plot, width = width, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
               plotly_plot = .fixConditionLabelHoverPlotly(plotly_plot, plot)
               plotly_plot = .applyLegendPositionPlotly(plotly_plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
             if(address != FALSE) {
-                .savePlotlyPlotHTML(plotly_plots,address,"QCPlot" ,PLOTLY_CANVAS_WIDTH, height)
+                .savePlotlyPlotHTML(plotly_plots,address,"QCPlot" ,width, height)
             }
           plotly_plots <- unlist(plotly_plots, recursive = FALSE)
           plotly_plots
@@ -234,13 +229,13 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convertGgplot2Plotly(plot, width = PLOTLY_CANVAS_WIDTH, height = height)
+              plotly_plot <- .convertGgplot2Plotly(plot, width = width, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
               plotly_plot = .applyLegendPositionPlotly(plotly_plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
           if(address != FALSE) {
-              .savePlotlyPlotHTML(plotly_plots,address,"ConditionPlot" ,PLOTLY_CANVAS_WIDTH, height)
+              .savePlotlyPlotHTML(plotly_plots,address,"ConditionPlot" ,width, height)
           }
           plotly_plots <- unlist(plotly_plots, recursive = FALSE)
           plotly_plots
@@ -311,7 +306,7 @@ dataProcessPlots = function(
   condition.layout = if (isPlotly) {
     .layoutConditionLabels(condition.names,
                            data.table::uniqueN(processed$LABEL),
-                           PLOTLY_CANVAS_WIDTH, text.size)
+                           width, text.size)
   } else NULL
   if (!is.numeric(ylimUp) && !is.null(condition.layout)) {
     y.limup = y.limup + (condition.layout$n_lines - 1) * 0.9
@@ -521,7 +516,7 @@ dataProcessPlots = function(
   condition.layout = if (isPlotly) {
     .layoutConditionLabels(condition.names,
                            data.table::uniqueN(processed$LABEL),
-                           PLOTLY_CANVAS_WIDTH, text.size)
+                           width, text.size)
   } else NULL
   if (!is.numeric(ylimUp) && !is.null(condition.layout)) {
     y.limup = y.limup + (condition.layout$n_lines - 1) * 0.9
@@ -702,7 +697,7 @@ dataProcessPlots = function(
 #' leaves a dead band across the top and squeezes the panel into the corner.
 #' @noRd
 .convertGgplot2Plotly = function(plot, tips = "all", legend_position = "right",
-                                 width = 1400, height = 600) {
+                                 width = 800, height = 600) {
     plot = plot + theme(legend.position = legend_position)
     converted_plot <- ggplotly(plot, tooltip = tips, width = width,
                                height = height)
@@ -830,7 +825,7 @@ dataProcessPlots = function(
 #' wrap converted plots in sized containers for the saved HTML
 #'
 #' The container has to be at least as wide as the widget inside it. Pinned at
-#' 800 it cropped a 1400px plot, cutting off the side legend.
+#' 800 it cropped any wider plot, cutting off the side legend.
 #' @noRd
 .getPlotlyPlotHTML = function(plots, width, height) {
     divs <- lapply(plots, function(x) {

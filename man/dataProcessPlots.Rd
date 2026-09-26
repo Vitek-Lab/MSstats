@@ -83,10 +83,10 @@ above graph in Profile Plot. Default is 7.}
 
 \item{dot.size.condition}{size of dots in condition plot. Default is 3.}
 
-\item{width}{width of the saved PDF file in pixels, converted at 72 pixels
-per inch, so the default 800 is an 11.1 inch page. Does not affect the Plotly
-output, whose canvas is fixed at the width MSstatsShiny reserves for these
-plots.}
+\item{width}{width of the plot in pixels. Default is 800 pixels. For the saved
+PDF it is converted at 72 pixels per inch, so the default 800 is an 11.1 inch
+page. For the Plotly output it is the width of the canvas, and it also sets
+how much room the condition labels in Profile Plot and QC plot are fitted to.}
 
 \item{height}{height of the saved file in pixels. Default is 600 pixels.
 Applies to both the PDF and the Plotly output.}

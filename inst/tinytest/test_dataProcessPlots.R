@@ -145,23 +145,33 @@ expect_silent(suppressWarnings(
 expect_true(any(grepl("ProfilePlot.*\\.pdf$", list.files(tmp_dir3))))
 unlink(tmp_dir3, recursive = TRUE)
 
-# Test 13: there is no separate Plotly width argument ------------------------
-# The Plotly canvas width is an internal constant, not something the caller
-# sizes; width is the PDF page.
+# Test 13: width sizes the Plotly canvas ------------------------------------
+# The caller sets the canvas; nothing inside dataProcessPlots pins it. The
+# default is 800, the same as for groupComparisonPlots.
 
-expect_false("width.plotly" %in% names(formals(dataProcessPlots)))
+plotly_width = function(...) {
+    out = NULL
+    invisible(capture.output(suppressWarnings(
+        out <- dataProcessPlots(QuantData, type = "QCPlot",
+                                which.Protein = protein_name, address = FALSE,
+                                isPlotly = TRUE, ...)
+    )))
+    out[[1]]$x$layout$width
+}
+expect_equal(plotly_width(), 800)
+expect_equal(plotly_width(width = 1400), 1400)
 
 # Test 14: the saved HTML container is sized to the plot it holds ------------
-# Regression test. The container was pinned at 800px while the widget inside it
-# was 1400px wide, so the right-hand side of every saved plot -- which is where
-# the feature legend is mounted -- fell outside the box.
+# Regression test. The container was pinned at 800px whatever the widget inside
+# it was, so a wider plot had its right-hand side -- which is where the feature
+# legend is mounted -- fall outside the box.
 
 tmp_dir4 = tempfile("msstats_dataprocessplots_html_")
 dir.create(tmp_dir4)
 invisible(capture.output(suppressWarnings(
     dataProcessPlots(QuantData, type = "ProfilePlot", which.Protein = protein_name,
                       summaryPlot = FALSE, address = paste0(tmp_dir4, "/"),
-                      isPlotly = TRUE)
+                      isPlotly = TRUE, width = 1400)
 )))
 zip_path = list.files(tmp_dir4, pattern = "\\.zip$", full.names = TRUE)[1]
 unzip(zip_path, exdir = file.path(tmp_dir4, "unzipped"))
@@ -178,6 +188,6 @@ px = function(pattern) {
 container_width = px("width:[0-9]+px; height:[0-9]+px; margin")
 widget_width = px("width:[0-9]+px;height:[0-9]+px")
 
-expect_equal(container_width, widget_width)
-expect_true(container_width >= 1400L)
+expect_equal(container_width, 1400L)
+expect_equal(widget_width, 1400L)
 unlink(tmp_dir4, recursive = TRUE)

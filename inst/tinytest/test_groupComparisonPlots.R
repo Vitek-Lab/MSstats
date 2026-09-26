@@ -75,6 +75,9 @@ plotly_volcano = invisible(capture.output(
 expect_true(is.list(result_volcano))
 expect_true(length(result_volcano) > 0)
 expect_true(inherits(result_volcano[[1]], "plotly"))
+# Regression test: the converter shared with dataProcessPlots once defaulted to
+# 1400px, silently widening this plot. It stays at 800px.
+expect_equal(result_volcano[[1]]$x$layout$width, 800)
 
 # Test 9: Heatmap (plotly), saved as a zipped HTML file ----------------------
 tmp_dir2 = tempfile("msstats_groupcomparisonplots_heatmap_")
