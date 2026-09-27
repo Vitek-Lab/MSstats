@@ -371,7 +371,9 @@
 }
 
 #' Fit a Gaussian, left-censored AFT model with a conjugate-gradient
-#' Newton step (rather than a cholesky solve)
+#' Newton step (rather than a cholesky solve).  Maximum likelihood estimation
+#' loop was written to match the survival package (survreg6.c) to ensure
+#' results match with survreg.
 #'
 #' @section Under the hood, the AFT model is fit with maximum likelihood
 #' estimation, where the objective is a Gaussian density for observed rows and 
