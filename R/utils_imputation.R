@@ -301,8 +301,7 @@
 #' Gauss-Newton (outer-product-of-gradients) approximation to the AFT
 #' negative Hessian
 #'
-#' A fallback when the
-#' negative Hessian is not positive definite.
+#' A fallback when the negative Hessian is not positive definite.
 #'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param derivatives output of \code{.aftGaussianDerivatives}.
@@ -372,40 +371,18 @@
 }
 
 #' Fit a Gaussian, left-censored AFT model with a conjugate-gradient
-#' Newton step
+#' Newton step (rather than a cholesky solve)
 #'
-#' An alternative to \code{.fitSurvival} for exactly the same imputation
-#' model (Gaussian accelerated-failure-time regression, left-censoring
-#' only, chosen by the same \code{.buildAFTFormula} both solvers share),
-#' used when \code{aft_solver = "cg"}. It runs the same kind of
-#' Newton-Raphson iteration \code{survival::survreg} does - repeatedly
-#' solving \code{negative_hessian \%*\% step = gradient} for the next
-#' set of coefficients - but performs that linear solve with the
-#' conjugate-gradient routine \code{.cgSolve} instead of the Cholesky
-#' factorization \code{survreg} uses internally. The returned object is
-#' classed \code{"survreg"} and carries the fields \code{predict.survreg}
-#' needs, so it is a drop-in replacement anywhere \code{.fitSurvival}'s
-#' result is used.
-#'
-#' @section Maximum likelihood estimation:
-#' \strong{The model.} Each row i has a log-intensity \code{y_i}, a row
-#' \code{x_i} of \code{design_matrix}, and linear predictor
-#' \code{mu_i = x_i' beta}. The Gaussian AFT model says
-#' \preformatted{
-#'     y_i = mu_i + sigma * eps_i,    eps_i ~ N(0, 1)
-#' }
-#' so each true log-intensity is normally distributed around its
-#' prediction with a common standard deviation \code{sigma} (the fitted
-#' \code{scale}). The unknowns are \code{theta = (beta, log sigma)};
-#' \code{sigma} is estimated on the log scale so that Newton steps are
-#' unconstrained and can never produce a negative standard deviation.
-#' Write \code{z_i = (y_i - mu_i) / sigma} for the standardized distance
-#' from the prediction, \code{phi} for the standard normal density
+#' @section Under the hood, the AFT model is fit with maximum likelihood
+#' estimation, where the objective is a Gaussian density for observed rows and 
+#' CDF for censored rows.
+#' 
+#' \code{phi} for the standard normal density
 #' (\code{dnorm}), and \code{Phi} for its CDF (\code{pnorm}).
-#'
-#' \strong{The objective: density for observed rows, CDF for censored
-#' rows.} Maximum likelihood picks the \code{theta} under which the data we
-#' saw were most probable. What we "saw" differs by row type
+#' Maximum likelihood picks the set of parameter values \code{theta} 
+#' under which the data we saw were most probable. What we "saw" differs by 
+#' whether a row is observed or censored.
+#' 
 #' (\code{exact_indicator}):
 #' \itemize{
 #'   \item An \emph{observed} (exact) row has a known value, so it
@@ -413,74 +390,70 @@
 #'   \code{L_i = (1 / sigma) phi(z_i)}.
 #'   \item A \emph{censored} row is one whose intensity fell below the
 #'   detection limit. Its true value is unknown; all we know is that it lies
-#'   somewhere below the threshold \code{c_i} (which
-#'   \code{.setCensoredByThreshold} has substituted in as \code{y_i}). The
-#'   honest contribution is therefore the total probability of landing
-#'   anywhere below that threshold - the normal CDF:
+#'   somewhere below the threshold \code{c_i}.
 #'   \code{L_i = P(Y_i <= c_i) = Phi((c_i - mu_i) / sigma)}.
 #' }
+#' 
 #' Taking logs and summing over rows gives the objective that is maximized:
 #' \preformatted{
 #'     l(theta) = sum_{observed} [ log phi(z_i) - log sigma ]
 #'              + sum_{censored} log Phi(z_i)
 #' }
-#' (the first sum is, up to a constant, ordinary least squares; the second
+#' 
+#' The first sum is, up to a constant, ordinary least squares; the second
 #' is what pulls \code{mu_i} and \code{sigma} toward values that make the
-#' censored rows plausibly low). If a censored row's \code{mu_i} is well
+#' censored rows plausibly low. If a censored row's \code{mu_i} is well
 #' above its threshold, \code{Phi(z_i)} is tiny and \code{l} is heavily
-#' penalized - so the fit, and the imputed values later predicted from it,
-#' respect the information that those rows were below the limit, rather
-#' than ignoring them or treating the threshold as an exact value.
+#' penalized.
+#' 
+#' @section Gradient ascent is performed to maximize the log likelihood.
 #'
-#' \strong{Setting the derivatives to zero.} The maximum is where the score
-#' (gradient of \code{l}) is zero. By the chain rule through
-#' \code{mu_i = x_i' beta}, each row only needs its derivatives with respect
-#' to \code{mu_i} and \code{log sigma} (computed by
-#' \code{.aftGaussianDerivatives}):
+#' The maximum log likelihood is where the gradient is zero. We compute 
+#' derivatives with respect to each parameter:
+#' 
 #' \preformatted{
 #'     observed:  d l_i / d mu_i = z_i / sigma
 #'     censored:  d l_i / d mu_i = -phi(z_i) / (sigma Phi(z_i))
 #' }
+#' 
 #' The observed term is the usual least-squares residual pull; the censored
-#' term (an inverse Mills ratio) always pushes \code{mu_i} down, strongly
+#' term always pushes \code{mu_i} down, strongly
 #' when the prediction sits above the threshold and negligibly when it is
-#' already well below. These assemble into the score
-#' (\code{.buildAFTGradient}), with \code{d} the vector of
-#' \code{d l_i / d mu_i}:
-#' \preformatted{
-#'     U(theta) = [ X' d                         ]   (gradient wrt beta)
-#'                [ sum_i d l_i / d log sigma    ]   (gradient wrt log sigma)
-#' }
-#' There is no closed-form root because of the \code{Phi} terms, so the
-#' root is found iteratively.
+#' already well below. 
+#' 
+#' @section Step size is determined with the negative Hessian.
 #'
-#' \strong{Newton-Raphson.} Expanding the score to first order around the
-#' current guess, \code{U(theta + step) ~ U(theta) + H(theta) step}, and
-#' setting it to zero gives the Newton step
+#' Newton's method updates \code{theta} using the step that exactly
+#' maximizes a second-order Taylor approximation of the
+#' log-likelihood around the current estimate. 
+#'
 #' \preformatted{
-#'     -H(theta) step = U(theta),    theta_new = theta + step
+#'     l(theta) ~ l(theta_0) + g'(theta - theta_0)
+#'                + 1/2 (theta - theta_0)' H (theta - theta_0)
 #' }
-#' where \code{H = d^2 l / d theta d theta'} is the Hessian of the
-#' log-likelihood, with blocks
+#'
+#' Setting the derivative of this quadratic to zero and solving for
+#' \code{theta} gives the update:
+#'
 #' \preformatted{
-#'     H = [ X' W X        X' v   ]    W = diag(d^2 l_i / d mu_i^2)
-#'         [ v' X      sum_i s_i  ]    v_i = d^2 l_i / d mu_i d log sigma
-#'                                     s_i = d^2 l_i / d (log sigma)^2
+#'     theta_new = theta + (-H)^-1 * gradient
 #' }
-#' The negative Hessian \code{-H} (\code{.buildAFTNegativeHessian}) is
-#' also known as the observed information matrix.
-#' This linear system is the part solved by \code{.cgSolve} (see its
-#' documentation for the conjugate-gradient math). Starting values come
-#' from ordinary least squares that ignores censoring. If a step fails to
-#' increase \code{l} (or produces non-finite values), the candidate is
-#' pulled toward the current guess, \code{(candidate + 2 * current) / 3},
-#' cutting the step to a third each time until \code{l} improves; if \code{-H} is not positive definite (so the
-#' Newton direction might not point uphill), the Gauss-Newton matrix
-#' \code{sum_i g_i g_i'} of per-row score contributions is used instead,
-#' which is positive semi-definite by construction. Iteration stops when \code{l} changes by less than
-#' \code{convergence_tolerance}, and the inverse of the final negative
-#' Hessian is returned as the coefficient variance-covariance matrix, as
-#' \code{survreg} does.
+#' 
+#' Another way to think about this is that the Newton method rescales each 
+#' component of the gradient by an amount determined by local curvature, 
+#' rather than applying a single global step size.  For example, if \code{-H} 
+#' were diagonal, this would reduce to an entry-specific
+#' step size for each parameter: \code{theta_new_i = theta_i +
+#' gradient_i / (-H_ii)}. Directions with sharp curvature (large
+#' \code{|H_ii|}) get small steps, since the gradient there changes
+#' quickly and is only locally reliable; directions with flat curvature
+#' get large steps.
+#'
+#' In general \code{-H} is not diagonal, so \code{(-H)^-1} does not
+#' just rescale each gradient entry independently.  It captures how
+#' curvature in one parameter's direction depends on the value of
+#' another. This coupling is what makes Newton's method converge faster
+#' than methods that rescale each coordinate independently.
 #'
 #' @param input data.table, the same shape \code{.fitSurvival} expects.
 #' @param aft_iterations maximum number of log-likelihood evaluations the
@@ -494,22 +467,17 @@
 #' @param use_jacobi_preconditioner if \code{TRUE}, precondition every
 #' conjugate-gradient solve with the inverse of the current negative
 #' Hessian's own diagonal (see \code{.cgSolve}'s
-#' \code{use_jacobi_preconditioner}). This is what \code{aft_solver =
-#' "pcg"} enables, versus plain conjugate gradient for \code{"cg"}.
+#' \code{use_jacobi_preconditioner}). 
 #' @param verbose if \code{TRUE}, \code{message()} a line per
 #' Newton-Raphson iteration - conjugate-gradient iterations used, whether
 #' the Gauss-Newton fallback (see below) was needed, elapsed time, and the
 #' resulting log-likelihood - plus a one-line summary once fitting
-#' finishes. Meant for evaluating how solver choice and problem size
-#' trade off against iteration count and wall time, not for routine use
-#' (this fits one protein at a time, so it is easy to generate a line per
-#' protein across a whole \code{dataProcess()} run).
+#' finishes. 
 #'
 #' @return a fitted model of class \code{"survreg"}, with one added field:
 #' \code{cg_diagnostics}, a data.frame with one row per Newton-Raphson
 #' iteration recording the conjugate-gradient iteration counts and timing
-#' described above (populated regardless of \code{verbose}, so it can be
-#' inspected/aggregated programmatically after the fact).
+#' described above
 #'
 #' @importFrom stats model.frame model.matrix model.response lm.fit sd
 #' @keywords internal
