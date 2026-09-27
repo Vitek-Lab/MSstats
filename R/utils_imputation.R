@@ -260,7 +260,7 @@
       sum(derivatives$gradient_wrt_log_scale))
 }
 
-#' Assemble the AFT Hessian matrix
+#' Assemble the negative Hessian of the AFT log-likelihood
 #'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param derivatives output of \code{.aftGaussianDerivatives}.
@@ -270,7 +270,7 @@
 #'
 #' @keywords internal
 #' @noRd
-.buildAFTInformationMatrix = function(design_matrix, derivatives) {
+.buildAFTNegativeHessian = function(design_matrix, derivatives) {
     regression_block = -crossprod(
         design_matrix,
         design_matrix * derivatives$second_derivative_wrt_linear_predictor)
@@ -299,10 +299,10 @@
 }
 
 #' Gauss-Newton (outer-product-of-gradients) approximation to the AFT
-#' information matrix
+#' negative Hessian
 #'
 #' A fallback when the
-#' observed information matrix is not positive definite.
+#' negative Hessian is not positive definite.
 #'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param derivatives output of \code{.aftGaussianDerivatives}.
@@ -339,7 +339,7 @@
 #' Solve for one AFT Newton-Raphson step with conjugate gradient
 #'
 #' @param design_matrix model matrix of the AFT fit.
-#' @param information_matrix output of \code{.buildAFTInformationMatrix}.
+#' @param negative_hessian output of \code{.buildAFTNegativeHessian}.
 #' @param derivatives output of \code{.aftGaussianDerivatives}.
 #' @param gradient output of \code{.buildAFTGradient}.
 #' @param use_jacobi_preconditioner passed to \code{.cgSolve}.
@@ -349,11 +349,11 @@
 #'
 #' @keywords internal
 #' @noRd
-.solveAFTNewtonStep = function(design_matrix, information_matrix,
+.solveAFTNewtonStep = function(design_matrix, negative_hessian,
                                derivatives, gradient,
                                use_jacobi_preconditioner) {
     primary_solve = .cgSolveMufflingPDWarning(
-        information_matrix, gradient,
+        negative_hessian, gradient,
         use_jacobi_preconditioner = use_jacobi_preconditioner)
     if (primary_solve$positive_definite) {
         list(step = primary_solve$solution,
@@ -379,7 +379,7 @@
 #' only, chosen by the same \code{.buildAFTFormula} both solvers share),
 #' used when \code{aft_solver = "cg"}. It runs the same kind of
 #' Newton-Raphson iteration \code{survival::survreg} does - repeatedly
-#' solving \code{information_matrix \%*\% step = gradient} for the next
+#' solving \code{negative_hessian \%*\% step = gradient} for the next
 #' set of coefficients - but performs that linear solve with the
 #' conjugate-gradient routine \code{.cgSolve} instead of the Cholesky
 #' factorization \code{survreg} uses internally. The returned object is
@@ -455,29 +455,31 @@
 #' root is found iteratively.
 #'
 #' \strong{Newton-Raphson.} Expanding the score to first order around the
-#' current guess, \code{U(theta + step) ~ U(theta) - I(theta) step}, and
+#' current guess, \code{U(theta + step) ~ U(theta) + H(theta) step}, and
 #' setting it to zero gives the Newton step
 #' \preformatted{
-#'     I(theta) step = U(theta),    theta_new = theta + step
+#'     -H(theta) step = U(theta),    theta_new = theta + step
 #' }
-#' where \code{I = -d^2 l / d theta d theta'} is the observed information
-#' matrix (\code{.buildAFTInformationMatrix}), with blocks
+#' where \code{H = d^2 l / d theta d theta'} is the Hessian of the
+#' log-likelihood, with blocks
 #' \preformatted{
-#'     I = - [ X' W X        X' v   ]    W = diag(d^2 l_i / d mu_i^2)
-#'           [ v' X      sum_i s_i  ]    v_i = d^2 l_i / d mu_i d log sigma
-#'                                       s_i = d^2 l_i / d (log sigma)^2
+#'     H = [ X' W X        X' v   ]    W = diag(d^2 l_i / d mu_i^2)
+#'         [ v' X      sum_i s_i  ]    v_i = d^2 l_i / d mu_i d log sigma
+#'                                     s_i = d^2 l_i / d (log sigma)^2
 #' }
+#' The negative Hessian \code{-H} (\code{.buildAFTNegativeHessian}) is
+#' also known as the observed information matrix.
 #' This linear system is the part solved by \code{.cgSolve} (see its
 #' documentation for the conjugate-gradient math). Starting values come
 #' from ordinary least squares that ignores censoring. If a step fails to
 #' increase \code{l} (or produces non-finite values), the candidate is
 #' pulled toward the current guess, \code{(candidate + 2 * current) / 3},
-#' cutting the step to a third each time until \code{l} improves; if \code{I} is not positive definite (so the
+#' cutting the step to a third each time until \code{l} improves; if \code{-H} is not positive definite (so the
 #' Newton direction might not point uphill), the Gauss-Newton matrix
 #' \code{sum_i g_i g_i'} of per-row score contributions is used instead,
 #' which is positive semi-definite by construction. Iteration stops when \code{l} changes by less than
-#' \code{convergence_tolerance}, and the inverse of the final information
-#' matrix is returned as the coefficient variance-covariance matrix, as
+#' \code{convergence_tolerance}, and the inverse of the final negative
+#' Hessian is returned as the coefficient variance-covariance matrix, as
 #' \code{survreg} does.
 #'
 #' @param input data.table, the same shape \code{.fitSurvival} expects.
@@ -490,8 +492,8 @@
 #' between iterations falls below this (matches the default
 #' \code{rel.tolerance} in \code{survival::survreg.control}).
 #' @param use_jacobi_preconditioner if \code{TRUE}, precondition every
-#' conjugate-gradient solve with the inverse of the current information
-#' matrix's own diagonal (see \code{.cgSolve}'s
+#' conjugate-gradient solve with the inverse of the current negative
+#' Hessian's own diagonal (see \code{.cgSolve}'s
 #' \code{use_jacobi_preconditioner}). This is what \code{aft_solver =
 #' "pcg"} enables, versus plain conjugate gradient for \code{"cg"}.
 #' @param verbose if \code{TRUE}, \code{message()} a line per
@@ -557,10 +559,10 @@
         iteration_start_time = Sys.time()
 
         gradient = .buildAFTGradient(design_matrix, current_fit)
-        information_matrix =
-            .buildAFTInformationMatrix(design_matrix, current_fit)
+        negative_hessian =
+            .buildAFTNegativeHessian(design_matrix, current_fit)
         newton_step = .solveAFTNewtonStep(
-            design_matrix, information_matrix, current_fit, gradient,
+            design_matrix, negative_hessian, current_fit, gradient,
             use_jacobi_preconditioner)
 
         elapsed_seconds =
@@ -644,11 +646,11 @@
             sum(cg_diagnostics$elapsed_seconds), converged))
     }
 
-    final_information_matrix =
-        .buildAFTInformationMatrix(design_matrix, current_fit)
+    final_negative_hessian =
+        .buildAFTNegativeHessian(design_matrix, current_fit)
     variance_covariance_matrix = tryCatch(
-        solve(final_information_matrix),
-        error = function(e) MASS::ginv(final_information_matrix))
+        solve(final_negative_hessian),
+        error = function(e) MASS::ginv(final_negative_hessian))
 
     fitted_coefficients = coefficients
     names(fitted_coefficients) = colnames(design_matrix)

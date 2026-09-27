@@ -92,13 +92,13 @@
 #' 4. Well-clustered eigenvalues reduces the number of iterations needed
 #'
 #' @param coefficient_matrix symmetric positive (semi-)definite matrix,
-#' e.g. the Hessian/information matrix from a Newton step.
+#' e.g. the negative Hessian from a Newton step.
 #' @param right_hand_side vector the system is solved against, e.g. the
 #' gradient/score vector from a Newton step.
 #' @param use_jacobi_preconditioner if \code{TRUE}, precondition with the
 #' inverse of \code{coefficient_matrix}'s own diagonal - cheap to apply,
 #' and often enough to cut down the number of iterations needed when the
-#' diagonal dominates (as it typically does for an AFT information matrix,
+#' diagonal dominates (as it typically does for an AFT negative Hessian,
 #' where each parameter's own curvature tends to be much larger than its
 #' cross-terms with the other parameters). Defaults to \code{FALSE}, which
 #' reduces exactly to plain (unpreconditioned) conjugate gradient.
