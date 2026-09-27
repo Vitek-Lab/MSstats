@@ -79,6 +79,15 @@ MSstatsPrepareForDataProcess = function(input, log_base, fix_missing) {
     sink()
 }
 
+#' Check that aft_solver is one of the supported AFT solvers
+#' @param aft_solver string: "cholesky", "cg", or "pcg"
+#' @keywords internal
+#' @noRd
+.checkAFTSolver = function(aft_solver) {
+    checkmate::assertChoice(aft_solver, c("cholesky", "cg", "pcg"),
+                            .var.name = "aft_solver")
+}
+
 #' Check validity of parameters to dataProcess function
 #' @param log_base of logarithmic transformation
 #' @param normalization_method string: "quantile", "equalizemedians", "FALSE",
