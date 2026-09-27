@@ -3,13 +3,9 @@
 #' MSstats fits an accelerated-failure-time (AFT) model per protein to
 #' impute left-censored values, and predictors are chosen based on how much
 #' information is actually available: whether this is a labeled (SRM)
-#' experiment with a reference channel (\code{ref_covariate}), whether
-#' there is more than one feature to estimate a \code{FEATURE} effect for,
-#' and whether there are enough uncensored observations to estimate that
-#' effect at all. Both \code{.fitSurvival} (Cholesky-based, via
-#' \code{survival::survreg}) and \code{.fitSurvivalCG} (conjugate-gradient
-#' based) share this selection logic, so the two solvers always fit the
-#' same model and differ only in how the Newton step is solved.
+#' experiment (\code{ref_covariate}), whether there is more than one feature 
+#' to estimate a \code{FEATURE} effect for, and whether there are enough 
+#' uncensored observations to estimate that effect at all.
 #'
 #' @param input data.table with columns \code{newABUNDANCE}, \code{cen},
 #' \code{RUN}, \code{FEATURE}, \code{LABEL}, and (for labeled experiments)
@@ -53,6 +49,8 @@
     }
 }
 
+#' Fit an AFT survival model with SurvReg dependency
+#' 
 #' @param input data.table with the columns \code{.buildAFTFormula} needs.
 #' @param aft_iterations maximum number of iterations for AFT model fitting.
 #' @param verbose if \code{TRUE}, \code{message()} the problem size
@@ -91,23 +89,6 @@
 
 
 #' Per-observation log-likelihood and derivatives for a Gaussian AFT model
-#'
-#' Computes what a Newton-Raphson step needs at the current parameter
-#' guess: the log-likelihood, its first derivative with respect to the
-#' linear predictor and to the log of the scale parameter, and the
-#' corresponding second derivatives - all summed/assembled later into the
-#' score vector and information matrix by \code{.fitSurvivalCG}. This only
-#' covers the two cases MSstats' AFT imputation actually uses: an exact
-#' (uncensored) observation, or one left-censored below a detection-limit
-#' ceiling (\code{Surv(y, cen, type = "left")} with \code{cen == 0}).
-#'
-#' The formulas are transcribed term-for-term from \code{survival}'s own
-#' C implementation (\code{survregc1.c}'s \code{gauss_d} function and its
-#' "exact"/"left censored" cases) rather than re-derived by hand, since a
-#' hand re-derivation is an easy place to introduce a sign error; this
-#' function's correctness is instead checked against numerical
-#' differentiation of the log-likelihood (see
-#' \code{test_utils_imputation_cg.R}).
 #'
 #' @param linear_predictor current linear predictor
 #' (\code{model_matrix \%*\% coefficients}).
@@ -244,9 +225,6 @@
 #' Evaluate the Gaussian AFT log-likelihood and derivatives at a
 #' parameter guess
 #'
-#' Thin wrapper around \code{.aftGaussianDerivatives} that forms the
-#' linear predictor from \code{design_matrix} and \code{coefficients}.
-#'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param coefficients current regression coefficients.
 #' @param log_scale current log of the scale parameter.
@@ -266,7 +244,7 @@
         observed_value, exact_indicator)
 }
 
-#' Assemble the AFT score vector
+#' Assemble the AFT gradient vector
 #'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param derivatives output of \code{.aftGaussianDerivatives}.
@@ -282,7 +260,7 @@
       sum(derivatives$gradient_wrt_log_scale))
 }
 
-#' Assemble the AFT observed information matrix
+#' Assemble the AFT Hessian matrix
 #'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param derivatives output of \code{.aftGaussianDerivatives}.
@@ -323,7 +301,7 @@
 #' Gauss-Newton (outer-product-of-gradients) approximation to the AFT
 #' information matrix
 #'
-#' Always positive semi-definite, so it is used as a fallback when the
+#' A fallback when the
 #' observed information matrix is not positive definite.
 #'
 #' @param design_matrix model matrix of the AFT fit.
@@ -359,10 +337,6 @@
 }
 
 #' Solve for one AFT Newton-Raphson step with conjugate gradient
-#'
-#' Solves \code{information_matrix \%*\% step = gradient}; if the
-#' information matrix turns out not to be positive definite, re-solves
-#' against the Gauss-Newton approximation instead.
 #'
 #' @param design_matrix model matrix of the AFT fit.
 #' @param information_matrix output of \code{.buildAFTInformationMatrix}.
