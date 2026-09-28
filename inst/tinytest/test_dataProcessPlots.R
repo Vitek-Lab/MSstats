@@ -98,43 +98,7 @@ expect_true(spec_right$showlegend)
 expect_equal(spec_right$legend$orientation, "v")
 expect_true(spec_right$legend$x > 1)
 
-# Test 11: text.angle no longer suppresses the Plotly label layout -----------
-
-QuantDataLong = QuantData
-long_group = function(x) factor(paste0("Study_Tissue_Timepoint_", x))
-QuantDataLong$FeatureLevelData$GROUP = long_group(QuantDataLong$FeatureLevelData$GROUP)
-QuantDataLong$ProteinLevelData$GROUP = long_group(QuantDataLong$ProteinLevelData$GROUP)
-
-condition_label_trace = function(text.angle) {
-    plot = suppressWarnings(
-        dataProcessPlots(QuantDataLong, type = "ProfilePlot",
-                          which.Protein = protein_name, summaryPlot = FALSE,
-                          address = FALSE, isPlotly = TRUE,
-                          text.angle = text.angle)
-    )[[1]]
-    traces = plotly::plotly_build(plot)$x$data
-    Filter(function(trace) identical(trace$mode, "text"), traces)[[1]]
-}
-
-for (angle in c(0, 90)) {
-    trace = condition_label_trace(angle)
-    expect_true(all(nchar(trace$text) < nchar(trace$hovertext)))
-    expect_true(all(grepl("^Study_Tissue_Timepoint_", trace$hovertext)))
-}
-
-# Test 12: the ggplot2/PDF path keeps the full names and honours text.angle --
-
-tmp_dir3 = tempfile("msstats_dataprocessplots_pdf_")
-dir.create(tmp_dir3)
-expect_silent(suppressWarnings(
-    dataProcessPlots(QuantDataLong, type = "ProfilePlot",
-                      which.Protein = protein_name, summaryPlot = FALSE,
-                      address = paste0(tmp_dir3, "/"), text.angle = 90)
-))
-expect_true(any(grepl("ProfilePlot.*\\.pdf$", list.files(tmp_dir3))))
-unlink(tmp_dir3, recursive = TRUE)
-
-# Test 13: width sizes the Plotly canvas ------------------------------------
+# Test 11: width sizes the Plotly canvas ------------------------------------
 
 plotly_width = function(...) {
     out = NULL
@@ -148,7 +112,7 @@ plotly_width = function(...) {
 expect_equal(plotly_width(), 800)
 expect_equal(plotly_width(width = 1400), 1400)
 
-# Test 14: the saved HTML container is sized to the plot it holds ------------
+# Test 12: the saved HTML container is sized to the plot it holds ------------
 
 html = as.character(MSstats:::.getPlotlyPlotHTML(list("plot"), 1400, 600))
 expect_true(grepl("width:1400px; height:600px", html))

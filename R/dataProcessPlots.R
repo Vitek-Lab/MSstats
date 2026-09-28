@@ -40,19 +40,14 @@
 #' graph in Profile Plot and QC plot. Default is 4.
 #' @param text.angle angle of labels represented each condition at the top
 #' of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
-#' Default is 0. In Profile Plot and QC plot the rotation applies to the
-#' ggplot2/PDF output only: \code{ggplotly()} does not carry the rotation of
-#' the condition labels through, so \code{isPlotly = TRUE} draws them
-#' horizontally and fits them to the available room instead. Condition plot
-#' rotates its x-axis labels in both outputs.
+#' Default is 0.
 #' @param legend.size size of feature legend (transition-level or peptide-level)
 #' above graph in Profile Plot. Default is 7.
 #' @param dot.size.profile size of dots in profile plot. Default is 2.
 #' @param dot.size.condition size of dots in condition plot. Default is 3.
 #' @param width width of the plot in pixels. Default is 800 pixels. For the saved
 #' PDF it is converted at 72 pixels per inch, so the default 800 is an 11.1 inch
-#' page. For the Plotly output it is the width of the canvas, and it also sets
-#' how much room the condition labels in Profile Plot and QC plot are fitted to.
+#' page. For the Plotly output it is the width of the canvas.
 #' @param height height of the saved file in pixels. Default is 600 pixels.
 #' Applies to both the PDF and the Plotly output.
 #' @param which.Protein Protein list to draw plots. List can be names of Proteins
@@ -165,7 +160,6 @@ dataProcessPlots = function(
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
                   og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
-                  og_plotly_plot = .fixConditionLabelHoverPlotly(og_plotly_plot, plot_i)
 
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
@@ -182,7 +176,6 @@ dataProcessPlots = function(
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
-                  summ_plotly_plot = .fixConditionLabelHoverPlotly(summ_plotly_plot, plot_i)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
@@ -208,7 +201,6 @@ dataProcessPlots = function(
               plot <- plots[[i]]
               plotly_plot <- .convertGgplot2Plotly(plot, width = width, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
-              plotly_plot = .fixConditionLabelHoverPlotly(plotly_plot, plot)
               plotly_plot = .applyLegendPositionPlotly(plotly_plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
@@ -300,22 +292,9 @@ dataProcessPlots = function(
   y.limup = ifelse(is.numeric(ylimUp), ylimUp, ceiling(max(processed$ABUNDANCE, na.rm = TRUE) + 3))
   y.limdown = ifelse(is.numeric(ylimDown), ylimDown, -1)
   
-  # Laid out for the Plotly output only; the PDF keeps the full names, where
-  # text.angle still works.
-  condition.names = levels(tempGroupName$GROUP)
-  condition.layout = if (isPlotly) {
-    .layoutConditionLabels(condition.names,
-                           data.table::uniqueN(processed$LABEL),
-                           width, text.size)
-  } else NULL
-  if (!is.numeric(ylimUp) && !is.null(condition.layout)) {
-    y.limup = y.limup + (condition.layout$n_lines - 1) * 0.9
-  }
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
-                         ABUNDANCE = rep(y.limup - 0.5, length(groupAxis)),
-                         Name = condition.names,
-                         Label = if (is.null(condition.layout)) condition.names
-                                 else condition.layout$labels)
+                         ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
+                         Name = levels(tempGroupName$GROUP))
 
   
   if ("is_labeled_ref" %in% colnames(processed)) {
@@ -379,8 +358,7 @@ dataProcessPlots = function(
                                       text.size, text.angle, 
                                       legend.size, dot.size.profile, 
                                       ss, s, cumGroupAxis, yaxis.name,
-                                      lineNameAxis, groupNametemp, dot_colors,
-                                      condition.layout)
+                                      lineNameAxis, groupNametemp, dot_colors)
       
       setTxtProgressBar(pb, i)
       print(profile_plot)
@@ -444,7 +422,7 @@ dataProcessPlots = function(
       profile_plot = .makeSummaryProfilePlot(
         combined, is_censored, y.limdown, y.limup, x.axis.size, y.axis.size, 
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
-        yaxis.name, lineNameAxis, groupNametemp, condition.layout
+        yaxis.name, lineNameAxis, groupNametemp
       )
       print(profile_plot)
       setTxtProgressBar(pb, i)
@@ -510,22 +488,9 @@ dataProcessPlots = function(
   groupAxis = as.numeric(xtabs(~GROUP, tempGroupName))
   cumGroupAxis = cumsum(groupAxis)
   lineNameAxis = cumGroupAxis[-nlevels(tempGroupName$GROUP)]
-  # Laid out for the Plotly output only; the PDF keeps the full names, where
-  # text.angle still works.
-  condition.names = levels(tempGroupName$GROUP)
-  condition.layout = if (isPlotly) {
-    .layoutConditionLabels(condition.names,
-                           data.table::uniqueN(processed$LABEL),
-                           width, text.size)
-  } else NULL
-  if (!is.numeric(ylimUp) && !is.null(condition.layout)) {
-    y.limup = y.limup + (condition.layout$n_lines - 1) * 0.9
-  }
   groupName = data.frame(RUN = c(0, lineNameAxis) + groupAxis / 2 + 0.5,
-                         ABUNDANCE = rep(y.limup - 0.5, length(groupAxis)),
-                         Name = condition.names,
-                         Label = if (is.null(condition.layout)) condition.names
-                                 else condition.layout$labels)
+                         ABUNDANCE = rep(y.limup - 1, length(groupAxis)),
+                         Name = levels(tempGroupName$GROUP))
   if (!isPlotly) {
       savePlot(address, "QCPlot", width, height)
   }
@@ -535,7 +500,7 @@ dataProcessPlots = function(
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
-                          yaxis.name, condition.layout)
+                          yaxis.name)
     print(qc_plot)
     plots[[1]] = qc_plot
   } 
@@ -558,7 +523,7 @@ dataProcessPlots = function(
       qc_plot = .makeQCPlot(single_protein, FALSE, y.limdown, y.limup, 
                             x.axis.size, y.axis.size, text.size, text.angle, 
                             legend.size, label.color, cumGroupAxis, groupName,
-                            lineNameAxis, yaxis.name, condition.layout)
+                            lineNameAxis, yaxis.name)
       print(qc_plot)
       plots[[i+1]] = qc_plot # to accomodate all proteins
       setTxtProgressBar(pb, i)
@@ -657,35 +622,6 @@ dataProcessPlots = function(
   if (isPlotly) {
       plots
   }
-}
-
-#' restore the untruncated condition name in the Plotly hover
-#'
-#' The condition labels arrive as a single text-mode trace, so the full names
-#' can be put back on hover without disturbing the drawn text.
-#' @param plot converted plotly plot
-#' @param ggplot_obj the ggplot it was converted from, carrying the drawn
-#'   `Label` and the untruncated `Name` on its condition label layer
-#' @noRd
-.fixConditionLabelHoverPlotly = function(plot, ggplot_obj) {
-    full_names = NULL
-    for (layer in ggplot_obj$layers) {
-        if (all(c("Name", "Label") %in% colnames(layer$data))) {
-            full_names = as.character(layer$data$Name)
-            break
-        }
-    }
-    if (is.null(full_names)) {
-        return(plot)
-    }
-    for (i in seq_along(plot$x$data)) {
-        trace = plot$x$data[[i]]
-        if (identical(trace$mode, "text") &&
-            length(trace$text) == length(full_names)) {
-            plot$x$data[[i]]$hovertext = full_names
-        }
-    }
-    plot
 }
 
 #' converter for plots from ggplot to plotly
