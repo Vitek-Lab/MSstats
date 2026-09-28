@@ -39,7 +39,11 @@ graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
 of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
-Default is 0.}
+Default is 0. In Profile Plot and QC plot the rotation applies to the
+ggplot2/PDF output only: \code{ggplotly()} does not carry the rotation of
+the condition labels through, so \code{isPlotly = TRUE} draws them
+horizontally and fits them to the available room instead. Condition plot
+rotates its x-axis labels in both outputs.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}

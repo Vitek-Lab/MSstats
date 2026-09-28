@@ -70,7 +70,11 @@ graph in Profile Plot and QC plot. Default is 4.}
 
 \item{text.angle}{angle of labels represented each condition at the top
 of graph in Profile Plot and QC plot or x-axis labeling in Condition plot. 
-Default is 0.}
+Default is 0. In Profile Plot and QC plot the rotation applies to the
+ggplot2/PDF output only: \code{ggplotly()} does not carry the rotation of
+the condition labels through, so \code{isPlotly = TRUE} draws them
+horizontally and fits them to the available room instead. Condition plot
+rotates its x-axis labels in both outputs.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}
@@ -81,7 +85,8 @@ above graph in Profile Plot. Default is 7.}
 
 \item{width}{width of the plot in pixels. Default is 800 pixels. For the saved
 PDF it is converted at 72 pixels per inch, so the default 800 is an 11.1 inch
-page. For the Plotly output it is the width of the canvas.}
+page. For the Plotly output it is the width of the canvas, and it also sets
+how much room the condition labels in Profile Plot and QC plot are fitted to.}
 
 \item{height}{height of the saved file in pixels. Default is 600 pixels.
 Applies to both the PDF and the Plotly output.}
