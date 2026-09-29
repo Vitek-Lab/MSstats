@@ -295,13 +295,13 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 
 #' Wrapper to fit robust linear model for one protein with a matrix-free
 #' LSQR-based solver instead of \code{MASS::rlm}'s QR-based one
-#' @return list, see \code{.rlmLSQR}
+#' @return list, see \code{.fitRobustRunFeatureModel}
 #' @keywords internal
 .fitHuberLSQR = function(input) {
     valid = !is.na(input$log2inty)
-    .rlmLSQR(input$log2inty[valid], input$run[valid], input$feature[valid],
-             run_levels = sort(unique(input$run)),
-             feature_levels = sort(unique(input$feature)))
+    .fitRobustRunFeatureModel(input$log2inty[valid], input$run[valid], input$feature[valid],
+                              run_levels = sort(unique(input$run)),
+                              feature_levels = sort(unique(input$feature)))
 }
 
 

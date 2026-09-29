@@ -8,7 +8,7 @@ LSQR-based solver instead of \code{MASS::rlm}'s QR-based one}
 .fitHuberLSQR(input)
 }
 \value{
-list, see \code{.rlmLSQR}
+list, see \code{.fitRobustRunFeatureModel}
 }
 \description{
 Wrapper to fit robust linear model for one protein with a matrix-free
