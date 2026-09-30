@@ -81,3 +81,38 @@ invisible(capture.output(suppressWarnings(
 )))
 expect_true(any(grepl("ConditionPlot.*\\.zip$", list.files(tmp_dir2))))
 unlink(tmp_dir2, recursive = TRUE)
+
+# Test 10: the Plotly legend is mounted on the right ------------------------
+
+legend_spec = function() {
+    plot = suppressWarnings(
+        dataProcessPlots(QuantData, type = "ProfilePlot",
+                          which.Protein = protein_name, summaryPlot = FALSE,
+                          address = FALSE, isPlotly = TRUE)
+    )[[1]]
+    plotly::plotly_build(plot)$x$layout
+}
+
+spec_right = legend_spec()
+expect_true(spec_right$showlegend)
+expect_equal(spec_right$legend$orientation, "v")
+expect_true(spec_right$legend$x > 1)
+
+# Test 11: width sizes the Plotly canvas ------------------------------------
+
+plotly_width = function(...) {
+    out = NULL
+    invisible(capture.output(suppressWarnings(
+        out <- dataProcessPlots(QuantData, type = "QCPlot",
+                                which.Protein = protein_name, address = FALSE,
+                                isPlotly = TRUE, ...)
+    )))
+    out[[1]]$x$layout$width
+}
+expect_equal(plotly_width(), 800)
+expect_equal(plotly_width(width = 1400), 1400)
+
+# Test 12: the saved HTML container is sized to the plot it holds ------------
+
+html = as.character(MSstats:::.getPlotlyPlotHTML(list("plot"), 1400, 600))
+expect_true(grepl("width:1400px; height:600px", html))

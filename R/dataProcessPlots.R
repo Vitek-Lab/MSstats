@@ -45,8 +45,11 @@
 #' above graph in Profile Plot. Default is 7.
 #' @param dot.size.profile size of dots in profile plot. Default is 2.
 #' @param dot.size.condition size of dots in condition plot. Default is 3.
-#' @param width width of the saved file in pixels. Default is 800 pixels.
+#' @param width width of the plot in pixels. Default is 800 pixels. For the saved
+#' PDF it is converted at 72 pixels per inch, so the default 800 is an 11.1 inch
+#' page. For the Plotly output it is the width of the canvas.
 #' @param height height of the saved file in pixels. Default is 600 pixels.
+#' Applies to both the PDF and the Plotly output.
 #' @param which.Protein Protein list to draw plots. List can be names of Proteins
 #' or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).
 #' Default is "all", which generates all plots for each protein. 
@@ -152,7 +155,8 @@ dataProcessPlots = function(
           if("original_plot" %in% names(plots)) {
               for(i in seq_along(plots[["original_plot"]])) {
                   plot_i <- plots[["original_plot"]][[paste("plot",i)]]
-                  og_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  og_plotly_plot <- .convertGgplot2Plotly(plot_i, tips = c("FEATURE","RUN","newABUNDANCE"),
+                                                          width = width, height = height)
                   og_plotly_plot = .fixLegendPlotlyPlotsDataprocess(og_plotly_plot)
                   og_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(og_plotly_plot)
                   og_plotly_plot = .fixErrorBarCapsPlotly(og_plotly_plot)
@@ -160,19 +164,22 @@ dataProcessPlots = function(
                   if(toupper(featureName) == "NA") {
                       og_plotly_plot = .retainCensoredDataPoints(og_plotly_plot)
                   }
+                  og_plotly_plot = .applyLegendPositionPlotly(og_plotly_plot)
                   plotly_plots = c(plotly_plots, list(og_plotly_plot))
               }
           }
           if("summary_plot" %in% names(plots)) {
               for(i in seq_along(plots[["summary_plot"]])) {
                   plot_i <- plots[["summary_plot"]][[paste("plot",i)]]
-                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i,tips=c("FEATURE","RUN","newABUNDANCE"))
+                  summ_plotly_plot <- .convertGgplot2Plotly(plot_i, tips = c("FEATURE","RUN","newABUNDANCE"),
+                                                          width = width, height = height)
                   summ_plotly_plot = .fixLegendPlotlyPlotsDataprocess(summ_plotly_plot)
                   summ_plotly_plot = .fixCensoredPointsLegendProfilePlotsPlotly(summ_plotly_plot)
                   summ_plotly_plot = .fixErrorBarCapsPlotly(summ_plotly_plot)
                   if(toupper(featureName) == "NA") {
                       summ_plotly_plot = .retainCensoredDataPoints(summ_plotly_plot)
                   }
+                  summ_plotly_plot = .applyLegendPositionPlotly(summ_plotly_plot)
                   plotly_plots = c(plotly_plots, list(summ_plotly_plot))
               }
           }
@@ -192,8 +199,9 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convertGgplot2Plotly(plot)
+              plotly_plot <- .convertGgplot2Plotly(plot, width = width, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
+              plotly_plot = .applyLegendPositionPlotly(plotly_plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
             if(address != FALSE) {
@@ -213,8 +221,9 @@ dataProcessPlots = function(
       if(isPlotly) {
           for(i in seq_along(plots)) {
               plot <- plots[[i]]
-              plotly_plot <- .convertGgplot2Plotly(plot)
+              plotly_plot <- .convertGgplot2Plotly(plot, width = width, height = height)
               plotly_plot = .fixLegendPlotlyPlotsDataprocess(plotly_plot)
+              plotly_plot = .applyLegendPositionPlotly(plotly_plot)
               plotly_plots[[i]] = list(plotly_plot)
           }
           if(address != FALSE) {
@@ -617,38 +626,51 @@ dataProcessPlots = function(
 }
 
 #' converter for plots from ggplot to plotly
+#'
+#' `ggplotly()` reserves the legend band from the ggplot theme, so the theme is
+#' set to the requested position here and the matching plotly placement is
+#' applied by `.applyLegendPositionPlotly()` once post-processing is done. The
+#' two have to agree: a theme saying "top" under a legend drawn on the right
+#' leaves a dead band across the top and squeezes the panel into the corner.
 #' @noRd
-.convertGgplot2Plotly = function(plot, tips = "all") {
-    converted_plot <- ggplotly(plot,tooltip = tips)
-    converted_plot <- plotly::layout(
-            converted_plot,
-            width = 800,   # Set the width of the chart in pixels
-            height = 600,  # Set the height of the chart in pixels
-            title = list(
-                font = list(
-                    size = 18
-                )
-            ),
-            xaxis = list(
-                titlefont = list(
-                    size = 15  # Set the font size for the x-axis label
-                )
-            ),
-            legend = list(
-                x = 0,     # Set the x position of the legend
-                y = -0.25,    # Set the y position of the legend (negative value to move below the plot)
-                orientation = "h",  # Horizontal orientation
-                font = list(
-                    size = 12  # Set the font size for legend item labels
-                ),
-                title = list(
-                    font = list(
-                        size = 12  # Set the font size for the legend title
-                    )
-                )
+.convertGgplot2Plotly = function(plot, tips = "all", legend_position = "right",
+                                 width = 800, height = 600) {
+    plot = plot + theme(legend.position = legend_position)
+    converted_plot <- ggplotly(plot, tooltip = tips, width = width,
+                               height = height)
+    plotly::layout(
+        converted_plot,
+        title = list(
+            font = list(
+                size = 18
             )
-        ) 
-    converted_plot
+        ),
+        xaxis = list(
+            titlefont = list(
+                size = 15
+            )
+        )
+    )
+}
+
+
+#' place the legend, after every other post-processing step has run
+#'
+#' Applied last on purpose: the `.fix*Plotly()` helpers rewrite `showlegend` on
+#' individual traces, so anything deciding whether the legend is drawn has to run
+#' after them or be undone by them. Mounted on the right because only the
+#' vertical placements get plotly's scrolling behaviour, which is what keeps a
+#' legend with hundreds of features from covering the plot.
+#'
+#' @param plot converted plotly plot
+#' @noRd
+.applyLegendPositionPlotly = function(plot) {
+    plotly::layout(
+        plot, showlegend = TRUE,
+        legend = list(x = 1.02, y = 1, xanchor = "left", yanchor = "top",
+                      orientation = "v", font = list(size = 10),
+                      title = list(font = list(size = 12))),
+        margin = list(t = 60))
 }
 
 .retainCensoredDataPoints = function(plot) {
@@ -685,16 +707,18 @@ dataProcessPlots = function(
     first_false_index <- which(df$legend_entries == "FALSE")[1]
     first_true_index <- which(df$legend_entries == "TRUE")[1]
 
-    # Update plot data for the first occurrence of "FALSE"
+    # Pin the two shape entries above the scrolling feature list; lower
+    # legendrank sorts first, and plotly's default is 1000.
     if (!is.na(first_false_index)) {
         plot$x$data[[first_false_index]]$name <- "Detected data"
         plot$x$data[[first_false_index]]$showlegend <- TRUE
+        plot$x$data[[first_false_index]]$legendrank <- 1
     }
 
-    # Update plot data for the first occurrence of "TRUE"
     if (!is.na(first_true_index)) {
         plot$x$data[[first_true_index]]$name <- "Censored missing data"
         plot$x$data[[first_true_index]]$showlegend <- TRUE
+        plot$x$data[[first_true_index]]$legendrank <- 2
     }
     plot
 }
@@ -735,20 +759,17 @@ dataProcessPlots = function(
     plot
 }
 
+#' wrap converted plots in sized containers for the saved HTML
+#'
+#' The container has to be at least as wide as the widget inside it. Pinned at
+#' 800 it cropped any wider plot, cutting off the side legend.
+#' @noRd
 .getPlotlyPlotHTML = function(plots, width, height) {
-    doc <- htmltools::tagList(lapply(plots,function(x) htmltools::div(x, style = "float:left;width:100%;")))
-    # Set a specific width for each plot
-    plot_width <- 800
-    plot_height <- 600
-
-    # Create a div for each plot with style settings
     divs <- lapply(plots, function(x) {
-        htmltools::div(x, style = paste0("width:", plot_width, "px; height:", plot_height, "px; margin: 10px;"))
+        htmltools::div(x, style = paste0("width:", width, "px; height:", height,
+                                         "px; margin: 10px;"))
     })
-
-    # Combine the divs into a tagList
-    doc <- htmltools::tagList(divs)
-    doc
+    htmltools::tagList(divs)
 }
 
 .savePlotlyPlotHTML = function(plots, address, file_name, width, height) {
