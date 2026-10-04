@@ -227,13 +227,15 @@
 #' @inherit dataProcessPlots
 #' @param input data.table
 #' @param all_proteins character vector of protein names
+#' @param isPlotly TRUE if the plot will be converted with ggplotly
 #' @keywords internal
 .makeQCPlot = function(
     input, all_proteins, y.limdown, y.limup, x.axis.size, y.axis.size, 
     text.size, text.angle, legend.size, label.color, cumGroupAxis, groupName,
-    lineNameAxis, yaxis.name
+    lineNameAxis, yaxis.name, isPlotly = FALSE
 ) { 
     RUN = ABUNDANCE = Name = NULL
+    LABEL = x = lower = upper = ymin = ymax = NULL
     
     if (all_proteins) {
         plot_title = "All"
@@ -241,12 +243,49 @@
         plot_title = unique(input$PROTEIN)
     }
     
-    ggplot(input, aes(x = .data$RUN, y = .data$ABUNDANCE)) +
+    if (isPlotly) {
+        # ggplotly converts geom_boxplot into a single native plotly box trace,
+        # so the per-box drawing cost below does not apply here
+        qc_plot = ggplot(input, aes(x = .data$RUN, y = .data$ABUNDANCE)) +
         facet_grid(~LABEL) +
         geom_boxplot(aes(fill = .data$LABEL), outlier.shape = 1,
                      outlier.size = 1.5) +
+            scale_x_discrete("MS runs", breaks = cumGroupAxis)
+    } else {
+        # geom_boxplot draws every box (one per run) as a separate grob tree,
+        # which grows linearly with the number of runs. Draw the same
+        # statistics as a few vectorized layers instead.
+        box_stats = .qcBoxStats(input, y.limdown, y.limup)
+        boxes = box_stats$boxes
+        whiskers = rbind(boxes[, list(LABEL, x, y = upper, yend = ymax)],
+                         boxes[, list(LABEL, x, y = lower, yend = ymin)])
+        break_positions = match(as.character(cumGroupAxis), box_stats$x_levels)
+        has_break = !is.na(break_positions)
+        qc_plot = ggplot(boxes) +
+            facet_grid(~LABEL) +
+            geom_segment(data = whiskers,
+                         aes(x = .data$x, xend = .data$x,
+                             y = .data$y, yend = .data$yend),
+                         colour = "#333333", linewidth = 0.5) +
+            geom_rect(aes(xmin = .data$x - 0.375, xmax = .data$x + 0.375,
+                          ymin = .data$lower, ymax = .data$upper,
+                          fill = .data$LABEL),
+                      colour = "#333333", linewidth = 0.5) +
+            geom_segment(aes(x = .data$x - 0.375, xend = .data$x + 0.375,
+                             y = .data$middle, yend = .data$middle),
+                         colour = "#333333", linewidth = 1) +
+            geom_point(data = box_stats$outliers,
+                       aes(x = .data$x, y = .data$ABUNDANCE),
+                       shape = 1, size = 1.5, colour = "#333333") +
+            # expansion matches the discrete axis: 0.4 to n + 0.6
+            scale_x_continuous("MS runs",
+                               breaks = break_positions[has_break],
+                               labels = as.character(cumGroupAxis)[has_break],
+                               expand = expansion(add = 0.225))
+    }
+
+    qc_plot +
         scale_fill_manual(values = label.color, guide = "none") +
-        scale_x_discrete("MS runs", breaks = cumGroupAxis) +
         scale_y_continuous(yaxis.name, limits = c(y.limdown, y.limup)) +
         geom_vline(xintercept = lineNameAxis + 0.5, colour = "grey",
                    linetype = "longdash") +
@@ -256,6 +295,42 @@
         theme_msstats("QCPLOT", x.axis.size, y.axis.size,
                       legend_size = NULL)
     
+}
+
+
+#' Boxplot statistics for the QC plot, matching ggplot2::stat_boxplot
+#' @param input data.table with RUN (factor), LABEL and ABUNDANCE columns
+#' @param y.limdown,y.limup y-axis limits; values outside them are dropped
+#' before the statistics are computed, as scale_y_continuous(limits) does
+#' @return list with `boxes` (one row per LABEL and run), `outliers` and
+#' `x_levels` (the RUN levels present, in x-axis order)
+#' @keywords internal
+.qcBoxStats = function(input, y.limdown, y.limup) {
+    RUN = LABEL = ABUNDANCE = x = lower = upper = NULL
+
+    # discrete axis positions: index among RUN levels present in the data
+    x_levels = levels(droplevels(input$RUN))
+    values = data.table::data.table(
+        LABEL = input$LABEL,
+        x = match(as.character(input$RUN), x_levels),
+        ABUNDANCE = input$ABUNDANCE)
+    values = values[!is.na(ABUNDANCE) & ABUNDANCE >= y.limdown &
+                        ABUNDANCE <= y.limup]
+    boxes = values[, {
+        q = as.numeric(stats::quantile(ABUNDANCE, c(0, 0.25, 0.5, 0.75, 1)))
+        iqr = q[4] - q[2]
+        is_outlier = ABUNDANCE < q[2] - 1.5 * iqr | ABUNDANCE > q[4] + 1.5 * iqr
+        if (any(is_outlier)) {
+            q[c(1, 5)] = range(c(q[2:4], ABUNDANCE[!is_outlier]))
+        }
+        list(ymin = q[1], lower = q[2], middle = q[3], upper = q[4],
+             ymax = q[5])
+    }, by = c("LABEL", "x")]
+    outliers = values[boxes, on = c("LABEL", "x")][
+        ABUNDANCE < lower - 1.5 * (upper - lower) |
+            ABUNDANCE > upper + 1.5 * (upper - lower),
+        list(LABEL, x, ABUNDANCE)]
+    list(boxes = boxes, outliers = outliers, x_levels = x_levels)
 }
 
 

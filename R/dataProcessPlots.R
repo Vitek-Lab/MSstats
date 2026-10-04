@@ -352,7 +352,9 @@ dataProcessPlots = function(
                                       lineNameAxis, groupNametemp, dot_colors)
       
       setTxtProgressBar(pb, i)
+      if (!isPlotly) {
       print(profile_plot)
+      }
       output_plots[["original_plot"]][[paste("plot",i)]] <- profile_plot
     }
     
@@ -416,7 +418,9 @@ dataProcessPlots = function(
         text.size, text.angle, legend.size, dot.size.profile, cumGroupAxis, 
         yaxis.name, lineNameAxis, groupNametemp
       )
+      if (!isPlotly) {
       print(profile_plot)
+      }
       setTxtProgressBar(pb, i)
       output_plots[["summary_plot"]][[paste("plot",i)]] <- profile_plot
       
@@ -492,8 +496,10 @@ dataProcessPlots = function(
     qc_plot = .makeQCPlot(processed, TRUE, y.limdown, y.limup, x.axis.size, 
                           y.axis.size, text.size, text.angle, legend.size, 
                           label.color, cumGroupAxis, groupName, lineNameAxis, 
-                          yaxis.name)
+                          yaxis.name, isPlotly)
+    if (!isPlotly) {
     print(qc_plot)
+    }
     plots[[1]] = qc_plot
   } 
   
@@ -515,14 +521,16 @@ dataProcessPlots = function(
       qc_plot = .makeQCPlot(single_protein, FALSE, y.limdown, y.limup, 
                             x.axis.size, y.axis.size, text.size, text.angle, 
                             legend.size, label.color, cumGroupAxis, groupName,
-                            lineNameAxis, yaxis.name)
+                            lineNameAxis, yaxis.name, isPlotly)
+      if (!isPlotly) {
       print(qc_plot)
+      }
       plots[[i+1]] = qc_plot # to accomodate all proteins
       setTxtProgressBar(pb, i)
     } 
     close(pb)
   } 
-  if (address != FALSE) {
+  if (address != FALSE & !isPlotly) {
     dev.off()
   }
   if (isPlotly) {
@@ -591,7 +599,9 @@ dataProcessPlots = function(
                                   y.limup, x.axis.size, y.axis.size, 
                                   text.size, text.angle, legend.size, 
                                   dot.size.condition, yaxis.name)
+    if (!isPlotly) {
     print(con_plot)
+    }
     plots[[i]] = con_plot
     setTxtProgressBar(pb, i)
   }
