@@ -18,7 +18,8 @@
   cumGroupAxis,
   groupName,
   lineNameAxis,
-  yaxis.name
+  yaxis.name,
+  isPlotly = FALSE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ Default is 0.}
 
 \item{legend.size}{size of feature legend (transition-level or peptide-level)
 above graph in Profile Plot. Default is 7.}
+
+\item{isPlotly}{TRUE if the plot will be converted with ggplotly}
 }
 \description{
 To illustrate the quantitative data after data-preprocessing and 
