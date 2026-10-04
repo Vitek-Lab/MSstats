@@ -79,9 +79,12 @@ above graph in Profile Plot. Default is 7.}
 
 \item{dot.size.condition}{size of dots in condition plot. Default is 3.}
 
-\item{width}{width of the saved file in pixels. Default is 800 pixels.}
+\item{width}{width of the plot in pixels. Default is 800 pixels. For the saved
+PDF it is converted at 72 pixels per inch, so the default 800 is an 11.1 inch
+page. For the Plotly output it is the width of the canvas.}
 
-\item{height}{height of the saved file in pixels. Default is 600 pixels.}
+\item{height}{height of the saved file in pixels. Default is 600 pixels.
+Applies to both the PDF and the Plotly output.}
 
 \item{which.Protein}{Protein list to draw plots. List can be names of Proteins
 or order numbers of Proteins from levels(data$FeatureLevelData$PROTEIN).

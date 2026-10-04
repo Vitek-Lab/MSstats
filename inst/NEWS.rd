@@ -2,6 +2,13 @@
 \title{News for package, \pkg{MSstats}}
 \encoding{UTF-8}
 
+\section{Version 4.22.0 (in development)}{
+    \itemize{
+        \item \strong{Profile and QC plots}: In the Plotly output the feature legend is now mounted beside the plot rather than above it, where Plotly makes an over-tall legend scrollable. Proteins with many features no longer have the legend cover the plot, and legend entries are no longer silently dropped.
+        \item \strong{Bug fix}: In the Plotly output \code{dataProcessPlots} ignored \code{width} and \code{height}, drawing every plot at 800x600, and the saved HTML pinned every plot inside a fixed 800x600 container, cropping anything wider than it. The Plotly canvas and the container are now sized by \code{width} and \code{height}.
+    }
+}
+
 \section{Version 4.20.0 (2026-04-23)}{
     \itemize{
         \item \strong{Protein turnover analysis}: Added support for multi-label summarization, enabling experiments that use multiple isotope labels to quantify protein synthesis and degradation rates. Each isotope label is now summarized independently, giving more accurate per-label abundance estimates.
