@@ -67,10 +67,10 @@ expect_equal(fit_mass$s, fit_lsqr$scale, tolerance = 1e-4)
 expect_equal(unname(residuals(fit_mass)), unname(fit_lsqr$residuals), tolerance = 1e-4)
 expect_equal(fit_lsqr$df.residual, nrow(model.matrix(fit_mass)) - ncol(model.matrix(fit_mass)))
 
-# Test 6: a run/feature level with zero surviving observations (e.g. all its
-# rows have NA log2inty for this protein) is handled gracefully, matching how
-# .fitHuberLSQR calls .fitRobustRunFeatureModel with levels fixed from the
-# full column ------------------------------------------------------------------
+# Test 6: if a caller passes a run/feature level with zero surviving
+# observations, .fitRobustRunFeatureModel still handles it gracefully (no
+# error, minimum-norm solution). .fitHuberLSQR no longer does this; see Test 7.
+# ------------------------------------------------------------------------------
 na_rows = which(run2 == "run6")
 y3 = y2
 y3[na_rows] = NA
@@ -82,3 +82,24 @@ expect_true(fit_edge$converged)
 expect_false(anyNA(fit_edge$coefficients))
 full_design_df = data.frame(run2 = run2, feature2 = feature2)
 expect_equal(fit_edge$rank, ncol(model.matrix(~ run2 + feature2, full_design_df)))
+
+# Test 7: regression test - .fitHuberLSQR matches MASS::rlm when a run and a
+# feature are entirely missing for a protein. Levels used to be taken from the
+# full column (including all-NA rows), adding all-zero design columns that
+# understated df.residual and inflated the Huber scale. Because squeezeVar and
+# the noisy-feature quantile cutoff pool across proteins, that one-protein
+# mismatch flipped feature_quality for other proteins on large datasets.
+set.seed(7)
+protein_data = data.table::CJ(run = paste0("run", 1:6), feature = paste0("feat", 1:5))
+protein_data[, log2inty := 20 + rnorm(.N, sd = 0.3)]
+protein_data[1, log2inty := log2inty + 3] # an outlier
+protein_data[run == "run3", log2inty := NA]
+protein_data[feature == "feat4", log2inty := NA]
+fit_mass_na = MASS::rlm(log2inty ~ run + feature, data = protein_data,
+                        scale.est = "Huber")
+fit_lsqr_na = MSstats:::.fitHuberLSQR(protein_data)
+expect_true(fit_lsqr_na$converged)
+expect_equal(fit_lsqr_na$df.residual, summary(fit_mass_na)$df[2])
+expect_equal(fit_lsqr_na$scale, summary(fit_mass_na)$sigma, tolerance = 1e-4)
+expect_equal(unname(fit_lsqr_na$residuals), unname(residuals(fit_mass_na)),
+             tolerance = 1e-4)

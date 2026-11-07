@@ -299,9 +299,13 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @keywords internal
 .fitHuberLSQR = function(input) {
     valid = !is.na(input$log2inty)
+    # Build levels from observed rows only, matching MASS::rlm (which drops
+    # NA rows before building the design). Levels with no observations would
+    # add all-zero columns, understating df.residual and inflating the
+    # Huber scale estimate.
     .fitRobustRunFeatureModel(input$log2inty[valid], input$run[valid], input$feature[valid],
-                              run_levels = sort(unique(input$run)),
-                              feature_levels = sort(unique(input$feature)))
+                              run_levels = sort(unique(input$run[valid])),
+                              feature_levels = sort(unique(input$feature[valid])))
 }
 
 
