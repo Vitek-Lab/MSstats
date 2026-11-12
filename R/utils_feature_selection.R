@@ -125,7 +125,6 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
                                           verbose = FALSE) {
     log2inty = is_obs = unrep = n_observed = NULL
     label = protein = feature = run = feature_quality = is_outlier = NULL
-    has_three_informative = is_lowcvr = NULL
 
     if (nrow(input) == 0) {
         return(NULL)
@@ -134,41 +133,13 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
         input = input[log2inty > 0, ]
     }
 
-    if (verbose) {
-        # Parameters of the per-protein "log2inty ~ run + feature" model:
-        # intercept + (runs - 1) + (features - 1).
-        protein_sizes = input[(is_obs),
-                              list(n_parameters = data.table::uniqueN(run) +
-                                       data.table::uniqueN(feature) - 1),
-                              by = "protein"]
-        message(sprintf(
-            paste0("[HQ] label %s starting (method = %s): %d proteins, ",
-                   "%d observations, %d parameters (max %d per protein)"),
-            unique(input$label), method, nrow(protein_sizes), sum(input$is_obs),
-            as.integer(sum(protein_sizes$n_parameters)),
-            as.integer(max(c(0, protein_sizes$n_parameters)))))
-        label_start_time = Sys.time()
-    }
-
     input[, n_observed := sum(is_obs), by = c("protein", "feature")]
     input[, unrep := n_observed <= 1, ]
     .addOutlierCutoff(input)
     .addNInformativeInfo(input, min_feature_count, "unrep")
     .addCoverageInfo(input)
     .addNInformativeInfo(input, min_feature_count, "is_lowcvr")
-    if (verbose) {
-        model_start_time = Sys.time()
-    }
     .addModelInformation(input, method, verbose)
-    if (verbose) {
-        fitted_rows = input[(has_three_informative) & !(is_lowcvr) & !(unrep)]
-        message(sprintf(
-            paste0("[HQ] label %s robust fits: %d proteins, ",
-                   "%d observations, %.4f sec"),
-            unique(input$label), data.table::uniqueN(fitted_rows$protein),
-            sum(fitted_rows$is_obs),
-            as.numeric(Sys.time() - model_start_time, units = "secs")))
-    }
     input = .addModelVariances(input)
     input = .addNoisyFlag(input)
     
@@ -179,12 +150,6 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     input$is_outlier = ifelse(input$label == "H" & input$log2inty <= 0,
                               TRUE, input$is_outlier)
     input = unique(input[, list(label, protein, feature, run, feature_quality, is_outlier)])
-    if (verbose) {
-        message(sprintf(
-            "[HQ] label %s finished: %.4f sec total",
-            unique(input$label),
-            as.numeric(Sys.time() - label_start_time, units = "secs")))
-    }
     input
 }
 
@@ -296,8 +261,11 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @param method "highQuality" (default, \code{MASS::rlm}/QR-based robust
 #' fit via \code{.fitHuber}) or "highQuality-lsqr" (matrix-free LSQR-based
 #' robust fit via \code{.fitHuberLSQR})
-#' @param verbose if \code{TRUE}, log LSQR diagnostics (only used by
-#' "highQuality-lsqr", see \code{.fitRobustRunFeatureModel})
+#' @param verbose if \code{TRUE}, \code{message()} the number of
+#' observations, number of parameters and runtime of each protein's robust
+#' fit (\code{.fitHuber} or \code{.fitHuberLSQR}); for "highQuality-lsqr"
+#' LSQR iteration diagnostics are also logged, see
+#' \code{.fitRobustRunFeatureModel}
 #' @return list of residuals, degress of freedom and variances
 #' @importFrom stats residuals
 #' @keywords internal
@@ -307,8 +275,37 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
     fitting_data = input[!(is_lowcvr) & !(unrep), ]
     fitted_mask = !input$is_lowcvr & !is.na(input$log2inty) & !input$unrep
 
+    if (verbose) {
+        fit_start_time = Sys.time()
+    }
     if (method == "highQuality-lsqr") {
         robust_model = try(.fitHuberLSQR(fitting_data, verbose), silent = TRUE)
+    } else {
+        robust_model = try(.fitHuber(fitting_data), silent = TRUE)
+    }
+    if (verbose) {
+        fit_seconds = as.numeric(Sys.time() - fit_start_time, units = "secs")
+        observed = !is.na(fitting_data$log2inty)
+        # Parameters of "log2inty ~ run + feature" on the observed rows:
+        # intercept + (runs - 1) + (features - 1).
+        num_parameters = data.table::uniqueN(fitting_data$run[observed]) +
+            data.table::uniqueN(fitting_data$feature[observed]) - 1
+        fit_status = if (inherits(robust_model, "try-error")) {
+            "error"
+        } else if (robust_model$converged) {
+            "converged"
+        } else {
+            "not converged"
+        }
+        message(sprintf(
+            paste0("[HQ] protein %s (%s): %d observations, %d parameters, ",
+                   "%.4f sec, %s"),
+            as.character(input$protein[1]),
+            if (method == "highQuality-lsqr") ".fitHuberLSQR" else ".fitHuber",
+            sum(observed), as.integer(num_parameters), fit_seconds, fit_status))
+    }
+
+    if (method == "highQuality-lsqr") {
         if (inherits(robust_model, "try-error") || !robust_model$converged) {
             list(NA_real_, NA_real_, NA_real_)
         } else {
@@ -319,7 +316,6 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
                  rep(robust_model$scale ^ 2, nrow(input)))
         }
     } else {
-        robust_model = try(.fitHuber(fitting_data), silent = TRUE)
         if (inherits(robust_model, "try-error") || !robust_model$converged) {
             list(NA_real_, NA_real_, NA_real_)
         } else {
