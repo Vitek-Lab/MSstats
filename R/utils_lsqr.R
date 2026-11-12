@@ -420,6 +420,10 @@
 #' (\code{maxit} in \code{MASS::rlm})
 #' @param convergence_tolerance stop once the relative change in residuals
 #' between iterations is below this (\code{acc} in \code{MASS::rlm})
+#' @param verbose if \code{TRUE}, \code{message()} the problem size
+#' (observations and coefficients) and the number of LSQR iterations taken
+#' by every \code{.solveLeastSquares} call, plus a summary once the
+#' reweighting loop finishes - useful for seeing how LSQR scales
 #'
 #' @return list with elements \code{coefficients}, \code{residuals},
 #' \code{fitted.values}, \code{scale}, \code{df.residual}, \code{rank} and
@@ -432,15 +436,26 @@
                                      run_levels = NULL, feature_levels = NULL,
                                      huber_threshold = 1.345,
                                      max_iterations = 20,
-                                     convergence_tolerance = 1e-4) {
+                                     convergence_tolerance = 1e-4,
+                                     verbose = FALSE) {
     num_observations = length(log2inty)
     design = .buildRunFeatureDesign(run, feature, run_levels, feature_levels)
     num_coefficients = design$num_coefficients
     residual_df = num_observations - num_coefficients
+    fit_start_time = Sys.time()
+    total_lsqr_iterations = 0
 
     # Start from the ordinary (unweighted) least-squares fit.
-    coefficients = .solveLeastSquares(design$multiply, design$multiply_transposed,
-                                      log2inty, num_coefficients)$solution
+    lsqr_fit = .solveLeastSquares(design$multiply, design$multiply_transposed,
+                                  log2inty, num_coefficients)
+    coefficients = lsqr_fit$solution
+    total_lsqr_iterations = total_lsqr_iterations + lsqr_fit$iterations
+    if (verbose) {
+        message(sprintf(
+            "[HQ-LSQR] initial fit: %d observations, %d coefficients, lsqr iterations = %d (%s)",
+            num_observations, num_coefficients, lsqr_fit$iterations,
+            lsqr_fit$stop_reason))
+    }
     fitted = design$multiply(coefficients)
     residuals = log2inty - fitted
     scale = stats::mad(residuals, center = 0)
@@ -453,6 +468,7 @@
         2 * huber_threshold * stats::dnorm(huber_threshold)
 
     converged = FALSE
+    iteration = 0
     for (iteration in seq_len(max_iterations)) {
         previous_residuals = residuals
 
@@ -467,10 +483,18 @@
         # Downweight observations with large residuals, then refit.
         weights = MASS::psi.huber(residuals / scale)
         weighted_design = .applyWeightsToDesign(design, weights)
-        coefficients = .solveLeastSquares(weighted_design$multiply,
-                                          weighted_design$multiply_transposed,
-                                          sqrt(weights) * log2inty,
-                                          num_coefficients)$solution
+        lsqr_fit = .solveLeastSquares(weighted_design$multiply,
+                                      weighted_design$multiply_transposed,
+                                      sqrt(weights) * log2inty,
+                                      num_coefficients)
+        coefficients = lsqr_fit$solution
+        total_lsqr_iterations = total_lsqr_iterations + lsqr_fit$iterations
+        if (verbose) {
+            message(sprintf(
+                "[HQ-LSQR] irls iter %d: %d observations, %d coefficients, lsqr iterations = %d (%s)",
+                iteration, num_observations, num_coefficients,
+                lsqr_fit$iterations, lsqr_fit$stop_reason))
+        }
         fitted = design$multiply(coefficients)
         residuals = log2inty - fitted
 
@@ -478,6 +502,15 @@
                                    max(1e-20, sum(previous_residuals ^ 2)))
         converged = relative_change <= convergence_tolerance
         if (converged) break
+    }
+
+    if (verbose) {
+        message(sprintf(
+            paste0("[HQ-LSQR] finished: %d irls iterations, ",
+                   "%d total lsqr iterations, %.4f sec total, converged = %s"),
+            iteration, total_lsqr_iterations,
+            as.numeric(Sys.time() - fit_start_time, units = "secs"),
+            converged))
     }
 
     list(
