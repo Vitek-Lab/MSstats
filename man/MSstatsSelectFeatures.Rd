@@ -9,11 +9,16 @@ MSstatsSelectFeatures(input, method, top_n = 3, min_feature_count = 2)
 \arguments{
 \item{input}{data.table}
 
-\item{method}{"all" / "highQuality", "topN"}
+\item{method}{"all" / "highQuality" / "highQuality-lsqr" / "topN".
+"highQuality-lsqr" applies the same feature-quality/outlier flagging
+algorithm as "highQuality", but fits the per-protein robust regression
+with a matrix-free LSQR-based solver instead of \code{MASS::rlm}'s
+QR-based one (see \code{.fitHuberLSQR}).}
 
 \item{top_n}{number of features to use for "topN" method}
 
-\item{min_feature_count}{number of quality features for "highQuality" method}
+\item{min_feature_count}{number of quality features for "highQuality" /
+"highQuality-lsqr" method}
 }
 \value{
 data.table
@@ -22,7 +27,7 @@ data.table
 Feature selection before feature-level data summarization
 }
 \examples{
-raw = DDARawData 
+raw = DDARawData
 method = "TMP"
 cens = "NA"
 impute = TRUE

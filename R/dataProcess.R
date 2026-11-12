@@ -12,21 +12,25 @@
 #' recommendations on which normalization option to use.
 #' @param nameStandards optional vector of global standard peptide names. 
 #' Required only for normalization with global standard peptides.
-#' @param featureSubset "topN" (default) uses top N features which has highest average of log-intensity across runs. 
-#' "top3" uses top 3 features which have highest average of log-intensity across runs. 
+#' @param featureSubset "topN" (default) uses top N features which has highest average of log-intensity across runs.
+#' "top3" uses top 3 features which have highest average of log-intensity across runs.
 #' "all" uses all features that the data set has (not recommended in DIA experiments).
-#' It needs the input for n_top_feature option. 
-#' "highQuality" flags uninformative feature and outliers. See MSstats vignettes for 
+#' It needs the input for n_top_feature option.
+#' "highQuality" flags uninformative feature and outliers. See MSstats vignettes for
 #' recommendations on which feature selection option to use.
-#' @param remove_uninformative_feature_outlier optional. Only required if 
-#' featureSubset = "highQuality". TRUE allows to remove 
+#' "highQuality-lsqr" applies the same flagging algorithm as "highQuality", but fits
+#' the per-protein robust regression step with a matrix-free LSQR-based solver instead
+#' of "highQuality"'s QR-based one (\code{MASS::rlm}); provided for numerical-methods
+#' comparison, see \code{MSstatsSelectFeatures}.
+#' @param remove_uninformative_feature_outlier optional. Only required if
+#' featureSubset = "highQuality" or "highQuality-lsqr". TRUE allows to remove
 #' 1) noisy features (flagged in the column feature_quality with "Uninformative"),
-#' 2) outliers (flagged in the column, is_outlier with TRUE, 
-#' before run-level summarization. FALSE (default) uses all features and intensities 
+#' 2) outliers (flagged in the column, is_outlier with TRUE,
+#' before run-level summarization. FALSE (default) uses all features and intensities
 #' for run-level summarization.
-#' @param min_feature_count optional. Only required if featureSubset = "highQuality".
-#' Defines a minimum number of informative features a protein needs to be considered
-#' in the feature selection algorithm.
+#' @param min_feature_count optional. Only required if featureSubset = "highQuality"
+#' or "highQuality-lsqr". Defines a minimum number of informative features a protein
+#' needs to be considered in the feature selection algorithm.
 #' @param n_top_feature Specifies the number of top features to use in summarization (100 default). 
 #' Only required if featureSubset = 'topN'.  
 #' Default is 100, which means to use top 100 features. 

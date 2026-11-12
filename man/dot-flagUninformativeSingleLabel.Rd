@@ -4,12 +4,20 @@
 \alias{.flagUninformativeSingleLabel}
 \title{Flag uninformative features}
 \usage{
-.flagUninformativeSingleLabel(input, min_feature_count = 2)
+.flagUninformativeSingleLabel(
+  input,
+  min_feature_count = 2,
+  method = "highQuality"
+)
 }
 \arguments{
 \item{input}{data.table}
 
 \item{min_feature_count}{minimum number of quality features to consider}
+
+\item{method}{"highQuality" (default, \code{MASS::rlm}/QR-based robust
+fit) or "highQuality-lsqr" (matrix-free LSQR-based robust fit, see
+\code{.fitHuberLSQR})}
 }
 \value{
 data.table

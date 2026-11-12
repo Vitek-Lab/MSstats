@@ -1,16 +1,25 @@
 #' Feature selection before feature-level data summarization
-#' 
+#'
 #' @param input data.table
-#' @param method "all" / "highQuality", "topN"
+#' @param method "all" / "highQuality" / "highQuality-lsqr" / "topN".
+#' "highQuality-lsqr" applies the same feature-quality/outlier flagging
+#' algorithm as "highQuality", but fits the per-protein robust regression
+#' with a matrix-free LSQR-based solver instead of \code{MASS::rlm}'s
+#' QR-based one (see \code{.fitHuberLSQR}).
 #' @param top_n number of features to use for "topN" method
-#' @param min_feature_count number of quality features for "highQuality" method
-#' 
+#' @param min_feature_count number of quality features for "highQuality" /
+#' "highQuality-lsqr" method
+#' @param verbose if \code{TRUE}, \code{message()} diagnostics for the
+#' "highQuality" / "highQuality-lsqr" methods: problem size and elapsed time
+#' per label, plus (for "highQuality-lsqr") the number of LSQR iterations
+#' taken by every least-squares solve. See \code{.fitRobustRunFeatureModel}.
+#'
 #' @return data.table
-#' 
+#'
 #' @export
-#' 
-#' @examples 
-#' raw = DDARawData 
+#'
+#' @examples
+#' raw = DDARawData
 #' method = "TMP"
 #' cens = "NA"
 #' impute = TRUE
@@ -22,18 +31,21 @@
 #' input_all = MSstatsSelectFeatures(input, "all") # all features
 #' input_5 = MSstatsSelectFeatures(data.table::copy(input), "topN", top_n = 5) # top 5 features
 #' input_informative = MSstatsSelectFeatures(input, "highQuality") # feature selection
-#' 
+#'
 #' head(input_all)
 #' head(input_5)
 #' head(input_informative)
-#' 
-MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2) {
-    checkmate::assertChoice(method, c("all", "top3", "topN", "highQuality"))
+#'
+MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2,
+                                 verbose = FALSE) {
+    checkmate::assertChoice(method, c("all", "top3", "topN",
+                                      "highQuality", "highQuality-lsqr"))
     if (method == "all") {
         msg = "** Use all features that the dataset originally has."
-    } else if (method == "highQuality") {
+    } else if (method %in% c("highQuality", "highQuality-lsqr")) {
         msg = "** Flag uninformative feature and outliers by feature selection algorithm."
-        features_quality = .selectHighQualityFeatures(input, min_feature_count)
+        features_quality = .selectHighQualityFeatures(input, min_feature_count,
+                                                      method, verbose)
         input = merge(input, features_quality, all.x = TRUE,
                       by.x = c("LABEL", "PROTEIN", "FEATURE", "originalRUN"),
                       by.y = c("label", "protein", "feature", "run"))
@@ -71,9 +83,15 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' Select features of high quality
 #' @param input data.table
 #' @param min_feature_count minimum number of quality features to consider
+#' @param method "highQuality" (default, \code{MASS::rlm}/QR-based robust
+#' fit) or "highQuality-lsqr" (matrix-free LSQR-based robust fit, see
+#' \code{.fitHuberLSQR})
+#' @param verbose if \code{TRUE}, \code{message()} fitting diagnostics, see
+#' \code{MSstatsSelectFeatures}
 #' @return data.table
 #' @keywords internal
-.selectHighQualityFeatures = function(input, min_feature_count) {
+.selectHighQualityFeatures = function(input, min_feature_count, method = "highQuality",
+                                      verbose = FALSE) {
     PROTEIN = PEPTIDE = FEATURE = originalRUN = ABUNDANCE = censored = NULL
     is_obs = log2inty = is_censored = LABEL = NULL
 
@@ -92,7 +110,9 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 
     features_quality = data.table::rbindlist(lapply(split(input, input$label),
                                                     .flagUninformativeSingleLabel,
-                                                    min_feature_count = min_feature_count))
+                                                    min_feature_count = min_feature_count,
+                                                    method = method,
+                                                    verbose = verbose))
     features_quality
 }
 
@@ -101,24 +121,25 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @inheritParams .selectHighQualityFeatures
 #' @return data.table
 #' @keywords internal
-.flagUninformativeSingleLabel = function(input, min_feature_count = 2) {
+.flagUninformativeSingleLabel = function(input, min_feature_count = 2, method = "highQuality",
+                                          verbose = FALSE) {
     log2inty = is_obs = unrep = n_observed = NULL
     label = protein = feature = run = feature_quality = is_outlier = NULL
-    
+
     if (nrow(input) == 0) {
         return(NULL)
     }
     if (unique(input$label) == "H") {
         input = input[log2inty > 0, ]
     }
-    
+
     input[, n_observed := sum(is_obs), by = c("protein", "feature")]
     input[, unrep := n_observed <= 1, ]
     .addOutlierCutoff(input)
     .addNInformativeInfo(input, min_feature_count, "unrep")
     .addCoverageInfo(input)
     .addNInformativeInfo(input, min_feature_count, "is_lowcvr")
-    .addModelInformation(input)
+    .addModelInformation(input, method, verbose)
     input = .addModelVariances(input)
     input = .addNoisyFlag(input)
     
@@ -218,40 +239,91 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 
 #' Add model information
 #' @param input data.table
+#' @param method "highQuality" or "highQuality-lsqr", see
+#' \code{.selectHighQualityFeatures}
+#' @param verbose passed to \code{.calculateProteinVariance}
 #' @return data.table
 #' @keywords internal
-.addModelInformation = function(input) {
+.addModelInformation = function(input, method = "highQuality", verbose = FALSE) {
     has_three_informative = NULL
-    
-    input[(has_three_informative), 
-          c("model_residuals", "df_resid", "var_resid") := .calculateProteinVariance(.SD),
+
+    input[(has_three_informative),
+          c("model_residuals", "df_resid", "var_resid") := .calculateProteinVariance(.SD, method, verbose),
           by = "protein",
-          .SDcols = c("protein", "log2inty", "run", 
+          .SDcols = c("protein", "log2inty", "run",
                       "feature", "is_lowcvr", "unrep")]
-    
+
 }
 
 
 #' Calculate protein variances
 #' @param input data.table
+#' @param method "highQuality" (default, \code{MASS::rlm}/QR-based robust
+#' fit via \code{.fitHuber}) or "highQuality-lsqr" (matrix-free LSQR-based
+#' robust fit via \code{.fitHuberLSQR})
+#' @param verbose if \code{TRUE}, \code{message()} the number of
+#' observations, number of parameters and runtime of each protein's robust
+#' fit (\code{.fitHuber} or \code{.fitHuberLSQR}); for "highQuality-lsqr"
+#' LSQR iteration diagnostics are also logged, see
+#' \code{.fitRobustRunFeatureModel}
 #' @return list of residuals, degress of freedom and variances
 #' @importFrom stats residuals
 #' @keywords internal
-.calculateProteinVariance = function(input) {
+.calculateProteinVariance = function(input, method = "highQuality", verbose = FALSE) {
     is_lowcvr = unrep = NULL
-    
-    robust_model = try(.fitHuber(input[!(is_lowcvr) & !(unrep), ]), silent = TRUE) 
-    if (inherits(robust_model, "try-error")) {
-        list(NA_real_, NA_real_, NA_real_)
+
+    fitting_data = input[!(is_lowcvr) & !(unrep), ]
+    fitted_mask = !input$is_lowcvr & !is.na(input$log2inty) & !input$unrep
+
+    if (verbose) {
+        fit_start_time = Sys.time()
+    }
+    if (method == "highQuality-lsqr") {
+        robust_model = try(.fitHuberLSQR(fitting_data, verbose), silent = TRUE)
     } else {
-        if (robust_model$converged) {
+        robust_model = try(.fitHuber(fitting_data), silent = TRUE)
+    }
+    if (verbose) {
+        fit_seconds = as.numeric(Sys.time() - fit_start_time, units = "secs")
+        observed = !is.na(fitting_data$log2inty)
+        # Parameters of "log2inty ~ run + feature" on the observed rows:
+        # intercept + (runs - 1) + (features - 1).
+        num_parameters = data.table::uniqueN(fitting_data$run[observed]) +
+            data.table::uniqueN(fitting_data$feature[observed]) - 1
+        fit_status = if (inherits(robust_model, "try-error")) {
+            "error"
+        } else if (robust_model$converged) {
+            "converged"
+        } else {
+            "not converged"
+        }
+        message(sprintf(
+            paste0("[HQ] protein %s (%s): %d observations, %d parameters, ",
+                   "%.4f sec, %s"),
+            as.character(input$protein[1]),
+            if (method == "highQuality-lsqr") ".fitHuberLSQR" else ".fitHuber",
+            sum(observed), as.integer(num_parameters), fit_seconds, fit_status))
+    }
+
+    if (method == "highQuality-lsqr") {
+        if (inherits(robust_model, "try-error") || !robust_model$converged) {
+            list(NA_real_, NA_real_, NA_real_)
+        } else {
             model_residuals = rep(NA_real_, nrow(input))
-            model_residuals[!input$is_lowcvr & !is.na(input$log2inty) & !input$unrep] = residuals(robust_model)
+            model_residuals[fitted_mask] = robust_model$residuals
+            list(as.numeric(model_residuals),
+                 rep(robust_model$df.residual, nrow(input)),
+                 rep(robust_model$scale ^ 2, nrow(input)))
+        }
+    } else {
+        if (inherits(robust_model, "try-error") || !robust_model$converged) {
+            list(NA_real_, NA_real_, NA_real_)
+        } else {
+            model_residuals = rep(NA_real_, nrow(input))
+            model_residuals[fitted_mask] = residuals(robust_model)
             list(as.numeric(model_residuals),
                  rep(summary(robust_model)$df[2], nrow(input)),
                  rep(summary(robust_model)$sigma ^ 2, nrow(input)))
-        } else {
-            list(NA_real_, NA_real_, NA_real_)
         }
     }
 }
@@ -263,6 +335,24 @@ MSstatsSelectFeatures = function(input, method, top_n = 3, min_feature_count = 2
 #' @keywords internal
 .fitHuber = function(input) {
     MASS::rlm(log2inty ~ run + feature, data = input, scale.est = "Huber")
+}
+
+
+#' Wrapper to fit robust linear model for one protein with a matrix-free
+#' LSQR-based solver instead of \code{MASS::rlm}'s QR-based one
+#' @param verbose passed to \code{.fitRobustRunFeatureModel}
+#' @return list, see \code{.fitRobustRunFeatureModel}
+#' @keywords internal
+.fitHuberLSQR = function(input, verbose = FALSE) {
+    valid = !is.na(input$log2inty)
+    # Build levels from observed rows only, matching MASS::rlm (which drops
+    # NA rows before building the design). Levels with no observations would
+    # add all-zero columns, understating df.residual and inflating the
+    # Huber scale estimate.
+    .fitRobustRunFeatureModel(input$log2inty[valid], input$run[valid], input$feature[valid],
+                              run_levels = sort(unique(input$run[valid])),
+                              feature_levels = sort(unique(input$feature[valid])),
+                              verbose = verbose)
 }
 
 
